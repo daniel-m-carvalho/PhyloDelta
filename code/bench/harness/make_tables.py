@@ -34,9 +34,28 @@ def _run(*argv, default="unknown"):
 
 
 def _commit() -> str:
+    """The commit these tables were generated at, flagged if the tree is dirty.
+
+    `TABLES.md` is excluded from the dirty check, because writing it is what makes
+    the tree dirty — including it made the marker fire on every single run, which
+    is a warning that means nothing. The marker is for *uncommitted inputs*: a
+    changed runner or an unsaved result file, where the tables would describe code
+    that is not in the commit named beside them.
+    """
     sha = _run("git", "rev-parse", "--short", "HEAD")
-    dirty = _run("git", "status", "--porcelain", default="")
-    return f"{sha}{' + uncommitted changes' if dirty else ''}"
+    import subprocess
+
+    try:
+        out = subprocess.run(
+            ["git", "status", "--porcelain"], capture_output=True, text=True, timeout=10
+        )
+        changed = [
+            line for line in out.stdout.splitlines()
+            if line.strip() and not line.endswith("results/TABLES.md")
+        ]
+    except Exception:
+        changed = []
+    return f"{sha}{' + uncommitted changes' if changed else ''}"
 
 
 def _os_version() -> str:
