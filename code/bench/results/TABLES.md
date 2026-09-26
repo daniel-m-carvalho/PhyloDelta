@@ -14,7 +14,47 @@
 
 **Only 2 of the 10 cores are used for the backend**, deliberately. Table 9 is the measurement behind that choice: two threads give ~2x at 94% efficiency where ten give ~4.7x at 57%, so eight further cores buy the last 2.3x at a steeply falling rate. Every build figure in these tables is therefore what a **two-core** deployment costs, not what this machine can do flat out.
 
+## Which of these to present
+
+Eighteen tables is more than a chapter can carry, and most were made to answer a question that came up rather than to make an argument. Each heading below repeats its tier.
+
+**Present these** — The argument. Drop one and a claim goes unsupported.
+
+- **Table 1** — The headline. Where each tool stops, and the size claim.
+- **Table 2** — The caveat Table 1 cannot be read without: this design draws less, and that IS the design. Omitting it is how the earlier 34x mistake happened.
+- **Table 3** — Memory is half the claim — flat against growing.
+- **Table 5** — Correctness. A fast wrong answer is worth nothing, so the approximation's cost has to be stated.
+- **Table 8** — What the design costs. Presenting Table 1 without this is claiming the precompute is free.
+- **Table 12** — The mechanism itself — a payload sized to the viewport, flat at every tree size. This is the thesis in one table.
+- **Table 13** — The honest ledger. What was given up to get Table 1.
+- **Table 14** — Methodology. The rungs above 17,645 are synthetic and the thesis must say so where the numbers are.
+- **Table 15** — The other half of interaction: loading is not using. Also carries the finding that the comparison tool's cross-tree jump does not work at all.
+
+**Appendix, or one sentence citing the number** — Defends a choice or a stated limit of a PRESENT table.
+
+- **Table 4** — The detail behind Table 1's 'failed': what failed and how. Cite the 30-minute budget in the text.
+- **Table 9** — Justifies the 2-thread setting every build figure uses. One sentence plus the table in an appendix.
+- **Table 11** — The deployability argument: server memory is linear, not quadratic. A sentence with the marginal figure.
+- **Table 17** — Why the metric choice is not free, and where §9's claim holds. Relevant only if the thesis discusses metric plugins.
+- **Table 18** — Validation: two independent RF implementations agreeing at 1.1M nodes. A sentence, with the table in an appendix.
+
+**Keep in the repository, do not present** — Real and reproducible, but a PRESENT table already says it or it answered an internal question.
+
+- **Table 6** — Diagnostic. Phase-splitting another tool's time compares phase names that do not mean the same thing; Table 1's paint/compare split is the part that survives.
+- **Table 7** — A method note, not a result: it establishes that one sample per rung was enough. Belongs in a sentence about method.
+- **Table 10** — Subsumed by Table 9, which measures the same trade-off on whole builds rather than one step.
+- **Table 16** — The attribution behind Table 15 — the round trip is ~6 ms of a ~49 ms navigation. One sentence, not a table.
+
+The nine PRESENT tables answer, in order: how far each tool gets (1), on comparable work (2), at what memory (3), how correctly (5), by what mechanism (12), at what navigation cost (15), for what precompute (8), giving up what (13), measured on what data (14).
+
+*Two tables to read together, not separately:* Table 1 without Table 2 overstates the result, because the tools do not draw the same amount — that asymmetry IS the design, and hiding it is how an earlier version of this comparison reported a 34x that did not exist.
+
+---
+
 ## Table 1 — Scalability: where each tool stops
+
+<!-- tier: PRESENT -->
+> **PRESENT** — The headline. Where each tool stops, and the size claim.
 
 > **Heap here is MAIN-THREAD ONLY.** `Runtime.getHeapUsage` reads one isolate, and phylo.io computes its comparison in a **Web Worker** with a heap of its own. Where the comparison finishes, the worker's results are copied back and the figure reflects them; where it does not, the column shows only the two parsed trees and so *falls* as the tree grows. It is a lower bound, not the tool's memory. Table 4's RSS figures, which cover the whole renderer including workers, are the honest memory numbers.
 
@@ -22,18 +62,21 @@ Cold start to an interactive comparison. Phylo.io is split into *paint* (two tre
 
 | leaves | phylo.io paint | phylo.io compare | phylo.io main-thread heap | PhyloDelta | PhyloDelta heap | PhyloDelta advantage | server precompute |
 |---:|---:|---:|---:|---:|---:|---:|---:|
-| 1,000 | 0.4 s | 5 s | 27.4 MB | 0.29 s | 3.6 MB | **17x** | 2.0 s |
+| 1,000 | 0.4 s | 5 s | 27.4 MB | 0.29 s | 3.6 MB | **17x** | 0.5 s |
 | 2,500 | 0.9 s | 19 s | 100.2 MB | 0.24 s | 3.6 MB | **78x** | 2.0 s |
-| 5,000 | 1.9 s | 53 s | 291.1 MB | 0.19 s | 3.6 MB | **272x** | 2.0 s |
-| 10,000 | 4.4 s | 199 s | 1,181.4 MB | 0.20 s | 3.6 MB | **1,002x** | 2.5 s |
-| 17,645 | 9.3 s | **did not finish** | 58.7 MB | 0.20 s | 3.6 MB | — | 2.6 s |
-| 35,290 | 25.1 s | **did not finish** | 115.6 MB | 0.19 s | 3.7 MB | — | 3.0 s |
-| 70,580 | **failed** | **failed** | **failed** | 0.57 s | 3.6 MB | **only PhyloDelta** | 5.6 s |
-| 141,160 | **failed** | **failed** | **failed** | 0.34 s | 3.6 MB | **only PhyloDelta** | 14.4 s |
-| 282,320 | **failed** | **failed** | **failed** | 0.94 s | 3.6 MB | **only PhyloDelta** | 49.8 s |
-| 564,640 | **failed** | **failed** | **failed** | 0.75 s | 3.6 MB | **only PhyloDelta** | 339.5 s |
+| 5,000 | 1.9 s | 53 s | 291.1 MB | 0.19 s | 3.6 MB | **272x** | 2.6 s |
+| 10,000 | 4.4 s | 199 s | 1,181.4 MB | 0.20 s | 3.6 MB | **1,002x** | 2.0 s |
+| 17,645 | 9.3 s | **did not finish** | 58.7 MB | 0.20 s | 3.6 MB | — | 3.1 s |
+| 35,290 | 25.1 s | **did not finish** | 115.6 MB | 0.19 s | 3.7 MB | — | 4.6 s |
+| 70,580 | **failed** | **failed** | **failed** | 0.57 s | 3.6 MB | **only PhyloDelta** | 10.2 s |
+| 141,160 | **failed** | **failed** | **failed** | 0.34 s | 3.6 MB | **only PhyloDelta** | 31.5 s |
+| 282,320 | **failed** | **failed** | **failed** | 0.94 s | 3.6 MB | **only PhyloDelta** | 115.1 s |
+| 564,640 | **failed** | **failed** | **failed** | 0.75 s | 3.6 MB | **only PhyloDelta** | 492.7 s |
 
 ## Table 2 — What each tool actually drew
+
+<!-- tier: PRESENT -->
+> **PRESENT** — The caveat Table 1 cannot be read without: this design draws less, and that IS the design. Omitting it is how the earlier 34x mistake happened.
 
 The check that makes Table 1 admissible. An earlier comparison in this project reported a ~34x speedup that was an artefact of the two tools rendering 91 and 2,002 nodes. **Both tools draw a roughly constant amount** — so the difference in Table 1 is not "one of them drew less".
 
@@ -54,6 +97,9 @@ The check that makes Table 1 admissible. An earlier comparison in this project r
 
 ## Table 3 — Memory, and why it grows for one tool and not the other
 
+<!-- tier: PRESENT -->
+> **PRESENT** — Memory is half the claim — flat against growing.
+
 Phylo.io's DOM is flat while its heap climbs steeply: it **models the whole tree** in the browser, and on top of that holds MinHash sketches and a score per node, which scale with the *comparison* rather than with the tree. PhyloDelta never receives the tree at all.
 
 Rows where the comparison did not finish are marked — their figure excludes the worker entirely and must not be read as a decrease.
@@ -73,6 +119,9 @@ Rows where the comparison did not finish are marked — their figure excludes th
 
 ## Table 4 — Failure behaviour, given 30 minutes and 16 GB
 
+<!-- tier: SUPPORT -->
+> **SUPPORT** — The detail behind Table 1's 'failed': what failed and how. Cite the 30-minute budget in the text.
+
 Table 1's failures are against a stated budget. This removes the budget: each rung was given **30 minutes** with a 16 GB renderer cap on a 24 GB machine.
 
 | leaves | outcome | time to failure | peak renderer |
@@ -83,6 +132,9 @@ Table 1's failures are against a stated budget. This removes the budget: each ru
 *Peak memory is sampled every 2 s from process RSS, so it is a lower bound and the two figures should not be read as an ordering.*
 
 ## Table 5 — Accuracy: what the LSH approximation costs
+
+<!-- tier: PRESENT -->
+> **PRESENT** — Correctness. A fast wrong answer is worth nothing, so the approximation's cost has to be stated.
 
 Phylo.io finds each clade's best corresponding node by maximising Jaccard over **ten candidates** retrieved by MinHash/LSH (`worker_bcn.js`). This project maximises over every node, so it is an upper bound and every gap is a retrieval miss. Run on pairs with **identical leaf sets**, so a difference cannot be explained by unmatched-leaf handling.
 
@@ -95,6 +147,9 @@ Phylo.io finds each clade's best corresponding node by maximising Jaccard over *
 *`beat exact` must be 0: an exhaustive search cannot be beaten by a subset of the same candidates. It is reported as a check on the method, not as a result.*
 
 ## Table 6 — Where phylo.io's time goes
+
+<!-- tier: WORKING -->
+> **WORKING** — Diagnostic. Phase-splitting another tool's time compares phase names that do not mean the same thing; Table 1's paint/compare split is the part that survives.
 
 Its own phase split. Parsing and drawing are cheap and near-linear; **the comparison is what scales badly** — which is the same finding as this project's own correspondence search being the quadratic step (DECISIONS §17), reached independently by both implementations.
 
@@ -113,6 +168,9 @@ Its own phase split. Parsing and drawing are cheap and near-linear; **the compar
 
 ## Table 7 — PhyloDelta, repeated
 
+<!-- tier: WORKING -->
+> **WORKING** — A method note, not a result: it establishes that one sample per rung was enough. Belongs in a sentence about method.
+
 Six samples per rung after a discarded warm-up. Included because sub-second figures are at this harness's noise floor: a single sample per rung first reported 2.7 s and 3.6 s at the top two rungs, which no repeat could reproduce.
 
 | leaves | nodes | median | min | max | heap |
@@ -129,6 +187,9 @@ Six samples per rung after a discarded warm-up. Included because sub-second figu
 | 564,640 | 1,129,279 | **0.43 s** | 0.38 s | 0.97 s | 3.6 MB *(beyond phylo.io — it crashes at 141,160)* |
 
 ## Table 8 — The precompute PhyloDelta pays instead
+
+<!-- tier: PRESENT -->
+> **PRESENT** — What the design costs. Presenting Table 1 without this is claiming the precompute is free.
 
 Measured through the real upload path: POST the bundle, a worker claims it, poll until ready. Includes ingest, reconciliation, the correspondence search and the metric.
 
@@ -150,6 +211,9 @@ Measured through the real upload path: POST the bundle, a worker claims it, poll
 *The ~2 s floor at small sizes is the worker's poll interval, not work.*
 
 ## Table 9 — Build time at pinned thread counts
+
+<!-- tier: SUPPORT -->
+> **SUPPORT** — Justifies the 2-thread setting every build figure uses. One sentence plus the table in an appendix.
 
 Table 8 used the default — one thread per hardware thread, **10** on this machine. These are the same builds with the count pinned, through the same upload path, each on its own store.
 
@@ -174,6 +238,9 @@ Table 8 used the default — one thread per hardware thread, **10** on this mach
 
 ## Table 10 — Thread scaling of the parallel step
 
+<!-- tier: WORKING -->
+> **WORKING** — Subsumed by Table 9, which measures the same trade-off on whole builds rather than one step.
+
 **Only one step of the build is parallel**: the clade-correspondence search. It is driven directly here rather than timed through a whole build, which would dilute it with the single-threaded parse, reconciliation and metric around it. 70,580 leaves, best of 3 runs.
 
 | threads | time | speedup | efficiency | result identical to 1 thread |
@@ -191,6 +258,9 @@ Table 8 used the default — one thread per hardware thread, **10** on this mach
 The knee is at **4 threads**, which is the number of performance cores on this machine (10 cores, 4 of them performance). One to four threads buys 3.37x at 84% efficiency; four to ten buys only another 1.69x and drops efficiency to 57%. On a shared machine 4 threads is the better trade: 1.7x slower than 10, for 2.5x fewer cores.
 
 ## Table 11 — What the server needs while it builds
+
+<!-- tier: SUPPORT -->
+> **SUPPORT** — The deployability argument: server memory is linear, not quadratic. A sentence with the marginal figure.
 
 Peak RSS of the worker process, sampled every 200 ms against its idle baseline of 33 MB. Measured in a throwaway store so nothing else was disturbed.
 
@@ -217,6 +287,9 @@ Both thread settings are shown, compared on **absolute peak RSS** rather than on
 
 ## Table 12 — The request a panel actually makes
 
+<!-- tier: PRESENT -->
+> **PRESENT** — The mechanism itself — a payload sized to the viewport, flat at every tree size. This is the thesis in one table.
+
 The **cause**, where every other table shows the consequence. The same GET the frontend issues, at every tree size, read-only. Latency and payload are set by the viewport budget, so neither tracks the tree: **564x more leaves, the same few milliseconds and the same few kilobytes.**
 
 | leaves | median | min | max | response | leaves drawn |
@@ -236,15 +309,21 @@ The **cause**, where every other table shows the consequence. The same GET the f
 
 ## Table 13 — What the design costs
 
+<!-- tier: PRESENT -->
+> **PRESENT** — The honest ledger. What was given up to get Table 1.
+
 | | phylo.io | PhyloDelta |
 |---|---|---|
 | Server required | no | **yes** |
-| Precompute before first view | none | up to 340 s |
+| Precompute before first view | none | up to 493 s at 2 threads |
 | Whole tree ever visible | yes, in memory | **no, never transferred** |
 | Works offline from a file | yes | no |
 | Comparison recomputed on demand | yes | no, fixed at build |
 
 ## Table 14 — Provenance of the test data
+
+<!-- tier: PRESENT -->
+> **PRESENT** — Methodology. The rungs above 17,645 are synthetic and the thesis must say so where the numbers are.
 
 | rung | origin |
 |---:|---|
@@ -255,6 +334,9 @@ The **cause**, where every other table shows the consequence. The same GET the f
 *Every rung verified as a genuine comparison pair: 100% shared leaf sets, depth 79 to 191. Real MLST data stops at 27,962 leaves (clostridium), so rungs above 17,645 are synthetic and are used only for performance claims.*
 
 ## Table 15 — Navigation responsiveness, once the comparison is open
+
+<!-- tier: PRESENT -->
+> **PRESENT** — The other half of interaction: loading is not using. Also carries the finding that the comparison tool's cross-tree jump does not work at all.
 
 *Median milliseconds from the action to a painted result, 8 operations per cell after a discarded warm-up.*
 
@@ -276,6 +358,9 @@ The **cause**, where every other table shows the consequence. The same GET the f
 
 
 ## Table 16 — Where a PhyloDelta navigation's time goes
+
+<!-- tier: WORKING -->
+> **WORKING** — The attribution behind Table 15 — the round trip is ~6 ms of a ~49 ms navigation. One sentence, not a table.
 
 | leaves | expand total | of which fetch | back total | of which fetch | back, cache emptied | of which fetch |
 |---:|---:|---:|---:|---:|---:|---:|
@@ -304,6 +389,9 @@ Recorded with the mechanism because it is a claim about someone else's tool. It 
 
 ## Table 17 — Does the chosen metric change what a build costs?
 
+<!-- tier: SUPPORT -->
+> **SUPPORT** — Why the metric choice is not free, and where §9's claim holds. Relevant only if the thesis discusses metric plugins.
+
 *Seconds, from the worker's own per-metric timings at `PHYLODELTA_THREADS=2`. "Shared" is what every metric in a set pays once: parse, reconcile, correspondence, store.*
 
 | leaves | shared work | rf | rf-treediff | triplet | total | metrics as % of total |
@@ -329,6 +417,9 @@ So §9's claim that several metrics cost little more than one is **true asymptot
 
 
 ## Table 18 — Two RF implementations against each other
+
+<!-- tier: SUPPORT -->
+> **SUPPORT** — Validation: two independent RF implementations agreeing at 1.1M nodes. A sentence, with the table in an appendix.
 
 | leaves | built-in `rf` | `rf-treediff` | agree |
 |---:|---:|---:|:---:|

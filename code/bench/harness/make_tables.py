@@ -28,10 +28,101 @@ endurance = load("endurance.json", [])
 #: Full builds at pinned thread counts. Table 8 reports the 2-thread column as
 #: the deployment setting; Table 9 compares all three.
 pinned = {n: load(f"thread_builds_{n}.json") for n in (1, 2)}
+
+#: Build time at the **deployment** thread count, which is what every table that
+#: quotes one precompute figure must use.
+#:
+#: `server_build.json` is the original run and used the default — ten threads,
+#: the whole machine. Quoting it as "the precompute" overstates the design by
+#: ~1.5x at the top rung (339.5 s against 492.7 s) and contradicts Table 8 on the
+#: same page. Tables 1 and 13 were doing exactly that.
+DEPLOY_THREADS = 2
+deploy_build = {
+    r["leaves"]: r["build_s"]
+    for r in (pinned.get(DEPLOY_THREADS) or {"rungs": []})["rungs"]
+}
+
+
+def precompute_s(leaves):
+    """Seconds to build this rung at the deployment setting, or None.
+
+    Falls back to the 10-thread run only where no pinned measurement exists, so a
+    missing rung shows a number that is optimistic rather than no number at all —
+    and `precompute_is_pinned` is what lets a caller say which it got.
+    """
+    if leaves in deploy_build:
+        return deploy_build[leaves]
+    return server.get(leaves, {}).get("build_s")
+
+
+def precompute_is_pinned(leaves) -> bool:
+    return leaves in deploy_build
 navigation = load("navigation.json", {})
 metric_builds = load("metric_builds.json", {})
 metric_phases = load("metric_phases.json", {})
 rows = ceiling.get("rows", [])
+
+
+# --- which of these belong in the thesis ----------------------------------
+#
+# Eighteen tables is more than a thesis chapter can carry, and most were produced
+# to answer a question that came up rather than to make an argument. The tier is
+# recorded here, beside the generator, so the classification is part of the
+# artefact rather than a judgement made once in conversation and lost.
+#
+#   PRESENT   the argument. Drop one and a claim goes unsupported.
+#   SUPPORT   defends a choice or a limit of a PRESENT table. Appendix, or a
+#             sentence in the text citing the number.
+#   WORKING   real, reproducible, and not worth a reader's time: it answered an
+#             internal question, or a PRESENT table already says it.
+PRESENT, SUPPORT, WORKING = "PRESENT", "SUPPORT", "WORKING"
+
+TIERS = {
+    1: (PRESENT, "The headline. Where each tool stops, and the size claim."),
+    2: (PRESENT, "The caveat Table 1 cannot be read without: this design draws "
+                 "less, and that IS the design. Omitting it is how the earlier "
+                 "34x mistake happened."),
+    3: (PRESENT, "Memory is half the claim — flat against growing."),
+    4: (SUPPORT, "The detail behind Table 1's 'failed': what failed and how. Cite "
+                 "the 30-minute budget in the text."),
+    5: (PRESENT, "Correctness. A fast wrong answer is worth nothing, so the "
+                 "approximation's cost has to be stated."),
+    6: (WORKING, "Diagnostic. Phase-splitting another tool's time compares phase "
+                 "names that do not mean the same thing; Table 1's paint/compare "
+                 "split is the part that survives."),
+    7: (WORKING, "A method note, not a result: it establishes that one sample per "
+                 "rung was enough. Belongs in a sentence about method."),
+    8: (PRESENT, "What the design costs. Presenting Table 1 without this is "
+                 "claiming the precompute is free."),
+    9: (SUPPORT, "Justifies the 2-thread setting every build figure uses. One "
+                 "sentence plus the table in an appendix."),
+    10: (WORKING, "Subsumed by Table 9, which measures the same trade-off on whole "
+                  "builds rather than one step."),
+    11: (SUPPORT, "The deployability argument: server memory is linear, not "
+                  "quadratic. A sentence with the marginal figure."),
+    12: (PRESENT, "The mechanism itself — a payload sized to the viewport, flat at "
+                  "every tree size. This is the thesis in one table."),
+    13: (PRESENT, "The honest ledger. What was given up to get Table 1."),
+    14: (PRESENT, "Methodology. The rungs above 17,645 are synthetic and the "
+                  "thesis must say so where the numbers are."),
+    15: (PRESENT, "The other half of interaction: loading is not using. Also "
+                  "carries the finding that the comparison tool's cross-tree jump "
+                  "does not work at all."),
+    16: (WORKING, "The attribution behind Table 15 — the round trip is ~6 ms of a "
+                  "~49 ms navigation. One sentence, not a table."),
+    17: (SUPPORT, "Why the metric choice is not free, and where §9's claim holds. "
+                  "Relevant only if the thesis discusses metric plugins."),
+    18: (SUPPORT, "Validation: two independent RF implementations agreeing at 1.1M "
+                  "nodes. A sentence, with the table in an appendix."),
+}
+
+
+def table(number: int, title: str, lead: str = "\n") -> None:
+    """Print a table heading with its tier, so the file says what to present."""
+    tier, why = TIERS[number]
+    print(f"{lead}## Table {number} — {title}\n")
+    print(f"<!-- tier: {tier} -->")
+    print(f"> **{tier}** — {why}\n")
 
 
 def fmt(value, unit="", nd=1, dash="—"):
@@ -59,8 +150,37 @@ print("**Only 2 of the 10 cores are used for the backend**, deliberately. "
       "machine can do flat out.\n")
 
 
+# --- 0. what to present ---------------------------------------------------
+print("## Which of these to present\n")
+print("Eighteen tables is more than a chapter can carry, and most were made to "
+      "answer a question that came up rather than to make an argument. Each "
+      "heading below repeats its tier.\n")
+for tier, heading, blurb in (
+    (PRESENT, "Present these", "The argument. Drop one and a claim goes unsupported."),
+    (SUPPORT, "Appendix, or one sentence citing the number",
+     "Defends a choice or a stated limit of a PRESENT table."),
+    (WORKING, "Keep in the repository, do not present",
+     "Real and reproducible, but a PRESENT table already says it or it answered "
+     "an internal question."),
+):
+    chosen = [n for n, (t, _) in sorted(TIERS.items()) if t == tier]
+    print(f"**{heading}** — {blurb}\n")
+    for n in chosen:
+        print(f"- **Table {n}** — {TIERS[n][1]}")
+    print()
+print("The nine PRESENT tables answer, in order: how far each tool gets "
+      "(1), on comparable work (2), at what memory (3), how correctly (5), by "
+      "what mechanism (12), at what navigation cost (15), for what precompute "
+      "(8), giving up what (13), measured on what data (14).\n")
+print("*Two tables to read together, not separately:* Table 1 without Table 2 "
+      "overstates the result, because the tools do not draw the same amount — "
+      "that asymmetry IS the design, and hiding it is how an earlier version of "
+      "this comparison reported a 34x that did not exist.\n")
+print("---\n")
+
+
 # --- 1. the headline ------------------------------------------------------
-print("## Table 1 — Scalability: where each tool stops\n")
+table(1, "Scalability: where each tool stops", lead="")
 print("> **Heap here is MAIN-THREAD ONLY.** `Runtime.getHeapUsage` reads one "
       "isolate, and phylo.io computes its comparison in a **Web Worker** with "
       "a heap of its own. Where the comparison finishes, the worker's results "
@@ -99,11 +219,12 @@ for row in rows:
         f"| {leaves:,} | {paint} | {comp} | {heap} | "
         f"{fmt(d['ms'] / 1000, ' s', 2) if d.get('ok') else '**failed**'} | "
         f"{fmt(d.get('heap_mb'), ' MB')} | {ratio} | "
-        f"{fmt(server.get(leaves, {}).get('build_s'), ' s')} |"
+        f"{fmt(precompute_s(leaves), ' s')}"
+        f"{'' if precompute_is_pinned(leaves) else ' *(10 threads)*'} |"
     )
 
 # --- 2. fairness ----------------------------------------------------------
-print("\n## Table 2 — What each tool actually drew\n")
+table(2, "What each tool actually drew")
 print("The check that makes Table 1 admissible. An earlier comparison in this "
       "project reported a ~34x speedup that was an artefact of the two tools "
       "rendering 91 and 2,002 nodes. **Both tools draw a roughly constant "
@@ -131,7 +252,7 @@ for row in rows:
     )
 
 # --- 3. the mechanism -----------------------------------------------------
-print("\n## Table 3 — Memory, and why it grows for one tool and not the other\n")
+table(3, "Memory, and why it grows for one tool and not the other")
 print("Phylo.io's DOM is flat while its heap climbs steeply: it **models the "
       "whole tree** in the browser, and on top of that holds MinHash sketches "
       "and a score per node, which scale with the *comparison* rather than "
@@ -153,7 +274,7 @@ for row in rows:
 
 # --- 4. failure -----------------------------------------------------------
 if endurance:
-    print("\n## Table 4 — Failure behaviour, given 30 minutes and 16 GB\n")
+    table(4, "Failure behaviour, given 30 minutes and 16 GB")
     print("Table 1's failures are against a stated budget. This removes the "
           "budget: each rung was given **30 minutes** with a 16 GB renderer cap "
           "on a 24 GB machine.\n")
@@ -173,7 +294,7 @@ accuracy = []
 for path in sorted(RESULTS.glob("bcn_accuracy*.json")):
     accuracy.append(json.loads(path.read_text()))
 if accuracy:
-    print("\n## Table 5 — Accuracy: what the LSH approximation costs\n")
+    table(5, "Accuracy: what the LSH approximation costs")
     print("Phylo.io finds each clade's best corresponding node by maximising "
           "Jaccard over **ten candidates** retrieved by MinHash/LSH "
           "(`worker_bcn.js`). This project maximises over every node, so it is "
@@ -194,7 +315,7 @@ if accuracy:
           "method, not as a result.*")
 
 # --- 5b. where phylo.io's time goes ---------------------------------------
-print("\n## Table 6 — Where phylo.io's time goes\n")
+table(6, "Where phylo.io's time goes")
 print("Its own phase split. Parsing and drawing are cheap and near-linear; "
       "**the comparison is what scales badly** — which is the same finding as "
       "this project's own correspondence search being the quadratic step "
@@ -219,7 +340,7 @@ for row in rows:
 # --- 5c. how solid the PhyloDelta numbers are -----------------------------
 repeats = load("phylodelta_repeats.json", [])
 if repeats:
-    print("\n## Table 7 — PhyloDelta, repeated\n")
+    table(7, "PhyloDelta, repeated")
     print("Six samples per rung after a discarded warm-up. Included because "
           "sub-second figures are at this harness's noise floor: a single "
           "sample per rung first reported 2.7 s and 3.6 s at the top two "
@@ -236,8 +357,8 @@ if repeats:
 
 # --- 5d. the server side ---------------------------------------------------
 if server:
-    two_thread = {r["leaves"]: r["build_s"] for r in (pinned.get(2) or {"rungs": []})["rungs"]}
-    print("\n## Table 8 — The precompute PhyloDelta pays instead\n")
+    two_thread = deploy_build
+    table(8, "The precompute PhyloDelta pays instead")
     print("Measured through the real upload path: POST the bundle, a worker "
           "claims it, poll until ready. Includes ingest, reconciliation, the "
           "correspondence search and the metric.\n")
@@ -261,7 +382,7 @@ if server:
 # Emitted only once both pinned runs exist, so a half-finished experiment
 # cannot appear as a finished table.
 if all(pinned.values()):
-    print("\n## Table 9 — Build time at pinned thread counts\n")
+    table(9, "Build time at pinned thread counts")
     print("Table 8 used the default — one thread per hardware thread, **10** on "
           "this machine. These are the same builds with the count pinned, "
           "through the same upload path, each on its own store.\n")
@@ -312,7 +433,7 @@ if all(pinned.values()):
 
 scaling = load("thread_scaling.json")
 if scaling:
-    print("\n## Table 10 — Thread scaling of the parallel step\n")
+    table(10, "Thread scaling of the parallel step")
     print("**Only one step of the build is parallel**: the clade-correspondence "
           "search. It is driven directly here rather than timed through a whole "
           "build, which would dilute it with the single-threaded parse, "
@@ -339,7 +460,7 @@ if scaling:
 memory = load("build_memory.json")
 memory_ten = load("build_memory_10threads.json")
 if memory:
-    print("\n## Table 11 — What the server needs while it builds\n")
+    table(11, "What the server needs while it builds")
     print("Peak RSS of the worker process, sampled every 200 ms against its "
           f"idle baseline of {memory['idle_rss_mb']:,.0f} MB. Measured in a "
           "throwaway store so nothing else was disturbed.\n")
@@ -404,7 +525,7 @@ if memory:
 # --- 5e. the mechanism, directly ------------------------------------------
 latency = load("slice_latency.json", [])
 if latency:
-    print("\n## Table 12 — The request a panel actually makes\n")
+    table(12, "The request a panel actually makes")
     print("The **cause**, where every other table shows the consequence. The "
           "same GET the frontend issues, at every tree size, read-only. "
           "Latency and payload are set by the viewport budget, so neither "
@@ -427,17 +548,18 @@ if latency:
         "store memory-maps it.*")
 
 # --- 6. the honest ledger -------------------------------------------------
-print("\n## Table 13 — What the design costs\n")
+table(13, "What the design costs")
 print("| | phylo.io | PhyloDelta |")
 print("|---|---|---|")
 print("| Server required | no | **yes** |")
 print("| Precompute before first view | none | up to "
-      f"{max((r['build_s'] for r in server.values()), default=0):.0f} s |")
+      f"{max((precompute_s(n) or 0) for n in server) if server else 0:.0f} s "
+      f"at {DEPLOY_THREADS} threads |")
 print("| Whole tree ever visible | yes, in memory | **no, never transferred** |")
 print("| Works offline from a file | yes | no |")
 print("| Comparison recomputed on demand | yes | no, fixed at build |")
 
-print("\n## Table 14 — Provenance of the test data\n")
+table(14, "Provenance of the test data")
 print("| rung | origin |")
 print("|---:|---|")
 print("| 1,000 – 10,000 | pruned subsamples of the real vibrio NJ/UPGMA pair |")
@@ -452,7 +574,7 @@ print("\n*Every rung verified as a genuine comparison pair: 100% shared leaf "
 # --- 7. navigating, once loaded -------------------------------------------
 nav_rows = navigation.get("rows", [])
 if nav_rows:
-    print("\n## Table 15 — Navigation responsiveness, once the comparison is open\n")
+    table(15, "Navigation responsiveness, once the comparison is open")
     print("*Median milliseconds from the action to a painted result, "
           f"{navigation.get('samples', 8)} operations per cell after a discarded warm-up.*\n")
     print("| leaves | phylo.io expand | phylo.io back | phylo.io jump | "
@@ -506,7 +628,7 @@ if nav_rows:
           "explain away.\n")
 
     # What the cache actually contributed, and where the time goes instead.
-    print("\n## Table 16 — Where a PhyloDelta navigation's time goes\n")
+    table(16, "Where a PhyloDelta navigation's time goes")
     print("| leaves | expand total | of which fetch | back total | of which fetch | "
           "back, cache emptied | of which fetch |")
     print("|---:|---:|---:|---:|---:|---:|---:|")
@@ -558,7 +680,7 @@ if nav_rows:
 # --- 8. does the metric change the cost? ----------------------------------
 phase_rows = metric_phases.get("rows", [])
 if phase_rows:
-    print("\n\n## Table 17 — Does the chosen metric change what a build costs?\n")
+    table(17, "Does the chosen metric change what a build costs?", lead="\n\n")
     print("*Seconds, from the worker's own per-metric timings at "
           "`PHYLODELTA_THREADS=2`. \"Shared\" is what every metric in a set pays "
           "once: parse, reconcile, correspondence, store.*\n")
@@ -634,7 +756,7 @@ if phase_rows:
                 continue
             (agree if a == b else disagree).append((row["leaves"], a, b))
     if agree or disagree:
-        print("\n## Table 18 — Two RF implementations against each other\n")
+        table(18, "Two RF implementations against each other")
         print("| leaves | built-in `rf` | `rf-treediff` | agree |")
         print("|---:|---:|---:|:---:|")
         seen = set()
