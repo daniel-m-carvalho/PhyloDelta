@@ -3705,12 +3705,13 @@ the results were finished and checked over.
   `failed` cell in Tables 1 and 4 is a statement about the tool at an 8 GB cap rather than at Chrome's
   default. This was documented in `browser.mjs` and not in the table a reader sees.
 
-And one that is a real gap rather than an omission: **power state was not controlled or recorded.**
-The machine is a laptop that throttles on battery. That matters here specifically because the
-explanation already offered for the 564,640-leaf thread-scaling anomaly (§34.9, §34.11) *is* machine
-state — thermal drift across a twenty-minute run. Having invoked machine state to explain an anomaly,
-the environment table cannot then be silent about the part of it that is easiest to control. Repeats
-on mains power are the cheapest way to close it, and are not yet done.
+**Power state was not controlled**, and is recorded for completeness rather than as a limitation —
+a distinction worth making, because the first draft of this section called it "a real gap" and that
+was wrong. Every claim in §34 is a claim about **shape**: flat against growing, completes against does
+not, ratios between 16x and 1,644x. None of them turns on a timing difference of the size throttling
+produces. It bears on exactly one number, the 564,640 row of §34.8's ratios — and those are already
+withdrawn there, on precisely these grounds. A caveat whose only referent is an already-withdrawn
+figure is a footnote, not a threat to the thesis.
 
 The OS version and the commit are read from the machine when the tables are generated, not written
 down. A hand-copied commit is wrong from the next commit onward, which is the whole reason

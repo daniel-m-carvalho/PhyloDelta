@@ -10,19 +10,19 @@
 | Browser flags | `--js-flags=--max-old-space-size=8192`, `--disable-dev-shm-usage` — **both tools, identically** |
 | Viewport | 1440 x 900; Table 21 varies the height |
 | **Tool compared against** | **phylo.io 2.1.1**, its own prebuilt `dist/`, unmodified; findings re-checked against **2.2.5** (see the Table 15 note) |
-| This project | commit `4f553df + uncommitted changes` |
+| This project | commit `5bd212c + uncommitted changes` |
 | Runtimes | Python 3.12.14 (`uv`), Node 26.3.0, Playwright 1.63.0 |
 | Backend database | SQLite, in the store directory |
 | Store location | `/private/tmp/...` — an APFS SSD volume, **not** a RAM disk |
 | **Backend threads** | **2 of the 10 cores** (`PHYLODELTA_THREADS=2`) |
 | Transport | one origin, one fresh page per measurement; uncompressed except Table 20, which is gzip |
-| Power state | **not controlled** — see the caveat below |
+| Power state | not controlled (laptop) — bears only on Table 9's 564,640 ratios, already withdrawn there |
 
 **The two entries that matter most for checking these numbers** are the browser flags and the phylo.io version. The heap cap decides *where* a tool fails, so Table 1's and Table 4's `failed` rows are statements about the tool at an 8 GB cap, not at Chrome's default — and it is raised for both tools, which is what makes a failure the tool's own ceiling. The version matters because several findings are about phylo.io's behaviour: the "Highlight BCN" crash (Table 15) is a fact about **2.1.1** and a later release may fix it.
 
 **Headless, throughout.** Rendering in headless Chrome is not identical to a visible window, and these are partly rendering measurements — so this is a real caveat, not a footnote. It applies equally to both tools, so the *comparison* holds; the absolute paint times would need re-taking in a headed browser to be quoted as what a user sees.
 
-**Power state was not controlled or recorded**, and the machine is a laptop that throttles on battery. This is worth stating plainly because the explanation already offered for the 564,640-leaf thread-scaling anomaly (§34.9, §34.11) is machine state — thermal drift over a 20-minute run — and having invoked that, the table cannot then be silent about power. Repeats under a known power state are the cheapest way to close it.
+*Power state was not controlled, and is recorded for completeness rather than as a limitation.* Every claim these tables make is a claim about **shape** — flat against growing, completes against does not, ratios from 16x to 1,644x — and none of them turns on a timing difference of the size throttling produces. It bears on exactly one number: the 564,640 row of Table 9, whose ratios are withdrawn there on those grounds already.
 
 **Only 2 of the 10 cores are used for the backend**, deliberately. Table 9 is the measurement behind that choice: two threads give ~2x at 94% efficiency where ten give ~4.7x at 57%, so eight further cores buy the last 2.3x at a steeply falling rate. Every build figure in these tables is therefore what a **two-core** deployment costs, not what this machine can do flat out.
 

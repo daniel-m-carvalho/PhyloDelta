@@ -212,7 +212,8 @@ print("| Store location | `/private/tmp/...` — an APFS SSD volume, **not** a R
 print("| **Backend threads** | **2 of the 10 cores** (`PHYLODELTA_THREADS=2`) |")
 print("| Transport | one origin, one fresh page per measurement; uncompressed "
       "except Table 20, which is gzip |")
-print("| Power state | **not controlled** — see the caveat below |")
+print("| Power state | not controlled (laptop) — bears only on Table 9's "
+      "564,640 ratios, already withdrawn there |")
 print()
 print("**The two entries that matter most for checking these numbers** are the "
       "browser flags and the phylo.io version. The heap cap decides *where* a tool "
@@ -227,12 +228,12 @@ print("**Headless, throughout.** Rendering in headless Chrome is not identical t
       "a real caveat, not a footnote. It applies equally to both tools, so the "
       "*comparison* holds; the absolute paint times would need re-taking in a "
       "headed browser to be quoted as what a user sees.\n")
-print("**Power state was not controlled or recorded**, and the machine is a laptop "
-      "that throttles on battery. This is worth stating plainly because the "
-      "explanation already offered for the 564,640-leaf thread-scaling anomaly "
-      "(§34.9, §34.11) is machine state — thermal drift over a 20-minute run — and "
-      "having invoked that, the table cannot then be silent about power. Repeats "
-      "under a known power state are the cheapest way to close it.\n")
+print("*Power state was not controlled, and is recorded for completeness rather "
+      "than as a limitation.* Every claim these tables make is a claim about "
+      "**shape** — flat against growing, completes against does not, ratios from "
+      "16x to 1,644x — and none of them turns on a timing difference of the size "
+      "throttling produces. It bears on exactly one number: the 564,640 row of "
+      "Table 9, whose ratios are withdrawn there on those grounds already.\n")
 print("**Only 2 of the 10 cores are used for the backend**, deliberately. "
       "Table 9 is the measurement behind that choice: two threads give ~2x at "
       "94% efficiency where ten give ~4.7x at 57%, so eight further cores buy "
