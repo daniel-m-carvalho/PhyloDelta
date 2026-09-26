@@ -232,10 +232,34 @@ if server:
     print("\n*The ~2 s floor at small sizes is the worker's poll interval, not "
           "work.*")
 
+memory = load("build_memory.json")
+if memory:
+    print("\n## Table 9 — What the server needs while it builds\n")
+    print("Peak RSS of the worker process, sampled every 200 ms against its "
+          f"idle baseline of {memory['idle_rss_mb']:,.0f} MB. Measured in a "
+          "throwaway store so nothing else was disturbed.\n")
+    print("**The search is quadratic in time but LINEAR in memory** — every "
+          "doubling of leaves roughly doubles the footprint. The pruning bound "
+          "means it never materialises an n x n matrix: it holds the two trees' "
+          "columns and a scratch buffer per thread. For contrast, building "
+          "these trees with NJ would need ~500 GB of distance matrix at "
+          "500,000 taxa.\n")
+    print("| leaves | build | peak RSS | over idle | growth |")
+    print("|---:|---:|---:|---:|---:|")
+    previous = None
+    for r in memory["rungs"]:
+        over = r["over_idle_mb"]
+        growth = f"{over / previous:.2f}x" if previous else "—"
+        print(
+            f"| {r['leaves']:,} | {r['build_s']:.1f} s | {r['peak_rss_mb']:,.0f} MB | "
+            f"**{over:,.0f} MB** | {growth} |"
+        )
+        previous = over or None
+
 # --- 5e. the mechanism, directly ------------------------------------------
 latency = load("slice_latency.json", [])
 if latency:
-    print("\n## Table 9 — The request a panel actually makes\n")
+    print("\n## Table 10 — The request a panel actually makes\n")
     print("The **cause**, where every other table shows the consequence. The "
           "same GET the frontend issues, at every tree size, read-only. "
           "Latency and payload are set by the viewport budget, so neither "
@@ -258,7 +282,7 @@ if latency:
         "store memory-maps it.*")
 
 # --- 6. the honest ledger -------------------------------------------------
-print("\n## Table 10 — What the design costs\n")
+print("\n## Table 11 — What the design costs\n")
 print("| | phylo.io | PhyloDelta |")
 print("|---|---|---|")
 print("| Server required | no | **yes** |")
@@ -268,7 +292,7 @@ print("| Whole tree ever visible | yes, in memory | **no, never transferred** |"
 print("| Works offline from a file | yes | no |")
 print("| Comparison recomputed on demand | yes | no, fixed at build |")
 
-print("\n## Table 11 — Provenance of the test data\n")
+print("\n## Table 12 — Provenance of the test data\n")
 print("| rung | origin |")
 print("|---:|---|")
 print("| 1,000 – 10,000 | pruned subsamples of the real vibrio NJ/UPGMA pair |")

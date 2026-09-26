@@ -131,7 +131,26 @@ Measured through the real upload path: POST the bundle, a worker claims it, poll
 
 *The ~2 s floor at small sizes is the worker's poll interval, not work.*
 
-## Table 9 — The request a panel actually makes
+## Table 9 — What the server needs while it builds
+
+Peak RSS of the worker process, sampled every 200 ms against its idle baseline of 69 MB. Measured in a throwaway store so nothing else was disturbed.
+
+**The search is quadratic in time but LINEAR in memory** — every doubling of leaves roughly doubles the footprint. The pruning bound means it never materialises an n x n matrix: it holds the two trees' columns and a scratch buffer per thread. For contrast, building these trees with NJ would need ~500 GB of distance matrix at 500,000 taxa.
+
+| leaves | build | peak RSS | over idle | growth |
+|---:|---:|---:|---:|---:|
+| 1,000 | 0.8 s | 73 MB | **3 MB** | — |
+| 2,500 | 2.1 s | 76 MB | **7 MB** | 1.94x |
+| 5,000 | 2.1 s | 80 MB | **10 MB** | 1.52x |
+| 10,000 | 2.1 s | 87 MB | **18 MB** | 1.75x |
+| 17,645 | 2.6 s | 106 MB | **37 MB** | 2.10x |
+| 35,290 | 3.2 s | 148 MB | **79 MB** | 2.16x |
+| 70,580 | 5.5 s | 223 MB | **153 MB** | 1.94x |
+| 141,160 | 13.0 s | 392 MB | **322 MB** | 2.11x |
+| 282,320 | 44.3 s | 681 MB | **611 MB** | 1.90x |
+| 564,640 | 196.4 s | 1,271 MB | **1,201 MB** | 1.97x |
+
+## Table 10 — The request a panel actually makes
 
 The **cause**, where every other table shows the consequence. The same GET the frontend issues, at every tree size, read-only. Latency and payload are set by the viewport budget, so neither tracks the tree: **564x more leaves, the same few milliseconds and the same few kilobytes.**
 
@@ -150,7 +169,7 @@ The **cause**, where every other table shows the consequence. The same GET the f
 
 *From 1,000 to 564,640 leaves — a 565x increase — the median moves 3.8 ms to 2.9 ms and the payload 5.4 KB to 6.0 KB. Seven samples per rung after a warm-up, since the first touch of a store memory-maps it.*
 
-## Table 10 — What the design costs
+## Table 11 — What the design costs
 
 | | phylo.io | PhyloDelta |
 |---|---|---|
@@ -160,7 +179,7 @@ The **cause**, where every other table shows the consequence. The same GET the f
 | Works offline from a file | yes | no |
 | Comparison recomputed on demand | yes | no, fixed at build |
 
-## Table 11 — Provenance of the test data
+## Table 12 — Provenance of the test data
 
 | rung | origin |
 |---:|---|
