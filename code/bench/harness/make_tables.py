@@ -206,7 +206,10 @@ print(f"| Viewport | {ceiling.get('viewport', {}).get('width', 1440)} x "
       f"{ceiling.get('viewport', {}).get('height', 900)}; Table 21 varies the height |")
 print("| **Tool compared against** | **phylo.io 2.1.1**, its own prebuilt `dist/`, "
       "unmodified; findings re-checked against **2.2.5** (see the Table 15 note) |")
-print(f"| This project | commit `{_commit()}` |")
+# "Generated at", not "this is the commit of this file": committing the generated
+# file necessarily produces a later commit, so the row lags by one by
+# construction. Saying which it means costs a word and stops it reading as wrong.
+print(f"| This project | generated at commit `{_commit()}` |")
 print("| Runtimes | Python 3.12.14 (`uv`), Node 26.3.0, Playwright 1.63.0 |")
 print("| Backend database | SQLite, in the store directory |")
 print("| Store location | `/private/tmp/...` — an APFS SSD volume, **not** a RAM disk |")
