@@ -17,6 +17,35 @@ HERE = Path(__file__).resolve().parent
 RESULTS = HERE.parent / "results"
 
 
+def _run(*argv, default="unknown"):
+    """A short command's first line of output, or a stated default.
+
+    Read rather than written down: a hand-copied commit is wrong from the next
+    commit onwards, and this file exists because a copied number stops matching
+    its source. A missing tool degrades to "unknown" instead of failing the run.
+    """
+    import subprocess
+
+    try:
+        out = subprocess.run(argv, capture_output=True, text=True, timeout=10)
+        return out.stdout.strip().splitlines()[0] if out.stdout.strip() else default
+    except Exception:
+        return default
+
+
+def _commit() -> str:
+    sha = _run("git", "rev-parse", "--short", "HEAD")
+    dirty = _run("git", "status", "--porcelain", default="")
+    return f"{sha}{' + uncommitted changes' if dirty else ''}"
+
+
+def _os_version() -> str:
+    product = _run("sw_vers", "-productVersion")
+    build = _run("sw_vers", "-buildVersion")
+    kernel = _run("uname", "-r")
+    return f"macOS {product} (build {build}, Darwin {kernel})"
+
+
 def load(name, default=None):
     path = RESULTS / name
     return json.loads(path.read_text()) if path.exists() else default
@@ -145,15 +174,44 @@ print("# PhyloDelta vs Phylo.io — measured comparison\n")
 print("## Environment\n")
 print("| | |")
 print("|---|---|")
-print("| Machine | Apple silicon laptop, macOS |")
-print("| CPU | 10 cores — **4 performance, 6 efficiency** |")
-print("| RAM | 24 GB |")
-print(f"| Browser | {ceiling.get('browser', 'Chrome')} |")
+print("| Machine | Apple M4 laptop — **4 performance + 6 efficiency cores**, 24 GB |")
+print(f"| OS | {_os_version()} |")
+print(f"| Browser | {ceiling.get('browser', 'Chrome')}, **headless**, system Chrome "
+      "via Playwright's `channel: \"chrome\"` |")
+print("| Browser flags | `--js-flags=--max-old-space-size=8192`, "
+      "`--disable-dev-shm-usage` — **both tools, identically** |")
 print(f"| Viewport | {ceiling.get('viewport', {}).get('width', 1440)} x "
-      f"{ceiling.get('viewport', {}).get('height', 900)} |")
+      f"{ceiling.get('viewport', {}).get('height', 900)}; Table 21 varies the height |")
+print("| **Tool compared against** | **phylo.io 2.1.1**, its own prebuilt `dist/`, "
+      "unmodified |")
+print(f"| This project | commit `{_commit()}` |")
+print("| Runtimes | Python 3.12.14 (`uv`), Node 26.3.0, Playwright 1.63.0 |")
+print("| Backend database | SQLite, in the store directory |")
+print("| Store location | `/private/tmp/...` — an APFS SSD volume, **not** a RAM disk |")
 print("| **Backend threads** | **2 of the 10 cores** (`PHYLODELTA_THREADS=2`) |")
-print("| Transport | one origin, uncompressed, one fresh page per measurement |")
+print("| Transport | one origin, one fresh page per measurement; uncompressed "
+      "except Table 20, which is gzip |")
+print("| Power state | **not controlled** — see the caveat below |")
 print()
+print("**The two entries that matter most for checking these numbers** are the "
+      "browser flags and the phylo.io version. The heap cap decides *where* a tool "
+      "fails, so Table 1's and Table 4's `failed` rows are statements about the "
+      "tool at an 8 GB cap, not at Chrome's default — and it is raised for both "
+      "tools, which is what makes a failure the tool's own ceiling. The version "
+      "matters because several findings are about phylo.io's behaviour: the "
+      "\"Highlight BCN\" crash (Table 15) is a fact about **2.1.1** and a later "
+      "release may fix it.\n")
+print("**Headless, throughout.** Rendering in headless Chrome is not identical to "
+      "a visible window, and these are partly rendering measurements — so this is "
+      "a real caveat, not a footnote. It applies equally to both tools, so the "
+      "*comparison* holds; the absolute paint times would need re-taking in a "
+      "headed browser to be quoted as what a user sees.\n")
+print("**Power state was not controlled or recorded**, and the machine is a laptop "
+      "that throttles on battery. This is worth stating plainly because the "
+      "explanation already offered for the 564,640-leaf thread-scaling anomaly "
+      "(§34.9, §34.11) is machine state — thermal drift over a 20-minute run — and "
+      "having invoked that, the table cannot then be silent about power. Repeats "
+      "under a known power state are the cheapest way to close it.\n")
 print("**Only 2 of the 10 cores are used for the backend**, deliberately. "
       "Table 9 is the measurement behind that choice: two threads give ~2x at "
       "94% efficiency where ten give ~4.7x at 57%, so eight further cores buy "
