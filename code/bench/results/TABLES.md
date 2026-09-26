@@ -131,7 +131,30 @@ Measured through the real upload path: POST the bundle, a worker claims it, poll
 
 *The ~2 s floor at small sizes is the worker's poll interval, not work.*
 
-## Table 9 — Thread scaling of the parallel step
+## Table 9 — Build time at pinned thread counts
+
+Table 8 used the default — one thread per hardware thread, **10** on this machine. These are the same builds with the count pinned, through the same upload path, each on its own store.
+
+| leaves | 1 thread | 2 threads | 10 threads | 2 vs 1 | 10 vs 1 |
+|---:|---:|---:|---:|---:|---:|
+| 1,000 *(floor-limited — ratios are noise)* | 2.1 s | 0.5 s | 2.0 s | 3.81x | 1.02x |
+| 2,500 *(floor-limited — ratios are noise)* | 2.1 s | 2.0 s | 2.0 s | 1.01x | 1.01x |
+| 5,000 *(floor-limited — ratios are noise)* | 2.0 s | 2.6 s | 2.0 s | 0.80x | 1.01x |
+| 10,000 *(floor-limited — ratios are noise)* | 2.5 s | 2.0 s | 2.5 s | 1.25x | 1.00x |
+| 17,645 *(floor-limited — ratios are noise)* | 3.1 s | 3.1 s | 2.6 s | 1.00x | 1.19x |
+| 35,290 | 6.1 s | 4.6 s | 3.0 s | 1.33x | 2.00x |
+| 70,580 | 16.7 s | 10.2 s | 5.6 s | 1.65x | 2.98x |
+| 141,160 | 57.8 s | 31.5 s | 14.4 s | 1.84x | 4.03x |
+| 282,320 | 231.7 s | 115.1 s | 49.8 s | 2.01x | 4.65x |
+| 564,640 *(see note)* | 1200.7 s | 492.7 s | 339.5 s | 2.44x | 3.54x |
+
+**Read the middle rows.** From 35,290 to 282,320 the picture is clean and monotone: two threads rise 1.33x -> 2.01x, ten rise 2.00x -> 4.65x. The gain grows with size because below ~70,000 leaves the *serial* parts — parse, reconcile, ingest, and the 2 s poll — are most of the elapsed time, and threading the search cannot touch them. Amdahl's law, visible directly.
+
+**The 564,640 row should not be quoted as a ratio.** Two threads appear to give 2.44x, which is superlinear and therefore impossible for pure parallelism, and ten threads appear to *fall* to 3.54x, breaking an otherwise monotone trend. Both point at the machine rather than the code: the single-threaded run took **20 minutes**, long enough for thermal state to drift, and this rung's 10-thread baseline is the disputed one (339.5 s here, 196.4 s in another store — see DECISIONS §32.8). Against 196.4 s the 10-thread gain is 6.11x and the trend continues. The absolute times stand; the ratios for this row do not.
+
+**What to choose.** Two threads gives ~2x at 94% efficiency; ten gives ~4.7x at 57%. One thread wastes a near-free doubling. If efficiency is the objective, **two is the sweet spot** — but latency for a single comparison favours more threads, and throughput for a queue favours fewer per build with more builds at once. `PHYLODELTA_THREADS` exists so a deployment can choose; there is no single best value.
+
+## Table 10 — Thread scaling of the parallel step
 
 **Only one step of the build is parallel**: the clade-correspondence search. It is driven directly here rather than timed through a whole build, which would dilute it with the single-threaded parse, reconciliation and metric around it. 70,580 leaves, best of 3 runs.
 
@@ -149,7 +172,7 @@ Measured through the real upload path: POST the bundle, a worker claims it, poll
 
 The knee is at **4 threads**, which is the number of performance cores on this machine (10 cores, 4 of them performance). One to four threads buys 3.37x at 84% efficiency; four to ten buys only another 1.69x and drops efficiency to 57%. On a shared machine 4 threads is the better trade: 1.7x slower than 10, for 2.5x fewer cores.
 
-## Table 10 — What the server needs while it builds
+## Table 11 — What the server needs while it builds
 
 Peak RSS of the worker process, sampled every 200 ms against its idle baseline of 69 MB. Measured in a throwaway store so nothing else was disturbed.
 
@@ -168,7 +191,7 @@ Peak RSS of the worker process, sampled every 200 ms against its idle baseline o
 | 282,320 | 44.3 s | 681 MB | **611 MB** | 1.90x |
 | 564,640 | 196.4 s | 1,271 MB | **1,201 MB** | 1.97x |
 
-## Table 11 — The request a panel actually makes
+## Table 12 — The request a panel actually makes
 
 The **cause**, where every other table shows the consequence. The same GET the frontend issues, at every tree size, read-only. Latency and payload are set by the viewport budget, so neither tracks the tree: **564x more leaves, the same few milliseconds and the same few kilobytes.**
 
@@ -187,7 +210,7 @@ The **cause**, where every other table shows the consequence. The same GET the f
 
 *From 1,000 to 564,640 leaves — a 565x increase — the median moves 3.8 ms to 2.9 ms and the payload 5.4 KB to 6.0 KB. Seven samples per rung after a warm-up, since the first touch of a store memory-maps it.*
 
-## Table 12 — What the design costs
+## Table 13 — What the design costs
 
 | | phylo.io | PhyloDelta |
 |---|---|---|
@@ -197,7 +220,7 @@ The **cause**, where every other table shows the consequence. The same GET the f
 | Works offline from a file | yes | no |
 | Comparison recomputed on demand | yes | no, fixed at build |
 
-## Table 13 — Provenance of the test data
+## Table 14 — Provenance of the test data
 
 | rung | origin |
 |---:|---|

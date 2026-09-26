@@ -232,9 +232,63 @@ if server:
     print("\n*The ~2 s floor at small sizes is the worker's poll interval, not "
           "work.*")
 
+# Full builds at pinned thread counts, against the default-threaded figures
+# in Table 8. Emitted only once both pinned runs exist, so a half-finished
+# experiment cannot appear as a finished table.
+pinned = {n: load(f"thread_builds_{n}.json") for n in (1, 2)}
+if all(pinned.values()):
+    print("\n## Table 9 — Build time at pinned thread counts\n")
+    print("Table 8 used the default — one thread per hardware thread, **10** on "
+          "this machine. These are the same builds with the count pinned, "
+          "through the same upload path, each on its own store.\n")
+    print("| leaves | 1 thread | 2 threads | 10 threads | 2 vs 1 | 10 vs 1 |")
+    print("|---:|---:|---:|---:|---:|---:|")
+    one = {r["leaves"]: r["build_s"] for r in pinned[1]["rungs"]}
+    two = {r["leaves"]: r["build_s"] for r in pinned[2]["rungs"]}
+    for leaves in sorted(one):
+        ten = server.get(leaves, {}).get("build_s")
+        a, b = one[leaves], two.get(leaves)
+        if not (ten and b):
+            continue
+        # Below 35,290 the worker's 2 s poll interval is most of the elapsed
+        # time, so the ratios are noise: this is where 1,000 leaves "gains"
+        # 3.81x and 5,000 "loses" 0.80x.
+        mark = ""
+        if leaves < 35_290:
+            mark = " *(floor-limited — ratios are noise)*"
+        elif leaves == 564_640:
+            mark = " *(see note)*"
+        print(
+            f"| {leaves:,}{mark} | {a:.1f} s | {b:.1f} s | {ten:.1f} s | "
+            f"{a / b:.2f}x | {a / ten:.2f}x |"
+        )
+    print("\n**Read the middle rows.** From 35,290 to 282,320 the picture is "
+          "clean and monotone: two threads rise 1.33x -> 2.01x, ten rise "
+          "2.00x -> 4.65x. The gain grows with size because below ~70,000 "
+          "leaves the *serial* parts — parse, reconcile, ingest, and the 2 s "
+          "poll — are most of the elapsed time, and threading the search "
+          "cannot touch them. Amdahl's law, visible directly.\n")
+    print("**The 564,640 row should not be quoted as a ratio.** Two threads "
+          "appear to give 2.44x, which is superlinear and therefore impossible "
+          "for pure parallelism, and ten threads appear to *fall* to 3.54x, "
+          "breaking an otherwise monotone trend. Both point at the machine "
+          "rather than the code: the single-threaded run took **20 minutes**, "
+          "long enough for thermal state to drift, and this rung's 10-thread "
+          "baseline is the disputed one (339.5 s here, 196.4 s in another "
+          "store — see DECISIONS §32.8). Against 196.4 s the 10-thread gain is "
+          "6.11x and the trend continues. The absolute times stand; the ratios "
+          "for this row do not.\n")
+    print("**What to choose.** Two threads gives ~2x at 94% efficiency; ten "
+          "gives ~4.7x at 57%. One thread wastes a near-free doubling. If "
+          "efficiency is the objective, **two is the sweet spot** — but "
+          "latency for a single comparison favours more threads, and "
+          "throughput for a queue favours fewer per build with more builds at "
+          "once. `PHYLODELTA_THREADS` exists so a deployment can choose; there "
+          "is no single best value.")
+
 scaling = load("thread_scaling.json")
 if scaling:
-    print("\n## Table 9 — Thread scaling of the parallel step\n")
+    print("\n## Table 10 — Thread scaling of the parallel step\n")
     print("**Only one step of the build is parallel**: the clade-correspondence "
           "search. It is driven directly here rather than timed through a whole "
           "build, which would dilute it with the single-threaded parse, "
@@ -260,7 +314,7 @@ if scaling:
 
 memory = load("build_memory.json")
 if memory:
-    print("\n## Table 10 — What the server needs while it builds\n")
+    print("\n## Table 11 — What the server needs while it builds\n")
     print("Peak RSS of the worker process, sampled every 200 ms against its "
           f"idle baseline of {memory['idle_rss_mb']:,.0f} MB. Measured in a "
           "throwaway store so nothing else was disturbed.\n")
@@ -285,7 +339,7 @@ if memory:
 # --- 5e. the mechanism, directly ------------------------------------------
 latency = load("slice_latency.json", [])
 if latency:
-    print("\n## Table 11 — The request a panel actually makes\n")
+    print("\n## Table 12 — The request a panel actually makes\n")
     print("The **cause**, where every other table shows the consequence. The "
           "same GET the frontend issues, at every tree size, read-only. "
           "Latency and payload are set by the viewport budget, so neither "
@@ -308,7 +362,7 @@ if latency:
         "store memory-maps it.*")
 
 # --- 6. the honest ledger -------------------------------------------------
-print("\n## Table 12 — What the design costs\n")
+print("\n## Table 13 — What the design costs\n")
 print("| | phylo.io | PhyloDelta |")
 print("|---|---|---|")
 print("| Server required | no | **yes** |")
@@ -318,7 +372,7 @@ print("| Whole tree ever visible | yes, in memory | **no, never transferred** |"
 print("| Works offline from a file | yes | no |")
 print("| Comparison recomputed on demand | yes | no, fixed at build |")
 
-print("\n## Table 13 — Provenance of the test data\n")
+print("\n## Table 14 — Provenance of the test data\n")
 print("| rung | origin |")
 print("|---:|---|")
 print("| 1,000 – 10,000 | pruned subsamples of the real vibrio NJ/UPGMA pair |")
