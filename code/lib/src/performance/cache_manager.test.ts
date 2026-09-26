@@ -201,3 +201,33 @@ describe("clear", () => {
     expect(c.get("a")).toBeNull();
   });
 });
+
+describe("keys()", () => {
+  it("lists warm and rendered entries alike", () => {
+    const c = mgr(100);
+    c.set("a", "A", 10);
+    c.set("b", "B", 10);
+    c.promote("b");
+
+    expect([...c.keys()].sort()).toEqual(["a", "b"]);
+  });
+
+  it("drops a key as soon as it is evicted, with no help from the caller", () => {
+    // The reason this accessor exists: a caller keeping its own index would
+    // still list "a" here, because nobody told it about the eviction.
+    const c = mgr(20);
+    c.set("a", "A", 10);
+    c.set("b", "B", 10);
+    c.set("c", "C", 10);
+
+    expect(c.keys()).not.toContain("a");
+    expect(c.keys()).toHaveLength(2);
+  });
+
+  it("is empty after clear()", () => {
+    const c = mgr(100);
+    c.set("a", "A", 10);
+    c.clear();
+    expect(c.keys()).toEqual([]);
+  });
+});

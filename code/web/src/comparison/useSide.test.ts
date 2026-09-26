@@ -9,6 +9,7 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, ApiError } from "../api/client";
+import { sliceCache } from "../api/sliceCache";
 import { actAsync, renderHook } from "../test_support/renderHook";
 import { DEFAULT_BUDGET, readableBudget, useSide } from "./useSide";
 
@@ -93,5 +94,103 @@ describe("arriving from the other panel", () => {
     // this view is still perfectly valid, it is the move that did not happen.
     expect(result.current[0].jumpError).toMatch(/could not work out where/i);
     expect(result.current[0].error).toBeNull();
+  });
+});
+
+describe("navigating back to a view already seen", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    sliceCache.clear();
+  });
+
+  /** A slice whose root is whatever was asked for, so views are told apart. */
+  function reply(root: number | undefined) {
+    const nodes = 3;
+    const range = Array.from({ length: nodes }, (_, k) => k);
+    return {
+      tree: "vibrio-upgma",
+      root: root ?? 0,
+      budget: 120,
+      displayed_leaves: nodes,
+      hidden_leaves: 0,
+      total_leaves: nodes,
+      nodes: {
+        id: range.map((k) => (root ?? 0) * 100 + k),
+        parent: range.map((k) => k - 1),
+        label: range.map((k) => `leaf${k}`),
+        branch_len: range.map(() => 0.1),
+        true_leaf_count: range.map(() => 1),
+        truncated: range.map(() => false),
+      },
+      comparison: null,
+    };
+  }
+
+  function runPanel() {
+    const slice = vi
+      .spyOn(api, "slice")
+      .mockImplementation(async (_tree, options = {}) => reply(options.root));
+    return { slice, ...renderHook(() => useSide("vibrio-upgma", "a__b")) };
+  }
+
+  it("serves a slice it already holds instead of asking again", async () => {
+    // The gap this closes: pressing Back onto a view that had just been on
+    // screen went to the network for bytes the browser already had. It was
+    // never slow — ~2.9 ms — but it is the one operation where holding the
+    // whole tree in memory is a genuine advantage, and conceding it bought
+    // nothing.
+    const { slice, result } = runPanel();
+    await actAsync(() => {});
+    const afterFirst = slice.mock.calls.length;
+
+    await actAsync(() => result.current[1].focus(42));
+    expect(slice.mock.calls.length).toBeGreaterThan(afterFirst);
+
+    const afterFocus = slice.mock.calls.length;
+    await actAsync(() => result.current[1].back());
+
+    expect(slice.mock.calls.length).toBe(afterFocus);
+    expect(result.current[0].path).toEqual([]);
+    expect(result.current[0].tree).not.toBeNull();
+  });
+
+  it("does not flash a spinner over a picture it already has", async () => {
+    // A cache hit is applied synchronously, so `loading` never goes true at
+    // all. Asserting only on the final value would prove nothing — it is false
+    // once any fetch settles too — so this records every render.
+    vi.spyOn(api, "slice").mockImplementation(async (_tree, options = {}) =>
+      reply(options.root),
+    );
+    const seen: boolean[] = [];
+    const { result } = renderHook(() => {
+      const side = useSide("vibrio-upgma", "a__b");
+      seen.push(side[0].loading);
+      return side;
+    });
+
+    await actAsync(() => {});
+    await actAsync(() => result.current[1].focus(42));
+    seen.length = 0;
+    await actAsync(() => result.current[1].back());
+
+    expect(seen).not.toContain(true);
+    expect(result.current[0].tree).not.toBeNull();
+  });
+
+  it("reload asks the server again rather than re-serving what it holds", async () => {
+    // A tree id outlives the bytes behind it, so a cache that survived reload
+    // would make the button visibly do nothing — worse than not having one.
+    const { slice, result } = runPanel();
+    await actAsync(() => {});
+    // Go away and come back, so the root view is definitely held and served
+    // from the cache — otherwise this passes whether reload discards anything
+    // or not.
+    await actAsync(() => result.current[1].focus(42));
+    await actAsync(() => result.current[1].back());
+    const before = slice.mock.calls.length;
+
+    await actAsync(() => result.current[1].reload());
+
+    expect(slice.mock.calls.length).toBeGreaterThan(before);
   });
 });

@@ -24,6 +24,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./performance": {
+      "types": "./src/performance/index.ts",
+      "default": "./src/performance/index.ts"
     }
   },
   "files": [

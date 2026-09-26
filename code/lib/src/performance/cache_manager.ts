@@ -89,6 +89,19 @@ export class CacheManager<T = unknown> {
   }
 
   /**
+   * Every key currently held, warm and rendered, in no guaranteed order.
+   *
+   * Exists so a caller can invalidate a *subset* — everything belonging to one
+   * tree, say — without keeping its own index of what it has inserted. That
+   * index is the thing to avoid: it duplicates state the cache already owns,
+   * and eviction happens without the caller asking, so the copy goes stale
+   * silently. Reading the keys back is domain-blind and cannot desync.
+   */
+  keys(): string[] {
+    return [...this.#map.keys()];
+  }
+
+  /**
    * Returns the cached value and moves the entry to the front of its tier queue.
    * Returns null on miss.
    */

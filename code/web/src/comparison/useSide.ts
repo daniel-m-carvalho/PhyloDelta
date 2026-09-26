@@ -15,6 +15,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api/client";
+import { sliceCache, type SliceKeyParts } from "../api/sliceCache";
 import type { TreeSlice } from "../api/types";
 import { gradientFrom, type Gradient } from "../tree/comparisonValues";
 import { treeFromSlice, type SliceTree } from "../tree/fromSlice";
@@ -196,17 +197,64 @@ export function useSide(
   const root = path.length ? path[path.length - 1] : undefined;
   const latest = useRef(0);
 
+  // The slice this panel currently draws, so the cache can be told when the
+  // panel moves off it and it becomes an eviction candidate again.
+  const rendered = useRef<SliceKeyParts | null>(null);
+
   useEffect(() => {
     // Nothing to ask for until the panel has been measured.
     if (budget <= 0) return;
+
+    const parts: SliceKeyParts = { treeId, root, budget, compare, metric, keep: keep ?? undefined };
+
+    /**
+     * Put a slice on screen, from wherever it came.
+     *
+     * The tree is rebuilt here rather than cached alongside the slice, because
+     * `labelClades` changes the names the viewer shows without changing the
+     * response — so the built tree is a function of two things and only one of
+     * them is the request.
+     */
+    const show = (fetched: TreeSlice) => {
+      const built = treeFromSlice(fetched, { labelClades });
+      setSlice(fetched);
+      setTree(built);
+      setGradient(gradientFrom(built, fetched.comparison));
+      setLoading(false);
+      // Protect what is visible, release what no longer is. At most two
+      // entries are ever protected, one per panel, which is what keeps the
+      // rendered tier from crowding out the eviction candidates.
+      if (rendered.current) sliceCache.unrender(rendered.current);
+      rendered.current = parts;
+      sliceCache.render(parts);
+    };
+
     // Navigation is faster than the network, so a slow earlier request must
     // not overwrite a newer one. Both guards matter: abort stops the work,
     // the sequence number stops a response that already escaped.
     const controller = new AbortController();
     const ticket = ++latest.current;
+
+    // A slice already held is applied synchronously: no request, and no
+    // `loading` at all, so going back to a view does not flash a spinner over
+    // a picture the browser already has. The ticket is still taken, so an
+    // older fetch still in flight cannot land on top of it.
+    const held = sliceCache.get(parts);
+    if (held) {
+      setError(null);
+      show(held);
+      return () => controller.abort();
+    }
+
     setLoading(true);
     setError(null);
 
+    // Deliberately *not* routed through the cache's `registerPending`. It
+    // exists to stop two callers fetching the same key twice, and this hook
+    // already solves that more precisely with the abort and the ticket above.
+    // Sharing one promise between panels would mean either panel's abort
+    // rejecting the other's request — trading a duplicate fetch, which costs
+    // ~6 KB, for a cross-panel failure.
     api
       .slice(treeId, {
         root,
@@ -217,12 +265,12 @@ export function useSide(
         signal: controller.signal,
       })
       .then((fetched) => {
+        // Cached even when this response is stale for *this* panel: the
+        // navigation it answers may well be visited again, and the bytes have
+        // already been paid for.
+        sliceCache.put(parts, fetched);
         if (ticket !== latest.current) return;
-        const built = treeFromSlice(fetched, { labelClades });
-        setSlice(fetched);
-        setTree(built);
-        setGradient(gradientFrom(built, fetched.comparison));
-        setLoading(false);
+        show(fetched);
       })
       .catch((failed: unknown) => {
         if (ticket !== latest.current || controller.signal.aborted) return;
@@ -239,6 +287,18 @@ export function useSide(
     // unchanged — but the tree handed to the viewer must be rebuilt for the
     // new names to reach it.
   }, [treeId, root, budget, compare, metric, nonce, labelClades, keep]);
+
+  // A panel that goes away stops protecting its slice. Without this the entry
+  // would sit in the rendered tier forever, evictable only as a last resort —
+  // switching comparison after comparison would fill the budget with views no
+  // panel is showing.
+  useEffect(
+    () => () => {
+      if (rendered.current) sliceCache.unrender(rendered.current);
+      rendered.current = null;
+    },
+    [],
+  );
 
   const focus = useCallback(
     (storedId: number, keepVisible: number | null = null) => {
@@ -315,7 +375,19 @@ export function useSide(
       setBudget(2);
     }, []),
 
-    reload: useCallback(() => setNonce((n) => n + 1), []),
+    /**
+     * Ask again, and mean it.
+     *
+     * Bumping the nonce alone would now re-run the effect straight into a cache
+     * hit and change nothing on screen — a reload button that visibly does
+     * nothing, which is worse than not having one. A tree id outlives the bytes
+     * behind it (a rebuilt store keeps the id), so reload discards what is held
+     * for this tree first.
+     */
+    reload: useCallback(() => {
+      sliceCache.invalidateTree(treeId);
+      setNonce((n) => n + 1);
+    }, [treeId]),
   };
 
   return [
