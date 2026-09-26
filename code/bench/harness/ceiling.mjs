@@ -20,7 +20,7 @@
  * `performance.memory`, which reported phylo.io at 22 MB before and after
  * building 2,002 SVG elements.
  */
-import { readFileSync, writeFileSync, appendFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { launch, versionOf } from "./browser.mjs";
@@ -164,8 +164,18 @@ writeFileSync(stream, "");
 say(`\n${BROWSER} · viewport ${VIEWPORT.width}x${VIEWPORT.height} · budget ${BUDGET_MS / 1000}s\n`);
 say(`${"leaves".padStart(9)}  ${"phylo.io".padEnd(26)}  PhyloDelta`);
 
+// An optional size argument measures one rung and merges it into the
+// existing results, so adding the 564,640 rung does not cost a re-run of the
+// nine that are already measured.
+const only = process.argv[2] ? Number(process.argv[2]) : null;
+const previous = only !== null && existsSync(join(BENCH, "results", "ceiling.json"))
+  ? JSON.parse(readFileSync(join(BENCH, "results", "ceiling.json"), "utf8")).rows
+  : [];
+
 try {
-  for (const rung of built.filter((r) => r.status === "ready")) {
+  for (const rung of built.filter(
+    (r) => r.status === "ready" && (only === null || r.leaves === only),
+  )) {
     const spec = {
       id: rung.id,
       a: `ladder-${String(rung.leaves).padStart(6, "0")}-a.nwk`,
@@ -194,8 +204,15 @@ try {
   server.close();
 }
 
+const merged = [...previous.filter((r) => !rows.some((n) => n.leaves === r.leaves)), ...rows].sort(
+  (a, b) => a.leaves - b.leaves,
+);
 writeFileSync(
   join(BENCH, "results", "ceiling.json"),
-  JSON.stringify({ browser: BROWSER, viewport: VIEWPORT, budget_ms: BUDGET_MS, attempt_ms: ATTEMPT_MS, rows }, null, 2),
+  JSON.stringify(
+    { browser: BROWSER, viewport: VIEWPORT, budget_ms: BUDGET_MS, attempt_ms: ATTEMPT_MS, rows: merged },
+    null,
+    2,
+  ),
 );
 say(`\nwritten to results/ceiling.json`);

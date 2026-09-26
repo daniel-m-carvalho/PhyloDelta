@@ -357,6 +357,31 @@
         },
         "ok": true
       }
+    },
+    {
+      "leaves": 564640,
+      "server_s": 339.5,
+      "phyloio": {
+        "ok": false,
+        "failed": "phylo.io exceeded 660s"
+      },
+      "phylodelta": {
+        "ms": 752,
+        "heap_mb": 3.6,
+        "dom": {
+          "documents": 1,
+          "nodes": 222,
+          "jsEventListeners": 190
+        },
+        "drawn": {
+          "canvases": 14,
+          "shown": [
+            "showing 50 of 564,640 leaves · 564,630 behind wedges",
+            "showing 50 of 564,672 leaves · 564,669 behind wedges"
+          ]
+        },
+        "ok": true
+      }
     }
   ]
 }

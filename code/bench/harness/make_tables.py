@@ -25,6 +25,9 @@ def load(name, default=None):
 ceiling = load("ceiling.json", {})
 server = {r["leaves"]: r for r in load("server_build.json", [])}
 endurance = load("endurance.json", [])
+#: Full builds at pinned thread counts. Table 8 reports the 2-thread column as
+#: the deployment setting; Table 9 compares all three.
+pinned = {n: load(f"thread_builds_{n}.json") for n in (1, 2)}
 rows = ceiling.get("rows", [])
 
 
@@ -33,12 +36,25 @@ def fmt(value, unit="", nd=1, dash="—"):
 
 
 print("# PhyloDelta vs Phylo.io — measured comparison\n")
-print(
-    f"All measurements: **{ceiling.get('browser', 'Chrome')}**, viewport "
-    f"{ceiling.get('viewport', {}).get('width', 1440)}x{ceiling.get('viewport', {}).get('height', 900)}, "
-    "macOS, 24 GB RAM, 10 cores. Both tools served from one origin, uncompressed, "
-    "one fresh page each.\n"
-)
+print("## Environment\n")
+print("| | |")
+print("|---|---|")
+print("| Machine | Apple silicon laptop, macOS |")
+print("| CPU | 10 cores — **4 performance, 6 efficiency** |")
+print("| RAM | 24 GB |")
+print(f"| Browser | {ceiling.get('browser', 'Chrome')} |")
+print(f"| Viewport | {ceiling.get('viewport', {}).get('width', 1440)} x "
+      f"{ceiling.get('viewport', {}).get('height', 900)} |")
+print("| **Backend threads** | **2 of the 10 cores** (`PHYLODELTA_THREADS=2`) |")
+print("| Transport | one origin, uncompressed, one fresh page per measurement |")
+print()
+print("**Only 2 of the 10 cores are used for the backend**, deliberately. "
+      "Table 9 is the measurement behind that choice: two threads give ~2x at "
+      "94% efficiency where ten give ~4.7x at 57%, so eight further cores buy "
+      "the last 2.3x at a steeply falling rate. Every build figure in these "
+      "tables is therefore what a **two-core** deployment costs, not what this "
+      "machine can do flat out.\n")
+
 
 # --- 1. the headline ------------------------------------------------------
 print("## Table 1 — Scalability: where each tool stops\n")
@@ -217,25 +233,30 @@ if repeats:
 
 # --- 5d. the server side ---------------------------------------------------
 if server:
+    two_thread = {r["leaves"]: r["build_s"] for r in (pinned.get(2) or {"rungs": []})["rungs"]}
     print("\n## Table 8 — The precompute PhyloDelta pays instead\n")
     print("Measured through the real upload path: POST the bundle, a worker "
           "claims it, poll until ready. Includes ingest, reconciliation, the "
           "correspondence search and the metric.\n")
-    print("| leaves | upload | build | total | bundle size |")
-    print("|---:|---:|---:|---:|---:|")
+    print("**At 2 threads**, the deployment setting (see Environment and "
+          "Table 9). The 10-thread column is kept because the first runs used "
+          "the default, and because the gap is the cost of the choice.\n")
+    print("| leaves | build at 2 threads | build at 10 threads | bundle size |")
+    print("|---:|---:|---:|---:|")
     for leaves in sorted(server):
         r = server[leaves]
+        at_two = two_thread.get(leaves)
         print(
-            f"| {leaves:,} | {r['upload_s']:.1f} s | {r['build_s']:.1f} s | "
-            f"{r['total_s']:.1f} s | {r['bytes'] / 1e6:.1f} MB |"
+            f"| {leaves:,} | **{at_two:.1f} s** | {r['build_s']:.1f} s | "
+            f"{r['bytes'] / 1e6:.1f} MB |"
+            if at_two is not None else
+            f"| {leaves:,} | — | {r['build_s']:.1f} s | {r['bytes'] / 1e6:.1f} MB |"
         )
     print("\n*The ~2 s floor at small sizes is the worker's poll interval, not "
           "work.*")
 
-# Full builds at pinned thread counts, against the default-threaded figures
-# in Table 8. Emitted only once both pinned runs exist, so a half-finished
-# experiment cannot appear as a finished table.
-pinned = {n: load(f"thread_builds_{n}.json") for n in (1, 2)}
+# Emitted only once both pinned runs exist, so a half-finished experiment
+# cannot appear as a finished table.
 if all(pinned.values()):
     print("\n## Table 9 — Build time at pinned thread counts\n")
     print("Table 8 used the default — one thread per hardware thread, **10** on "
@@ -313,6 +334,7 @@ if scaling:
           "the better trade: 1.7x slower than 10, for 2.5x fewer cores.")
 
 memory = load("build_memory.json")
+memory_ten = load("build_memory_10threads.json")
 if memory:
     print("\n## Table 11 — What the server needs while it builds\n")
     print("Peak RSS of the worker process, sampled every 200 ms against its "
@@ -321,20 +343,60 @@ if memory:
     print("**The search is quadratic in time but LINEAR in memory** — every "
           "doubling of leaves roughly doubles the footprint. The pruning bound "
           "means it never materialises an n x n matrix: it holds the two trees' "
-          "columns and a scratch buffer per thread. For contrast, building "
-          "these trees with NJ would need ~500 GB of distance matrix at "
-          "500,000 taxa.\n")
-    print("| leaves | build | peak RSS | over idle | growth |")
-    print("|---:|---:|---:|---:|---:|")
-    previous = None
-    for r in memory["rungs"]:
-        over = r["over_idle_mb"]
-        growth = f"{over / previous:.2f}x" if previous else "—"
-        print(
-            f"| {r['leaves']:,} | {r['build_s']:.1f} s | {r['peak_rss_mb']:,.0f} MB | "
-            f"**{over:,.0f} MB** | {growth} |"
-        )
-        previous = over or None
+          "columns, which are memory-mapped, and one scratch buffer per "
+          "thread. For contrast, building these trees with NJ would need "
+          "~500 GB of distance matrix at 500,000 taxa.\n")
+    if memory_ten:
+        print("Both thread settings are shown, compared on **absolute peak "
+              "RSS** rather than on the over-idle delta. The two runs had "
+              f"different idle baselines ({memory['idle_rss_mb']:,.0f} MB and "
+              f"{memory_ten['idle_rss_mb']:,.0f} MB), so subtracting each from "
+              "its own baseline would make the small rungs look like 2 threads "
+              "used *more*, which is an artefact of the baseline and not a "
+              "measurement.\n")
+        print("**Fewer threads really does use less memory** — 30-40% less "
+              "across the range, because the scratch buffer is per-thread and "
+              "eight of them are not allocated. That is a larger effect than "
+              "expected: the prediction was that the memory-mapped trees would "
+              "dominate and the difference would be negligible. It does not, "
+              "and it is not.\n")
+        ten_by = {r["leaves"]: r for r in memory_ten["rungs"]}
+        print("| leaves | peak RSS (2 thr) | peak RSS (10 thr) | saved | marginal (2 thr) | growth |")
+        print("|---:|---:|---:|---:|---:|---:|")
+        previous = None
+        for row in memory["rungs"]:
+            other = ten_by.get(row["leaves"])
+            peak = row["peak_rss_mb"]
+            marginal = row["over_idle_mb"]
+            saved = f"{1 - peak / other['peak_rss_mb']:.0%}" if other else "—"
+            other_peak = f"{other['peak_rss_mb']:,.0f} MB" if other else "—"
+            # Growth is taken on the MARGINAL figure, not on peak RSS: peak
+            # carries a fixed ~33 MB interpreter baseline that dilutes every
+            # ratio and would make linear growth read as 1.65x per doubling.
+            growth = f"{marginal / previous:.2f}x" if previous else "—"
+            print(
+                f"| {row['leaves']:,} | **{peak:,.0f} MB** | {other_peak} | "
+                f"{saved} | {marginal:,.0f} MB | {growth} |"
+            )
+            previous = marginal or None
+        print("\n*Build times are deliberately omitted from this table. This "
+              "run measures memory, and its elapsed times came out well above "
+              "the dedicated ladder run — 842.5 s against 492.7 s at 564,640 "
+              "leaves, on the same setting — because it ran straight after a "
+              "browser benchmark that had saturated the machine. Table 8's "
+              "figures are the ones to quote.*")
+    else:
+        print("| leaves | build | peak RSS | over idle | growth |")
+        print("|---:|---:|---:|---:|---:|")
+        previous = None
+        for r in memory["rungs"]:
+            over = r["over_idle_mb"]
+            growth = f"{over / previous:.2f}x" if previous else "—"
+            print(
+                f"| {r['leaves']:,} | {r['build_s']:.1f} s | {r['peak_rss_mb']:,.0f} MB | "
+                f"**{over:,.0f} MB** | {growth} |"
+            )
+            previous = over or None
 
 # --- 5e. the mechanism, directly ------------------------------------------
 latency = load("slice_latency.json", [])

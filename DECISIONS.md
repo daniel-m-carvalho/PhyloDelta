@@ -3379,9 +3379,21 @@ was the differing suffix above. Every rung is therefore checked for leaf counts,
 and depth before it is used: all ten are **100% shared**, depth 79 to 474.
 
 Both tools, same pair, same origin, uncompressed, Chrome 154, viewport 1440x900, one fresh page
-each, on a 24 GB / 10-core machine. PhyloDelta is the **median of six samples** per rung after a
-discarded warm-up; phylo.io is a single sample, because at the larger rungs one sample costs ten
-minutes.
+each, on a 24 GB machine with 10 cores — 4 performance, 6 efficiency. PhyloDelta is the **median of
+six samples** per rung after a discarded warm-up; phylo.io is a single sample, because at the larger
+rungs one sample costs ten minutes.
+
+**The backend uses 2 of those 10 cores** (`PHYLODELTA_THREADS=2`), which is the deployment setting
+and the one every build figure here reports. §32.8 is the measurement behind that choice. The
+machine is therefore never worked flat out in these numbers, and the server costs quoted are what a
+two-core deployment pays.
+
+**The browser-side measurements were not re-run when the thread setting changed, and that is a
+decision rather than an omission.** A store built at 2 threads is **bit-identical** to one built at
+10 — asserted across seven thread counts in §32.7 — so the slices served from it, and everything
+measured in the browser from those slices, cannot differ. Only build *time* and build *memory*
+depend on the thread count, and both are re-measured. Re-running two hours of browser work to
+reproduce identical numbers would confirm nothing that determinism does not already guarantee.
 
 Phylo.io is timed in **two phases**, and this is the correction that matters: *paint* (two trees
 drawn) and *compare* (its best-corresponding-node worker finished). Only the second is the job
@@ -3399,6 +3411,9 @@ PhyloDelta is doing, because a slice arrives with its similarity values already 
 | 35,290 | 25.1 s | **did not finish in 600 s** | 0.19 s | — |
 | 70,580 – 282,320 | **failed** | **failed** | 0.57 / 0.34 / 0.94 s | — |
 | **564,640** *(1,129,279 nodes)* | **failed** | **failed** | **0.43 s** | — |
+
+Every rung above 70,580 is measured for both tools: phylo.io exhausts its attempt budget at each,
+including at 564,640, where PhyloDelta opens the comparison in 0.8 s in that same run.
 
 **The claim this supports is narrower than "phylo.io cannot show trees this large", and is true.**
 It paints 35,290 leaves in 25 s. What it cannot do is *complete a comparison*: that stops finishing
@@ -3589,16 +3604,27 @@ two ratios do not, and no conclusion rests on them.
 Measured 2026-09-26 in a throwaway store, sampling the worker process's RSS every 200 ms against a
 69 MB idle baseline.
 
-| leaves | build | over idle | growth |
-|---|---|---|---|
-| 17,645 | 2.6 s | 37 MB | — |
-| 35,290 | 3.2 s | 79 MB | 2.14x |
-| 70,580 | 5.5 s | 153 MB | 1.94x |
-| 141,160 | 13.0 s | 322 MB | 2.10x |
-| 282,320 | 44.3 s | 611 MB | 1.90x |
-| **564,640** | **196.4 s** | **1,201 MB** | **1.97x** |
+Re-measured at the deployment setting of **2 threads**, and compared against the original 10-thread
+run on **absolute peak RSS** — the two runs had different idle baselines (33 MB and 69 MB), so
+subtracting each from its own would make the small rungs appear to use *more* at 2 threads, which is
+an artefact rather than a measurement.
 
-**Quadratic in time, linear in memory.** Every doubling of leaves roughly doubles the footprint,
+| leaves | peak RSS (2 thr) | peak RSS (10 thr) | saved | marginal (2 thr) |
+|---|---|---|---|---|
+| 17,645 | 76 MB | 106 MB | 28% | 44 MB |
+| 70,580 | 166 MB | 223 MB | 25% | 134 MB |
+| 141,160 | 276 MB | 392 MB | 29% | 244 MB |
+| 282,320 | 470 MB | 681 MB | 31% | 438 MB |
+| **564,640** | **776 MB** | 1,271 MB | **39%** | 743 MB |
+
+**A prediction made before the run, and wrong.** The expectation was that the memory-mapped trees
+would dominate and the thread count would barely matter. It does matter: **fewer threads use 25-39%
+less memory**, because the scratch buffer is per-thread and eight of them are simply not allocated.
+So memory is a *second* reason to prefer two threads, alongside the efficiency argument in §32.8 —
+not the non-factor it was assumed to be.
+
+**Quadratic in time, linear in memory.** Every doubling of leaves roughly doubles the marginal
+footprint — 1.70x to 1.96x across the large rungs —
 because the pruning bound (§15.1) means the search never materialises an n x n matrix — it holds
 the two trees' columns, which are memory-mapped, and one scratch buffer per thread.
 
@@ -3608,8 +3634,9 @@ comparison of two such trees needs **1.2 GB**. The quadratic cost is paid in tim
 waited out, rather than in space, where it cannot.
 
 It also corroborates an older measurement: §17.1 recorded 568 MB peak for correspondence at 282,320
-leaves, single-threaded; this run measures **611 MB** for the same size with the parallel version,
-which is the same figure plus per-thread scratch.
+leaves, single-threaded; the 10-thread run measured **681 MB** peak for the same size, and the
+2-thread run **470 MB**. The single-threaded figure sitting between them is what per-thread scratch
+predicts.
 
 **One discrepancy, reported rather than smoothed.** The 564,640 rung built in **196.4 s** here
 against **339.5 s** in the benchmark store (§32.2, Table 8). Same work, same machine, 1.7x apart.

@@ -1,6 +1,18 @@
 # PhyloDelta vs Phylo.io — measured comparison
 
-All measurements: **Chrome 154.0.8037.58**, viewport 1440x900, macOS, 24 GB RAM, 10 cores. Both tools served from one origin, uncompressed, one fresh page each.
+## Environment
+
+| | |
+|---|---|
+| Machine | Apple silicon laptop, macOS |
+| CPU | 10 cores — **4 performance, 6 efficiency** |
+| RAM | 24 GB |
+| Browser | Chrome 154.0.8037.58 |
+| Viewport | 1440 x 900 |
+| **Backend threads** | **2 of the 10 cores** (`PHYLODELTA_THREADS=2`) |
+| Transport | one origin, uncompressed, one fresh page per measurement |
+
+**Only 2 of the 10 cores are used for the backend**, deliberately. Table 9 is the measurement behind that choice: two threads give ~2x at 94% efficiency where ten give ~4.7x at 57%, so eight further cores buy the last 2.3x at a steeply falling rate. Every build figure in these tables is therefore what a **two-core** deployment costs, not what this machine can do flat out.
 
 ## Table 1 — Scalability: where each tool stops
 
@@ -19,6 +31,7 @@ Cold start to an interactive comparison. Phylo.io is split into *paint* (two tre
 | 70,580 | **failed** | **failed** | **failed** | 0.57 s | 3.6 MB | **only PhyloDelta** | 5.6 s |
 | 141,160 | **failed** | **failed** | **failed** | 0.34 s | 3.6 MB | **only PhyloDelta** | 14.4 s |
 | 282,320 | **failed** | **failed** | **failed** | 0.94 s | 3.6 MB | **only PhyloDelta** | 49.8 s |
+| 564,640 | **failed** | **failed** | **failed** | 0.75 s | 3.6 MB | **only PhyloDelta** | 339.5 s |
 
 ## Table 2 — What each tool actually drew
 
@@ -37,6 +50,7 @@ The check that makes Table 1 admissible. An earlier comparison in this project r
 | 70,580 | failed | failed | 14 | 50 per panel |
 | 141,160 | failed | failed | 14 | 50 per panel |
 | 282,320 | failed | failed | 14 | 50 per panel |
+| 564,640 | failed | failed | 14 | 50 per panel |
 
 ## Table 3 — Memory, and why it grows for one tool and not the other
 
@@ -55,6 +69,7 @@ Rows where the comparison did not finish are marked — their figure excludes th
 | 70,580 | — *(compare unfinished — worker excluded)* | — | 3.6 MB |
 | 141,160 | — *(compare unfinished — worker excluded)* | — | 3.6 MB |
 | 282,320 | — *(compare unfinished — worker excluded)* | — | 3.6 MB |
+| 564,640 | — *(compare unfinished — worker excluded)* | — | 3.6 MB |
 
 ## Table 4 — Failure behaviour, given 30 minutes and 16 GB
 
@@ -94,6 +109,7 @@ Its own phase split. Parsing and drawing are cheap and near-linear; **the compar
 | 70,580 | — | — | — | **failed** | — |
 | 141,160 | — | — | — | **failed** | — |
 | 282,320 | — | — | — | **failed** | — |
+| 564,640 | — | — | — | **failed** | — |
 
 ## Table 7 — PhyloDelta, repeated
 
@@ -116,18 +132,20 @@ Six samples per rung after a discarded warm-up. Included because sub-second figu
 
 Measured through the real upload path: POST the bundle, a worker claims it, poll until ready. Includes ingest, reconciliation, the correspondence search and the metric.
 
-| leaves | upload | build | total | bundle size |
-|---:|---:|---:|---:|---:|
-| 1,000 | 0.0 s | 2.0 s | 2.1 s | 0.0 MB |
-| 2,500 | 0.0 s | 2.0 s | 2.0 s | 0.0 MB |
-| 5,000 | 0.0 s | 2.0 s | 2.0 s | 0.1 MB |
-| 10,000 | 0.0 s | 2.5 s | 2.5 s | 0.2 MB |
-| 17,645 | 0.0 s | 2.6 s | 2.6 s | 1.1 MB |
-| 35,290 | 0.0 s | 3.0 s | 3.1 s | 2.1 MB |
-| 70,580 | 0.0 s | 5.6 s | 5.6 s | 4.2 MB |
-| 141,160 | 0.0 s | 14.4 s | 14.4 s | 8.6 MB |
-| 282,320 | 0.1 s | 49.8 s | 49.9 s | 17.5 MB |
-| 564,640 | 0.1 s | 339.5 s | 339.7 s | 35.5 MB |
+**At 2 threads**, the deployment setting (see Environment and Table 9). The 10-thread column is kept because the first runs used the default, and because the gap is the cost of the choice.
+
+| leaves | build at 2 threads | build at 10 threads | bundle size |
+|---:|---:|---:|---:|
+| 1,000 | **0.5 s** | 2.0 s | 0.0 MB |
+| 2,500 | **2.0 s** | 2.0 s | 0.0 MB |
+| 5,000 | **2.6 s** | 2.0 s | 0.1 MB |
+| 10,000 | **2.0 s** | 2.5 s | 0.2 MB |
+| 17,645 | **3.1 s** | 2.6 s | 1.1 MB |
+| 35,290 | **4.6 s** | 3.0 s | 2.1 MB |
+| 70,580 | **10.2 s** | 5.6 s | 4.2 MB |
+| 141,160 | **31.5 s** | 14.4 s | 8.6 MB |
+| 282,320 | **115.1 s** | 49.8 s | 17.5 MB |
+| 564,640 | **492.7 s** | 339.5 s | 35.5 MB |
 
 *The ~2 s floor at small sizes is the worker's poll interval, not work.*
 
@@ -174,22 +192,28 @@ The knee is at **4 threads**, which is the number of performance cores on this m
 
 ## Table 11 — What the server needs while it builds
 
-Peak RSS of the worker process, sampled every 200 ms against its idle baseline of 69 MB. Measured in a throwaway store so nothing else was disturbed.
+Peak RSS of the worker process, sampled every 200 ms against its idle baseline of 33 MB. Measured in a throwaway store so nothing else was disturbed.
 
-**The search is quadratic in time but LINEAR in memory** — every doubling of leaves roughly doubles the footprint. The pruning bound means it never materialises an n x n matrix: it holds the two trees' columns and a scratch buffer per thread. For contrast, building these trees with NJ would need ~500 GB of distance matrix at 500,000 taxa.
+**The search is quadratic in time but LINEAR in memory** — every doubling of leaves roughly doubles the footprint. The pruning bound means it never materialises an n x n matrix: it holds the two trees' columns, which are memory-mapped, and one scratch buffer per thread. For contrast, building these trees with NJ would need ~500 GB of distance matrix at 500,000 taxa.
 
-| leaves | build | peak RSS | over idle | growth |
-|---:|---:|---:|---:|---:|
-| 1,000 | 0.8 s | 73 MB | **3 MB** | — |
-| 2,500 | 2.1 s | 76 MB | **7 MB** | 1.94x |
-| 5,000 | 2.1 s | 80 MB | **10 MB** | 1.52x |
-| 10,000 | 2.1 s | 87 MB | **18 MB** | 1.75x |
-| 17,645 | 2.6 s | 106 MB | **37 MB** | 2.10x |
-| 35,290 | 3.2 s | 148 MB | **79 MB** | 2.16x |
-| 70,580 | 5.5 s | 223 MB | **153 MB** | 1.94x |
-| 141,160 | 13.0 s | 392 MB | **322 MB** | 2.11x |
-| 282,320 | 44.3 s | 681 MB | **611 MB** | 1.90x |
-| 564,640 | 196.4 s | 1,271 MB | **1,201 MB** | 1.97x |
+Both thread settings are shown, compared on **absolute peak RSS** rather than on the over-idle delta. The two runs had different idle baselines (33 MB and 69 MB), so subtracting each from its own baseline would make the small rungs look like 2 threads used *more*, which is an artefact of the baseline and not a measurement.
+
+**Fewer threads really does use less memory** — 30-40% less across the range, because the scratch buffer is per-thread and eight of them are not allocated. That is a larger effect than expected: the prediction was that the memory-mapped trees would dominate and the difference would be negligible. It does not, and it is not.
+
+| leaves | peak RSS (2 thr) | peak RSS (10 thr) | saved | marginal (2 thr) | growth |
+|---:|---:|---:|---:|---:|---:|
+| 1,000 | **43 MB** | 73 MB | 41% | 10 MB | — |
+| 2,500 | **50 MB** | 76 MB | 34% | 17 MB | 1.69x |
+| 5,000 | **52 MB** | 80 MB | 34% | 20 MB | 1.13x |
+| 10,000 | **60 MB** | 87 MB | 31% | 27 MB | 1.40x |
+| 17,645 | **76 MB** | 106 MB | 28% | 44 MB | 1.61x |
+| 35,290 | **101 MB** | 148 MB | 32% | 68 MB | 1.55x |
+| 70,580 | **166 MB** | 223 MB | 25% | 134 MB | 1.96x |
+| 141,160 | **276 MB** | 392 MB | 29% | 244 MB | 1.82x |
+| 282,320 | **470 MB** | 681 MB | 31% | 438 MB | 1.80x |
+| 564,640 | **776 MB** | 1,271 MB | 39% | 743 MB | 1.70x |
+
+*Build times are deliberately omitted from this table. This run measures memory, and its elapsed times came out well above the dedicated ladder run — 842.5 s against 492.7 s at 564,640 leaves, on the same setting — because it ran straight after a browser benchmark that had saturated the machine. Table 8's figures are the ones to quote.*
 
 ## Table 12 — The request a panel actually makes
 
