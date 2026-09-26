@@ -57,6 +57,14 @@ The benchmark harness is in `code/bench/`. Every table in `results/TABLES.md` is
 `harness/make_tables.py` from `results/*.json` — nothing there is hand-copied, so re-run it after any
 re-measurement rather than editing the markdown.
 
+**The benchmark store has been deleted**, so `make_tables.py` still works (it reads the committed
+JSON) but the *browser* runners — `ceiling`, `navigation`, `transfer`, `viewport`,
+`measure_slice_latency` — will 404: they open comparisons by the ids in `server_build.json`, which
+existed only in that store. Rebuild first with `tools/build_ladder_stores.py` against
+`code/bench/trees/ladder` (the 20 generated trees are still on disk, gitignored), start an API and a
+worker on it with `PHYLODELTA_THREADS=2`, and point the runner at that port. ~11 minutes for the full
+ladder.
+
 ## How this project is worked on
 
 - **Measure before concluding.** Most of the real bugs here were found by counting, not by reading:
