@@ -3838,9 +3838,15 @@ first.
 **And checked against the current release.** The comparison used 2.1.1 (a 2025-07-02 checkout);
 **2.2.5** shipped 2026-01-30, three releases later. `api.js` and `worker_bcn.js` are unchanged between
 them, the BCN branch of `trigger_`, `expandToRoot`, `getHierarchyNodeFromModelNode` and
-`apply_collapse_from_data_to_d3` are byte-identical, and the measured rates match. The only real
-differences are a collapse-by-colour feature in `container.js` and colour palettes in `model.js`.
-Nothing here is stale, and nothing else in §34 needed re-running for the version.
+`apply_collapse_from_data_to_d3` are byte-identical, and the measured rates match. Across the rest of
+the source the changes are a collapse-by-colour feature (`container.js`), colour palettes
+(`model.js`), empty-metric colour fallbacks (`viewer.js`), colour input handling (`utils.js`) and
+`==`→`===` plus two commented-out zoom calls inside click handlers (`interface.js`). The built bundle
+grows 30.6 KB, 0.38%. Nothing touches layout, draw volume, or the comparison itself.
+
+**The ceiling was then confirmed on 2.2.5 directly, not inferred.** At 17,645 leaves its comparison
+also fails to complete inside a 600 s budget. That one result is what the whole of §34.2 rests on, and
+a diff — however clean — is an argument rather than a measurement, so it was run.
 
 This sharpens the comparison rather than softening it. The cross-tree jump is the operation this
 design is most open to criticism over: the counterpart is in the other tree, the panel has never held

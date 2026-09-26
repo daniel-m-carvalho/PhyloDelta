@@ -113,6 +113,7 @@ transfer_gzip = load("transfer_gzip.json", {})
 viewport = load("viewport.json", {})
 bcn_211 = load("phyloio_bcn_2.1.1.json", {})
 bcn_225 = load("phyloio_bcn_2.2.5.json", {})
+ceiling_225 = load("phyloio_ceiling_2.2.5.json", {})
 rows = ceiling.get("rows", [])
 
 
@@ -786,6 +787,13 @@ if nav_rows:
               "2.1.1 used elsewhere here: `api.js` and `worker_bcn.js` are unchanged between them, "
               "all four functions in this path are byte-identical, and the measured rates match. "
               "The 2.1.1 figures in these tables are not stale on this point.\n")
+        if ceiling_225:
+            done = ceiling_225["per_load"][0]["completed"]
+            print(f"The ceiling was confirmed on 2.2.5 directly rather than inferred from the "
+                  f"diff: at **{ceiling_225['leaves']:,} leaves** its comparison "
+                  f"**{'completed' if done else 'did not complete'}** inside a 600 s budget, "
+                  f"matching 2.1.1. That is the one claim the whole of Table 1 rests on, so it was "
+                  f"worth running rather than arguing.\n")
         print("It still sharpens the comparison rather than softening it: the cross-tree jump is "
               "the operation PhyloDelta's design is most open to criticism over — it costs an "
               "`/ancestor` call and a slice the panel has never held — and it is the one the "

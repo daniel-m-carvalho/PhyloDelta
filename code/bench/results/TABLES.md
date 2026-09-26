@@ -10,7 +10,7 @@
 | Browser flags | `--js-flags=--max-old-space-size=8192`, `--disable-dev-shm-usage` — **both tools, identically** |
 | Viewport | 1440 x 900; Table 21 varies the height |
 | **Tool compared against** | **phylo.io 2.1.1**, its own prebuilt `dist/`, unmodified; findings re-checked against **2.2.5** (see the Table 15 note) |
-| This project | commit `5bd212c + uncommitted changes` |
+| This project | commit `9b4da9a + uncommitted changes` |
 | Runtimes | Python 3.12.14 (`uv`), Node 26.3.0, Playwright 1.63.0 |
 | Backend database | SQLite, in the store directory |
 | Store location | `/private/tmp/...` — an APFS SSD volume, **not** a RAM disk |
@@ -410,6 +410,8 @@ It is **decided per page load and then holds for that load** — a load either f
 **The mechanism, and why it is conditional.** It is reached only from the context-menu item of that name (`viewer.js` line 1175 is the sole caller). `api.js` builds **two separate models** from the BCN worker's reply, and the `elementBCN` references inside the first point at that reply's own embedded copy of the second tree. `getHierarchyNodeFromModelNode` compares by object identity, so whether it finds anything depends on whether structured-clone identity between the two halves of one message survives into the rebuilt models — which is evidently not guaranteed. When it does not, the lookup returns null and `expandToRoot` hands that null to `apply_collapse_from_data_to_d3`, which reads `_children` on it.
 
 **Not a version problem.** Checked against **2.2.5** (2026-01-30) as well as the 2.1.1 used elsewhere here: `api.js` and `worker_bcn.js` are unchanged between them, all four functions in this path are byte-identical, and the measured rates match. The 2.1.1 figures in these tables are not stale on this point.
+
+The ceiling was confirmed on 2.2.5 directly rather than inferred from the diff: at **17,645 leaves** its comparison **did not complete** inside a 600 s budget, matching 2.1.1. That is the one claim the whole of Table 1 rests on, so it was worth running rather than arguing.
 
 It still sharpens the comparison rather than softening it: the cross-tree jump is the operation PhyloDelta's design is most open to criticism over — it costs an `/ancestor` call and a slice the panel has never held — and it is the one the comparison tool manages only sometimes.
 
