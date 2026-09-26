@@ -1,0 +1,282 @@
+{
+  "browser": "Chrome 154.0.8037.58",
+  "width": 1440,
+  "heights": [
+    400,
+    700,
+    1000,
+    1200,
+    1400,
+    1700,
+    2000,
+    2600,
+    3200
+  ],
+  "rungs": [
+    17645,
+    564640
+  ],
+  "rows": [
+    {
+      "height": 400,
+      "cells": [
+        {
+          "leaves": 17645,
+          "ok": true,
+          "budget": 50,
+          "auto_budget": 50,
+          "displayed_leaves": 50,
+          "total_leaves": 17645,
+          "right_budget": 50,
+          "panel_px": 255,
+          "bytes": 15009,
+          "count": 2
+        },
+        {
+          "leaves": 564640,
+          "ok": true,
+          "budget": 50,
+          "auto_budget": 50,
+          "displayed_leaves": 50,
+          "total_leaves": 564640,
+          "right_budget": 50,
+          "panel_px": 255,
+          "bytes": 12221,
+          "count": 2
+        }
+      ]
+    },
+    {
+      "height": 700,
+      "cells": [
+        {
+          "leaves": 17645,
+          "ok": true,
+          "budget": 50,
+          "auto_budget": 50,
+          "displayed_leaves": 50,
+          "total_leaves": 17645,
+          "right_budget": 50,
+          "panel_px": 555,
+          "bytes": 15009,
+          "count": 2
+        },
+        {
+          "leaves": 564640,
+          "ok": true,
+          "budget": 50,
+          "auto_budget": 50,
+          "displayed_leaves": 50,
+          "total_leaves": 564640,
+          "right_budget": 50,
+          "panel_px": 555,
+          "bytes": 12221,
+          "count": 2
+        }
+      ]
+    },
+    {
+      "height": 1000,
+      "cells": [
+        {
+          "leaves": 17645,
+          "ok": true,
+          "budget": 50,
+          "auto_budget": 50,
+          "displayed_leaves": 50,
+          "total_leaves": 17645,
+          "right_budget": 50,
+          "panel_px": 855,
+          "bytes": 15009,
+          "count": 2
+        },
+        {
+          "leaves": 564640,
+          "ok": true,
+          "budget": 50,
+          "auto_budget": 50,
+          "displayed_leaves": 50,
+          "total_leaves": 564640,
+          "right_budget": 50,
+          "panel_px": 855,
+          "bytes": 12221,
+          "count": 2
+        }
+      ]
+    },
+    {
+      "height": 1200,
+      "cells": [
+        {
+          "leaves": 17645,
+          "ok": true,
+          "budget": 75,
+          "auto_budget": 75,
+          "displayed_leaves": 75,
+          "total_leaves": 17645,
+          "right_budget": 75,
+          "panel_px": 1055,
+          "bytes": 22477,
+          "count": 2
+        },
+        {
+          "leaves": 564640,
+          "ok": true,
+          "budget": 75,
+          "auto_budget": 75,
+          "displayed_leaves": 75,
+          "total_leaves": 564640,
+          "right_budget": 75,
+          "panel_px": 1055,
+          "bytes": 19586,
+          "count": 2
+        }
+      ]
+    },
+    {
+      "height": 1400,
+      "cells": [
+        {
+          "leaves": 17645,
+          "ok": true,
+          "budget": 100,
+          "auto_budget": 100,
+          "displayed_leaves": 100,
+          "total_leaves": 17645,
+          "right_budget": 100,
+          "panel_px": 1255,
+          "bytes": 29020,
+          "count": 2
+        },
+        {
+          "leaves": 564640,
+          "ok": true,
+          "budget": 100,
+          "auto_budget": 100,
+          "displayed_leaves": 100,
+          "total_leaves": 564640,
+          "right_budget": 100,
+          "panel_px": 1255,
+          "bytes": 27024,
+          "count": 2
+        }
+      ]
+    },
+    {
+      "height": 1700,
+      "cells": [
+        {
+          "leaves": 17645,
+          "ok": true,
+          "budget": 100,
+          "auto_budget": 100,
+          "displayed_leaves": 100,
+          "total_leaves": 17645,
+          "right_budget": 100,
+          "panel_px": 1555,
+          "bytes": 29020,
+          "count": 2
+        },
+        {
+          "leaves": 564640,
+          "ok": true,
+          "budget": 100,
+          "auto_budget": 100,
+          "displayed_leaves": 100,
+          "total_leaves": 564640,
+          "right_budget": 100,
+          "panel_px": 1555,
+          "bytes": 27024,
+          "count": 2
+        }
+      ]
+    },
+    {
+      "height": 2000,
+      "cells": [
+        {
+          "leaves": 17645,
+          "ok": true,
+          "budget": 125,
+          "auto_budget": 125,
+          "displayed_leaves": 125,
+          "total_leaves": 17645,
+          "right_budget": 125,
+          "panel_px": 1855,
+          "bytes": 35628,
+          "count": 2
+        },
+        {
+          "leaves": 564640,
+          "ok": true,
+          "budget": 125,
+          "auto_budget": 125,
+          "displayed_leaves": 125,
+          "total_leaves": 564640,
+          "right_budget": 125,
+          "panel_px": 1855,
+          "bytes": 33938,
+          "count": 2
+        }
+      ]
+    },
+    {
+      "height": 2600,
+      "cells": [
+        {
+          "leaves": 17645,
+          "ok": true,
+          "budget": 175,
+          "auto_budget": 175,
+          "displayed_leaves": 175,
+          "total_leaves": 17645,
+          "right_budget": 175,
+          "panel_px": 2455,
+          "bytes": 48113,
+          "count": 2
+        },
+        {
+          "leaves": 564640,
+          "ok": true,
+          "budget": 175,
+          "auto_budget": 175,
+          "displayed_leaves": 175,
+          "total_leaves": 564640,
+          "right_budget": 175,
+          "panel_px": 2455,
+          "bytes": 47114,
+          "count": 2
+        }
+      ]
+    },
+    {
+      "height": 3200,
+      "cells": [
+        {
+          "leaves": 17645,
+          "ok": true,
+          "budget": 225,
+          "auto_budget": 225,
+          "displayed_leaves": 225,
+          "total_leaves": 17645,
+          "right_budget": 225,
+          "panel_px": 3055,
+          "bytes": 60481,
+          "count": 2
+        },
+        {
+          "leaves": 564640,
+          "ok": true,
+          "budget": 225,
+          "auto_budget": 225,
+          "displayed_leaves": 225,
+          "total_leaves": 564640,
+          "right_budget": 225,
+          "panel_px": 3055,
+          "bytes": 59051,
+          "count": 2
+        }
+      ]
+    }
+  ]
+}

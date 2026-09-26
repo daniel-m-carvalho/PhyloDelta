@@ -28,10 +28,12 @@
  * (Table 1). Separating the download from the outcome is what lets the finding be
  * stated precisely: it transfers 35 MB and still cannot open the comparison.
  *
- * No compression, on either side, because `serve.mjs` serves none — so this is
- * uncompressed-to-uncompressed. A gzip column would be worth having and would
- * favour phylo.io, whose Newick is highly compressible; that is recorded as a
- * limitation rather than guessed at.
+ * **Run twice, once per transport.** Uncompressed by default; with `BENCH_GZIP=1`
+ * `serve.mjs` compresses static files *and* proxied API responses, and the results
+ * go to their own file. Both tools get the same treatment in both runs — the API
+ * had to be compressed in the proxy, since FastAPI ships no GZipMiddleware, or the
+ * gzip run would have compressed phylo.io's Newick and left this frontend's JSON
+ * alone, measuring a transport difference and reporting it as a design one.
  */
 import { writeFileSync, readFileSync, existsSync, mkdirSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
@@ -190,8 +192,12 @@ const BROWSER = versionOf(probe);
 await probe.close();
 
 mkdirSync(join(BENCH, "results"), { recursive: true });
-const out = join(BENCH, "results", "transfer.json");
-const stream = join(BENCH, "results", "transfer.jsonl");
+//: Which transport this run measures. Separate files, because the two are not
+//: interchangeable and merging them would silently mix encodings in one column.
+const GZIP = process.env.BENCH_GZIP === "1";
+const suffix = GZIP ? "_gzip" : "";
+const out = join(BENCH, "results", `transfer${suffix}.json`);
+const stream = join(BENCH, "results", `transfer${suffix}.jsonl`);
 const only = process.argv[2] ? Number(process.argv[2]) : null;
 const previous =
   only !== null && existsSync(out) ? JSON.parse(readFileSync(out, "utf8")).rows : [];
@@ -199,7 +205,10 @@ if (!existsSync(stream)) writeFileSync(stream, "");
 
 const rows = [];
 const mb = (bytes) => bytes / 1e6;
-say(`\n${BROWSER} · uncompressed, one origin · bytes measured from the wire\n`);
+say(
+  `\n${BROWSER} · ${GZIP ? "GZIP" : "uncompressed"}, one origin · ` +
+    `bytes measured from the wire\n`,
+);
 say(
   `${"leaves".padStart(9)}  ${"phylo.io app".padStart(12)} ${"data".padStart(10)}` +
     `  ${"PhyloDelta app".padStart(14)} ${"data".padStart(9)}  ${"data ratio".padStart(10)}`,
@@ -237,6 +246,6 @@ const merged = [...previous.filter((r) => !rows.some((n) => n.leaves === r.leave
 );
 writeFileSync(
   out,
-  JSON.stringify({ browser: BROWSER, viewport: VIEWPORT, compressed: false, rows: merged }, null, 2),
+  JSON.stringify({ browser: BROWSER, viewport: VIEWPORT, compressed: GZIP, rows: merged }, null, 2),
 );
-say(`\nwritten to results/transfer.json`);
+say(`\nwritten to results/transfer${suffix}.json`);

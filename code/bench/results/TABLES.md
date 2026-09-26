@@ -30,6 +30,7 @@ Eighteen tables is more than a chapter can carry, and most were made to answer a
 - **Table 14** — Methodology. The rungs above 17,645 are synthetic and the thesis must say so where the numbers are.
 - **Table 15** — The other half of interaction: loading is not using. Also carries the finding that the comparison tool's cross-tree jump does not work at all.
 - **Table 19** — The claim as the quantity it is actually about: bytes over the wire. Present it beside Table 12 — 12 is the mechanism, 19 is what the mechanism buys.
+- **Table 21** — The other half of "sized to the viewport". Every other table shows the payload ignoring the tree; only this one shows it following the window, which is what earns the word *sized*.
 
 **Appendix, or one sentence citing the number** — Defends a choice or a stated limit of a PRESENT table.
 
@@ -38,6 +39,7 @@ Eighteen tables is more than a chapter can carry, and most were made to answer a
 - **Table 11** — The deployability argument: server memory is linear, not quadratic. A sentence with the marginal figure.
 - **Table 17** — Why the metric choice is not free, and where §9's claim holds. Relevant only if the thesis discusses metric plugins.
 - **Table 18** — Validation: two independent RF implementations agreeing at 1.1M nodes. A sentence, with the table in an appendix.
+- **Table 20** — Table 19 under compression, which is what a real deployment serves. Answers the first objection anyone will raise to 19, and answers it the other way from the expected one.
 
 **Keep in the repository, do not present** — Real and reproducible, but a PRESENT table already says it or it answered an internal question.
 
@@ -46,7 +48,7 @@ Eighteen tables is more than a chapter can carry, and most were made to answer a
 - **Table 10** — Subsumed by Table 9, which measures the same trade-off on whole builds rather than one step.
 - **Table 16** — The attribution behind Table 15 — the round trip is ~6 ms of a ~49 ms navigation. One sentence, not a table.
 
-The PRESENT tables answer, in this order: how far each tool gets (1), on comparable work (2), at what memory (3), sending how many bytes (19), how correctly (5), by what mechanism (12), at what navigation cost (15), for what precompute (8), giving up what (13), measured on what data (14).
+The PRESENT tables answer, in this order: how far each tool gets (1), on comparable work (2), at what memory (3), sending how many bytes (19), sized by what (21), how correctly (5), by what mechanism (12), at what navigation cost (15), for what precompute (8), giving up what (13), measured on what data (14).
 
 *If only one table can be shown, it is 19.* It states the claim in the quantity the claim is about — 28.9 KB against 35.5 MB at 564,640 leaves — and it is the only table whose ratio grows without bound while everything on this side stays flat.
 
@@ -468,7 +470,66 @@ So §9's claim that several metrics cost little more than one is **true asymptot
 
 *Two caveats, and they pull in opposite directions — stated separately rather than netted off.*
 
-- **Against the ratio shown:** nothing here is compressed, because `serve.mjs` serves none, deliberately, so that both tools face identical transport. Newick is highly compressible, so a gzip column would narrow the data ratio substantially. Not estimated — it needs measuring.
+- **Compression is off**, deliberately, so both tools face identical transport. It was expected to narrow the ratio, since Newick compresses well. Measured, it **widens** it — see Table 20.
 
 - **In favour of it:** PhyloDelta's data figure includes a ~13 KB `GET /api/v1/datasets` catalogue whose size tracks **how many comparisons the store holds**, not tree size. The benchmark store holds every ladder rung, so a single-comparison deployment transfers closer to 15 KB and the real figure is about half what is shown.
+
+
+## Table 20 — The same transfer, compressed
+
+<!-- tier: SUPPORT -->
+> **SUPPORT** — Table 19 under compression, which is what a real deployment serves. Answers the first objection anyone will raise to 19, and answers it the other way from the expected one.
+
+*The same runner with `BENCH_GZIP=1`: `serve.mjs` compresses static files **and** proxied API responses. Both tools, both transports, nothing else changed.*
+
+The API had to be compressed in the proxy, because FastAPI ships no `GZipMiddleware`. Without that, this run would have compressed phylo.io's Newick and left this frontend's JSON alone — measuring a transport difference and reporting it as a design one, in our own favour.
+
+| leaves | phylo.io data | PhyloDelta data | ratio, gzip | ratio, raw |
+|---:|---:|---:|---:|---:|
+| 1,000 | 0.01 MB | **7.4 KB** | **1x** | 1x |
+| 2,500 | 0.02 MB | **7.5 KB** | **2x** | 1x |
+| 5,000 | 0.03 MB | **7.7 KB** | **4x** | 3x |
+| 10,000 | 0.07 MB | **7.8 KB** | **8x** | 6x |
+| 17,645 | 0.49 MB | **9.8 KB** | **49x** | 35x |
+| 35,290 | 0.80 MB | **9.7 KB** | **80x** | 65x |
+| 70,580 | 1.60 MB | **9.6 KB** | **163x** | 134x |
+| 141,160 | 3.21 MB | **9.3 KB** | **336x** | 273x |
+| 282,320 | 6.46 MB | **8.8 KB** | **718x** | 567x |
+| 564,640 | 12.96 MB | **7.7 KB** | **1,644x** | 1,199x |
+
+**Compression widens the gap, which was not the expectation.** At 564,640 leaves the ratio goes from 1,199x to 1,644x. The reason is in the compression factors, not in the design: the slice JSON compresses 3.8x — repeated keys and small integers — while the Newick manages only 2.7x, because at this size it is mostly unique labels and branch lengths, which is close to incompressible.
+
+This matters for the write-up beyond the number: gzip is what a real deployment serves, so **Table 20 is the honest production figure and Table 19 is the conservative one.** Quoting 19 understates the result.
+
+*Application bundles compress too, and the asymmetry survives: 1.41 MB against 0.14 MB, still 10x apart.*
+
+
+## Table 21 — Sized to the viewport, not to the tree
+
+<!-- tier: PRESENT -->
+> **PRESENT** — The other half of "sized to the viewport". Every other table shows the payload ignoring the tree; only this one shows it following the window, which is what earns the word *sized*.
+
+*Slice payload only, summed across both panels, from the wire. Width held at 1440 px; height varied.*
+
+Every other table here shows the payload ignoring the **tree**. That is necessary but not sufficient: a server returning a fixed fifty leaves whatever the window would satisfy all of them while not doing what the design claims. This grid separates the two — read **down** a column for invariance to the tree, and **across** the rows for dependence on the window.
+
+| window px | panel px | leaf budget | 17,645 leaves | 564,640 leaves |
+|---:|---:|---:|---:|---:|
+| 400 | 255 | **50** | 14.7 KB / 50 tips | 11.9 KB / 50 tips |
+| 700 | 555 | **50** | 14.7 KB / 50 tips | 11.9 KB / 50 tips |
+| 1,000 | 855 | **50** | 14.7 KB / 50 tips | 11.9 KB / 50 tips |
+| 1,200 | 1055 | **75** | 22.0 KB / 75 tips | 19.1 KB / 75 tips |
+| 1,400 | 1255 | **100** | 28.3 KB / 100 tips | 26.4 KB / 100 tips |
+| 1,700 | 1555 | **100** | 28.3 KB / 100 tips | 26.4 KB / 100 tips |
+| 2,000 | 1855 | **125** | 34.8 KB / 125 tips | 33.1 KB / 125 tips |
+| 2,600 | 2455 | **175** | 47.0 KB / 175 tips | 46.0 KB / 175 tips |
+| 3,200 | 3055 | **225** | 59.1 KB / 225 tips | 57.7 KB / 225 tips |
+
+**Across the rows the payload follows the window:** panel 255 px to 3,055 px (12x) takes the budget from 50 to 225 tips and the payload from 14.7 KB to 59.1 KB. Above the floor the ratio of panel pixels to budgeted leaves settles at about **14**, which is `PIXELS_PER_LEAF` — the design constant recovered from the measurement rather than asserted.
+
+**Down the columns it ignores the tree:** at the same window, 17,645 leaves and 564,640 leaves — 32x more — cost 59.1 KB and 57.7 KB. The larger tree is marginally *cheaper*, which is label lengths, not structure.
+
+**The honest qualification: the steps are coarse.** `readableBudget` rounds to 25 leaves at 14 px each, so the payload only changes every ~350 px of panel — and with the 40-leaf floor, every window from 400 to 1,000 px gets the same 50 tips. So "sized to the viewport" holds with a granularity of about 350 px, and across the ordinary range of laptop windows the payload is in practice constant. The quantisation is deliberate (a settling layout must not cost a request, §29) but it does mean the scaling only bites on tall displays.
+
+*This also caught a sampling error worth keeping: the first run used evenly-spaced heights of 400-1,000 and reported an identical payload four times, which reads as the payload ignoring the viewport when it was the sample sitting inside one quantisation bucket.*
 

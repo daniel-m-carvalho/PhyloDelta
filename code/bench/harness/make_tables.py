@@ -61,6 +61,8 @@ navigation = load("navigation.json", {})
 metric_builds = load("metric_builds.json", {})
 metric_phases = load("metric_phases.json", {})
 transfer = load("transfer.json", {})
+transfer_gzip = load("transfer_gzip.json", {})
+viewport = load("viewport.json", {})
 rows = ceiling.get("rows", [])
 
 
@@ -118,6 +120,12 @@ TIERS = {
     19: (PRESENT, "The claim as the quantity it is actually about: bytes over the "
                   "wire. Present it beside Table 12 — 12 is the mechanism, 19 is "
                   "what the mechanism buys."),
+    20: (SUPPORT, "Table 19 under compression, which is what a real deployment "
+                  "serves. Answers the first objection anyone will raise to 19, "
+                  "and answers it the other way from the expected one."),
+    21: (PRESENT, "The other half of \"sized to the viewport\". Every other table "
+                  "shows the payload ignoring the tree; only this one shows it "
+                  "following the window, which is what earns the word *sized*."),
 }
 
 
@@ -174,9 +182,9 @@ for tier, heading, blurb in (
     print()
 print("The PRESENT tables answer, in this order: how far each tool gets (1), "
       "on comparable work (2), at what memory (3), sending how many bytes (19), "
-      "how correctly (5), by what mechanism (12), at what navigation cost (15), "
-      "for what precompute (8), giving up what (13), measured on what data "
-      "(14).\n")
+      "sized by what (21), how correctly (5), by what mechanism (12), at what "
+      "navigation cost (15), for what precompute (8), giving up what (13), "
+      "measured on what data (14).\n")
 print("*If only one table can be shown, it is 19.* It states the claim in the "
       "quantity the claim is about — 28.9 KB against 35.5 MB at 564,640 leaves — "
       "and it is the only table whose ratio grows without bound while everything "
@@ -833,13 +841,132 @@ if transfer_rows:
           "win only through the data column.\n")
     print("*Two caveats, and they pull in opposite directions — stated separately "
           "rather than netted off.*\n")
-    print("- **Against the ratio shown:** nothing here is compressed, because "
-          "`serve.mjs` serves none, deliberately, so that both tools face "
-          "identical transport. Newick is highly compressible, so a gzip column "
-          "would narrow the data ratio substantially. Not estimated — it needs "
-          "measuring.\n")
+    print("- **Compression is off**, deliberately, so both tools face identical "
+          "transport. It was expected to narrow the ratio, since Newick "
+          "compresses well. Measured, it **widens** it — see Table 20.\n")
     print("- **In favour of it:** PhyloDelta's data figure includes a ~13 KB "
           "`GET /api/v1/datasets` catalogue whose size tracks **how many "
           "comparisons the store holds**, not tree size. The benchmark store "
           "holds every ladder rung, so a single-comparison deployment transfers "
           "closer to 15 KB and the real figure is about half what is shown.\n")
+
+# --- 10. the same, compressed ---------------------------------------------
+gz_rows = transfer_gzip.get("rows", [])
+raw_by_leaves = {r["leaves"]: r for r in transfer.get("rows", [])}
+if gz_rows:
+    table(20, "The same transfer, compressed")
+    print("*The same runner with `BENCH_GZIP=1`: `serve.mjs` compresses static "
+          "files **and** proxied API responses. Both tools, both transports, "
+          "nothing else changed.*\n")
+    print("The API had to be compressed in the proxy, because FastAPI ships no "
+          "`GZipMiddleware`. Without that, this run would have compressed "
+          "phylo.io's Newick and left this frontend's JSON alone — measuring a "
+          "transport difference and reporting it as a design one, in our own "
+          "favour.\n")
+    print("| leaves | phylo.io data | PhyloDelta data | ratio, gzip | ratio, raw |")
+    print("|---:|---:|---:|---:|---:|")
+    for row in gz_rows:
+        pi, pd = row.get("phyloio", {}), row.get("phylodelta", {})
+        if pi.get("data") is None or not pd.get("data"):
+            print(f"| {row['leaves']:,} | — | — | — | — |")
+            continue
+        was = raw_by_leaves.get(row["leaves"], {})
+        was_ratio = (
+            f"{was['phyloio']['data'] / was['phylodelta']['data']:,.0f}x"
+            if was and was.get("phyloio", {}).get("data") and was.get("phylodelta", {}).get("data")
+            else "—"
+        )
+        print(f"| {row['leaves']:,} | {pi['data'] / 1e6:,.2f} MB "
+              f"| **{pd['data'] / 1024:,.1f} KB** "
+              f"| **{pi['data'] / pd['data']:,.0f}x** | {was_ratio} |")
+
+    top_gz = gz_rows[-1]
+    top_raw = raw_by_leaves.get(top_gz["leaves"], {})
+    gz_data = top_gz["phylodelta"]["data"]
+    raw_data = top_raw["phylodelta"]["data"]
+    gz_tree = top_gz["phyloio"]["data"]
+    raw_tree = top_raw["phyloio"]["data"]
+    print(f"\n**Compression widens the gap, which was not the expectation.** At "
+          f"{top_gz['leaves']:,} leaves the ratio goes from "
+          f"{raw_tree / raw_data:,.0f}x to {gz_tree / gz_data:,.0f}x. The reason is "
+          f"in the compression factors, not in the design: the slice JSON "
+          f"compresses {raw_data / gz_data:,.1f}x — repeated keys and small "
+          f"integers — while the Newick manages only {raw_tree / gz_tree:,.1f}x, "
+          f"because at this size it is mostly unique labels and branch lengths, "
+          f"which is close to incompressible.\n")
+    print("This matters for the write-up beyond the number: gzip is what a real "
+          "deployment serves, so **Table 20 is the honest production figure and "
+          "Table 19 is the conservative one.** Quoting 19 understates the result.\n")
+    gz_app_pi = top_gz["phyloio"]["app"]
+    gz_app_pd = top_gz["phylodelta"]["app"]
+    print(f"*Application bundles compress too, and the asymmetry survives: "
+          f"{gz_app_pi / 1e6:,.2f} MB against {gz_app_pd / 1e6:,.2f} MB, still "
+          f"{gz_app_pi / gz_app_pd:,.0f}x apart.*\n")
+
+# --- 11. sized to the viewport, not to the tree ----------------------------
+vp_rows = viewport.get("rows", [])
+if vp_rows:
+    rungs = viewport.get("rungs", [])
+    table(21, "Sized to the viewport, not to the tree")
+    print("*Slice payload only, summed across both panels, from the wire. Width "
+          f"held at {viewport.get('width', 1440)} px; height varied.*\n")
+    print("Every other table here shows the payload ignoring the **tree**. That is "
+          "necessary but not sufficient: a server returning a fixed fifty leaves "
+          "whatever the window would satisfy all of them while not doing what the "
+          "design claims. This grid separates the two — read **down** a column for "
+          "invariance to the tree, and **across** the rows for dependence on the "
+          "window.\n")
+    header = "| window px | panel px | leaf budget | " + " | ".join(
+        f"{n:,} leaves" for n in rungs
+    ) + " |"
+    print(header)
+    print("|---:" * (3 + len(rungs)) + "|")
+    for row in vp_rows:
+        first = next((c for c in row["cells"] if c.get("ok")), {})
+        cells = []
+        for c in row["cells"]:
+            cells.append(
+                f"{c['bytes'] / 1024:,.1f} KB / {c['displayed_leaves']} tips"
+                if c.get("ok") else "—"
+            )
+        print(f"| {row['height']:,} | {first.get('panel_px', '—')} "
+              f"| **{first.get('budget', '—')}** | " + " | ".join(cells) + " |")
+
+    ok_rows = [r for r in vp_rows if any(c.get("ok") for c in r["cells"])]
+    if ok_rows:
+        lo, hi = ok_rows[0], ok_rows[-1]
+        lo_cell = next(c for c in lo["cells"] if c.get("ok"))
+        hi_cell = next(c for c in hi["cells"] if c.get("ok"))
+        lo_panel = lo_cell.get("panel_px") or 1
+        hi_panel = hi_cell.get("panel_px") or 1
+        print(f"\n**Across the rows the payload follows the window:** panel "
+              f"{lo_panel:,} px to {hi_panel:,} px ({hi_panel / lo_panel:,.0f}x) "
+              f"takes the budget from {lo_cell['budget']} to {hi_cell['budget']} "
+              f"tips and the payload from {lo_cell['bytes'] / 1024:,.1f} KB to "
+              f"{hi_cell['bytes'] / 1024:,.1f} KB. Above the floor the ratio of "
+              f"panel pixels to budgeted leaves settles at about **14**, which is "
+              f"`PIXELS_PER_LEAF` — the design constant recovered from the "
+              f"measurement rather than asserted.\n")
+        # Invariance down the columns, stated from the widest row.
+        per = [c for c in hi["cells"] if c.get("ok")]
+        if len(per) > 1:
+            a, b = per[0], per[-1]
+            print(f"**Down the columns it ignores the tree:** at the same window, "
+                  f"{a['total_leaves']:,} leaves and {b['total_leaves']:,} leaves "
+                  f"— {b['total_leaves'] / a['total_leaves']:,.0f}x more — cost "
+                  f"{a['bytes'] / 1024:,.1f} KB and {b['bytes'] / 1024:,.1f} KB. "
+                  f"The larger tree is marginally *cheaper*, which is label "
+                  f"lengths, not structure.\n")
+
+    print("**The honest qualification: the steps are coarse.** `readableBudget` "
+          "rounds to 25 leaves at 14 px each, so the payload only changes every "
+          "~350 px of panel — and with the 40-leaf floor, every window from 400 "
+          "to 1,000 px gets the same 50 tips. So \"sized to the viewport\" holds "
+          "with a granularity of about 350 px, and across the ordinary range of "
+          "laptop windows the payload is in practice constant. The quantisation is "
+          "deliberate (a settling layout must not cost a request, §29) but it does "
+          "mean the scaling only bites on tall displays.\n")
+    print("*This also caught a sampling error worth keeping: the first run used "
+          "evenly-spaced heights of 400-1,000 and reported an identical payload "
+          "four times, which reads as the payload ignoring the viewport when it "
+          "was the sample sitting inside one quantisation bucket.*\n")

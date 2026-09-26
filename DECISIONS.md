@@ -3882,10 +3882,9 @@ reasoning about the design instead of counting.
 Two caveats pulling in opposite directions, stated separately rather than netted off into one
 comfortable number:
 
-* **Against the ratio.** Nothing is compressed, because `serve.mjs` serves no gzip — deliberately, so
-  both tools face identical transport. Newick is highly compressible, so a gzip column would narrow
-  the data ratio substantially. Not estimated; it needs measuring, and it is the first thing an
-  examiner should ask for.
+* **Compression is off**, because `serve.mjs` serves none — deliberately, so both tools face
+  identical transport. It was expected to narrow the ratio, since Newick compresses well. It does the
+  opposite; see §34.17.
 * **In favour of it.** The 27.5 KB includes a ~13 KB `datasets` catalogue whose size tracks **how many
   comparisons the store holds**, not tree size. The benchmark store holds every ladder rung, so a
   single-comparison deployment transfers closer to 15 KB — the real figure is about half what is
@@ -3893,6 +3892,60 @@ comfortable number:
 
 Neither is large enough to disturb the shape, which is the finding: one side grows with the tree and
 the other does not.
+
+### 34.17 The same transfer under compression
+
+The obvious objection to §34.16 is that nobody serves uncompressed, and Newick compresses well — so
+the 1,199x ought to be an artefact of the transport. It is measured rather than argued: `BENCH_GZIP=1`
+makes `serve.mjs` compress static files **and** proxied API responses, and the run goes to its own
+results file so the two transports are never mixed in one column.
+
+**Compression widens the gap**, from 1,199x to **1,644x** at 564,640 leaves. The reason is in the
+compression ratios and not in the design: the slice JSON compresses **3.8x** — repeated keys, small
+integers, a handful of short strings — while the Newick manages **2.7x**, because at that size it is
+mostly unique labels and branch lengths, which is close to incompressible. Predicted wrongly, and
+recorded as such: reasoning "Newick is text, text compresses" ignored that the thing it is compared
+against is *also* text, and denser.
+
+So **Table 20 is the production figure and Table 19 is the conservative one.** The write-up should
+quote 19 and note 20, not the other way round — the claim does not need the larger number, and the
+smaller one is the one taken under a transport neither tool was tuned for.
+
+**The API is compressed in the proxy, not by FastAPI**, which ships no `GZipMiddleware`. Without that,
+this run would have compressed phylo.io's Newick and left this frontend's JSON alone — a transport
+difference reported as a design difference, in our own favour. That is the §34.3 asymmetry trap in a
+new place, and it would have inflated the ratio further.
+
+### 34.18 Sized to the viewport: the half that was never measured
+
+Every table before this one shows the payload ignoring the **tree**. None showed it following the
+**window**, and the claim is "sized to the viewport" — so the word *sized* was unsupported. The
+distinction is not pedantic: a server that returned a fixed fifty leaves whatever the window would
+satisfy every other table here while not doing what the design says.
+
+Table 21 is a grid, so the two are separable: down a column, 32x more leaves costs *slightly less*
+(59.1 KB against 57.7 KB, which is label lengths); across the rows, a panel from 255 px to 3,055 px
+takes the budget from 50 to 225 tips and the payload from 14.7 KB to 59.1 KB.
+
+The pleasing part is a check nobody designed: above the floor, the measured ratio of panel pixels to
+budgeted leaves settles at about **14** — `PIXELS_PER_LEAF`, recovered from the wire rather than
+asserted.
+
+#### What it also shows, which is less flattering
+
+**The steps are coarse.** `readableBudget` rounds to 25 leaves at 14 px each, so the payload only
+changes every ~350 px of panel; with the 40-leaf floor, every window from 400 to 1,000 px gets the
+same 50 tips. "Sized to the viewport" therefore holds at a granularity of ~350 px, and across the
+ordinary range of laptop windows the payload is in practice **constant**. The quantisation is
+deliberate — a settling layout must not cost a request (§29), and the measured reason for it was a
+panel reporting 600 px then 577 px on load — but the honest statement is "sized to the viewport in
+steps", not "proportional to the viewport".
+
+**And a sampling error worth keeping.** The first run used evenly spaced heights of 400–1,000 px and
+reported an identical payload four times. That reads as the payload ignoring the viewport, which would
+have been a much worse finding than the truth: all four heights sat inside one quantisation bucket. An
+evenly spaced sample of a step function measures the sampling, not the function — the heights were
+re-chosen to cross the steps.
 
 ---
 
