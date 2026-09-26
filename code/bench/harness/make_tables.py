@@ -60,6 +60,7 @@ def precompute_is_pinned(leaves) -> bool:
 navigation = load("navigation.json", {})
 metric_builds = load("metric_builds.json", {})
 metric_phases = load("metric_phases.json", {})
+transfer = load("transfer.json", {})
 rows = ceiling.get("rows", [])
 
 
@@ -114,6 +115,9 @@ TIERS = {
                   "Relevant only if the thesis discusses metric plugins."),
     18: (SUPPORT, "Validation: two independent RF implementations agreeing at 1.1M "
                   "nodes. A sentence, with the table in an appendix."),
+    19: (PRESENT, "The claim as the quantity it is actually about: bytes over the "
+                  "wire. Present it beside Table 12 — 12 is the mechanism, 19 is "
+                  "what the mechanism buys."),
 }
 
 
@@ -168,10 +172,15 @@ for tier, heading, blurb in (
     for n in chosen:
         print(f"- **Table {n}** — {TIERS[n][1]}")
     print()
-print("The nine PRESENT tables answer, in order: how far each tool gets "
-      "(1), on comparable work (2), at what memory (3), how correctly (5), by "
-      "what mechanism (12), at what navigation cost (15), for what precompute "
-      "(8), giving up what (13), measured on what data (14).\n")
+print("The PRESENT tables answer, in this order: how far each tool gets (1), "
+      "on comparable work (2), at what memory (3), sending how many bytes (19), "
+      "how correctly (5), by what mechanism (12), at what navigation cost (15), "
+      "for what precompute (8), giving up what (13), measured on what data "
+      "(14).\n")
+print("*If only one table can be shown, it is 19.* It states the claim in the "
+      "quantity the claim is about — 28.9 KB against 35.5 MB at 564,640 leaves — "
+      "and it is the only table whose ratio grows without bound while everything "
+      "on this side stays flat.\n")
 print("*Two tables to read together, not separately:* Table 1 without Table 2 "
       "overstates the result, because the tools do not draw the same amount — "
       "that asymmetry IS the design, and hiding it is how an earlier version of "
@@ -770,3 +779,67 @@ if phase_rows:
               "TreeDiff is the reference implementation of the paper this project follows (§1.10) "
               "— so agreement at 1,129,279 nodes is a check on both, and a disagreement would "
               "have meant one of them was wrong.\n")
+
+# --- 9. the claim as bytes -------------------------------------------------
+transfer_rows = transfer.get("rows", [])
+if transfer_rows:
+    table(19, "Bytes over the wire")
+    print("*\"Never send the whole tree\" is a claim about transferred bytes. "
+          "Measured from the wire — `request.sizes()` per response, not file "
+          "sizes on disk — uncompressed on both sides, one origin.*\n")
+    print("**Application and data are separate columns on purpose.** PhyloDelta "
+          "ships a bundle too, and quoting its slices against phylo.io's "
+          "whole-tree download while ignoring that would be comparing a partial "
+          "cost with a total one — the error Table 2 exists to prevent. Add the "
+          "columns as you see fit; the application bytes are paid once per "
+          "visit, the data bytes once per comparison.\n")
+    print("| leaves | phylo.io app | phylo.io data | phylo.io total | "
+          "PhyloDelta app | PhyloDelta data | PhyloDelta total | data ratio | total ratio |")
+    print("|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
+
+    for row in transfer_rows:
+        pi, pd = row.get("phyloio", {}), row.get("phylodelta", {})
+        pi_app, pi_data = pi.get("app"), pi.get("data")
+        pd_app, pd_data = pd.get("app"), pd.get("data")
+        if None in (pi_app, pi_data, pd_app, pd_data):
+            print(f"| {row['leaves']:,} | — | — | — | — | — | — | — | — |")
+            continue
+        pi_total, pd_total = pi_app + pi_data, pd_app + pd_data
+        print(
+            f"| {row['leaves']:,} | {pi_app / 1e6:,.2f} MB | {pi_data / 1e6:,.2f} MB "
+            f"| {pi_total / 1e6:,.2f} MB | {pd_app / 1e6:,.2f} MB "
+            f"| **{pd_data / 1024:,.1f} KB** | {pd_total / 1e6:,.2f} MB "
+            f"| **{pi_data / pd_data:,.0f}x** | {pi_total / pd_total:,.0f}x |"
+        )
+
+    top = transfer_rows[-1]
+    tpi, tpd = top["phyloio"], top["phylodelta"]
+    first = transfer_rows[0]
+    print(f"\n**At {top['leaves']:,} leaves phylo.io must transfer "
+          f"{tpi['data'] / 1e6:,.1f} MB of tree and still cannot open the "
+          f"comparison** (Table 1). PhyloDelta transfers "
+          f"{tpd['data'] / 1024:,.1f} KB and shows it. The data column is the one "
+          f"that matters for the claim: it is flat — "
+          f"{first['phylodelta']['data'] / 1024:,.1f} KB at "
+          f"{first['leaves']:,} leaves and {tpd['data'] / 1024:,.1f} KB at "
+          f"{top['leaves']:,} — against a download that grows linearly with the "
+          f"tree.\n")
+    print("**The application bundles run the other way, and by more than "
+          f"expected.** phylo.io's is {tpi['app'] / 1e6:,.2f} MB — `phylo.js` at "
+          "4.0 MB plus two worker chunks at 2.9 and 1.4 MB — against PhyloDelta's "
+          f"{tpd['app'] / 1e6:,.2f} MB. So PhyloDelta transfers less **in total at "
+          "every rung including the smallest**, which was not the expected result: "
+          "the prediction was that it would lose on total bytes on small trees and "
+          "win only through the data column.\n")
+    print("*Two caveats, and they pull in opposite directions — stated separately "
+          "rather than netted off.*\n")
+    print("- **Against the ratio shown:** nothing here is compressed, because "
+          "`serve.mjs` serves none, deliberately, so that both tools face "
+          "identical transport. Newick is highly compressible, so a gzip column "
+          "would narrow the data ratio substantially. Not estimated — it needs "
+          "measuring.\n")
+    print("- **In favour of it:** PhyloDelta's data figure includes a ~13 KB "
+          "`GET /api/v1/datasets` catalogue whose size tracks **how many "
+          "comparisons the store holds**, not tree size. The benchmark store "
+          "holds every ladder rung, so a single-comparison deployment transfers "
+          "closer to 15 KB and the real figure is about half what is shown.\n")

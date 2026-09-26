@@ -29,6 +29,7 @@ Eighteen tables is more than a chapter can carry, and most were made to answer a
 - **Table 13** — The honest ledger. What was given up to get Table 1.
 - **Table 14** — Methodology. The rungs above 17,645 are synthetic and the thesis must say so where the numbers are.
 - **Table 15** — The other half of interaction: loading is not using. Also carries the finding that the comparison tool's cross-tree jump does not work at all.
+- **Table 19** — The claim as the quantity it is actually about: bytes over the wire. Present it beside Table 12 — 12 is the mechanism, 19 is what the mechanism buys.
 
 **Appendix, or one sentence citing the number** — Defends a choice or a stated limit of a PRESENT table.
 
@@ -45,7 +46,9 @@ Eighteen tables is more than a chapter can carry, and most were made to answer a
 - **Table 10** — Subsumed by Table 9, which measures the same trade-off on whole builds rather than one step.
 - **Table 16** — The attribution behind Table 15 — the round trip is ~6 ms of a ~49 ms navigation. One sentence, not a table.
 
-The nine PRESENT tables answer, in order: how far each tool gets (1), on comparable work (2), at what memory (3), how correctly (5), by what mechanism (12), at what navigation cost (15), for what precompute (8), giving up what (13), measured on what data (14).
+The PRESENT tables answer, in this order: how far each tool gets (1), on comparable work (2), at what memory (3), sending how many bytes (19), how correctly (5), by what mechanism (12), at what navigation cost (15), for what precompute (8), giving up what (13), measured on what data (14).
+
+*If only one table can be shown, it is 19.* It states the claim in the quantity the claim is about — 28.9 KB against 35.5 MB at 564,640 leaves — and it is the only table whose ratio grows without bound while everything on this side stays flat.
 
 *Two tables to read together, not separately:* Table 1 without Table 2 overstates the result, because the tools do not draw the same amount — that asymmetry IS the design, and hiding it is how an earlier version of this comparison reported a 34x that did not exist.
 
@@ -435,4 +438,37 @@ So §9's claim that several metrics cost little more than one is **true asymptot
 | 564,640 | 218,400 | 218,400 | yes |
 
 *20 of 20 builds agree exactly.* Different algorithms over different representations by different authors — TreeDiff is the reference implementation of the paper this project follows (§1.10) — so agreement at 1,129,279 nodes is a check on both, and a disagreement would have meant one of them was wrong.
+
+
+## Table 19 — Bytes over the wire
+
+<!-- tier: PRESENT -->
+> **PRESENT** — The claim as the quantity it is actually about: bytes over the wire. Present it beside Table 12 — 12 is the mechanism, 19 is what the mechanism buys.
+
+*"Never send the whole tree" is a claim about transferred bytes. Measured from the wire — `request.sizes()` per response, not file sizes on disk — uncompressed on both sides, one origin.*
+
+**Application and data are separate columns on purpose.** PhyloDelta ships a bundle too, and quoting its slices against phylo.io's whole-tree download while ignoring that would be comparing a partial cost with a total one — the error Table 2 exists to prevent. Add the columns as you see fit; the application bytes are paid once per visit, the data bytes once per comparison.
+
+| leaves | phylo.io app | phylo.io data | phylo.io total | PhyloDelta app | PhyloDelta data | PhyloDelta total | data ratio | total ratio |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1,000 | 8.27 MB | 0.02 MB | 8.28 MB | 0.49 MB | **27.5 KB** | 0.52 MB | **1x** | 16x |
+| 2,500 | 8.27 MB | 0.04 MB | 8.31 MB | 0.49 MB | **27.7 KB** | 0.52 MB | **1x** | 16x |
+| 5,000 | 8.27 MB | 0.08 MB | 8.35 MB | 0.49 MB | **28.3 KB** | 0.52 MB | **3x** | 16x |
+| 10,000 | 8.27 MB | 0.17 MB | 8.43 MB | 0.49 MB | **28.6 KB** | 0.52 MB | **6x** | 16x |
+| 17,645 | 8.27 MB | 1.11 MB | 9.38 MB | 0.49 MB | **31.3 KB** | 0.52 MB | **35x** | 18x |
+| 35,290 | 8.27 MB | 2.07 MB | 10.34 MB | 0.49 MB | **31.2 KB** | 0.52 MB | **65x** | 20x |
+| 70,580 | 8.27 MB | 4.25 MB | 12.52 MB | 0.49 MB | **31.1 KB** | 0.52 MB | **134x** | 24x |
+| 141,160 | 8.27 MB | 8.61 MB | 16.87 MB | 0.49 MB | **30.7 KB** | 0.52 MB | **273x** | 32x |
+| 282,320 | 8.27 MB | 17.50 MB | 25.76 MB | 0.49 MB | **30.1 KB** | 0.52 MB | **567x** | 50x |
+| 564,640 | 8.27 MB | 35.49 MB | 43.75 MB | 0.49 MB | **28.9 KB** | 0.52 MB | **1,199x** | 84x |
+
+**At 564,640 leaves phylo.io must transfer 35.5 MB of tree and still cannot open the comparison** (Table 1). PhyloDelta transfers 28.9 KB and shows it. The data column is the one that matters for the claim: it is flat — 27.5 KB at 1,000 leaves and 28.9 KB at 564,640 — against a download that grows linearly with the tree.
+
+**The application bundles run the other way, and by more than expected.** phylo.io's is 8.27 MB — `phylo.js` at 4.0 MB plus two worker chunks at 2.9 and 1.4 MB — against PhyloDelta's 0.49 MB. So PhyloDelta transfers less **in total at every rung including the smallest**, which was not the expected result: the prediction was that it would lose on total bytes on small trees and win only through the data column.
+
+*Two caveats, and they pull in opposite directions — stated separately rather than netted off.*
+
+- **Against the ratio shown:** nothing here is compressed, because `serve.mjs` serves none, deliberately, so that both tools face identical transport. Newick is highly compressible, so a gzip column would narrow the data ratio substantially. Not estimated — it needs measuring.
+
+- **In favour of it:** PhyloDelta's data figure includes a ~13 KB `GET /api/v1/datasets` catalogue whose size tracks **how many comparisons the store holds**, not tree size. The benchmark store holds every ladder rung, so a single-comparison deployment transfers closer to 15 KB and the real figure is about half what is shown.
 

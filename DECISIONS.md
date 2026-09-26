@@ -28,7 +28,8 @@ rejected.
 
 The thesis claim is **client-side**. What is measured is the time and memory a *browser* spends
 presenting and navigating a comparison of two large phylogenetic trees, and how that scales towards
-500k+ **leaves** (~1M nodes). Stated in leaves because that is the unit of the data — a leaf is a taxon, an internal node is an inferred branch point — while noting nodes alongside, since the rendering cost is paid per node. Measured at **564,640 leaves / 1,129,279 nodes** (§34.2). Backend computation time and space are explicitly **not** the claim, but are reported anyway (§34.5).
+500k+ **leaves** (~1M nodes). Stated in leaves because that is the unit of the data — a leaf is a taxon, an internal node is an inferred branch point — while noting nodes alongside, since the rendering cost is paid per node. Measured at **564,640 leaves / 1,129,279 nodes** (§34.2), at which point the browser is sent
+**28.9 KB** where the comparison tool must fetch **35.5 MB** and still cannot open it (§34.16). Backend computation time and space are explicitly **not** the claim, but are reported anyway (§34.5).
 
 That single sentence determines the architecture. If the expensive work does not have to be fast,
 it should be moved off the request path entirely — computed once, offline, stored in a form that
@@ -3839,7 +3840,59 @@ Refusing by name was honoured at the *query* — `GET /comparisons/{id}?metric=t
 there instead — but the uploader who asked for it was told nothing, minutes later and in another
 process. Fixed in §36.
 
+### 34.16 The claim as bytes over the wire
 
+Everything above this measures a *consequence* of the transfer — time, memory, drawn elements. The
+thesis sentence is about the transfer itself: **the server should send a summary sized to the viewport
+and never the whole tree.** That quantity was the one thing not measured. Table 12 gave a slice's size
+with nothing to compare it against, and Table 8's "bundle size" is the upload. Table 19 is the
+measurement.
+
+At 564,640 leaves phylo.io must transfer **35.5 MB** of tree and still cannot open the comparison;
+this frontend transfers **28.9 KB** and shows it. The data column is flat across the whole ladder —
+27.5 KB at 1,000 leaves, 28.9 KB at 564,640 — against a download that grows linearly. The ratio
+reaches 1,199x and has no ceiling, which no other table here can say.
+
+**Measured from the wire, not from `stat`.** File sizes on disk are a good estimate and a bad
+measurement: they miss headers, miss the application bundle entirely, and cannot see a request nobody
+predicted. Every response is counted through Playwright's `request.sizes()`, on `requestfinished`
+rather than `response` — `sizes()` reports a body of 0 while a response is still streaming, which at
+35 MB is all of it.
+
+**Both application bundles are counted, in their own column.** This is the trap §34.3 and Table 2
+exist to warn about: quoting 6 KB slices against a whole-tree download while ignoring that this
+frontend also ships a bundle would compare a partial cost against a total one.
+
+#### Two predictions the measurement overturned
+
+Recorded because both were stated before measuring and both were wrong in the same direction — from
+reasoning about the design instead of counting.
+
+* **"PhyloDelta probably loses on total bytes at the smallest rungs."** It does not; it wins at every
+  rung, including 1,000 leaves. phylo.io's bundle is **8.27 MB** — `phylo.js` at 4.0 MB plus worker
+  chunks of 2.9 and 1.4 MB — against 0.49 MB here. The total ratio never falls below 16x, and the
+  bundle, not the tree, is what dominates phylo.io's transfer below ~140,000 leaves.
+* **"Two slices, so about 13.5 KB."** It is 27.5 KB, because a panel's first load is not two slices:
+  it is `datasets`, `metrics`, the comparison summary, and then the two slices. The estimate was of
+  the part that had already been measured, which is the easiest kind of estimate to be confident and
+  wrong about.
+
+#### What the table deliberately does not claim
+
+Two caveats pulling in opposite directions, stated separately rather than netted off into one
+comfortable number:
+
+* **Against the ratio.** Nothing is compressed, because `serve.mjs` serves no gzip — deliberately, so
+  both tools face identical transport. Newick is highly compressible, so a gzip column would narrow
+  the data ratio substantially. Not estimated; it needs measuring, and it is the first thing an
+  examiner should ask for.
+* **In favour of it.** The 27.5 KB includes a ~13 KB `datasets` catalogue whose size tracks **how many
+  comparisons the store holds**, not tree size. The benchmark store holds every ladder rung, so a
+  single-comparison deployment transfers closer to 15 KB — the real figure is about half what is
+  shown.
+
+Neither is large enough to disturb the shape, which is the finding: one side grows with the tree and
+the other does not.
 
 ---
 
