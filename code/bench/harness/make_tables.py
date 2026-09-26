@@ -232,9 +232,35 @@ if server:
     print("\n*The ~2 s floor at small sizes is the worker's poll interval, not "
           "work.*")
 
+scaling = load("thread_scaling.json")
+if scaling:
+    print("\n## Table 9 — Thread scaling of the parallel step\n")
+    print("**Only one step of the build is parallel**: the clade-correspondence "
+          "search. It is driven directly here rather than timed through a whole "
+          "build, which would dilute it with the single-threaded parse, "
+          "reconciliation and metric around it. "
+          f"{scaling['leaves']:,} leaves, best of {scaling['repeats']} runs.\n")
+    print("| threads | time | speedup | efficiency | result identical to 1 thread |")
+    print("|---:|---:|---:|---:|:--:|")
+    for r in scaling["rungs"]:
+        print(
+            f"| {r['threads']} | {r['seconds']:.2f} s | {r['speedup']:.2f}x | "
+            f"{r['efficiency']:.0%} | {'yes' if r['identical_to_single_thread'] else '**NO**'} |"
+        )
+    print("\n**The last column is the one that matters.** Each index's result "
+          "depends only on read-only inputs, so it must be bit-identical "
+          "whatever the thread count. A race here would not crash — it would "
+          "quietly return a slightly wrong best corresponding node, which no "
+          "timing figure would reveal.\n")
+    print("The knee is at **4 threads**, which is the number of performance "
+          "cores on this machine (10 cores, 4 of them performance). One to four "
+          "threads buys 3.37x at 84% efficiency; four to ten buys only another "
+          "1.69x and drops efficiency to 57%. On a shared machine 4 threads is "
+          "the better trade: 1.7x slower than 10, for 2.5x fewer cores.")
+
 memory = load("build_memory.json")
 if memory:
-    print("\n## Table 9 — What the server needs while it builds\n")
+    print("\n## Table 10 — What the server needs while it builds\n")
     print("Peak RSS of the worker process, sampled every 200 ms against its "
           f"idle baseline of {memory['idle_rss_mb']:,.0f} MB. Measured in a "
           "throwaway store so nothing else was disturbed.\n")
@@ -259,7 +285,7 @@ if memory:
 # --- 5e. the mechanism, directly ------------------------------------------
 latency = load("slice_latency.json", [])
 if latency:
-    print("\n## Table 10 — The request a panel actually makes\n")
+    print("\n## Table 11 — The request a panel actually makes\n")
     print("The **cause**, where every other table shows the consequence. The "
           "same GET the frontend issues, at every tree size, read-only. "
           "Latency and payload are set by the viewport budget, so neither "
@@ -282,7 +308,7 @@ if latency:
         "store memory-maps it.*")
 
 # --- 6. the honest ledger -------------------------------------------------
-print("\n## Table 11 — What the design costs\n")
+print("\n## Table 12 — What the design costs\n")
 print("| | phylo.io | PhyloDelta |")
 print("|---|---|---|")
 print("| Server required | no | **yes** |")
@@ -292,7 +318,7 @@ print("| Whole tree ever visible | yes, in memory | **no, never transferred** |"
 print("| Works offline from a file | yes | no |")
 print("| Comparison recomputed on demand | yes | no, fixed at build |")
 
-print("\n## Table 12 — Provenance of the test data\n")
+print("\n## Table 13 — Provenance of the test data\n")
 print("| rung | origin |")
 print("|---:|---|")
 print("| 1,000 – 10,000 | pruned subsamples of the real vibrio NJ/UPGMA pair |")

@@ -131,7 +131,25 @@ Measured through the real upload path: POST the bundle, a worker claims it, poll
 
 *The ~2 s floor at small sizes is the worker's poll interval, not work.*
 
-## Table 9 — What the server needs while it builds
+## Table 9 — Thread scaling of the parallel step
+
+**Only one step of the build is parallel**: the clade-correspondence search. It is driven directly here rather than timed through a whole build, which would dilute it with the single-threaded parse, reconciliation and metric around it. 70,580 leaves, best of 3 runs.
+
+| threads | time | speedup | efficiency | result identical to 1 thread |
+|---:|---:|---:|---:|:--:|
+| 1 | 13.20 s | 1.00x | 100% | yes |
+| 2 | 7.04 s | 1.88x | 94% | yes |
+| 3 | 5.01 s | 2.64x | 88% | yes |
+| 4 | 3.92 s | 3.37x | 84% | yes |
+| 6 | 3.03 s | 4.35x | 73% | yes |
+| 8 | 2.56 s | 5.15x | 64% | yes |
+| 10 | 2.31 s | 5.71x | 57% | yes |
+
+**The last column is the one that matters.** Each index's result depends only on read-only inputs, so it must be bit-identical whatever the thread count. A race here would not crash — it would quietly return a slightly wrong best corresponding node, which no timing figure would reveal.
+
+The knee is at **4 threads**, which is the number of performance cores on this machine (10 cores, 4 of them performance). One to four threads buys 3.37x at 84% efficiency; four to ten buys only another 1.69x and drops efficiency to 57%. On a shared machine 4 threads is the better trade: 1.7x slower than 10, for 2.5x fewer cores.
+
+## Table 10 — What the server needs while it builds
 
 Peak RSS of the worker process, sampled every 200 ms against its idle baseline of 69 MB. Measured in a throwaway store so nothing else was disturbed.
 
@@ -150,7 +168,7 @@ Peak RSS of the worker process, sampled every 200 ms against its idle baseline o
 | 282,320 | 44.3 s | 681 MB | **611 MB** | 1.90x |
 | 564,640 | 196.4 s | 1,271 MB | **1,201 MB** | 1.97x |
 
-## Table 10 — The request a panel actually makes
+## Table 11 — The request a panel actually makes
 
 The **cause**, where every other table shows the consequence. The same GET the frontend issues, at every tree size, read-only. Latency and payload are set by the viewport budget, so neither tracks the tree: **564x more leaves, the same few milliseconds and the same few kilobytes.**
 
@@ -169,7 +187,7 @@ The **cause**, where every other table shows the consequence. The same GET the f
 
 *From 1,000 to 564,640 leaves — a 565x increase — the median moves 3.8 ms to 2.9 ms and the payload 5.4 KB to 6.0 KB. Seven samples per rung after a warm-up, since the first touch of a store memory-maps it.*
 
-## Table 11 — What the design costs
+## Table 12 — What the design costs
 
 | | phylo.io | PhyloDelta |
 |---|---|---|
@@ -179,7 +197,7 @@ The **cause**, where every other table shows the consequence. The same GET the f
 | Works offline from a file | yes | no |
 | Comparison recomputed on demand | yes | no, fixed at build |
 
-## Table 12 — Provenance of the test data
+## Table 13 — Provenance of the test data
 
 | rung | origin |
 |---:|---|
