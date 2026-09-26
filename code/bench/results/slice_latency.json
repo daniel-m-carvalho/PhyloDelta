@@ -1,0 +1,92 @@
+[
+  {
+    "leaves": 1000,
+    "median_ms": 3.7921660114079714,
+    "min_ms": 3.1159999780356884,
+    "max_ms": 8.547374978661537,
+    "bytes": 5480,
+    "displayed_leaves": 50,
+    "total_leaves": 1000
+  },
+  {
+    "leaves": 2500,
+    "median_ms": 3.0453340150415897,
+    "min_ms": 2.8357909759506583,
+    "max_ms": 11.559374979697168,
+    "bytes": 5642,
+    "displayed_leaves": 50,
+    "total_leaves": 2500
+  },
+  {
+    "leaves": 5000,
+    "median_ms": 2.9147500172257423,
+    "min_ms": 2.878875005990267,
+    "max_ms": 3.1617500353604555,
+    "bytes": 5777,
+    "displayed_leaves": 50,
+    "total_leaves": 5000
+  },
+  {
+    "leaves": 10000,
+    "median_ms": 2.7709580026566982,
+    "min_ms": 2.7148749795742333,
+    "max_ms": 2.9201250290498137,
+    "bytes": 5776,
+    "displayed_leaves": 50,
+    "total_leaves": 10000
+  },
+  {
+    "leaves": 17645,
+    "median_ms": 3.2213330268859863,
+    "min_ms": 2.9767919913865626,
+    "max_ms": 3.9370000013150275,
+    "bytes": 7088,
+    "displayed_leaves": 50,
+    "total_leaves": 17645
+  },
+  {
+    "leaves": 35290,
+    "median_ms": 3.0528329662047327,
+    "min_ms": 2.8947090031579137,
+    "max_ms": 3.3089579665102065,
+    "bytes": 7045,
+    "displayed_leaves": 50,
+    "total_leaves": 35290
+  },
+  {
+    "leaves": 70580,
+    "median_ms": 2.8654999914579093,
+    "min_ms": 2.7279999922029674,
+    "max_ms": 3.407459007576108,
+    "bytes": 6972,
+    "displayed_leaves": 50,
+    "total_leaves": 70580
+  },
+  {
+    "leaves": 141160,
+    "median_ms": 3.248542023357004,
+    "min_ms": 2.873999997973442,
+    "max_ms": 34.65783398132771,
+    "bytes": 6851,
+    "displayed_leaves": 50,
+    "total_leaves": 141160
+  },
+  {
+    "leaves": 282320,
+    "median_ms": 3.1950409756973386,
+    "min_ms": 2.958500001113862,
+    "max_ms": 3.3900830312632024,
+    "bytes": 6615,
+    "displayed_leaves": 50,
+    "total_leaves": 282320
+  },
+  {
+    "leaves": 564640,
+    "median_ms": 2.9336660518310964,
+    "min_ms": 2.8793749515898526,
+    "max_ms": 3.0366670107468963,
+    "bytes": 6093,
+    "displayed_leaves": 50,
+    "total_leaves": 564640
+  }
+]

@@ -131,7 +131,26 @@ Measured through the real upload path: POST the bundle, a worker claims it, poll
 
 *The ~2 s floor at small sizes is the worker's poll interval, not work.*
 
-## Table 9 — What the design costs
+## Table 9 — The request a panel actually makes
+
+The **cause**, where every other table shows the consequence. The same GET the frontend issues, at every tree size, read-only. Latency and payload are set by the viewport budget, so neither tracks the tree: **564x more leaves, the same few milliseconds and the same few kilobytes.**
+
+| leaves | median | min | max | response | leaves drawn |
+|---:|---:|---:|---:|---:|---:|
+| 1,000 | **3.8 ms** | 3.1 ms | 8.5 ms | 5.4 KB | 50 |
+| 2,500 | **3.0 ms** | 2.8 ms | 11.6 ms | 5.5 KB | 50 |
+| 5,000 | **2.9 ms** | 2.9 ms | 3.2 ms | 5.6 KB | 50 |
+| 10,000 | **2.8 ms** | 2.7 ms | 2.9 ms | 5.6 KB | 50 |
+| 17,645 | **3.2 ms** | 3.0 ms | 3.9 ms | 6.9 KB | 50 |
+| 35,290 | **3.1 ms** | 2.9 ms | 3.3 ms | 6.9 KB | 50 |
+| 70,580 | **2.9 ms** | 2.7 ms | 3.4 ms | 6.8 KB | 50 |
+| 141,160 | **3.2 ms** | 2.9 ms | 34.7 ms | 6.7 KB | 50 |
+| 282,320 | **3.2 ms** | 3.0 ms | 3.4 ms | 6.5 KB | 50 |
+| 564,640 | **2.9 ms** | 2.9 ms | 3.0 ms | 6.0 KB | 50 |
+
+*From 1,000 to 564,640 leaves — a 565x increase — the median moves 3.8 ms to 2.9 ms and the payload 5.4 KB to 6.0 KB. Seven samples per rung after a warm-up, since the first touch of a store memory-maps it.*
+
+## Table 10 — What the design costs
 
 | | phylo.io | PhyloDelta |
 |---|---|---|
@@ -141,7 +160,7 @@ Measured through the real upload path: POST the bundle, a worker claims it, poll
 | Works offline from a file | yes | no |
 | Comparison recomputed on demand | yes | no, fixed at build |
 
-## Table 10 — Provenance of the test data
+## Table 11 — Provenance of the test data
 
 | rung | origin |
 |---:|---|

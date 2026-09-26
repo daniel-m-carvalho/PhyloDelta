@@ -232,8 +232,33 @@ if server:
     print("\n*The ~2 s floor at small sizes is the worker's poll interval, not "
           "work.*")
 
+# --- 5e. the mechanism, directly ------------------------------------------
+latency = load("slice_latency.json", [])
+if latency:
+    print("\n## Table 9 — The request a panel actually makes\n")
+    print("The **cause**, where every other table shows the consequence. The "
+          "same GET the frontend issues, at every tree size, read-only. "
+          "Latency and payload are set by the viewport budget, so neither "
+          "tracks the tree: **564x more leaves, the same few milliseconds and "
+          "the same few kilobytes.**\n")
+    print("| leaves | median | min | max | response | leaves drawn |")
+    print("|---:|---:|---:|---:|---:|---:|")
+    for r in latency:
+        print(
+            f"| {r['leaves']:,} | **{r['median_ms']:.1f} ms** | {r['min_ms']:.1f} ms | "
+            f"{r['max_ms']:.1f} ms | {r['bytes'] / 1024:.1f} KB | {r['displayed_leaves']} |"
+        )
+    first, last = latency[0], latency[-1]
+    print(
+        f"\n*From {first['leaves']:,} to {last['leaves']:,} leaves — a "
+        f"{last['leaves'] / first['leaves']:.0f}x increase — the median moves "
+        f"{first['median_ms']:.1f} ms to {last['median_ms']:.1f} ms and the "
+        f"payload {first['bytes'] / 1024:.1f} KB to {last['bytes'] / 1024:.1f} KB. "
+        "Seven samples per rung after a warm-up, since the first touch of a "
+        "store memory-maps it.*")
+
 # --- 6. the honest ledger -------------------------------------------------
-print("\n## Table 9 — What the design costs\n")
+print("\n## Table 10 — What the design costs\n")
 print("| | phylo.io | PhyloDelta |")
 print("|---|---|---|")
 print("| Server required | no | **yes** |")
@@ -243,7 +268,7 @@ print("| Whole tree ever visible | yes, in memory | **no, never transferred** |"
 print("| Works offline from a file | yes | no |")
 print("| Comparison recomputed on demand | yes | no, fixed at build |")
 
-print("\n## Table 10 — Provenance of the test data\n")
+print("\n## Table 11 — Provenance of the test data\n")
 print("| rung | origin |")
 print("|---:|---|")
 print("| 1,000 – 10,000 | pruned subsamples of the real vibrio NJ/UPGMA pair |")
