@@ -3385,7 +3385,10 @@ six samples** per rung after a discarded warm-up; phylo.io is a single sample, b
 rungs one sample costs ten minutes.
 
 **The backend uses 2 of those 10 cores** (`PHYLODELTA_THREADS=2`), which is the deployment setting
-and the one every build figure here reports. §34.8 is the measurement behind that choice. The
+and the one every build figure here reports. It became the deployment setting *late*: this paragraph
+claimed it while `docker-compose.yml` still set `0` in all three services, so the deployed system
+took every core and the numbers below described a configuration nobody was running (see
+Corrections). §34.8 is the measurement behind that choice. The
 machine is therefore never worked flat out in these numbers, and the server costs quoted are what a
 two-core deployment pays.
 
@@ -3589,8 +3592,9 @@ wastes a near-free doubling** — at 564,640 leaves it means 20 minutes of waiti
 So there is no single best value, and the decision belongs to the deployment rather than to the
 code: **latency** for one comparison favours more threads; **throughput** for a queue favours fewer
 per build and more builds at once, which is where the efficiency argument is straightforwardly
-right. `PHYLODELTA_THREADS` exists for exactly this, and the default stays "one per core" because a
-single researcher waiting on a single upload is the common case.
+right. `PHYLODELTA_THREADS` exists for exactly this. The *code* default stays "one per core", because a
+single researcher waiting on a single upload is the common case and a library should not quietly cap
+a dedicated machine; the *deployment* pins 2, because that is what these numbers describe.
 
 **The 564,640 row's ratios are not usable, and are reported as such.** Two threads appear to give
 2.44x — superlinear, therefore impossible for pure parallelism — while ten appear to *fall* to

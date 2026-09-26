@@ -15,7 +15,11 @@ services:
     environment:
       PHYLODELTA_STORE: /data/store
       PHYLODELTA_DATASETS: /data/datasets
-      PHYLODELTA_THREADS: "0"
+      # Two, like the others. A one-off seed could justify taking every core,
+      # but then the deployment's own build time would not be the figure this
+      # project reports — and watching it seed is the first thing anyone does
+      # with a fresh deployment.
+      PHYLODELTA_THREADS: "2"
     volumes:
       - phylodelta-data:/data/store
       - ./datasets:/data/datasets:ro
@@ -32,9 +36,10 @@ services:
     environment:
       PHYLODELTA_STORE: /data/store
       PHYLODELTA_DATASETS: /data/datasets
-      # 0 means one thread per core for the correspondence search. Set a
-      # number on a shared machine, where taking every core is unneighbourly.
-      PHYLODELTA_THREADS: "0"
+      # Two, matching the worker. The API does not run the correspondence
+      # search, so this only bites on a rebuild invoked through it; set here so
+      # one file gives one answer instead of three services disagreeing.
+      PHYLODELTA_THREADS: "2"
       # --- authentication -------------------------------------------------
       # `mock` attaches a hardcoded user to every request and checks nothing,
       # so the app runs with no identity provider. It is opt-in and the
@@ -97,7 +102,13 @@ services:
     environment:
       PHYLODELTA_STORE: /data/store
       PHYLODELTA_DATASETS: /data/datasets
-      PHYLODELTA_THREADS: "0"
+      # Two, not one per core. This is the service that runs the correspondence
+      # search, so this is the setting every measured build time describes: two
+      # threads give ~2x at 94% efficiency where ten give ~4.7x at 57%, so the
+      # further eight cores buy the last 2.3x at a steeply falling rate
+      # (DECISIONS §34.8, Table 9). It also leaves the machine usable, which
+      # matters when the API and the web container share it.
+      PHYLODELTA_THREADS: "2"
     volumes:
       # The same store the API serves from, read-write: this is the process
       # that writes it. Both containers must agree on the path, since the

@@ -70,7 +70,7 @@ a VM reachable only from the university network or through an SSH tunnel; it is
 not acceptable on the open internet. See `PHYLODELTA_AUTH=jwt` in
 `docker-compose.yml`.
 
-Set `PHYLODELTA_THREADS` to a number on a shared machine — `0` takes every core.
+`PHYLODELTA_THREADS` is set to **2** for all three services in `docker-compose.yml`. `0` would take every core, and the measured trade-off is that two threads give ~2x at 94% efficiency where ten give ~4.7x at 57% (DECISIONS §34.8). Two is also the setting every build time this project reports was measured at, so a deployment on the default would not behave like the documented one. Raise it if the machine is dedicated and single-comparison latency matters more than being a good neighbour.
 
 Deploying a new version:
 
