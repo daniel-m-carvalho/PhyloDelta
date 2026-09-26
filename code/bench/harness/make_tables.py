@@ -205,12 +205,14 @@ if repeats:
           "sub-second figures are at this harness's noise floor: a single "
           "sample per rung first reported 2.7 s and 3.6 s at the top two "
           "rungs, which no repeat could reproduce.\n")
-    print("| leaves | median | min | max | heap |")
-    print("|---:|---:|---:|---:|---:|")
+    print("| leaves | nodes | median | min | max | heap |")
+    print("|---:|---:|---:|---:|---:|---:|")
     for r in repeats:
+        nodes = r["leaves"] * 2 - 1
+        beyond = " *(beyond phylo.io — it crashes at 141,160)*" if r["leaves"] > 141160 else ""
         print(
-            f"| {r['leaves']:,} | **{r['median_ms'] / 1000:.2f} s** | "
-            f"{r['min_ms'] / 1000:.2f} s | {r['max_ms'] / 1000:.2f} s | {r['heap_mb']} MB |"
+            f"| {r['leaves']:,} | {nodes:,} | **{r['median_ms'] / 1000:.2f} s** | "
+            f"{r['min_ms'] / 1000:.2f} s | {r['max_ms'] / 1000:.2f} s | {r['heap_mb']} MB{beyond} |"
         )
 
 # --- 5d. the server side ---------------------------------------------------
@@ -246,7 +248,7 @@ print("| rung | origin |")
 print("|---:|---|")
 print("| 1,000 – 10,000 | pruned subsamples of the real vibrio NJ/UPGMA pair |")
 print("| 17,645 | **the real pair, unmodified** |")
-print("| 35,290 – 282,320 | nested relabelled copies of the real pair, preserving depth and imbalance |")
+print("| 35,290 – 564,640 | nested relabelled copies of the real pair, preserving depth and imbalance |")
 print("\n*Every rung verified as a genuine comparison pair: 100% shared leaf "
       "sets, depth 79 to 191. Real MLST data stops at 27,962 leaves "
       "(clostridium), so rungs above 17,645 are synthetic and are used only for "

@@ -99,17 +99,18 @@ Its own phase split. Parsing and drawing are cheap and near-linear; **the compar
 
 Six samples per rung after a discarded warm-up. Included because sub-second figures are at this harness's noise floor: a single sample per rung first reported 2.7 s and 3.6 s at the top two rungs, which no repeat could reproduce.
 
-| leaves | median | min | max | heap |
-|---:|---:|---:|---:|---:|
-| 1,000 | **0.62 s** | 0.48 s | 2.46 s | 3.6 MB |
-| 2,500 | **0.52 s** | 0.48 s | 2.69 s | 3.6 MB |
-| 5,000 | **0.61 s** | 0.45 s | 2.46 s | 3.6 MB |
-| 10,000 | **0.58 s** | 0.46 s | 1.61 s | 3.6 MB |
-| 17,645 | **0.61 s** | 0.47 s | 1.06 s | 3.6 MB |
-| 35,290 | **0.58 s** | 0.44 s | 0.73 s | 3.6 MB |
-| 70,580 | **0.59 s** | 0.42 s | 0.89 s | 3.6 MB |
-| 141,160 | **0.66 s** | 0.42 s | 2.16 s | 3.6 MB |
-| 282,320 | **0.53 s** | 0.44 s | 2.35 s | 3.6 MB |
+| leaves | nodes | median | min | max | heap |
+|---:|---:|---:|---:|---:|---:|
+| 1,000 | 1,999 | **0.62 s** | 0.48 s | 2.46 s | 3.6 MB |
+| 2,500 | 4,999 | **0.52 s** | 0.48 s | 2.69 s | 3.6 MB |
+| 5,000 | 9,999 | **0.61 s** | 0.45 s | 2.46 s | 3.6 MB |
+| 10,000 | 19,999 | **0.58 s** | 0.46 s | 1.61 s | 3.6 MB |
+| 17,645 | 35,289 | **0.61 s** | 0.47 s | 1.06 s | 3.6 MB |
+| 35,290 | 70,579 | **0.58 s** | 0.44 s | 0.73 s | 3.6 MB |
+| 70,580 | 141,159 | **0.59 s** | 0.42 s | 0.89 s | 3.6 MB |
+| 141,160 | 282,319 | **0.66 s** | 0.42 s | 2.16 s | 3.6 MB |
+| 282,320 | 564,639 | **0.53 s** | 0.44 s | 2.35 s | 3.6 MB *(beyond phylo.io — it crashes at 141,160)* |
+| 564,640 | 1,129,279 | **0.43 s** | 0.38 s | 0.97 s | 3.6 MB *(beyond phylo.io — it crashes at 141,160)* |
 
 ## Table 8 — The precompute PhyloDelta pays instead
 
@@ -126,6 +127,7 @@ Measured through the real upload path: POST the bundle, a worker claims it, poll
 | 70,580 | 0.0 s | 5.6 s | 5.6 s | 4.2 MB |
 | 141,160 | 0.0 s | 14.4 s | 14.4 s | 8.6 MB |
 | 282,320 | 0.1 s | 49.8 s | 49.9 s | 17.5 MB |
+| 564,640 | 0.1 s | 339.5 s | 339.7 s | 35.5 MB |
 
 *The ~2 s floor at small sizes is the worker's poll interval, not work.*
 
@@ -134,7 +136,7 @@ Measured through the real upload path: POST the bundle, a worker claims it, poll
 | | phylo.io | PhyloDelta |
 |---|---|---|
 | Server required | no | **yes** |
-| Precompute before first view | none | up to 50 s |
+| Precompute before first view | none | up to 340 s |
 | Whole tree ever visible | yes, in memory | **no, never transferred** |
 | Works offline from a file | yes | no |
 | Comparison recomputed on demand | yes | no, fixed at build |
@@ -145,6 +147,6 @@ Measured through the real upload path: POST the bundle, a worker claims it, poll
 |---:|---|
 | 1,000 – 10,000 | pruned subsamples of the real vibrio NJ/UPGMA pair |
 | 17,645 | **the real pair, unmodified** |
-| 35,290 – 282,320 | nested relabelled copies of the real pair, preserving depth and imbalance |
+| 35,290 – 564,640 | nested relabelled copies of the real pair, preserving depth and imbalance |
 
 *Every rung verified as a genuine comparison pair: 100% shared leaf sets, depth 79 to 191. Real MLST data stops at 27,962 leaves (clostridium), so rungs above 17,645 are synthetic and are used only for performance claims.*

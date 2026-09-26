@@ -144,6 +144,9 @@ def nest(arrays, copies: int, ladder_tag: str) -> str:
 
 def main() -> None:
     out = Path(sys.argv[1] if len(sys.argv) > 1 else "ladder")
+    # Optional explicit sizes, so a single new rung can be added without
+    # regenerating the eight that already exist.
+    wanted = [int(a) for a in sys.argv[2:]] or RUNGS
     out.mkdir(parents=True, exist_ok=True)
 
     left = parse_newick_file(LEFT)
@@ -155,7 +158,7 @@ def main() -> None:
     right_text = to_newick(right)
     base = len(shared)
 
-    for target in RUNGS:
+    for target in wanted:
         if target < base:
             random.seed(target)  # reproducible, and different per rung
             keep = set(random.sample(shared, target))

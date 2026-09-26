@@ -8,7 +8,7 @@
  * direct probe could not reproduce (~30ms for the same API burst). Reporting
  * that as a degradation would have invented a limit the design does not have.
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { launch } from "./browser.mjs";
@@ -31,7 +31,11 @@ const median = (xs) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
 console.log(`\n${"leaves".padStart(9)} | ${"median".padStart(7)} | ${"min-max".padStart(13)} | heap`);
 console.log("-".repeat(52));
 
-for (const rung of built.filter((r) => r.status === "ready")) {
+// An optional size argument measures one rung without re-running the others.
+const only = process.argv[2] ? Number(process.argv[2]) : null;
+const wanted = built.filter((r) => r.status === "ready" && (only === null || r.leaves === only));
+
+for (const rung of wanted) {
   const times = [];
   const heaps = [];
   const browser = await launch();
@@ -71,8 +75,15 @@ for (const rung of built.filter((r) => r.status === "ready")) {
     samples: times,
     heap_mb: +median(heaps).toFixed(1),
   };
+  // Merged into what is already there, so measuring one rung does not
+  // discard the other nine.
+  const file = join(BENCH, "results", "phylodelta_repeats.json");
+  const existing = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : [];
+  const merged = [...existing.filter((r) => r.leaves !== row.leaves), row].sort(
+    (a, b) => a.leaves - b.leaves,
+  );
   out.push(row);
-  writeFileSync(join(BENCH, "results", "phylodelta_repeats.json"), JSON.stringify(out, null, 2));
+  writeFileSync(file, JSON.stringify(merged, null, 2));
   console.log(
     `${rung.leaves.toLocaleString().padStart(9)} | ${(row.median_ms / 1000).toFixed(2).padStart(6)}s | ` +
       `${(row.min_ms / 1000).toFixed(2)}-${(row.max_ms / 1000).toFixed(2)}s`.padStart(13) +

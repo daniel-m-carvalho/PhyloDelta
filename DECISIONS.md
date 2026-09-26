@@ -28,7 +28,7 @@ rejected.
 
 The thesis claim is **client-side**. What is measured is the time and memory a *browser* spends
 presenting and navigating a comparison of two large phylogenetic trees, and how that scales towards
-500k+ nodes. Backend computation time and space are explicitly **not** the claim.
+500k+ **leaves** (~1M nodes). Stated in leaves because that is the unit of the data — a leaf is a taxon, an internal node is an inferred branch point — while noting nodes alongside, since the rendering cost is paid per node. Measured at **564,640 leaves / 1,129,279 nodes** (§32.2). Backend computation time and space are explicitly **not** the claim, but are reported anyway (§32.5).
 
 That single sentence determines the architecture. If the expensive work does not have to be fast,
 it should be moved off the request path entirely — computed once, offline, stored in a form that
@@ -3378,6 +3378,7 @@ PhyloDelta is doing, because a slice arrives with its similarity values already 
 | 17,645 | 9.3 s | **did not finish in 600 s** | 0.20 s | — |
 | 35,290 | 25.1 s | **did not finish in 600 s** | 0.19 s | — |
 | 70,580 – 282,320 | **failed** | **failed** | 0.57 / 0.34 / 0.94 s | — |
+| **564,640** *(1,129,279 nodes)* | **failed** | **failed** | **0.43 s** | — |
 
 **The claim this supports is narrower than "phylo.io cannot show trees this large", and is true.**
 It paints 35,290 leaves in 25 s. What it cannot do is *complete a comparison*: that stops finishing
@@ -3386,6 +3387,11 @@ data, at the edge of what the incumbent can do at all.
 
 Given 30 minutes and 16 GB instead of a 600 s budget, 141,160 and 282,320 **crash the renderer
 process** after 17.1 and 25.6 minutes, peaking at 10.7 and 9.7 GB.
+
+**The target scale is met and measured.** At **564,640 leaves / 1,129,279 nodes** — four times the
+size at which phylo.io crashes — PhyloDelta opens the comparison in a median **0.43 s** on 3.6 MB,
+over six samples, which is *faster* than several smaller rungs and confirms the curve is flat rather
+than merely shallow. Its server build cost 339.5 s, and that is in the table too.
 
 ### 32.3 The mechanism, which is not the one expected
 
@@ -3481,8 +3487,10 @@ rather than banking it:**
   whole-renderer RSS is the honest memory number.
 * **Peak RSS is sampled every 2 s**, so Table 4's figures are lower bounds and their ordering
   (10.7 GB at 141k vs 9.7 GB at 282k) should not be read as meaningful.
-* **Rungs above 17,645 leaves are synthetic.** Real MLST data stops at 27,962 (clostridium). They
-  are used for performance claims only, never for accuracy.
+* **Rungs above 17,645 leaves are synthetic** — nested relabelled copies of the real pair,
+  preserving depth and imbalance (564,640 leaves reaches depth 206/474). Real MLST data stops at
+  27,962 (clostridium). They are used for performance claims only, never for accuracy. The thesis
+  sentence must say *realistically-shaped synthetic trees*, not imply real data at that size.
 * **Accuracy measured to 5,000 leaves only**, because beyond that their comparison does not finish
   in a reasonable time — which is itself the point, but it does mean the miss-rate trend is
   established over a narrow range.

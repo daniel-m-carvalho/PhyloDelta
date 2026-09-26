@@ -66,7 +66,18 @@ def poll(comparison_id: str, limit: float) -> tuple[str, str | None]:
 def main() -> None:
     ladder = Path(sys.argv[1])
     rungs = sorted({int(p.name.split("-")[1]) for p in ladder.glob("ladder-*-a.nwk")})
-    out = []
+
+    # Already-built rungs are kept as they are. Rebuilding them would mint new
+    # comparison ids and break the link between server_build.json and the
+    # ceiling results that reference them.
+    target = Path(__file__).resolve().parents[2] / "bench" / "results" / "server_build.json"
+    out = json.loads(target.read_text()) if target.exists() else []
+    done = {r["leaves"] for r in out}
+    rungs = [r for r in rungs if r not in done]
+    if not rungs:
+        print("nothing new to build")
+        return
+    print("building:", ", ".join(f"{r:,}" for r in rungs))
 
     print(f"{'leaves':>9} {'upload':>8} {'build':>9} {'total':>9}  status")
     for leaves in rungs:
@@ -102,7 +113,7 @@ def main() -> None:
             f"{row['total_s']:>8.1f}s  {status}{f' — {error}' if error else ''}"
         )
 
-    target = Path(__file__).resolve().parents[2] / "bench" / "results" / "server_build.json"
+    out.sort(key=lambda r: r["leaves"])
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(out, indent=2))
     print(f"\nwritten to {target}")
