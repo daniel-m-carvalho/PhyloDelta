@@ -31,7 +31,7 @@
         //
         // The sub-phases are tool-specific by nature; the honest comparable
         // figure is `postFetch` — everything after the bytes arrive.
-        async load(leftUrl, rightUrl) {
+        async load(leftUrl, rightUrl, compareBudgetMs) {
           const t0 = performance.now();
           const [a, b] = await Promise.all([
             fetch(leftUrl).then((r) => r.text()),
@@ -58,6 +58,27 @@
           );
           const painted = performance.now();
 
+          /*
+           * Painting is NOT the end of the job in compare mode. The
+           * best-corresponding-node scores are computed in a Web Worker that
+           * `phylo.start()` only kicks off; `container.message_loader` holds
+           * the progress text and returns to null when it lands.
+           *
+           * Measuring only to paint compared their "two trees drawn" against
+           * this project's "comparison drawn", because a slice arrives with
+           * its similarity values already in it. Both numbers are reported so
+           * the difference is visible rather than assumed away.
+           */
+          let compared = null;
+          const deadline = performance.now() + (compareBudgetMs || 600000);
+          while (performance.now() < deadline) {
+            if (c1.message_loader === null || c1.message_loader === undefined) {
+              compared = performance.now();
+              break;
+            }
+            await new Promise((r) => setTimeout(r, 250));
+          }
+
           return {
             fetch: fetched - t0,
             parse: parsed - fetched,
@@ -65,6 +86,8 @@
             paint: painted - laidOut,
             postFetch: painted - fetched,
             total: painted - t0,
+            compareComplete: compared !== null,
+            toCompare: compared === null ? null : compared - fetched,
           };
         },
       };

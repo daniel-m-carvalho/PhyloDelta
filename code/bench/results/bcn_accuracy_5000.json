@@ -1,0 +1,15 @@
+{
+  "pair": "8af1aa65c99e__91df14b26367",
+  "leaves": 5000,
+  "compare_ms": 79160.5,
+  "clades_phyloio": 4999,
+  "clades_exact": 4999,
+  "joined": 4999,
+  "unjoinable": 0,
+  "comparable": 4994,
+  "exact_match": 4765,
+  "worse": 229,
+  "higher_than_exact": 0,
+  "gap_median": 0.10331382249530996,
+  "gap_worst": 0.6396551847457885
+}

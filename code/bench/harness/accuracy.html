@@ -67,29 +67,76 @@
 
           const started = performance.now();
           phylo.start();
+
+          /*
+           * Two things the obvious version gets wrong.
+           *
+           * 1. The scores are computed in a Web Worker and `api.js` then
+           *    builds a NEW Model, so `models[0]` is the original unscored
+           *    tree. `container.message_loader` carries the progress text and
+           *    is set back to null when the worker returns — that is the
+           *    completion signal, and waiting on it is the difference between
+           *    reading scores and reading an empty object.
+           * 2. `deepLeafList` does NOT exist on the rendered model; it lives
+           *    inside the worker. Leaf sets are therefore computed here from
+           *    the topology, which is also what makes the join to an exact
+           *    implementation trustworthy — it depends on the tree, not on a
+           *    private field.
+           */
+          for (let waited = 0; waited < 900_000; waited += 250) {
+            if (c1.message_loader === null || c1.message_loader === undefined) break;
+            await new Promise((r) => setTimeout(r, 250));
+          }
           const elapsed = performance.now() - started;
 
+          const root = (c1.viewer && c1.viewer.model && c1.viewer.model.data) || c1.models[0].data;
+
+          // Iterative post-order: these trees are ~180 deep at the small rungs
+          // and deeper as they grow, and recursion here risks a stack overflow
+          // in exactly the cases the thesis is about.
+          const order = [];
+          const stack = [root];
+          while (stack.length) {
+            const node = stack.pop();
+            order.push(node);
+            const kids = node.children || node.branchset || [];
+            for (const kid of kids) stack.push(kid);
+          }
+
+          const sets = new Map();
           const out = [];
           let scored = 0, unscored = 0;
-          const walk = (node) => {
-            const names = (node.deepLeafList || []).filter(isLeafName).sort();
-            const children = node.children || node.branchset || [];
-            if (children.length > 0 && names.length > 0) {
+
+          for (let i = order.length - 1; i >= 0; i--) {
+            const node = order[i];
+            const kids = node.children || node.branchset || [];
+            let names;
+            if (kids.length === 0) {
+              names = [node.name];
+            } else {
+              names = [];
+              for (const kid of kids) names = names.concat(sets.get(kid) || []);
+            }
+            sets.set(node, names);
+
+            if (kids.length > 0 && names.length > 0) {
               const scores = node.elementS ? Object.values(node.elementS) : [];
-              // No entry at all means LSH returned nothing usable for this
-              // clade — a total miss, distinct from a low score.
-              if (scores.length) { scored++; } else { unscored++; }
+              if (scores.length) scored++; else unscored++;
               out.push({
                 n: names.length,
-                k: fingerprint(names),
+                k: fingerprint([...names].sort()),
                 s: scores.length ? scores[0] : null,
               });
             }
-            children.forEach(walk);
-          };
-          walk(c1.models[0].data);
+          }
 
-          return { clades: out, scored, unscored, compare_ms: elapsed };
+          return {
+            clades: out,
+            scored,
+            unscored,
+            compare_ms: elapsed,
+            finished: c1.message_loader === null || c1.message_loader === undefined,
+          };
         },
       };
       window.__benchReady = true;

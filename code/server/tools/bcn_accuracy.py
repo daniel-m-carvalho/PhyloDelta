@@ -120,11 +120,15 @@ def main() -> None:
 
     comparable = ~np.isnan(lsh) & ~np.isnan(ex)
     gap = ex[comparable] - lsh[comparable]
-    # Floating point: both sides compute Jaccard in doubles from the same
-    # integers, so a true tie is exact to well within this.
-    tie = np.abs(gap) < 1e-9
-    worse = gap > 1e-9
-    better = gap < -1e-9
+    # The correspondence column is stored as **float32**, and phylo.io computes
+    # in float64, so a genuine tie differs by up to float32 epsilon (~1.2e-7).
+    # A 1e-9 tolerance reported 86 clades where the approximation beat an exact
+    # search — impossible by construction — and inflated the miss count from 29
+    # to 280. The largest such excess measured was 2.9e-8: all quantisation.
+    TOLERANCE = 1e-6
+    tie = np.abs(gap) < TOLERANCE
+    worse = gap > TOLERANCE
+    better = gap < -TOLERANCE
 
     n = int(comparable.sum())
     print(f"\ncomparable clades: {n:,}")
@@ -152,17 +156,23 @@ def main() -> None:
             if not band.any():
                 continue
             g = ex[band] - lsh[band]
-            miss = g > 1e-9
+            miss = g > TOLERANCE
             label = f"{lo}-{hi}" if hi < 10**9 else f"{lo}+"
             print(
                 f"    {label:>10} leaves: {int(band.sum()):>6,} clades, "
                 f"{miss.mean():>6.1%} missed, median gap {np.median(g[miss]) if miss.any() else 0:.4f}"
             )
 
-    out = Path(__file__).resolve().parents[2] / "bench" / "results" / "bcn_accuracy.json"
+    # One file per size, so a trend across rungs survives the next run rather
+    # than being overwritten by it.
+    bench = Path(__file__).resolve().parents[2] / "bench" / "results"
+    sizes = {r["id"]: r["leaves"] for r in json.loads((bench / "server_build.json").read_text())}
+    leaves = sizes.get(pair_id)
+    out = bench / f"bcn_accuracy_{leaves or pair_id}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps({
         "pair": pair_id,
+        "leaves": leaves,
         "compare_ms": extract.get("compare_ms"),
         "clades_phyloio": len(theirs),
         "clades_exact": len(exact),

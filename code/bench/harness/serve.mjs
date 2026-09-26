@@ -64,6 +64,21 @@ export function start(port = 8099) {
     }
 
     const url = decodeURIComponent(raw.split("?")[0]);
+
+    // phylo.io's bundle builds its workers with `new Worker(new URL(...,
+    // import.meta.url))`, which webpack resolves RELATIVE TO THE PAGE. The
+    // driver pages live under /harness/, so the chunks were requested at
+    // /harness/src_worker_*.phylo.js and 404'd — silently, because a failed
+    // Worker construction only shows up as a console error and the app simply
+    // never finishes computing. Mapped here so the comparison actually runs.
+    const worker = /^\/harness\/(src_worker_\w+\.phylo\.js)$/.exec(url);
+    if (worker) {
+      const chunk = join(PHYLOIO, "dist", worker[1]);
+      res.writeHead(200, { "Content-Type": "text/javascript", "Cache-Control": "no-store" });
+      createReadStream(chunk).pipe(res);
+      return;
+    }
+
     const prefix = Object.keys(ROOTS).find((p) => url.startsWith(p));
     // normalize() collapses any "..", so a crafted URL cannot escape the root.
     const file = prefix

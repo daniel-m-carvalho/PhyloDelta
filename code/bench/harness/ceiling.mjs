@@ -39,7 +39,10 @@ const BUDGET_MS = 180_000;
 //: Hard ceiling on one (tool, rung) attempt, INCLUDING instrumentation. The
 //: per-step Playwright timeouts do not cover a CDP call, which is how the
 //: first version stalled for 44 minutes inside a forced GC.
-const ATTEMPT_MS = 240_000;
+const ATTEMPT_MS = 660_000;
+
+//: How long phylo.io's comparison worker is given after it has painted.
+const COMPARE_MS = 600_000;
 
 /** Unbuffered: a run this long is useless if its progress is invisible. */
 function say(line) {
@@ -89,8 +92,8 @@ async function runPhyloio(rung) {
     await page.waitForFunction(() => window.__benchReady === true, undefined, { timeout: BUDGET_MS });
     return await measure(page, client, async () => {
       const phases = await page.evaluate(
-        ([a, b]) => window.__bench.load(a, b),
-        [`/trees/ladder/${rung.a}`, `/trees/ladder/${rung.b}`],
+        ([a, b, budget]) => window.__bench.load(a, b, budget),
+        [`/trees/ladder/${rung.a}`, `/trees/ladder/${rung.b}`, COMPARE_MS],
       );
       const drawn = await page.evaluate(() => ({
         svg: document.querySelectorAll("svg").length,
@@ -175,10 +178,16 @@ try {
     rows.push(row);
     // Appended as it goes: a run this long must survive being interrupted.
     appendFileSync(stream, JSON.stringify(row) + "\n");
-    const show = (r) =>
-      r.ok
-        ? `${(r.ms / 1000).toFixed(1)}s  ${String(r.heap_mb ?? "n/a").padStart(6)}MB`
-        : `FAIL ${r.failed}`.slice(0, 26);
+    const show = (r) => {
+      if (!r.ok) return `FAIL ${r.failed}`.slice(0, 30);
+      const paint = r.phases ? (r.phases.postFetch / 1000).toFixed(1) : (r.ms / 1000).toFixed(1);
+      const cmp = r.phases
+        ? r.phases.compareComplete
+          ? ` cmp ${(r.phases.toCompare / 1000).toFixed(0)}s`
+          : " cmp INCOMPLETE"
+        : "";
+      return `${paint}s ${String(r.heap_mb ?? "n/a").padStart(5)}MB${cmp}`;
+    };
     say(`${rung.leaves.toLocaleString().padStart(9)}  ${show(phyloio).padEnd(26)}  ${show(phylodelta)}`);
   }
 } finally {
