@@ -35,6 +35,7 @@ import {
   PIXELS_PER_LEAF,
   readableBudget,
   useSide,
+  type SideActions,
   type SideState,
 } from "./useSide";
 import { viewMetric } from "./metric";
@@ -245,6 +246,22 @@ function toViewport(container: HTMLElement, x: number, y: number) {
   return { x: box.left + x, y: box.top + y };
 }
 
+/**
+ * The benchmark harness's handle on a live comparison (see the effect below).
+ *
+ * Declared here rather than in a .d.ts so it sits beside the only code that
+ * writes it: a global whose declaration is somewhere else is a global nobody
+ * knows the owner of.
+ */
+declare global {
+  interface Window {
+    __phylodelta?: {
+      state: () => [SideState, SideState];
+      actions: () => [SideActions, SideActions];
+    };
+  }
+}
+
 export function ComparisonView({
   pair,
   initial,
@@ -376,6 +393,31 @@ export function ComparisonView({
   const sides = useRef<[SideState, SideState]>([left, right]);
   sides.current = [left, right];
 
+  /*
+   * A seam for the benchmark harness, and only for it.
+   *
+   * The navigation comparison has to drive both tools at the **same layer** or
+   * it measures different things and says it measured one. phylo.io's context
+   * menu item does `container.trigger_("collapse", …)`, so the harness calls
+   * `trigger_` directly; the fair counterpart here is the action the menu item
+   * calls — `focus`, `back`, `focusWithContext` — not a synthetic click on a
+   * WebGL canvas, which would add hit-testing to one side of the comparison
+   * and not the other.
+   *
+   * Exposed rather than hidden behind a dev-only flag because the benchmark
+   * measures the **shipping build** (`web/dist`, served by `bench/serve.mjs`);
+   * a hook compiled out of that build could not be used to measure it. It
+   * reads and moves the view, which is all the UI can already do.
+   */
+  useEffect(() => {
+    window.__phylodelta = {
+      state: () => sides.current,
+      actions: () => [leftActions, rightActions],
+    };
+    return () => {
+      delete window.__phylodelta;
+    };
+  }, [leftActions, rightActions]);
 
   const bothLoaded = Boolean(left.tree && right.tree);
 

@@ -28,6 +28,9 @@ endurance = load("endurance.json", [])
 #: Full builds at pinned thread counts. Table 8 reports the 2-thread column as
 #: the deployment setting; Table 9 compares all three.
 pinned = {n: load(f"thread_builds_{n}.json") for n in (1, 2)}
+navigation = load("navigation.json", {})
+metric_builds = load("metric_builds.json", {})
+metric_phases = load("metric_phases.json", {})
 rows = ceiling.get("rows", [])
 
 
@@ -296,7 +299,7 @@ if all(pinned.values()):
           "rather than the code: the single-threaded run took **20 minutes**, "
           "long enough for thermal state to drift, and this rung's 10-thread "
           "baseline is the disputed one (339.5 s here, 196.4 s in another "
-          "store — see DECISIONS §32.8). Against 196.4 s the 10-thread gain is "
+          "store — see DECISIONS §34.8). Against 196.4 s the 10-thread gain is "
           "6.11x and the trend continues. The absolute times stand; the ratios "
           "for this row do not.\n")
     print("**What to choose.** Two threads gives ~2x at 94% efficiency; ten "
@@ -444,3 +447,204 @@ print("\n*Every rung verified as a genuine comparison pair: 100% shared leaf "
       "sets, depth 79 to 191. Real MLST data stops at 27,962 leaves "
       "(clostridium), so rungs above 17,645 are synthetic and are used only for "
       "performance claims.*")
+
+
+# --- 7. navigating, once loaded -------------------------------------------
+nav_rows = navigation.get("rows", [])
+if nav_rows:
+    print("\n## Table 15 — Navigation responsiveness, once the comparison is open\n")
+    print("*Median milliseconds from the action to a painted result, "
+          f"{navigation.get('samples', 8)} operations per cell after a discarded warm-up.*\n")
+    print("| leaves | phylo.io expand | phylo.io back | phylo.io jump | "
+          "PhyloDelta expand | PhyloDelta back | PhyloDelta jump |")
+    print("|---:|---:|---:|---:|---:|---:|---:|")
+
+    #: Rungs where phylo.io never finished computing the comparison, from the
+    #: ceiling run. A tool with no comparison has nothing to navigate, and that
+    #: is a different statement from "navigation was slow" — the first harness
+    #: run reported it as "exceeded 900s", which reads as the second.
+    no_comparison = {
+        r["leaves"]
+        for r in rows
+        if not (r.get("phyloio", {}).get("phases") or {}).get("compareComplete")
+    }
+
+    def nav(cell, key, leaves=None, tool=None):
+        if tool == "phyloio" and leaves in no_comparison:
+            return "*no comparison*"
+        if not cell or cell.get("ok") is False:
+            return "**fails**"
+        got = cell.get(key) or {}
+        return fmt(got.get("median_ms"), " ms") if got.get("median_ms") is not None else "**fails**"
+
+    for row in nav_rows:
+        pi, pd = row.get("phyloio", {}), row.get("phylodelta", {})
+        n = row["leaves"]
+        print(f"| {n:,} | {nav(pi, 'expand', n, 'phyloio')} | {nav(pi, 'back', n, 'phyloio')} "
+              f"| {nav(pi, 'jump', n, 'phyloio')} "
+              f"| {nav(pd, 'expand')} | {nav(pd, 'back')} | {nav(pd, 'jump')} |")
+
+    print("\n**\"No comparison\" is not slow navigation.** phylo.io paints both trees at 17,645 "
+          "leaves but its best-corresponding-node worker never finishes there — Table 1 records "
+          "`compareComplete=False` against a 600 s budget — so in compare mode there is nothing to "
+          "navigate. Its navigation is therefore measurable only to **10,000 leaves**, where the "
+          "comparison completes in 199 s. PhyloDelta is measured at 17,645 anyway, because holding "
+          "flat is the claim.\n")
+    print("*The first harness run reported that cell as \"exceeded 900s\", which reads as \"its "
+          "navigation is slow\". It is not the same statement, and the distinction is the whole "
+          "point of the row.*\n")
+    print("**Both tools are driven one layer below the click** — phylo.io through "
+          "`container.trigger_(action, …)`, which is exactly what its context-menu items call, and "
+          "PhyloDelta through the actions its menu items call. Synthesising a click on a WebGL "
+          "canvas would have charged hit-testing to one side only. What is excluded is the same for "
+          "both: opening a menu and pressing an item.\n")
+    print("**The operations are not equivalent in what they reveal.** phylo.io holds the whole tree, "
+          "so it collapses and expands clades of up to 1,000 leaves and draws all of them. "
+          "PhyloDelta's targets are the wedges in the current slice — 309 leaves down to 41 — and "
+          "expanding one draws about fifty tips. phylo.io therefore does *more* drawing per "
+          "operation at these sizes and is still faster; that is a real result and not one to "
+          "explain away.\n")
+
+    # What the cache actually contributed, and where the time goes instead.
+    print("\n## Table 16 — Where a PhyloDelta navigation's time goes\n")
+    print("| leaves | expand total | of which fetch | back total | of which fetch | "
+          "back, cache emptied | of which fetch |")
+    print("|---:|---:|---:|---:|---:|---:|---:|")
+    for row in nav_rows:
+        pd = row.get("phylodelta", {})
+        if not pd.get("ok"):
+            continue
+        f = pd.get("fetch_ms", {})
+        cold = pd.get("uncached", {})
+        def med(o):
+            return fmt((o or {}).get("median_ms"), " ms")
+        print(f"| {row['leaves']:,} | {med(pd.get('expand'))} | {med(f.get('expand'))} "
+              f"| {med(pd.get('back'))} | {med(f.get('back'))} "
+              f"| {med(cold.get('back'))} | {med(f.get('cold_back'))} |")
+    print("\n*Cached and uncached are interleaved in one page against the same target, because "
+          "measuring them in separate browsers reported the uncached run as three times FASTER — "
+          "the first run was paying for a cold server and the second inherited a warm one. The "
+          "uncached pass runs first, so any residual warming works against the cache.*\n")
+    print("**The cache works and it barely matters.** On a hit the network cost of a navigation is "
+          "**0 ms**, which is the cache doing exactly its job — and the navigation takes the same "
+          "total time, because the round trip was never the cost. Roughly 42 ms of a ~49 ms "
+          "navigation is building the tree and drawing it. Every headline figure in Tables 1–14 was "
+          "measured with no caching at all, so they are a floor rather than a best case.\n")
+
+    # phylo.io's jump does not survive compare mode.
+    broken = [r for r in nav_rows
+              if (r.get("phyloio", {}).get("failure_count") or 0) > 0]
+    if broken:
+        first = broken[0]["phyloio"]["failures"][0]
+        print("\n### Table 15 note — phylo.io's \"Highlight BCN\" throws in compare mode\n")
+        print("Every attempt failed, at every rung, with the same error:\n")
+        print(f"> `{first.get('error')}`\n")
+        print("It is reached only from the context-menu item of that name "
+              "(`viewer.js` line 1175 is the sole caller), with the arguments used here, in "
+              "phylo.io 2.1.1. The cause is in `api.js`: the BCN worker's reply is used to build "
+              "**two separate models**, and the `elementBCN` references inside the first reply point "
+              "at that reply's own embedded copy of the second tree rather than at the model built "
+              "from it. `getHierarchyNodeFromModelNode` compares by object identity, finds nothing, "
+              "returns null, and `expandToRoot` passes that null to "
+              "`apply_collapse_from_data_to_d3`, which reads `_children` on it. The targets are "
+              "parentless, which is the visible symptom of being detached.\n")
+        print("Recorded with the mechanism because it is a claim about someone else's tool. It also "
+              "sharpens the comparison rather than softening it: the cross-tree jump is the "
+              "operation PhyloDelta's design is most open to criticism over — it costs an "
+              "`/ancestor` call and a slice the panel has never held — and it is the one the "
+              "comparison tool cannot complete at all.\n")
+
+
+# --- 8. does the metric change the cost? ----------------------------------
+phase_rows = metric_phases.get("rows", [])
+if phase_rows:
+    print("\n\n## Table 17 — Does the chosen metric change what a build costs?\n")
+    print("*Seconds, from the worker's own per-metric timings at "
+          "`PHYLODELTA_THREADS=2`. \"Shared\" is what every metric in a set pays "
+          "once: parse, reconcile, correspondence, store.*\n")
+    print("| leaves | shared work | rf | rf-treediff | triplet | total | metrics as % of total |")
+    print("|---:|---:|---:|---:|---:|---:|---:|")
+
+    def secs(value):
+        # `is not None`, not truthiness: a real 0.0 s must not print as "—".
+        return f"{value:,.1f} s" if value is not None else "—"
+
+    for row in phase_rows:
+        widest = max(row["builds"], key=lambda b: len(b["metrics"]))
+        per = widest.get("per_metric", {})
+
+        def one(name):
+            got = per.get(name)
+            if got is None:
+                return "—"
+            return "**refused**" if "failed" in got else secs(got.get("seconds"))
+
+        shared = widest.get("shared_s")
+        total = widest.get("total_s")
+        metric_sum = sum(
+            g["seconds"] for g in per.values() if isinstance(g, dict) and "seconds" in g
+        )
+        # The log resolves to 0.1 s, so a share computed from a sub-second build
+        # is quantisation, not a measurement: it printed "100%" at 2,500 leaves
+        # and "0%" at 1,000. Suppressed rather than shown as a number.
+        share = f"{metric_sum / total * 100:.0f}%" if total and total >= 1.0 else "*n/a*"
+        print(f"| {row['leaves']:,} | {secs(shared)} | {one('rf')} | {one('rf-treediff')} "
+              f"| {one('triplet')} | {secs(total)} | {share} |")
+
+    top = max(phase_rows, key=lambda r: r["leaves"])
+    top_widest = max(top["builds"], key=lambda b: len(b["metrics"]))
+    top_per = top_widest.get("per_metric", {})
+    cheap = sum(
+        top_per[m]["seconds"] for m in ("rf", "rf-treediff")
+        if isinstance(top_per.get(m), dict) and "seconds" in top_per[m]
+    )
+    trip = (top_per.get("triplet") or {}).get("seconds")
+    top_total = top_widest.get("total_s") or 0
+    trip_share = f"{trip / top_total * 100:.0f}%" if trip and top_total else "—"
+    print(f"\n**The answer reverses with size, so \"does the metric matter\" has no single "
+          f"answer.** `rf` and `rf-treediff` are free at every scale — together {cheap:,.1f} s of a "
+          f"{top_total:,.0f} s build at {top['leaves']:,} leaves. `triplet` is not: at 141,160 it "
+          f"costs 12.3 s against 14.8 s for all the shared work, very nearly doubling the build. By "
+          f"{top['leaves']:,} `triplet` alone has fallen back to {trip_share} of the build (the "
+          f"table's last column counts all three metrics together), because the shared work is "
+          f"O(n^2) and the metric is near-linear, so correspondence overtakes it.\n")
+    print("So §9's claim that several metrics cost little more than one is **true "
+          "asymptotically and misleading in the middle** — which is where most real trees sit. "
+          "The claim should be stated about the *shared* work, which is what is actually shared, "
+          "rather than about metrics in general.\n")
+    print("**Measured from the worker's log, not from wall-clock differences.** The three metric "
+          "sets are uploaded in a fixed order, so the \"+triplet\" build is always last, and the "
+          "first pass showed it at a suspiciously uniform 1.7-2x the others — the shape of an "
+          "ordering artefact rather than a cost. Per-metric timings carry no such confound.\n")
+    print("*Absolute shared-work times in this table come from a single freshly-built store in "
+          "one sitting and run lower than Table 9's for the same rung (256 s against 493 s at "
+          "564,640). That is the store-dependent variance already recorded in §34.9 and §34.11, "
+          "not a change in the code. What this table is for is the ratio within each row, which is "
+          "internally consistent.*\n")
+
+    # The cross-check, which matters more than either timing.
+    build_rows = metric_builds.get("rows", [])
+    agree, disagree = [], []
+    for row in build_rows:
+        for build in row["builds"]:
+            values = build.get("values", {})
+            a = (values.get("rf") or {}).get("summary", {}).get("rf")
+            b = (values.get("rf-treediff") or {}).get("summary", {}).get("rf")
+            if a is None or b is None:
+                continue
+            (agree if a == b else disagree).append((row["leaves"], a, b))
+    if agree or disagree:
+        print("\n## Table 18 — Two RF implementations against each other\n")
+        print("| leaves | built-in `rf` | `rf-treediff` | agree |")
+        print("|---:|---:|---:|:---:|")
+        seen = set()
+        for leaves, a, b in agree + disagree:
+            if leaves in seen:
+                continue
+            seen.add(leaves)
+            print(f"| {leaves:,} | {a:,.0f} | {b:,.0f} | {'yes' if a == b else '**NO**'} |")
+        print(f"\n*{len(agree)} of {len(agree) + len(disagree)} builds agree exactly.* "
+              "Different algorithms over different representations by different authors — "
+              "TreeDiff is the reference implementation of the paper this project follows (§1.10) "
+              "— so agreement at 1,129,279 nodes is a check on both, and a disagreement would "
+              "have meant one of them was wrong.\n")

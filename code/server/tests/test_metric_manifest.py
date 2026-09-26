@@ -147,3 +147,25 @@ def test_every_shipped_manifest_parses():
         assert m.directory is not None
         for column in m.outputs.columns:
             assert column.dtype
+
+
+def test_treediff_rf_refuses_a_weighted_distance():
+    """The shipped pattern must not accept a *weighted* RF as an RF.
+
+    `rf_postorder` prints "Weighted Robinson Foulds distance is: …" instead of
+    "Robinson Foulds distance is: …" as soon as its input carries branch
+    lengths — observed from 17,645 leaves up, where the generated ladder starts
+    including them. An unanchored pattern matches that line too, so the server
+    would have recorded 1.23e+06 as this pair's RF, alongside a built-in `rf`
+    of 6,825, with nothing saying which was wrong. The server writes this
+    metric's input without lengths, so it does not happen today; the anchor is
+    what stops it being a silent wrong answer if that ever changes.
+    """
+    import re
+
+    from phylodelta.metrics import registry
+
+    pattern = registry.discover()["rf-treediff"].raw["parse"]["scalars"][0]["pattern"]
+
+    assert re.search(pattern, "Robinson Foulds distance is: 6825").group(1) == "6825"
+    assert re.search(pattern, "Weighted Robinson Foulds distance is: 1.23025e+06") is None

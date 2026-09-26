@@ -1,0 +1,939 @@
+{
+  "api": "http://127.0.0.1:8014/api/v1",
+  "sets": [
+    [
+      "rf"
+    ],
+    [
+      "rf",
+      "rf-treediff"
+    ],
+    [
+      "rf",
+      "rf-treediff",
+      "triplet"
+    ]
+  ],
+  "rows": [
+    {
+      "leaves": 1000,
+      "builds": [
+        {
+          "metrics": [
+            "rf"
+          ],
+          "build_s": 2.05,
+          "status": "ready",
+          "error": null,
+          "id": "dac9113f595a__136825e158cd",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 531.0,
+                "rf_normalised": 0.26603206412825653,
+                "shared_clusters": 468,
+                "clusters_left": 999,
+                "clusters_right": 999,
+                "n_leaves": 1000
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff"
+          ],
+          "build_s": 2.04,
+          "status": "ready",
+          "error": null,
+          "id": "5dbc41e08eeb__905c5ffcdbe2",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 531.0,
+                "rf_normalised": 0.26603206412825653,
+                "shared_clusters": 468,
+                "clusters_left": 999,
+                "clusters_right": 999,
+                "n_leaves": 1000
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 531.0
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet"
+          ],
+          "build_s": 2.04,
+          "status": "ready",
+          "error": null,
+          "id": "26844af9a2c2__c785d3db73b5",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 531.0,
+                "rf_normalised": 0.26603206412825653,
+                "shared_clusters": 468,
+                "clusters_left": 999,
+                "clusters_right": 999,
+                "n_leaves": 1000
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 531.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 81869156
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "leaves": 2500,
+      "builds": [
+        {
+          "metrics": [
+            "rf"
+          ],
+          "build_s": 2.04,
+          "status": "ready",
+          "error": null,
+          "id": "625857987390__72612884a378",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 1219.0,
+                "rf_normalised": 0.24399519615692555,
+                "shared_clusters": 1280,
+                "clusters_left": 2499,
+                "clusters_right": 2499,
+                "n_leaves": 2500
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff"
+          ],
+          "build_s": 2.03,
+          "status": "ready",
+          "error": null,
+          "id": "7845636f59a1__f6e0be525d75",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 1219.0,
+                "rf_normalised": 0.24399519615692555,
+                "shared_clusters": 1280,
+                "clusters_left": 2499,
+                "clusters_right": 2499,
+                "n_leaves": 2500
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 1219.0
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet"
+          ],
+          "build_s": 2.55,
+          "status": "ready",
+          "error": null,
+          "id": "09ff3da5b9c5__2a51c67ee5ae",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 1219.0,
+                "rf_normalised": 0.24399519615692555,
+                "shared_clusters": 1280,
+                "clusters_left": 2499,
+                "clusters_right": 2499,
+                "n_leaves": 2500
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 1219.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 1250965641
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "leaves": 5000,
+      "builds": [
+        {
+          "metrics": [
+            "rf"
+          ],
+          "build_s": 2.04,
+          "status": "ready",
+          "error": null,
+          "id": "a34acdd9c0e9__a7d44be62095",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 2207.0,
+                "rf_normalised": 0.22078831532613044,
+                "shared_clusters": 2792,
+                "clusters_left": 4999,
+                "clusters_right": 4999,
+                "n_leaves": 5000
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff"
+          ],
+          "build_s": 2.04,
+          "status": "ready",
+          "error": null,
+          "id": "13e922a44c60__41e40f160b4b",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 2207.0,
+                "rf_normalised": 0.22078831532613044,
+                "shared_clusters": 2792,
+                "clusters_left": 4999,
+                "clusters_right": 4999,
+                "n_leaves": 5000
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 2207.0
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet"
+          ],
+          "build_s": 2.04,
+          "status": "ready",
+          "error": null,
+          "id": "94ab9748cad8__8a20f4383ccc",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 2207.0,
+                "rf_normalised": 0.22078831532613044,
+                "shared_clusters": 2792,
+                "clusters_left": 4999,
+                "clusters_right": 4999,
+                "n_leaves": 5000
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 2207.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 9632676049
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "leaves": 10000,
+      "builds": [
+        {
+          "metrics": [
+            "rf"
+          ],
+          "build_s": 2.55,
+          "status": "ready",
+          "error": null,
+          "id": "bf7b20ee1a5d__2e6679d0a03f",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 4113.0,
+                "rf_normalised": 0.20569113822764554,
+                "shared_clusters": 5886,
+                "clusters_left": 9999,
+                "clusters_right": 9999,
+                "n_leaves": 10000
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff"
+          ],
+          "build_s": 2.04,
+          "status": "ready",
+          "error": null,
+          "id": "5ad307711eff__120b16c6fc70",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 4113.0,
+                "rf_normalised": 0.20569113822764554,
+                "shared_clusters": 5886,
+                "clusters_left": 9999,
+                "clusters_right": 9999,
+                "n_leaves": 10000
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 4113.0
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet"
+          ],
+          "build_s": 2.55,
+          "status": "ready",
+          "error": null,
+          "id": "705a7e023e7e__ce96788e4545",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 4113.0,
+                "rf_normalised": 0.20569113822764554,
+                "shared_clusters": 5886,
+                "clusters_left": 9999,
+                "clusters_right": 9999,
+                "n_leaves": 10000
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 4113.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 77907165286
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "leaves": 17645,
+      "builds": [
+        {
+          "metrics": [
+            "rf"
+          ],
+          "build_s": 2.55,
+          "status": "ready",
+          "error": null,
+          "id": "30e1e9b6eca7__ad45d771fd15",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 6825.0,
+                "rf_normalised": 0.19341948648189083,
+                "shared_clusters": 10819,
+                "clusters_left": 17644,
+                "clusters_right": 17644,
+                "n_leaves": 17645
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff"
+          ],
+          "build_s": 2.55,
+          "status": "ready",
+          "error": null,
+          "id": "5d155498c8a3__91482b4554aa",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 6825.0,
+                "rf_normalised": 0.19341948648189083,
+                "shared_clusters": 10819,
+                "clusters_left": 17644,
+                "clusters_right": 17644,
+                "n_leaves": 17645
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 6825.0
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet"
+          ],
+          "build_s": 3.56,
+          "status": "ready",
+          "error": null,
+          "id": "e35bf980dcbf__5cc3dc99ae33",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 6825.0,
+                "rf_normalised": 0.19341948648189083,
+                "shared_clusters": 10819,
+                "clusters_left": 17644,
+                "clusters_right": 17644,
+                "n_leaves": 17645
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 6825.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 427072406574
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "leaves": 35290,
+      "builds": [
+        {
+          "metrics": [
+            "rf"
+          ],
+          "build_s": 3.57,
+          "status": "ready",
+          "error": null,
+          "id": "79536787f77a__cbb2537d795b",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 13650.0,
+                "rf_normalised": 0.193408524144185,
+                "shared_clusters": 21639,
+                "clusters_left": 35289,
+                "clusters_right": 35289,
+                "n_leaves": 35290
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff"
+          ],
+          "build_s": 3.06,
+          "status": "ready",
+          "error": null,
+          "id": "9c3fe68e2abc__aade6652543d",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 13650.0,
+                "rf_normalised": 0.193408524144185,
+                "shared_clusters": 21639,
+                "clusters_left": 35289,
+                "clusters_right": 35289,
+                "n_leaves": 35290
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 13650.0
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet"
+          ],
+          "build_s": 6.1,
+          "status": "ready",
+          "error": null,
+          "id": "7600f86bb1d7__ce4bf8050ed0",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 13650.0,
+                "rf_normalised": 0.193408524144185,
+                "shared_clusters": 21639,
+                "clusters_left": 35289,
+                "clusters_right": 35289,
+                "n_leaves": 35290
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 13650.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 854144813148
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "leaves": 70580,
+      "builds": [
+        {
+          "metrics": [
+            "rf"
+          ],
+          "build_s": 6.11,
+          "status": "ready",
+          "error": null,
+          "id": "357d08fad72a__a4488c442696",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 27300.0,
+                "rf_normalised": 0.193403043441299,
+                "shared_clusters": 43279,
+                "clusters_left": 70579,
+                "clusters_right": 70579,
+                "n_leaves": 70580
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff"
+          ],
+          "build_s": 6.61,
+          "status": "ready",
+          "error": null,
+          "id": "10339d53063c__95e1c81bfb20",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 27300.0,
+                "rf_normalised": 0.193403043441299,
+                "shared_clusters": 43279,
+                "clusters_left": 70579,
+                "clusters_right": 70579,
+                "n_leaves": 70580
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 27300.0
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet"
+          ],
+          "build_s": 12.15,
+          "status": "ready",
+          "error": null,
+          "id": "9e9a0d2361dd__4e2b2ef94664",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 27300.0,
+                "rf_normalised": 0.193403043441299,
+                "shared_clusters": 43279,
+                "clusters_left": 70579,
+                "clusters_right": 70579,
+                "n_leaves": 70580
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 27300.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 1708289626296
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "leaves": 141160,
+      "builds": [
+        {
+          "metrics": [
+            "rf"
+          ],
+          "build_s": 17.21,
+          "status": "ready",
+          "error": null,
+          "id": "f7989663b391__6d70fab39bfd",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 54600.0,
+                "rf_normalised": 0.19340030320633617,
+                "shared_clusters": 86559,
+                "clusters_left": 141159,
+                "clusters_right": 141159,
+                "n_leaves": 141160
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff"
+          ],
+          "build_s": 17.73,
+          "status": "ready",
+          "error": null,
+          "id": "34bd2e37ba76__af2c4f76e853",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 54600.0,
+                "rf_normalised": 0.19340030320633617,
+                "shared_clusters": 86559,
+                "clusters_left": 141159,
+                "clusters_right": 141159,
+                "n_leaves": 141160
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 54600.0
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet"
+          ],
+          "build_s": 29.9,
+          "status": "ready",
+          "error": null,
+          "id": "fafbf88dad64__dacff2668dc5",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 54600.0,
+                "rf_normalised": 0.19340030320633617,
+                "shared_clusters": 86559,
+                "clusters_left": 141159,
+                "clusters_right": 141159,
+                "n_leaves": 141160
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 54600.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 3416579252592
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "leaves": 282320,
+      "builds": [
+        {
+          "metrics": [
+            "rf"
+          ],
+          "build_s": 61.74,
+          "status": "ready",
+          "error": null,
+          "id": "1696504cde40__5a54115c4455",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 109200.0,
+                "rf_normalised": 0.19339893311797335,
+                "shared_clusters": 173119,
+                "clusters_left": 282319,
+                "clusters_right": 282319,
+                "n_leaves": 282320
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff"
+          ],
+          "build_s": 61.74,
+          "status": "ready",
+          "error": null,
+          "id": "db40612324cc__78b1796bb7e6",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 109200.0,
+                "rf_normalised": 0.19339893311797335,
+                "shared_clusters": 173119,
+                "clusters_left": 282319,
+                "clusters_right": 282319,
+                "n_leaves": 282320
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 109200.0
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet"
+          ],
+          "build_s": 87.58,
+          "status": "ready",
+          "error": null,
+          "id": "f08b7bed498f__4904f7280a5f",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 109200.0,
+                "rf_normalised": 0.19339893311797335,
+                "shared_clusters": 173119,
+                "clusters_left": 282319,
+                "clusters_right": 282319,
+                "n_leaves": 282320
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 109200.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 6833158505184
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "leaves": 564640,
+      "builds": [
+        {
+          "metrics": [
+            "rf"
+          ],
+          "build_s": 246.44,
+          "status": "ready",
+          "error": null,
+          "id": "2bf26154bbf9__8aa98b1d1603",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 218400.0,
+                "rf_normalised": 0.19339824808107142,
+                "shared_clusters": 346239,
+                "clusters_left": 564639,
+                "clusters_right": 564639,
+                "n_leaves": 564640
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff"
+          ],
+          "build_s": 249.09,
+          "status": "ready",
+          "error": null,
+          "id": "ce865b3b97c7__898ae37a61b3",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 218400.0,
+                "rf_normalised": 0.19339824808107142,
+                "shared_clusters": 346239,
+                "clusters_left": 564639,
+                "clusters_right": 564639,
+                "n_leaves": 564640
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 218400.0
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet"
+          ],
+          "build_s": 315.95,
+          "status": "ready",
+          "error": null,
+          "id": "c435362fbbd3__991749d936b0",
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 218400.0,
+                "rf_normalised": 0.19339824808107142,
+                "shared_clusters": 346239,
+                "clusters_left": 564639,
+                "clusters_right": 564639,
+                "n_leaves": 564640
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 218400.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 13666317010368
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

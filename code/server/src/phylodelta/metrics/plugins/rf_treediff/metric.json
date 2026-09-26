@@ -3,7 +3,11 @@
   "title": "Robinson-Foulds (TreeDiff)",
   "version": "1",
   "kind": "subprocess",
-  "command": ["${native}/TreeDiff/rf_postorder", "${left}", "${right}"],
+  "command": [
+    "${native}/TreeDiff/rf_postorder",
+    "${left}",
+    "${right}"
+  ],
   "input": {
     "format": "newick",
     "include_lengths": false
@@ -13,9 +17,10 @@
     "scalars": [
       {
         "key": "rf",
-        "pattern": "Robinson Foulds distance is:\\s*([0-9.eE+-]+)",
+        "pattern": "(?m)^Robinson Foulds distance is:\\s*([0-9.eE+-]+)",
         "type": "float",
-        "required": true
+        "required": true,
+        "description": "Should equal the built-in `rf` metric exactly. A disagreement means one of them is wrong. The pattern is anchored to the start of a line on purpose: `rf_postorder` switches to printing \"Weighted Robinson Foulds distance is:\" when its input carries branch lengths, and an unanchored pattern matches that line too \u2014 recording a weighted distance of 1.23e+06 as an RF of 6,825's kind. The server writes this metric's input without lengths, so it does not currently happen; anchoring makes it refuse rather than depend on that staying true."
       }
     ]
   },

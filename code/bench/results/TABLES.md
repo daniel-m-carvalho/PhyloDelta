@@ -168,7 +168,7 @@ Table 8 used the default — one thread per hardware thread, **10** on this mach
 
 **Read the middle rows.** From 35,290 to 282,320 the picture is clean and monotone: two threads rise 1.33x -> 2.01x, ten rise 2.00x -> 4.65x. The gain grows with size because below ~70,000 leaves the *serial* parts — parse, reconcile, ingest, and the 2 s poll — are most of the elapsed time, and threading the search cannot touch them. Amdahl's law, visible directly.
 
-**The 564,640 row should not be quoted as a ratio.** Two threads appear to give 2.44x, which is superlinear and therefore impossible for pure parallelism, and ten threads appear to *fall* to 3.54x, breaking an otherwise monotone trend. Both point at the machine rather than the code: the single-threaded run took **20 minutes**, long enough for thermal state to drift, and this rung's 10-thread baseline is the disputed one (339.5 s here, 196.4 s in another store — see DECISIONS §32.8). Against 196.4 s the 10-thread gain is 6.11x and the trend continues. The absolute times stand; the ratios for this row do not.
+**The 564,640 row should not be quoted as a ratio.** Two threads appear to give 2.44x, which is superlinear and therefore impossible for pure parallelism, and ten threads appear to *fall* to 3.54x, breaking an otherwise monotone trend. Both point at the machine rather than the code: the single-threaded run took **20 minutes**, long enough for thermal state to drift, and this rung's 10-thread baseline is the disputed one (339.5 s here, 196.4 s in another store — see DECISIONS §34.8). Against 196.4 s the 10-thread gain is 6.11x and the trend continues. The absolute times stand; the ratios for this row do not.
 
 **What to choose.** Two threads gives ~2x at 94% efficiency; ten gives ~4.7x at 57%. One thread wastes a near-free doubling. If efficiency is the objective, **two is the sweet spot** — but latency for a single comparison favours more threads, and throughput for a queue favours fewer per build with more builds at once. `PHYLODELTA_THREADS` exists so a deployment can choose; there is no single best value.
 
@@ -253,3 +253,95 @@ The **cause**, where every other table shows the consequence. The same GET the f
 | 35,290 – 564,640 | nested relabelled copies of the real pair, preserving depth and imbalance |
 
 *Every rung verified as a genuine comparison pair: 100% shared leaf sets, depth 79 to 191. Real MLST data stops at 27,962 leaves (clostridium), so rungs above 17,645 are synthetic and are used only for performance claims.*
+
+## Table 15 — Navigation responsiveness, once the comparison is open
+
+*Median milliseconds from the action to a painted result, 8 operations per cell after a discarded warm-up.*
+
+| leaves | phylo.io expand | phylo.io back | phylo.io jump | PhyloDelta expand | PhyloDelta back | PhyloDelta jump |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1,000 | 30.9 ms | 31.3 ms | **fails** | 49.6 ms | 49.0 ms | 47.6 ms |
+| 2,500 | 31.1 ms | 31.1 ms | **fails** | 49.2 ms | 49.3 ms | 49.3 ms |
+| 5,000 | 31.5 ms | 32.1 ms | **fails** | 49.2 ms | 49.3 ms | 49.8 ms |
+| 10,000 | 31.5 ms | 31.6 ms | **fails** | 49.3 ms | 49.2 ms | 49.3 ms |
+| 17,645 | *no comparison* | *no comparison* | *no comparison* | 49.2 ms | 49.3 ms | 49.3 ms |
+
+**"No comparison" is not slow navigation.** phylo.io paints both trees at 17,645 leaves but its best-corresponding-node worker never finishes there — Table 1 records `compareComplete=False` against a 600 s budget — so in compare mode there is nothing to navigate. Its navigation is therefore measurable only to **10,000 leaves**, where the comparison completes in 199 s. PhyloDelta is measured at 17,645 anyway, because holding flat is the claim.
+
+*The first harness run reported that cell as "exceeded 900s", which reads as "its navigation is slow". It is not the same statement, and the distinction is the whole point of the row.*
+
+**Both tools are driven one layer below the click** — phylo.io through `container.trigger_(action, …)`, which is exactly what its context-menu items call, and PhyloDelta through the actions its menu items call. Synthesising a click on a WebGL canvas would have charged hit-testing to one side only. What is excluded is the same for both: opening a menu and pressing an item.
+
+**The operations are not equivalent in what they reveal.** phylo.io holds the whole tree, so it collapses and expands clades of up to 1,000 leaves and draws all of them. PhyloDelta's targets are the wedges in the current slice — 309 leaves down to 41 — and expanding one draws about fifty tips. phylo.io therefore does *more* drawing per operation at these sizes and is still faster; that is a real result and not one to explain away.
+
+
+## Table 16 — Where a PhyloDelta navigation's time goes
+
+| leaves | expand total | of which fetch | back total | of which fetch | back, cache emptied | of which fetch |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1,000 | 49.6 ms | 6.8 ms | 49.0 ms | 0.0 ms | 48.8 ms | 7.8 ms |
+| 2,500 | 49.2 ms | 8.1 ms | 49.3 ms | 0.0 ms | 48.9 ms | 8.4 ms |
+| 5,000 | 49.2 ms | 8.1 ms | 49.3 ms | 0.0 ms | 47.7 ms | 7.9 ms |
+| 10,000 | 49.3 ms | 7.8 ms | 49.2 ms | 0.0 ms | 49.1 ms | 8.1 ms |
+| 17,645 | 49.2 ms | 6.6 ms | 49.3 ms | 0.0 ms | 49.0 ms | 6.7 ms |
+
+*Cached and uncached are interleaved in one page against the same target, because measuring them in separate browsers reported the uncached run as three times FASTER — the first run was paying for a cold server and the second inherited a warm one. The uncached pass runs first, so any residual warming works against the cache.*
+
+**The cache works and it barely matters.** On a hit the network cost of a navigation is **0 ms**, which is the cache doing exactly its job — and the navigation takes the same total time, because the round trip was never the cost. Roughly 42 ms of a ~49 ms navigation is building the tree and drawing it. Every headline figure in Tables 1–14 was measured with no caching at all, so they are a floor rather than a best case.
+
+
+### Table 15 note — phylo.io's "Highlight BCN" throws in compare mode
+
+Every attempt failed, at every rung, with the same error:
+
+> `Cannot read properties of null (reading '_children')`
+
+It is reached only from the context-menu item of that name (`viewer.js` line 1175 is the sole caller), with the arguments used here, in phylo.io 2.1.1. The cause is in `api.js`: the BCN worker's reply is used to build **two separate models**, and the `elementBCN` references inside the first reply point at that reply's own embedded copy of the second tree rather than at the model built from it. `getHierarchyNodeFromModelNode` compares by object identity, finds nothing, returns null, and `expandToRoot` passes that null to `apply_collapse_from_data_to_d3`, which reads `_children` on it. The targets are parentless, which is the visible symptom of being detached.
+
+Recorded with the mechanism because it is a claim about someone else's tool. It also sharpens the comparison rather than softening it: the cross-tree jump is the operation PhyloDelta's design is most open to criticism over — it costs an `/ancestor` call and a slice the panel has never held — and it is the one the comparison tool cannot complete at all.
+
+
+
+## Table 17 — Does the chosen metric change what a build costs?
+
+*Seconds, from the worker's own per-metric timings at `PHYLODELTA_THREADS=2`. "Shared" is what every metric in a set pays once: parse, reconcile, correspondence, store.*
+
+| leaves | shared work | rf | rf-treediff | triplet | total | metrics as % of total |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1,000 | 0.0 s | 0.0 s | 0.0 s | 0.0 s | 0.1 s | *n/a* |
+| 2,500 | 0.1 s | 0.0 s | 0.0 s | 0.1 s | 0.1 s | *n/a* |
+| 5,000 | 0.1 s | 0.0 s | 0.0 s | 0.1 s | 0.3 s | *n/a* |
+| 10,000 | 0.2 s | 0.0 s | 0.0 s | 0.4 s | 0.7 s | *n/a* |
+| 17,645 | 0.4 s | 0.0 s | 0.1 s | 1.1 s | 1.6 s | 75% |
+| 35,290 | 1.1 s | 0.1 s | 0.1 s | 2.6 s | 4.0 s | 70% |
+| 70,580 | 4.0 s | 0.1 s | 0.2 s | 5.8 s | 10.2 s | 60% |
+| 141,160 | 14.8 s | 0.2 s | 0.5 s | 12.3 s | 28.0 s | 46% |
+| 282,320 | 57.9 s | 0.5 s | 1.0 s | 25.5 s | 85.3 s | 32% |
+| 564,640 | 256.3 s | 1.0 s | 2.2 s | 53.6 s | 313.9 s | 18% |
+
+**The answer reverses with size, so "does the metric matter" has no single answer.** `rf` and `rf-treediff` are free at every scale — together 3.2 s of a 314 s build at 564,640 leaves. `triplet` is not: at 141,160 it costs 12.3 s against 14.8 s for all the shared work, very nearly doubling the build. By 564,640 `triplet` alone has fallen back to 17% of the build (the table's last column counts all three metrics together), because the shared work is O(n^2) and the metric is near-linear, so correspondence overtakes it.
+
+So §9's claim that several metrics cost little more than one is **true asymptotically and misleading in the middle** — which is where most real trees sit. The claim should be stated about the *shared* work, which is what is actually shared, rather than about metrics in general.
+
+**Measured from the worker's log, not from wall-clock differences.** The three metric sets are uploaded in a fixed order, so the "+triplet" build is always last, and the first pass showed it at a suspiciously uniform 1.7-2x the others — the shape of an ordering artefact rather than a cost. Per-metric timings carry no such confound.
+
+*Absolute shared-work times in this table come from a single freshly-built store in one sitting and run lower than Table 9's for the same rung (256 s against 493 s at 564,640). That is the store-dependent variance already recorded in §34.9 and §34.11, not a change in the code. What this table is for is the ratio within each row, which is internally consistent.*
+
+
+## Table 18 — Two RF implementations against each other
+
+| leaves | built-in `rf` | `rf-treediff` | agree |
+|---:|---:|---:|:---:|
+| 1,000 | 531 | 531 | yes |
+| 2,500 | 1,219 | 1,219 | yes |
+| 5,000 | 2,207 | 2,207 | yes |
+| 10,000 | 4,113 | 4,113 | yes |
+| 17,645 | 6,825 | 6,825 | yes |
+| 35,290 | 13,650 | 13,650 | yes |
+| 70,580 | 27,300 | 27,300 | yes |
+| 141,160 | 54,600 | 54,600 | yes |
+| 282,320 | 109,200 | 109,200 | yes |
+| 564,640 | 218,400 | 218,400 | yes |
+
+*20 of 20 builds agree exactly.* Different algorithms over different representations by different authors — TreeDiff is the reference implementation of the paper this project follows (§1.10) — so agreement at 1,129,279 nodes is a check on both, and a disagreement would have meant one of them was wrong.
+
