@@ -9,8 +9,8 @@
 | Browser | Chrome 154.0.8037.58, **headless**, system Chrome via Playwright's `channel: "chrome"` |
 | Browser flags | `--js-flags=--max-old-space-size=8192`, `--disable-dev-shm-usage` — **both tools, identically** |
 | Viewport | 1440 x 900; Table 21 varies the height |
-| **Tool compared against** | **phylo.io 2.1.1**, its own prebuilt `dist/`, unmodified |
-| This project | commit `8ed3ca6` |
+| **Tool compared against** | **phylo.io 2.1.1**, its own prebuilt `dist/`, unmodified; findings re-checked against **2.2.5** (see the Table 15 note) |
+| This project | commit `4f553df + uncommitted changes` |
 | Runtimes | Python 3.12.14 (`uv`), Node 26.3.0, Playwright 1.63.0 |
 | Backend database | SQLite, in the store directory |
 | Store location | `/private/tmp/...` — an APFS SSD volume, **not** a RAM disk |
@@ -392,15 +392,26 @@ The **cause**, where every other table shows the consequence. The same GET the f
 **The cache works and it barely matters.** On a hit the network cost of a navigation is **0 ms**, which is the cache doing exactly its job — and the navigation takes the same total time, because the round trip was never the cost. Roughly 42 ms of a ~49 ms navigation is building the tree and drawing it. Every headline figure in Tables 1–14 was measured with no caching at all, so they are a floor rather than a best case.
 
 
-### Table 15 note — phylo.io's "Highlight BCN" throws in compare mode
+### Table 15 note — phylo.io's "Highlight BCN" is intermittent
 
-Every attempt failed, at every rung, with the same error:
+Every attempt failed in the navigation run above, at every rung, with the same error:
 
 > `Cannot read properties of null (reading '_children')`
 
-It is reached only from the context-menu item of that name (`viewer.js` line 1175 is the sole caller), with the arguments used here, in phylo.io 2.1.1. The cause is in `api.js`: the BCN worker's reply is used to build **two separate models**, and the `elementBCN` references inside the first reply point at that reply's own embedded copy of the second tree rather than at the model built from it. `getHierarchyNodeFromModelNode` compares by object identity, finds nothing, returns null, and `expandToRoot` passes that null to `apply_collapse_from_data_to_d3`, which reads `_children` on it. The targets are parentless, which is the visible symptom of being detached.
+**But "always" was n=1 page load per rung, and the failure is intermittent.** A dedicated probe over repeated loads of the same pair at 1,000 leaves:
 
-Recorded with the mechanism because it is a claim about someone else's tool. It also sharpens the comparison rather than softening it: the cross-tree jump is the operation PhyloDelta's design is most open to criticism over — it costs an `/ancestor` call and a slice the panel has never held — and it is the one the comparison tool cannot complete at all.
+| phylo.io | page loads | loads where the jump worked | attempts succeeded |
+|---|---:|---:|---:|
+| 2.1.1 | 8 | 0 | 0/80 |
+| 2.2.5 | 8 | 1 | 10/80 |
+
+It is **decided per page load and then holds for that load** — a load either fails on every node tried or succeeds on every node tried. So the honest claim is that the jump fails in most loads, not that it never works, and Table 15 reports one load per rung, which is why it shows only the common outcome.
+
+**The mechanism, and why it is conditional.** It is reached only from the context-menu item of that name (`viewer.js` line 1175 is the sole caller). `api.js` builds **two separate models** from the BCN worker's reply, and the `elementBCN` references inside the first point at that reply's own embedded copy of the second tree. `getHierarchyNodeFromModelNode` compares by object identity, so whether it finds anything depends on whether structured-clone identity between the two halves of one message survives into the rebuilt models — which is evidently not guaranteed. When it does not, the lookup returns null and `expandToRoot` hands that null to `apply_collapse_from_data_to_d3`, which reads `_children` on it.
+
+**Not a version problem.** Checked against **2.2.5** (2026-01-30) as well as the 2.1.1 used elsewhere here: `api.js` and `worker_bcn.js` are unchanged between them, all four functions in this path are byte-identical, and the measured rates match. The 2.1.1 figures in these tables are not stale on this point.
+
+It still sharpens the comparison rather than softening it: the cross-tree jump is the operation PhyloDelta's design is most open to criticism over — it costs an `/ancestor` call and a slice the panel has never held — and it is the one the comparison tool manages only sometimes.
 
 
 

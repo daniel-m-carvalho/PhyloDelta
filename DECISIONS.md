@@ -3806,9 +3806,16 @@ Two consequences worth stating plainly. The cache is **not** a performance impro
 so; it removes a needless request. And every figure in Tables 1–14 was measured with no caching at
 all, which makes them a floor rather than a best case.
 
-#### phylo.io's cross-tree jump does not work in compare mode
+#### phylo.io's cross-tree jump works only sometimes
 
-Every attempt failed, at every rung, with `Cannot read properties of null (reading '_children')`.
+Every attempt failed, at every rung, with `Cannot read properties of null (reading '_children')` —
+and that was **n=1 page load per rung**, which turned out to matter. A probe over repeated loads of
+one pair found the outcome is decided **per load** and then holds for that load: a load either fails
+on every node tried or succeeds on every node tried. Over eight loads each, 2.1.1 failed in all
+eight and 2.2.5 in seven.
+
+So the claim is "fails in most loads", not "does not work". The first version of this section said
+the latter, from a run that could not have distinguished them.
 
 The mechanism, because this is a claim about someone else's tool. `api.js` builds **two separate
 models** from the BCN worker's reply — `new Model(e.data[0].data, …)` and `new Model(e.data[1].data,
@@ -3818,10 +3825,21 @@ identity, finds nothing, and returns null; `expandToRoot` hands that null to
 `apply_collapse_from_data_to_d3`, which reads `_children` on it. The target objects are parentless,
 which is the observable symptom of being detached from either model.
 
+Which also explains why it is conditional. Identity between the two halves of one worker message is
+a property of how the structured clone is rebuilt, not something the code establishes — so it
+sometimes survives into the new models and the lookup finds its target.
+
 Checked rather than assumed: the menu item "Highlight BCN" at `viewer.js` line 1175 is the **only**
 caller of that action, it is invoked with the arguments used here, and the failure reproduces on an
 untouched freshly-loaded pair — so it is not an artefact of the harness having collapsed something
-first. phylo.io 2.1.1.
+first.
+
+**And checked against the current release.** The comparison used 2.1.1 (a 2025-07-02 checkout);
+**2.2.5** shipped 2026-01-30, three releases later. `api.js` and `worker_bcn.js` are unchanged between
+them, the BCN branch of `trigger_`, `expandToRoot`, `getHierarchyNodeFromModelNode` and
+`apply_collapse_from_data_to_d3` are byte-identical, and the measured rates match. The only real
+differences are a collapse-by-colour feature in `container.js` and colour palettes in `model.js`.
+Nothing here is stale, and nothing else in §34 needed re-running for the version.
 
 This sharpens the comparison rather than softening it. The cross-tree jump is the operation this
 design is most open to criticism over: the counterpart is in the other tree, the panel has never held
@@ -4283,6 +4301,17 @@ only, never an oracle. Milestone 2 validates against the 200 published pairs in 
 `distance_testing.json`, cross-checked against `phangorn::RF.dist` and against `TreeDiff`, the
 reference C++ implementation of the paper in §1.10 — the closest thing available to an authoritative
 oracle, being by the authors of the algorithm being followed.
+
+**"phylo.io's cross-tree jump does not work."** Too strong, and asserted from one page load per
+rung. It fails in *most* loads, not all: the outcome is fixed per load — every node in a load behaves
+the same way — so a single load can only ever report one of the two behaviours, and reporting nine of
+them as "always" was reading n=1 as a rate. The mechanism described was right; the frequency was
+invented. Measured properly at 1 success in 16 loads across two versions, and the write-up now says
+"only sometimes".
+
+The lesson is the one already written at the top of this file, met again: an assertion should encode
+the promise being made. "Every attempt failed" was true of what was run and false as a claim about
+the tool.
 
 **"There is no cache."** Said twice, about code that was present, exported and tested. The first
 answer rested on a `grep` whose `--include=*.ts` zsh had expanded and failed on — the shell's error

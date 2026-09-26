@@ -1,0 +1,52 @@
+{
+  "label": "2.1.1",
+  "browser": "Chrome 154.0.8037.58",
+  "leaves": 1000,
+  "loads": 8,
+  "loads_with_any_success": 0,
+  "loads_all_failed": 8,
+  "attempts_total": 80,
+  "attempts_succeeded": 0,
+  "per_load": [
+    {
+      "completed": true,
+      "attempted": 10,
+      "succeeded": 0
+    },
+    {
+      "completed": true,
+      "attempted": 10,
+      "succeeded": 0
+    },
+    {
+      "completed": true,
+      "attempted": 10,
+      "succeeded": 0
+    },
+    {
+      "completed": true,
+      "attempted": 10,
+      "succeeded": 0
+    },
+    {
+      "completed": true,
+      "attempted": 10,
+      "succeeded": 0
+    },
+    {
+      "completed": true,
+      "attempted": 10,
+      "succeeded": 0
+    },
+    {
+      "completed": true,
+      "attempted": 10,
+      "succeeded": 0
+    },
+    {
+      "completed": true,
+      "attempted": 10,
+      "succeeded": 0
+    }
+  ]
+}

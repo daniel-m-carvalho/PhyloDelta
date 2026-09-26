@@ -111,6 +111,8 @@ metric_phases = load("metric_phases.json", {})
 transfer = load("transfer.json", {})
 transfer_gzip = load("transfer_gzip.json", {})
 viewport = load("viewport.json", {})
+bcn_211 = load("phyloio_bcn_2.1.1.json", {})
+bcn_225 = load("phyloio_bcn_2.2.5.json", {})
 rows = ceiling.get("rows", [])
 
 
@@ -202,7 +204,7 @@ print("| Browser flags | `--js-flags=--max-old-space-size=8192`, "
 print(f"| Viewport | {ceiling.get('viewport', {}).get('width', 1440)} x "
       f"{ceiling.get('viewport', {}).get('height', 900)}; Table 21 varies the height |")
 print("| **Tool compared against** | **phylo.io 2.1.1**, its own prebuilt `dist/`, "
-      "unmodified |")
+      "unmodified; findings re-checked against **2.2.5** (see the Table 15 note) |")
 print(f"| This project | commit `{_commit()}` |")
 print("| Runtimes | Python 3.12.14 (`uv`), Node 26.3.0, Playwright 1.63.0 |")
 print("| Backend database | SQLite, in the store directory |")
@@ -752,23 +754,41 @@ if nav_rows:
               if (r.get("phyloio", {}).get("failure_count") or 0) > 0]
     if broken:
         first = broken[0]["phyloio"]["failures"][0]
-        print("\n### Table 15 note — phylo.io's \"Highlight BCN\" throws in compare mode\n")
-        print("Every attempt failed, at every rung, with the same error:\n")
+        print("\n### Table 15 note — phylo.io's \"Highlight BCN\" is intermittent\n")
+        print("Every attempt failed in the navigation run above, at every rung, with the same "
+              "error:\n")
         print(f"> `{first.get('error')}`\n")
-        print("It is reached only from the context-menu item of that name "
-              "(`viewer.js` line 1175 is the sole caller), with the arguments used here, in "
-              "phylo.io 2.1.1. The cause is in `api.js`: the BCN worker's reply is used to build "
-              "**two separate models**, and the `elementBCN` references inside the first reply point "
-              "at that reply's own embedded copy of the second tree rather than at the model built "
-              "from it. `getHierarchyNodeFromModelNode` compares by object identity, finds nothing, "
-              "returns null, and `expandToRoot` passes that null to "
-              "`apply_collapse_from_data_to_d3`, which reads `_children` on it. The targets are "
-              "parentless, which is the visible symptom of being detached.\n")
-        print("Recorded with the mechanism because it is a claim about someone else's tool. It also "
-              "sharpens the comparison rather than softening it: the cross-tree jump is the "
-              "operation PhyloDelta's design is most open to criticism over — it costs an "
+        print("**But \"always\" was n=1 page load per rung, and the failure is intermittent.** A "
+              "dedicated probe over repeated loads of the same pair at 1,000 leaves:\n")
+        if bcn_211 or bcn_225:
+            print("| phylo.io | page loads | loads where the jump worked | attempts succeeded |")
+            print("|---|---:|---:|---:|")
+            for d in (bcn_211, bcn_225):
+                if d:
+                    print(f"| {d['label']} | {d['loads']} | {d['loads_with_any_success']} "
+                          f"| {d['attempts_succeeded']}/{d['attempts_total']} |")
+            print()
+        print("It is **decided per page load and then holds for that load** — a load either fails "
+              "on every node tried or succeeds on every node tried. So the honest claim is that the "
+              "jump fails in most loads, not that it never works, and Table 15 reports one load per "
+              "rung, which is why it shows only the common outcome.\n")
+        print("**The mechanism, and why it is conditional.** It is reached only from the "
+              "context-menu item of that name (`viewer.js` line 1175 is the sole caller). `api.js` "
+              "builds **two separate models** from the BCN worker's reply, and the `elementBCN` "
+              "references inside the first point at that reply's own embedded copy of the second "
+              "tree. `getHierarchyNodeFromModelNode` compares by object identity, so whether it "
+              "finds anything depends on whether structured-clone identity between the two halves "
+              "of one message survives into the rebuilt models — which is evidently not "
+              "guaranteed. When it does not, the lookup returns null and `expandToRoot` hands that "
+              "null to `apply_collapse_from_data_to_d3`, which reads `_children` on it.\n")
+        print("**Not a version problem.** Checked against **2.2.5** (2026-01-30) as well as the "
+              "2.1.1 used elsewhere here: `api.js` and `worker_bcn.js` are unchanged between them, "
+              "all four functions in this path are byte-identical, and the measured rates match. "
+              "The 2.1.1 figures in these tables are not stale on this point.\n")
+        print("It still sharpens the comparison rather than softening it: the cross-tree jump is "
+              "the operation PhyloDelta's design is most open to criticism over — it costs an "
               "`/ancestor` call and a slice the panel has never held — and it is the one the "
-              "comparison tool cannot complete at all.\n")
+              "comparison tool manages only sometimes.\n")
 
 
 # --- 8. does the metric change the cost? ----------------------------------
