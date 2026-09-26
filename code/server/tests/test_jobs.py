@@ -386,3 +386,125 @@ def test_undeclared_species_is_reported_as_unknown_not_as_matching(client, store
     ).json()
     assert body["same_species"] is None
     assert "not declared" in body["caution"]
+
+
+# --- a metric that fails is not a failed comparison, but it is not silent ----
+
+def _upload_asking_for(client, metrics: str, owner: str = "alice") -> str:
+    response = client.post(
+        "/api/v1/comparisons",
+        files={
+            "left_tree": ("nj.nwk", io.BytesIO(LEFT)),
+            "right_tree": ("upgma.nwk", io.BytesIO(RIGHT)),
+        },
+        data={"metrics": metrics},
+        headers={AUTH_HEADER: owner},
+    )
+    assert response.status_code == 202, response.text
+    return response.json()["id"]
+
+
+def _break_triplet(monkeypatch, reason: str) -> None:
+    """Make `triplet` refuse, leaving `rf` alone.
+
+    Patched on `jobs`, not on `pipeline`: `jobs` does `from .pipeline import
+    load_metrics`, so the name it calls is its own. Patching the pipeline's
+    attribute would have left the worker calling the real one and the test
+    passing for the wrong reason.
+    """
+    from phylodelta.metrics.runners import MetricFailed
+    from phylodelta.precompute import jobs as runner
+
+    real = runner.load_metrics
+
+    def with_a_broken_metric(wanted):
+        manifests, loaded = real(wanted)
+
+        def refuse(prepared):
+            raise MetricFailed(reason)
+
+        return manifests, {**loaded, "triplet": refuse}
+
+    monkeypatch.setattr(runner, "load_metrics", with_a_broken_metric)
+
+
+def test_a_failing_metric_leaves_the_comparison_ready(client, store, monkeypatch):
+    """One metric of two failing must not throw away the other, or the pair.
+
+    Correspondence is minutes on a large pair and is shared by every metric
+    (§9), so refusing the whole upload because one metric could not run would
+    discard work that is perfectly good.
+    """
+    from phylodelta.precompute.jobs import process_next
+
+    _break_triplet(monkeypatch, "metric 'triplet' produced no match for 'triplet'")
+    comparison_id = _upload_asking_for(client, "rf,triplet")
+    assert process_next("w1") is True
+
+    status = client.get(
+        f"/api/v1/comparisons/{comparison_id}/status", headers={AUTH_HEADER: "alice"}
+    ).json()
+    assert status["status"] == "ready" and status["ready"] is True
+    assert status["error"] is None, "the comparison did not fail; one metric did"
+
+    # And the metric that worked is genuinely servable.
+    body = client.get(
+        f"/api/v1/comparisons/{comparison_id}?metric=rf", headers={AUTH_HEADER: "alice"}
+    )
+    assert body.status_code == 200
+
+
+def test_a_failing_metric_is_named_with_its_reason(client, store, monkeypatch):
+    """The gap this closes.
+
+    Before, the pipeline logged the refusal to stderr and carried on: the row
+    went `ready`, `error` was null, and the metric was simply absent. Asking for
+    `triplet` and getting a comparison without it was indistinguishable, from
+    the API, from never having asked for it.
+    """
+    from phylodelta.precompute.jobs import process_next
+
+    _break_triplet(monkeypatch, "metric 'triplet' needs trip_sht, which is not built")
+    comparison_id = _upload_asking_for(client, "rf,triplet")
+    assert process_next("w1") is True
+
+    status = client.get(
+        f"/api/v1/comparisons/{comparison_id}/status", headers={AUTH_HEADER: "alice"}
+    ).json()
+
+    # What was asked for is still reported as asked for — that is the record of
+    # the request, and it must not be quietly rewritten to what succeeded.
+    assert status["metrics"] == ["rf", "triplet"]
+    assert status["metrics_ready"] == ["rf"]
+    assert "triplet" in status["metrics_failed"]
+    assert "not built" in status["metrics_failed"]["triplet"]
+
+
+def test_metrics_ready_reflects_the_store_not_the_request(client, store):
+    """`metrics_ready` is what can actually be asked for.
+
+    Read from the store, the same source the datasets listing and the slicing
+    routes answer from, so a client cannot be told a metric is ready here and
+    refused it there.
+    """
+    from phylodelta.precompute.jobs import process_next
+
+    comparison_id = _upload_asking_for(client, "rf")
+    assert process_next("w1") is True
+
+    status = client.get(
+        f"/api/v1/comparisons/{comparison_id}/status", headers={AUTH_HEADER: "alice"}
+    ).json()
+    assert status["metrics_ready"] == ["rf"]
+    assert status["metrics_failed"] == {}
+
+
+def test_a_retry_that_succeeds_clears_an_earlier_metric_failure(store):
+    """A stale failure must not stay attached to a comparison that now has it."""
+    enqueue(1)
+    queue.claim_next("w1")
+    queue.finish("L0__R0", metric_errors={"triplet": "it broke"})
+    assert db.comparison_for("alice", "L0__R0").metric_errors
+
+    queue.finish("L0__R0")
+    assert db.comparison_for("alice", "L0__R0").metric_errors is None

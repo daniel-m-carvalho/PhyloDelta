@@ -24,6 +24,7 @@ import threading
 import time
 import traceback
 from contextlib import contextmanager
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from .. import config, db, retention, uploads
@@ -36,6 +37,21 @@ from .pipeline import NotComparable, compute_pair, ingest_tree_file, load_metric
 #: correspondence gradient that drives the colouring is computed once per pair
 #: regardless of which metrics run (§9).
 DEFAULT_METRICS = ["rf"]
+
+
+@dataclass(frozen=True, slots=True)
+class ComparisonBuilt:
+    """What one finished comparison leaves the caller needing to know.
+
+    Was a bare ``(left_id, right_id)`` tuple, which the caller needs so it can
+    remove both stores if the comparison was deleted mid-build. The per-metric
+    outcome has to travel the same way — it is known here and reportable only by
+    the caller — and widening the tuple would have made every use positional.
+    """
+
+    datasets: tuple[str, str]
+    #: Requested metrics that produced nothing, as ``{name: reason}``.
+    metrics_failed: dict[str, str] = field(default_factory=dict)
 
 
 class TreeRejected(Exception):
@@ -82,11 +98,14 @@ def _requested(record) -> list[str]:
     return [name.strip() for name in (record.metrics or "").split(",") if name.strip()]
 
 
-def run_comparison(comparison_id: str, metrics: list[str] | None = None) -> tuple[str, str]:
+def run_comparison(
+    comparison_id: str, metrics: list[str] | None = None
+) -> ComparisonBuilt:
     """Do the work for one claimed comparison. Raises on failure.
 
-    Returns the two dataset ids it built, so the caller can clean them up if
-    the comparison was deleted while this was running.
+    Returns the two dataset ids it built, so the caller can clean them up if the
+    comparison was deleted while this was running, and any metric that was asked
+    for and produced nothing, so the caller can record why.
     """
     store = Path(config.STORE_DIR)
     record = db.comparison_by_id(comparison_id)
@@ -155,7 +174,10 @@ def run_comparison(comparison_id: str, metrics: list[str] | None = None) -> tupl
     )
     for line in computed.report_lines:
         print(line, flush=True)
-    return (record.left_id, record.right_id)
+    return ComparisonBuilt(
+        datasets=(record.left_id, record.right_id),
+        metrics_failed=dict(computed.metrics_failed),
+    )
 
 
 def process_next(worker: str | None = None, metrics: list[str] | None = None) -> bool:
@@ -196,11 +218,16 @@ def process_next(worker: str | None = None, metrics: list[str] | None = None) ->
     # everything just written is unreachable and would otherwise sit on disk
     # with nothing referring to it.
     if db.comparison_by_id(comparison_id) is None:
-        retention.remove_orphaned_stores(comparison_id, built)
+        retention.remove_orphaned_stores(comparison_id, built.datasets)
         print(f"--- {comparison_id} was deleted while running; discarded", flush=True)
         return True
 
-    queue.finish(comparison_id)
+    queue.finish(comparison_id, metric_errors=built.metrics_failed)
+    for name, why in built.metrics_failed.items():
+        # Said again at the end of the job, next to the "ready" line: the
+        # per-metric failure was printed pages earlier, and a reader scanning for
+        # the outcome of this comparison would not see it.
+        print(f"--- {comparison_id} metric {name} produced nothing: {why}", flush=True)
     # The raw bundle is ~69% of a stored comparison and redundant once
     # ingested. Kept only when the job failed, where it is the evidence.
     freed = retention.discard_bundle(comparison_id)

@@ -28,6 +28,7 @@ engines rather than correct on one and approximated on the other.
 
 from __future__ import annotations
 
+import json
 import os
 import socket
 from datetime import UTC, datetime, timedelta
@@ -126,8 +127,20 @@ def heartbeat(comparison_id: str, worker: str | None = None) -> None:
         )
 
 
-def finish(comparison_id: str, error: str | None = None) -> None:
-    """Record a job as ready, or as failed with a reason."""
+def finish(
+    comparison_id: str,
+    error: str | None = None,
+    metric_errors: dict[str, str] | None = None,
+) -> None:
+    """Record a job as ready, or as failed with a reason.
+
+    ``metric_errors`` is a *ready* comparison's partial failures: metrics that
+    were asked for and produced nothing. They do not make the comparison failed —
+    everything else about it is good, and refusing the whole upload because one
+    of three metrics could not run would throw away minutes of correspondence.
+    They are recorded so the API can say which are missing and why, instead of
+    the absence being the only evidence.
+    """
     with session() as active:
         active.execute(
             update(Comparison)
@@ -135,6 +148,10 @@ def finish(comparison_id: str, error: str | None = None) -> None:
             .values(
                 status=ComparisonStatus.FAILED if error else ComparisonStatus.READY,
                 error=error,
+                # Written on every finish, so a retry that succeeds clears what
+                # the previous attempt recorded rather than leaving a stale
+                # failure attached to a comparison that now has the metric.
+                metric_errors=json.dumps(metric_errors) if metric_errors else None,
                 finished_at=_now(),
             )
         )

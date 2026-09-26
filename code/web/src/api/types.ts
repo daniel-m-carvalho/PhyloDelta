@@ -123,6 +123,19 @@ export interface ComparisonStatus {
   finished_at: string | null;
   error: string | null;
   ready: boolean;
+  /** Metrics the upload asked for — the record of the request, not of the result. */
+  metrics?: string[];
+  /** Of those, the ones that can actually be asked for. */
+  metrics_ready?: string[];
+  /**
+   * Metrics that were asked for and produced nothing, mapped to why.
+   *
+   * A comparison can be `ready` and still have entries here: one metric failing
+   * does not spoil the rest, so it is served without that one. Absent data must
+   * look absent — a metric quietly missing from the list is exactly the silent
+   * default this project refuses.
+   */
+  metrics_failed?: Record<string, string>;
 }
 
 /** Every failure from the API carries this shape. */

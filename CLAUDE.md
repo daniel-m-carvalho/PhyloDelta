@@ -39,7 +39,7 @@ debugging session spent on a fix that was live in the tests and not in the brows
 ## Tests and tools
 
 ```bash
-cd code/server && uv run pytest -q          # 455
+cd code/server && uv run pytest -q          # 459
 cd code/lib     && npm test                 # 363
 cd code/web     && npm test                 # 98
 cd code/lib_demo && npm test                # 41
@@ -77,9 +77,9 @@ re-measurement rather than editing the markdown.
 
 ## Open threads
 
-- **A failing metric is not reported to the uploader.** The pipeline logs it and continues; the
-  comparison goes `ready` with that metric absent and `status` carrying no error, so asking for it
-  and never asking look identical from the API (§34.15). The fix is a per-metric status on the row.
+- **The comparison view does not say a metric is missing.** `/status` carries `metrics_failed` and
+  the upload panel shows it (§36), but a user returning later sees one fewer option in the metric
+  selector with no reason on screen.
 - **No metric returns a list of differing leaves.** `phangorn::mast()` — in the user's own R script
   at `../../examples/04_trees_spr_metrics_and_trace.R` — does exactly that, and the library's
   `membership` comparison mode was written for it. MAST is O(n²), so it would be a metric that

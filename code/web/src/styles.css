@@ -319,6 +319,12 @@ body {
 .upload-status { margin: 12px 0 0; font-size: 13px; color: var(--muted); }
 .upload-status.failed { color: var(--danger); }
 .upload-status.ready { color: var(--accent); }
+/*
+ * A comparison that succeeded with part of what was asked for missing. Warn,
+ * not danger: the result is usable, and colouring it like a failure would say
+ * the upload did not work when it did.
+ */
+.upload-status.partial { color: var(--warn); }
 
 /*
  * Leaving a comparison is a navigation, so it looks like a button rather than

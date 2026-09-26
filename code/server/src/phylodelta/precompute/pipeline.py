@@ -18,7 +18,7 @@ import argparse
 import itertools
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from .. import catalogue, config, db
@@ -244,6 +244,13 @@ class PairComputed:
     shared_ms: float
     metrics_written: list[str]
     report_lines: list[str]
+    #: Requested metrics that produced nothing, as ``{name: reason}``.
+    #:
+    #: Returned rather than only logged. A metric failing does not fail the
+    #: comparison — the rest of it is perfectly good — but the caller is the only
+    #: one positioned to tell whoever asked, and until this existed the reason
+    #: reached stderr and stopped there.
+    metrics_failed: dict[str, str] = field(default_factory=dict)
 
 
 def load_metrics(wanted: list[str]):
@@ -351,13 +358,20 @@ def compute_pair(
     )
 
     written: list[str] = []
+    failed: dict[str, str] = {}
     try:
         for name in wanted:
             metric_started = time.perf_counter()
             try:
                 result = loaded[name](prepared)
             except MetricFailed as exc:
+                # Recorded as well as logged, so the reason can reach the row and
+                # from there the person who asked for this metric. The first line
+                # only: a subprocess metric's message can carry 800 characters of
+                # captured output, which belongs in the log and not in an API
+                # response.
                 print(f"{pair_id:<34} {name:<10} failed: {exc}", file=sys.stderr)
+                failed[name] = str(exc).strip().splitlines()[0][:300]
                 continue
             # Before anything is written: a metric that renamed a column, or
             # stopped producing one, fails here rather than being discovered by
@@ -401,7 +415,7 @@ def compute_pair(
         + (f", {dropped:,} leaf/leaves dropped to reconcile" if dropped else "")
         + ("  [CROSS-SPECIES: labels matched by coincidence]" if same_species is False else "")
     )
-    return PairComputed(pair_id, notes, shared_ms, written, lines)
+    return PairComputed(pair_id, notes, shared_ms, written, lines, failed)
 
 
 def store_is_populated(store_dir: Path | None = None) -> bool:

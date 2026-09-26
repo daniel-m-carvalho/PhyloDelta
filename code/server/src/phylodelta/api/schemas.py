@@ -518,6 +518,25 @@ class ComparisonStatusResponse(BaseModel):
         default_factory=list,
         description="The metrics this comparison was uploaded to be computed with.",
     )
+    metrics_ready: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Of those, the ones that produced results and can be asked for. "
+            "Empty until the comparison is ready."
+        ),
+    )
+    metrics_failed: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "Metrics that were asked for and produced nothing, mapped to why. "
+            "A comparison can be `ready` and still have entries here: one metric "
+            "failing does not spoil the rest, so the comparison is served without "
+            "it. Before this existed the only evidence was the metric's absence "
+            "from `metrics_ready`, which is indistinguishable from never having "
+            "asked for it."
+        ),
+        examples=[{"triplet": "metric 'triplet' produced no match for 'triplet'"}],
+    )
     created_at: str = Field(description="ISO 8601, UTC.")
     finished_at: str | None = Field(
         None, description="ISO 8601, UTC. Null until it succeeds or fails."

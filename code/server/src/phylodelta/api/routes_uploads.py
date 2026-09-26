@@ -20,6 +20,8 @@ in which a half-built store can be read as though it were finished.
 
 from __future__ import annotations
 
+import json
+
 from fastapi import APIRouter, Depends, File, Form, Path, UploadFile, status
 
 from .. import db, retention, uploads
@@ -27,6 +29,7 @@ from . import errors
 from .identity import current_owner
 from .routes_meta import API_PREFIX
 from ..metrics import registry as metric_registry
+from ..metrics import registry_pairs
 from .schemas import ComparisonRemoved, ComparisonStatusResponse, UploadAccepted
 
 router = APIRouter(prefix=f"{API_PREFIX}/comparisons", tags=["comparisons"])
@@ -187,6 +190,26 @@ def upload_comparison(
     )
 
 
+def _metric_errors(record) -> dict[str, str]:
+    """The row's recorded per-metric failures, or nothing.
+
+    Guarded rather than trusted: the column is JSON written by the worker, and a
+    status poll must not 500 because a row predates the column or holds something
+    unexpected. A malformed value is reported as no failures, which is what the
+    caller would have seen before this existed.
+    """
+    raw = getattr(record, "metric_errors", None)
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+    except (TypeError, ValueError):
+        return {}
+    if not isinstance(parsed, dict):
+        return {}
+    return {str(k): str(v) for k, v in parsed.items()}
+
+
 @router.get(
     "/{comparison_id}/status",
     response_model=ComparisonStatusResponse,
@@ -211,11 +234,23 @@ def comparison_status(
             f"No comparison {comparison_id!r}.",
             "GET /api/v1/datasets lists what you have.",
         )
+    requested = [m for m in (record.metrics or "").split(",") if m]
+    # What the store actually holds, not what the row hoped for. A metric that
+    # raised left nothing behind, and this is the same source the datasets
+    # listing and the slicing routes answer from, so a client cannot be told a
+    # metric is ready here and refused it there.
+    ready_metrics = (
+        registry_pairs.available(record.id)
+        if record.status is db.ComparisonStatus.READY
+        else []
+    )
     return ComparisonStatusResponse(
         id=record.id,
         status=record.status.value,
         display_name=record.display_name or record.id,
-        metrics=[m for m in (record.metrics or "").split(",") if m],
+        metrics=requested,
+        metrics_ready=ready_metrics,
+        metrics_failed=_metric_errors(record),
         created_at=_isoformat(record.created_at) or "",
         finished_at=_isoformat(record.finished_at),
         error=record.error,

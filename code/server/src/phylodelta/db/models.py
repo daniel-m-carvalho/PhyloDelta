@@ -136,6 +136,23 @@ class Comparison(Base):
     #: asked for, and a retry in a month has to reach the same answer.
     metrics: Mapped[str] = mapped_column(String(255), default="rf")
 
+    #: Metrics that were asked for and did not produce anything, as JSON
+    #: ``{name: reason}``. Null when every requested metric succeeded.
+    #:
+    #: Needed because a metric failing is **not** a failed comparison: the
+    #: pipeline logs it and carries on, so the row went `ready` with the metric
+    #: simply missing from the store and `error` null. Asking for `triplet` and
+    #: getting a comparison without it was indistinguishable, from the API, from
+    #: never having asked — the refusal existed only in the worker's stderr.
+    #: Refusing by name is the rule (§9); this is where the name goes for a
+    #: failure that happens minutes later in another process.
+    #:
+    #: JSON in a text column rather than a metric_results table: there are one
+    #: or two of these per comparison, nothing queries across them, and a table
+    #: would add a join and a second place for the two to disagree — the same
+    #: argument that kept the job state on this row.
+    metric_errors: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     store_path: Mapped[str] = mapped_column(String(512), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     finished_at: Mapped[datetime | None] = mapped_column(

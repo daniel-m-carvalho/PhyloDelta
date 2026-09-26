@@ -3830,14 +3830,14 @@ agreements. A disagreement would have meant one of them was wrong, and three of 
 implementations examined for this project return wrong answers on real input (§1.10), so this is not
 a formality.
 
-#### A gap this exposes: a metric that fails is not reported to the uploader
+#### A gap this exposed: a metric that fails was not reported to the uploader
 
-When a metric raises, the pipeline logs it to stderr and **continues**; the comparison finishes
-`ready` with that metric simply absent from its list, and `status` carries no error. Asking for
-`triplet` and receiving a ready comparison without it is indistinguishable, from the API, from never
-having asked. Refusing by name is honoured at the *query* — `GET /comparisons/{id}?metric=triplet`
-says the metric is not there — but the uploader who asked for it is never told why. Recorded, not
-fixed; the fix is a per-metric status on the comparison row.
+When a metric raised, the pipeline logged it to stderr and **continued**; the comparison finished
+`ready` with that metric simply absent, and `status` carried no error. Asking for `triplet` and
+receiving a ready comparison without it was indistinguishable, from the API, from never having asked.
+Refusing by name was honoured at the *query* — `GET /comparisons/{id}?metric=triplet` says what is
+there instead — but the uploader who asked for it was told nothing, minutes later and in another
+process. Fixed in §36.
 
 
 
@@ -3925,6 +3925,68 @@ building the tree and drawing it.
 So this is not a performance improvement; it is the removal of a needless request, and a measured
 answer to "how much of navigation is the server". The headline figures in §34 were all taken
 **without** any caching, which makes them a floor rather than a best case.
+
+
+---
+
+## 36. A metric that fails is named, and does not fail the comparison
+
+Found by measuring §34.15, not by reading: asking for three metrics and getting two back looked
+exactly like asking for two.
+
+### 36.1 Why a failing metric must not fail the comparison
+
+The pipeline's existing behaviour — log the refusal, carry on — is right, and the fix does not change
+it. Correspondence is the O(n²) step and is **shared by every metric** (§9); it is 256 s at 564,640
+leaves. Refusing the whole upload because one of three metrics could not run would discard all of
+that to deliver nothing, when what was actually produced is a complete, usable comparison missing one
+column. So the comparison stays `ready` and `error` stays null: `error` means *the comparison* failed,
+and overloading it would make a partial success unreportable.
+
+### 36.2 What was wrong was the silence
+
+Absent data must look absent (a rule this project already had, and this broke). A metric missing from
+a ready comparison carried no statement about itself. Three places now do:
+
+* **`comparisons.metric_errors`** — JSON `{name: reason}` on the row, written on every `finish`, so a
+  retry that succeeds clears a previous attempt's failure rather than leaving it attached to a
+  comparison that now has the metric.
+* **`GET /comparisons/{id}/status`** — gains `metrics_ready` and `metrics_failed`. `metrics` keeps
+  meaning *what was asked for*: it is the record of the request and must not be quietly rewritten to
+  whatever succeeded, or the question "did I get what I asked for?" becomes unanswerable.
+* **The upload panel** — says so while the uploader is still looking at it, styled `--warn` and not
+  `--danger`, because the result is usable and colouring it like a failure would say the upload did
+  not work when it did.
+
+`metrics_ready` is read from the **store**, not from the row: `registry_pairs.available(pair_id)`, the
+same source the datasets listing and the slicing routes answer from. A second source of truth here
+would let a client be told a metric is ready and then refused it.
+
+### 36.3 JSON in a column, not a metric_results table
+
+There are one or two of these per comparison, nothing queries across them, and a table would add a
+join and a second place for the two to disagree — the same argument that kept the job state on the
+comparison row rather than in a jobs table (§24). The read is guarded rather than trusted: a status
+poll must not 500 because a row predates the column, so a malformed value reports as no failures.
+
+### 36.4 Verified against a binary that fails the way the real one does
+
+The interesting failure mode is not a missing executable, it is **silence**: TreeDiff's binaries exit
+0 with empty stdout on input they cannot take. A stub doing exactly that, in place of `trip_sht`, with
+the real `rf_postorder` beside it, produced the intended outcome end to end — `ready`, `error: null`,
+`metrics_ready: [rf, rf-treediff]`, and `triplet` named with the pattern it failed to match. The
+manifest's `required: true` is what converts that silence into a refusal; without it the metric would
+have written an empty result that looked computed.
+
+Each assertion was checked against the behaviour removed: dropping the route's reporting fails the
+naming test, and dropping the worker's recording fails that one and the retry test.
+
+### 36.5 What this does not do
+
+The comparison *view* does not repeat it. A user returning a week later sees a metric selector with
+one fewer option and no explanation on screen — the reason is available from `/status`, but nothing
+fetches it there. Recorded rather than done, because the uploader at the moment of upload is who was
+actually uninformed.
 
 
 ---

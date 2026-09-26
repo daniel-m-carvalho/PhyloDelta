@@ -88,6 +88,9 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
       .catch(() => setMetrics([]));
   }, []);
   const [status, setStatus] = useState<ComparisonStatus | null>(null);
+  // Entries, not the record itself, so the count and the single-item wording
+  // below read from one thing.
+  const failedMetrics = Object.entries(status?.metrics_failed ?? {});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -264,6 +267,23 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
               : status.status === "failed"
                 ? `Failed: ${status.error ?? "no reason given"}`
                 : "Ready."}
+        </p>
+      ) : null}
+      {/*
+        A metric that was asked for and could not be computed.
+
+        Separate from `error`, which means the comparison failed: this one is
+        ready and usable, and only part of what was requested is missing. Saying
+        so here is the whole point — the comparison arrives with the metric
+        simply absent, which on its own is indistinguishable from never having
+        asked for it.
+      */}
+      {failedMetrics.length > 0 ? (
+        <p className="upload-status partial">
+          {failedMetrics.length === 1
+            ? `Computed, but ${failedMetrics[0][0]} could not be: ${failedMetrics[0][1]}`
+            : `Computed, but ${failedMetrics.length} metrics could not be: ` +
+              failedMetrics.map(([name, why]) => `${name} (${why})`).join("; ")}
         </p>
       ) : null}
       {error ? <p className="upload-status failed">{error}</p> : null}
