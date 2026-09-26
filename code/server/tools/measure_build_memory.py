@@ -70,7 +70,8 @@ def post(left: Path, right: Path, name: str) -> str:
 def main() -> None:
     rungs = sorted({int(p.name.split("-")[1]) for p in LADDER.glob("ladder-*-a.nwk")})
     baseline = rss_mb(WORKER_PID)
-    print(f"worker pid {WORKER_PID}, idle RSS {baseline:,.0f} MB\n")
+    target = Path(__file__).resolve().parents[2] / "bench" / "results" / "build_memory.json"
+    print(f"worker pid {WORKER_PID}, idle RSS {baseline:,.0f} MB\n", flush=True)
     print(f"{'leaves':>9} {'build':>8} {'peak RSS':>11} {'over idle':>11}")
 
     out = []
@@ -111,11 +112,16 @@ def main() -> None:
         out.append(row)
         print(
             f"{leaves:>9,} {elapsed:>7.1f}s {peak:>10,.0f} MB {peak - baseline:>10,.0f} MB"
-            + ("" if record["status"] == "ready" else f"  {record['status']}")
+            + ("" if record["status"] == "ready" else f"  {record['status']}"),
+            flush=True,
         )
+        # After EVERY rung, like the other two measurement tools. Writing once
+        # at the end made a healthy 40-minute run indistinguishable from a
+        # stalled one: the output file kept its old timestamp throughout and
+        # stdout was block-buffered, so there was no sign of progress at all
+        # and the run was very nearly killed for nothing.
+        target.write_text(json.dumps({"idle_rss_mb": round(baseline, 1), "rungs": out}, indent=2))
 
-    target = Path(__file__).resolve().parents[2] / "bench" / "results" / "build_memory.json"
-    target.write_text(json.dumps({"idle_rss_mb": round(baseline, 1), "rungs": out}, indent=2))
     print(f"\nwritten to {target}")
 
 
