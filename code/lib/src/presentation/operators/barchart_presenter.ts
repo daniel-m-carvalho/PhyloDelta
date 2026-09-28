@@ -57,8 +57,14 @@ export interface BarChartOptions {
 }
 
 interface LeafBar {
-  /** Container element; holds one child div per composition segment. */
-  el: HTMLDivElement;
+  /**
+   * Container element; holds one child div per composition segment.
+   *
+   * **Null when the leaf has no data.** A leaf without a composition still gets
+   * an entry, because it still gets a *label* — the identifier is a property of
+   * the leaf, not of the typing data. Only the bar is withheld.
+   */
+  el: HTMLDivElement | null;
   /** Overlay label element. */
   labelEl: HTMLDivElement | null;
   identifier: string;
@@ -269,36 +275,55 @@ export class BarChartPresenter implements TreeOperator {
       if (!this.viewer?.passesFilter(layoutNode.source)) continue;
       const identifier = this.identifierOf(layoutNode.source);
       const datum = this.resolveDatum(identifier, layoutNode.source);
-      if (!datum) continue; // no data for this leaf ⇒ no bar (never a fabricated one)
-      const segments = datumSegments(datum, identifier);
-      const total = datumTotal(datum);
-      this.maxTotal = Math.max(this.maxTotal, total);
 
-      // Stacked composition bar: container + one flex child per segment, sized
-      // proportionally to its value. Segment order reverses when reflected so
-      // the stack mirrors too. Colors are semantic (shared scale by key).
-      const el = document.createElement("div");
-      Object.assign(el.style, {
-        position: "absolute",
-        height: `${this.barHeight}px`,
-        display: "flex",
-        flexDirection: reflected ? "row-reverse" : "row",
-        borderRadius: "1px",
-        overflow: "hidden",
-        transformOrigin: "left center",
-        willChange: "transform, width",
-      } as CSSStyleDeclaration);
-      el.title = this.tooltip(identifier, total, segments);
-      for (const seg of segments) {
-        const segEl = document.createElement("div");
-        Object.assign(segEl.style, {
-          flex: `${Math.max(0, seg.value)} 1 0`,
-          background: seg.color ?? this.colorOf(seg.key),
-          height: "100%",
+      /*
+       * No datum means no bar — never a fabricated one. It does **not** mean no
+       * label: this used to `continue` here, which skipped the rest of the loop
+       * body, and the label is built further down in it. Since the reducer above
+       * blanks Sigma's native label for every leaf while bars are on, a leaf
+       * without typing data was left with no identifier at all. On a pair whose
+       * leaves have no typing data for the chosen species, that is every leaf on
+       * screen, and the trees lost all their labels the moment typing was
+       * enabled.
+       *
+       * `total` and `maxTotal` stay inside this branch, so the bar scale is set
+       * by the leaves that actually have data. `maxLabelWidth` deliberately does
+       * not: the right-hand band has to fit the widest label whether or not it
+       * has a bar beside it.
+       */
+      let el: HTMLDivElement | null = null;
+      let total = 0;
+      if (datum) {
+        const segments = datumSegments(datum, identifier);
+        total = datumTotal(datum);
+        this.maxTotal = Math.max(this.maxTotal, total);
+
+        // Stacked composition bar: container + one flex child per segment, sized
+        // proportionally to its value. Segment order reverses when reflected so
+        // the stack mirrors too. Colors are semantic (shared scale by key).
+        el = document.createElement("div");
+        Object.assign(el.style, {
+          position: "absolute",
+          height: `${this.barHeight}px`,
+          display: "flex",
+          flexDirection: reflected ? "row-reverse" : "row",
+          borderRadius: "1px",
+          overflow: "hidden",
+          transformOrigin: "left center",
+          willChange: "transform, width",
         } as CSSStyleDeclaration);
-        el.appendChild(segEl);
+        el.title = this.tooltip(identifier, total, segments);
+        for (const seg of segments) {
+          const segEl = document.createElement("div");
+          Object.assign(segEl.style, {
+            flex: `${Math.max(0, seg.value)} 1 0`,
+            background: seg.color ?? this.colorOf(seg.key),
+            height: "100%",
+          } as CSSStyleDeclaration);
+          el.appendChild(segEl);
       }
       this.overlay.appendChild(el);
+      }
 
       // We render every leaf label ourselves (Sigma's native labels are blanked
       // while bars are on), so there's no collision culling — each tip gets a
@@ -340,7 +365,7 @@ export class BarChartPresenter implements TreeOperator {
 
     for (const [id, bar] of this.bars) {
       if (!graph.hasNode(id)) {
-        bar.el.style.display = "none";
+        if (bar.el) bar.el.style.display = "none";
         if (bar.labelEl) bar.labelEl.style.display = "none";
         continue;
       }
@@ -355,8 +380,12 @@ export class BarChartPresenter implements TreeOperator {
       // Keep the container a flex row — must NOT be "block", or the stacked
       // composition segments collapse (they lay out via flex-grow), leaving only
       // the first segment's color visible.
-      bar.el.style.display = "flex";
-      bar.el.style.width = `${width}px`;
+      // A leaf with no data has a label and no bar, so everything below has to
+      // tolerate a null element rather than assume every entry draws one.
+      if (bar.el) {
+        bar.el.style.display = "flex";
+        bar.el.style.width = `${width}px`;
+      }
 
       if (reflected) {
         // Tip is on the left; draw label then bar extending leftward, all
@@ -370,7 +399,7 @@ export class BarChartPresenter implements TreeOperator {
           bar.labelEl.style.width = `${bar.labelWidth}px`;
         }
         const barRight = pos.x - this.markerGap - this.maxLabelWidth - this.offset;
-        bar.el.style.transform = `translate(${barRight - width}px, ${top}px)`;
+        if (bar.el) bar.el.style.transform = `translate(${barRight - width}px, ${top}px)`;
       } else {
         // Tip is on the left; draw label then bar extending rightward, all
         // sharing a column so the bars' left edges line up. Layout (left to
@@ -382,7 +411,7 @@ export class BarChartPresenter implements TreeOperator {
           bar.labelEl.style.width = `${bar.labelWidth}px`;
         }
         const startX = pos.x + this.markerGap + this.maxLabelWidth + this.offset;
-        bar.el.style.transform = `translate(${startX}px, ${top}px)`;
+        if (bar.el) bar.el.style.transform = `translate(${startX}px, ${top}px)`;
       }
     }
   }
