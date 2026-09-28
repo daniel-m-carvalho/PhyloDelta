@@ -17,7 +17,7 @@
  * be removed; the behaviour is deliberate, not a defect.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "../api/client";
 import type { LeafComposition, ValueCount } from "../api/types";
 import type { SliceTree } from "../tree/fromSlice";
@@ -131,6 +131,32 @@ export function useTypingData(
   const labelKey = labels.join(",");
   const columnKey = segmentKeys.join(",");
 
+  /**
+   * The request that failed, so it is not immediately reissued.
+   *
+   * A failed fetch sets `error`, which re-renders, which can bring the effect
+   * back round to the same request — and with the backend unreachable that
+   * repeats for as long as the page is open. Observed in the field as panels
+   * "shaking constantly": not a layout problem at all, but this component
+   * re-rendering on every failure, with the console showing the same
+   * `compositions` request dozens of times.
+   *
+   * Keyed by the request rather than a boolean, so this stops a *repeat* and
+   * not a *retry*: choosing different columns, navigating to different leaves
+   * or toggling typing off and on all produce a different key and are tried
+   * again. What cannot happen is the same request going out twice with nothing
+   * having changed in between.
+   *
+   * **This is defence in depth, not the fix.** The fix is the dependency list
+   * below: with `labels` and `segmentKeys` removed, a failure no longer brings
+   * the effect back round at all, and removing this guard breaks no test. It is
+   * kept because the failure it prevents is a request storm from every open
+   * browser against a backend that is already down, and because React's
+   * StrictMode double-invokes effects in development. If it ever has to earn
+   * its place, that is the argument — not a test.
+   */
+  const failedRequest = useRef<string | null>(null);
+
   // Which columns can segment. Once per isolate set, not per slice.
   useEffect(() => {
     if (!enabled || !isolateSet) return;
@@ -149,8 +175,16 @@ export function useTypingData(
   useEffect(() => {
     if (!enabled || !isolateSet || segmentKeys.length === 0 || labels.length === 0) {
       setByLeaf(new Map());
+      // Turning typing off and on again is the user asking for another go.
+      failedRequest.current = null;
       return;
     }
+    const request = `${isolateSet}\u0000${columnKey}\u0000${labelKey}`;
+    // Already tried and failed, with nothing changed since: the error is
+    // already on screen, so returning here leaves it there rather than
+    // clearing it and asking again.
+    if (failedRequest.current === request) return;
+
     let live = true;
     setLoading(true);
     setError(null);
@@ -166,10 +200,14 @@ export function useTypingData(
     )
       .then((responses) => {
         if (!live) return;
+        failedRequest.current = null;
         setByLeaf(mergeColumns(responses));
         setLoading(false);
       })
       .catch((failed: unknown) => {
+        // Recorded before the state update, because that update is what
+        // re-renders and brings the effect back here.
+        failedRequest.current = request;
         if (!live) return;
         setError(failed instanceof ApiError ? failed.message : String(failed));
         setLoading(false);
@@ -177,7 +215,13 @@ export function useTypingData(
     return () => {
       live = false;
     };
-  }, [enabled, isolateSet, columnKey, labelKey, labels, segmentKeys]);
+    // `labels` and `segmentKeys` are deliberately absent: `labelKey` and
+    // `columnKey` are their joined forms, and comparing those by VALUE is the
+    // whole point. Listing the arrays as well puts identity back in, so a
+    // re-render holding an equal-but-new array refetches for no reason — which
+    // is how a single failure became a request loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, isolateSet, columnKey, labelKey]);
 
   const categories = useMemo(() => {
     const seen = new Set<string>();

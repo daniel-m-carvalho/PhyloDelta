@@ -85,6 +85,13 @@ ladder.
 
 ## Open threads
 
+- **A failing typing fetch used to repeat forever.** Reported from a deployment as panels "shaking
+  constantly" — not layout at all, but the component re-rendering on every failure while the same
+  `compositions` request went out dozens of times. The cause was `labels` and `segmentKeys` sitting in
+  an effect's dependency list *beside* their own joined string keys, putting identity back into a
+  comparison meant to be by value. Third bug of this shape in `useTypingData`; the hook's own comment
+  records an earlier one that "looped until the page died".
+
 - **The comparison view does not say a metric is missing.** `/status` carries `metrics_failed` and
   the upload panel shows it (§36), but a user returning later sees one fewer option in the metric
   selector with no reason on screen.
