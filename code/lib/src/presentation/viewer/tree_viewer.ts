@@ -647,7 +647,29 @@ export class TreeViewer {
     const dCx = this.rightReservePx / 2 / pxPerFramed;
     const sign = this.reflect ? -1 : 1;
     const state = camera.getState();
-    camera.setState({ ...state, x: 0.5 + sign * dCx });
+    const target = 0.5 + sign * dCx;
+
+    /*
+     * A pan that would move the picture by less than half a pixel is not a pan.
+     *
+     * `pxPerFramed` is read from the *current* viewport, so every container
+     * resize recomputes this and applies it again — and each application lands
+     * on a slightly different sub-pixel position. On a container that keeps
+     * resizing, the camera drifts: measured from a screen recording as ~1,400
+     * to 3,000 pixels changing across the whole tree roughly once a second,
+     * with no whole-pixel translation and the differences accumulating. Both
+     * panels at once, and only with the bars enabled — which is the only time
+     * `rightReservePx` is non-zero and this path runs at all.
+     *
+     * The threshold is expressed in screen pixels rather than camera units
+     * because that is what is perceptible, and because camera units mean
+     * different distances at different zooms. Same idea as the equality guard
+     * in `setRightReservePx`, one level further down: recomputing the same
+     * answer must not move anything.
+     */
+    if (Math.abs(target - state.x) * pxPerFramed < 0.5) return;
+
+    camera.setState({ ...state, x: target });
   }
 
   private wireSigmaEvents(renderer: Sigma): void {

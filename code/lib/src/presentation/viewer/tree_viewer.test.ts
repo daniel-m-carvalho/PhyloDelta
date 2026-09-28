@@ -448,3 +448,73 @@ describe("selection → structure helpers", () => {
     expect(v.mrcaOf(["anything"])).toBeNull();
   });
 });
+
+describe("recentring for the bar-chart reserve", () => {
+  /** The fake Sigma underneath, with its recorded camera writes. */
+  function fake(v: TreeViewer) {
+    return v.getRenderer() as unknown as {
+      emit: (e: string, p: unknown) => void;
+      cameraState: { x: number };
+      cameraWrites: Array<{ x: number }>;
+      framedScale: number;
+    };
+  }
+
+  function withTree() {
+    const v = viewer();
+    v.setTree({ name: "root", branchset: [leaf("a"), leaf("b")] });
+    return v;
+  }
+
+  it("pans once to centre the tree plus its reserved band", () => {
+    const v = withTree();
+    v.setRightReservePx(100);
+    fake(v).emit("afterRender", {});
+
+    // 100 px reserve, 100 px per framed unit ⇒ shift half of it ⇒ x = 1.0.
+    const writes = fake(v).cameraWrites;
+    expect(writes[writes.length - 1]?.x).toBeCloseTo(1.0, 6);
+  });
+
+  it("does not pan again when the answer has not changed", () => {
+    // The drift this closes. `pxPerFramed` is read from the *current* viewport,
+    // so every container resize recomputes this pan and applies it again. Each
+    // application landed on a slightly different sub-pixel position, and on a
+    // container that keeps resizing the camera walks away from where it should
+    // be — visible as the tree twitching about once a second, in both panels,
+    // only ever with the bars enabled.
+    const v = withTree();
+    v.setRightReservePx(100);
+    fake(v).emit("afterRender", {});
+    const after = fake(v).cameraWrites.length;
+
+    // Re-arm the recentre without changing anything it depends on, the way a
+    // container resize does.
+    v.setRightReservePx(0);
+    v.setRightReservePx(100);
+    fake(v).emit("afterRender", {});
+
+    expect(fake(v).cameraWrites.length).toBe(after);
+    expect(fake(v).cameraState.x).toBeCloseTo(1.0, 6);
+  });
+
+  it("ignores the sub-pixel difference a tiny viewport change produces", () => {
+    // The drift, in its actual form. A container that resizes by a hair gives a
+    // slightly different `pxPerFramed`, so the recomputed pan differs in the
+    // sixth decimal — far below anything visible, but applied it moves the
+    // camera, and the next resize moves it again from the new position.
+    const v = withTree();
+    v.setRightReservePx(100);
+    fake(v).emit("afterRender", {});
+    const settled = fake(v).cameraState.x;
+    const writes = fake(v).cameraWrites.length;
+
+    fake(v).framedScale = 100.001; // the container changed by a fraction
+    v.setRightReservePx(0);
+    v.setRightReservePx(100);
+    fake(v).emit("afterRender", {});
+
+    expect(fake(v).cameraWrites.length).toBe(writes);
+    expect(fake(v).cameraState.x).toBe(settled);
+  });
+});

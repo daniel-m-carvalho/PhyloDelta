@@ -61,10 +61,31 @@ export default class FakeSigma {
     return this.container;
   }
 
+  /**
+   * Camera state, held rather than fabricated per call.
+   *
+   * It used to return a fresh `{x: 0.5, …}` every time and swallow `setState`,
+   * which made any camera behaviour untestable — a pan and a no-op looked
+   * identical. The recentring guard is exactly that kind of behaviour, so the
+   * fake has to remember what it was told.
+   */
+  cameraState: { x: number; y: number; angle: number; ratio: number } = {
+    x: 0.5,
+    y: 0.5,
+    angle: 0,
+    ratio: 1,
+  };
+
+  /** Test-only: every `setState` the code under test issued, in order. */
+  cameraWrites: Array<{ x: number; y: number; angle: number; ratio: number }> = [];
+
   getCamera() {
     return {
-      getState: () => ({ x: 0.5, y: 0.5, angle: 0, ratio: 1 }),
-      setState: () => {},
+      getState: () => ({ ...this.cameraState }),
+      setState: (state: { x: number; y: number; angle: number; ratio: number }) => {
+        this.cameraState = { ...this.cameraState, ...state };
+        this.cameraWrites.push({ ...this.cameraState });
+      },
       animate: (_state: unknown, _opts: unknown, cb?: () => void) => cb?.(),
     };
   }
@@ -76,8 +97,15 @@ export default class FakeSigma {
   graphToViewport(coords: { x: number; y: number }) {
     return coords;
   }
+  /**
+   * Pixels per framed-graph unit. Settable because the recentring maths divides
+   * by it, so a test needs to choose whether a given reserve lands above or
+   * below the half-pixel threshold.
+   */
+  framedScale = 100;
+
   framedGraphToViewport(coords: { x: number; y: number }) {
-    return { x: coords.x * 100, y: coords.y * 100 };
+    return { x: coords.x * this.framedScale, y: coords.y * this.framedScale };
   }
   getNodeDisplayData(): undefined {
     return undefined;

@@ -40,7 +40,7 @@ debugging session spent on a fix that was live in the tests and not in the brows
 
 ```bash
 cd code/server && uv run pytest -q          # 459
-cd code/lib     && npm test                 # 365
+cd code/lib     && npm test                 # 368
 cd code/web     && npm test                 # 101
 cd code/lib_demo && npm test                # 41
 ```
