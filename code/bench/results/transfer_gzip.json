@@ -8,31 +8,31 @@
   "rows": [
     {
       "leaves": 1000,
-      "pair": "87a594497778__3a05b50b7ed9",
+      "pair": "8f6848318bb7__02aadd5969c6",
       "phyloio": {
         "ok": true,
         "received": {
           "leftChars": 8352,
           "rightChars": 8352
         },
-        "app": 1405824,
+        "app": 1408892,
         "data": 7392,
         "other": 0,
         "requests": 6,
         "byUrl": [
           {
             "url": "/phyloio/dist/phylo.js",
-            "bytes": 706321,
+            "bytes": 709137,
             "kind": "app"
           },
           {
             "url": "/phyloio/dist/src_worker_bcn_js.phylo.js",
-            "bytes": 503540,
+            "bytes": 503629,
             "kind": "app"
           },
           {
             "url": "/phyloio/dist/src_worker_distance_js.phylo.js",
-            "bytes": 194595,
+            "bytes": 194758,
             "kind": "app"
           },
           {
@@ -58,14 +58,14 @@
           "showing 50 of 1,000 leaves · 993 behind wedges",
           "showing 50 of 1,000 leaves · 976 behind wedges"
         ],
-        "app": 139392,
-        "data": 7601,
+        "app": 139462,
+        "data": 7255,
         "other": 0,
         "requests": 9,
         "byUrl": [
           {
-            "url": "/assets/index-DZE6bipp.js",
-            "bytes": 135877,
+            "url": "/assets/index-MSopFkAX.js",
+            "bytes": 135947,
             "kind": "app"
           },
           {
@@ -74,18 +74,13 @@
             "kind": "app"
           },
           {
-            "url": "/api/v1/trees/87a594497778/slice",
-            "bytes": 1784,
+            "url": "/api/v1/trees/8f6848318bb7/slice",
+            "bytes": 1783,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/3a05b50b7ed9/slice",
+            "url": "/api/v1/trees/02aadd5969c6/slice",
             "bytes": 1745,
-            "kind": "data"
-          },
-          {
-            "url": "/api/v1/datasets",
-            "bytes": 1680,
             "kind": "data"
           },
           {
@@ -94,7 +89,12 @@
             "kind": "data"
           },
           {
-            "url": "/api/v1/comparisons/87a594497778__3a05b50b7ed9",
+            "url": "/api/v1/datasets",
+            "bytes": 1335,
+            "kind": "data"
+          },
+          {
+            "url": "/api/v1/comparisons/8f6848318bb7__02aadd5969c6",
             "bytes": 586,
             "kind": "data"
           },
@@ -108,31 +108,31 @@
     },
     {
       "leaves": 2500,
-      "pair": "707df38ec090__cfbf711adb82",
+      "pair": "a199b239285d__e7bbb5004bf4",
       "phyloio": {
         "ok": true,
         "received": {
           "leftChars": 20916,
           "rightChars": 20916
         },
-        "app": 1405824,
+        "app": 1408892,
         "data": 17497,
         "other": 0,
         "requests": 6,
         "byUrl": [
           {
             "url": "/phyloio/dist/phylo.js",
-            "bytes": 706321,
+            "bytes": 709137,
             "kind": "app"
           },
           {
             "url": "/phyloio/dist/src_worker_bcn_js.phylo.js",
-            "bytes": 503540,
+            "bytes": 503629,
             "kind": "app"
           },
           {
             "url": "/phyloio/dist/src_worker_distance_js.phylo.js",
-            "bytes": 194595,
+            "bytes": 194758,
             "kind": "app"
           },
           {
@@ -158,14 +158,14 @@
           "showing 50 of 2,500 leaves · 2,489 behind wedges",
           "showing 50 of 2,500 leaves · 2,469 behind wedges"
         ],
-        "app": 139392,
-        "data": 7694,
+        "app": 139462,
+        "data": 7349,
         "other": 0,
         "requests": 9,
         "byUrl": [
           {
-            "url": "/assets/index-DZE6bipp.js",
-            "bytes": 135877,
+            "url": "/assets/index-MSopFkAX.js",
+            "bytes": 135947,
             "kind": "app"
           },
           {
@@ -174,18 +174,13 @@
             "kind": "app"
           },
           {
-            "url": "/api/v1/trees/707df38ec090/slice",
+            "url": "/api/v1/trees/a199b239285d/slice",
             "bytes": 1857,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/cfbf711adb82/slice",
-            "bytes": 1766,
-            "kind": "data"
-          },
-          {
-            "url": "/api/v1/datasets",
-            "bytes": 1680,
+            "url": "/api/v1/trees/e7bbb5004bf4/slice",
+            "bytes": 1767,
             "kind": "data"
           },
           {
@@ -194,8 +189,13 @@
             "kind": "data"
           },
           {
-            "url": "/api/v1/comparisons/707df38ec090__cfbf711adb82",
-            "bytes": 585,
+            "url": "/api/v1/datasets",
+            "bytes": 1335,
+            "kind": "data"
+          },
+          {
+            "url": "/api/v1/comparisons/a199b239285d__e7bbb5004bf4",
+            "bytes": 584,
             "kind": "data"
           },
           {
@@ -208,31 +208,31 @@
     },
     {
       "leaves": 5000,
-      "pair": "8af1aa65c99e__91df14b26367",
+      "pair": "073ab38d2b0b__ce11d0873231",
       "phyloio": {
         "ok": true,
         "received": {
           "leftChars": 41874,
           "rightChars": 41874
         },
-        "app": 1405824,
+        "app": 1408892,
         "data": 33920,
         "other": 0,
         "requests": 6,
         "byUrl": [
           {
             "url": "/phyloio/dist/phylo.js",
-            "bytes": 706321,
+            "bytes": 709137,
             "kind": "app"
           },
           {
             "url": "/phyloio/dist/src_worker_bcn_js.phylo.js",
-            "bytes": 503540,
+            "bytes": 503629,
             "kind": "app"
           },
           {
             "url": "/phyloio/dist/src_worker_distance_js.phylo.js",
-            "bytes": 194595,
+            "bytes": 194758,
             "kind": "app"
           },
           {
@@ -258,14 +258,14 @@
           "showing 50 of 5,000 leaves · 4,983 behind wedges",
           "showing 50 of 5,000 leaves · 4,993 behind wedges"
         ],
-        "app": 139392,
-        "data": 7927,
+        "app": 139462,
+        "data": 7582,
         "other": 0,
         "requests": 9,
         "byUrl": [
           {
-            "url": "/assets/index-DZE6bipp.js",
-            "bytes": 135877,
+            "url": "/assets/index-MSopFkAX.js",
+            "bytes": 135947,
             "kind": "app"
           },
           {
@@ -274,18 +274,13 @@
             "kind": "app"
           },
           {
-            "url": "/api/v1/trees/8af1aa65c99e/slice",
+            "url": "/api/v1/trees/073ab38d2b0b/slice",
             "bytes": 1936,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/91df14b26367/slice",
+            "url": "/api/v1/trees/ce11d0873231/slice",
             "bytes": 1919,
-            "kind": "data"
-          },
-          {
-            "url": "/api/v1/datasets",
-            "bytes": 1680,
             "kind": "data"
           },
           {
@@ -294,7 +289,12 @@
             "kind": "data"
           },
           {
-            "url": "/api/v1/comparisons/8af1aa65c99e__91df14b26367",
+            "url": "/api/v1/datasets",
+            "bytes": 1335,
+            "kind": "data"
+          },
+          {
+            "url": "/api/v1/comparisons/073ab38d2b0b__ce11d0873231",
             "bytes": 586,
             "kind": "data"
           },
@@ -308,31 +308,31 @@
     },
     {
       "leaves": 10000,
-      "pair": "f4d91f4f31aa__9172bc06c98a",
+      "pair": "96c986f4644e__f004fcd59435",
       "phyloio": {
         "ok": true,
         "received": {
           "leftChars": 83704,
           "rightChars": 83704
         },
-        "app": 1405824,
+        "app": 1408892,
         "data": 65505,
         "other": 0,
         "requests": 6,
         "byUrl": [
           {
             "url": "/phyloio/dist/phylo.js",
-            "bytes": 706321,
+            "bytes": 709137,
             "kind": "app"
           },
           {
             "url": "/phyloio/dist/src_worker_bcn_js.phylo.js",
-            "bytes": 503540,
+            "bytes": 503629,
             "kind": "app"
           },
           {
             "url": "/phyloio/dist/src_worker_distance_js.phylo.js",
-            "bytes": 194595,
+            "bytes": 194758,
             "kind": "app"
           },
           {
@@ -358,14 +358,14 @@
           "showing 50 of 10,000 leaves · 9,982 behind wedges",
           "showing 50 of 10,000 leaves · 9,996 behind wedges"
         ],
-        "app": 139392,
-        "data": 7972,
+        "app": 139462,
+        "data": 7628,
         "other": 0,
         "requests": 9,
         "byUrl": [
           {
-            "url": "/assets/index-DZE6bipp.js",
-            "bytes": 135877,
+            "url": "/assets/index-MSopFkAX.js",
+            "bytes": 135947,
             "kind": "app"
           },
           {
@@ -374,18 +374,13 @@
             "kind": "app"
           },
           {
-            "url": "/api/v1/trees/9172bc06c98a/slice",
-            "bytes": 1966,
+            "url": "/api/v1/trees/f004fcd59435/slice",
+            "bytes": 1969,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/f4d91f4f31aa/slice",
-            "bytes": 1932,
-            "kind": "data"
-          },
-          {
-            "url": "/api/v1/datasets",
-            "bytes": 1680,
+            "url": "/api/v1/trees/96c986f4644e/slice",
+            "bytes": 1931,
             "kind": "data"
           },
           {
@@ -394,8 +389,13 @@
             "kind": "data"
           },
           {
-            "url": "/api/v1/comparisons/f4d91f4f31aa__9172bc06c98a",
-            "bytes": 588,
+            "url": "/api/v1/datasets",
+            "bytes": 1335,
+            "kind": "data"
+          },
+          {
+            "url": "/api/v1/comparisons/96c986f4644e__f004fcd59435",
+            "bytes": 587,
             "kind": "data"
           },
           {
@@ -408,26 +408,26 @@
     },
     {
       "leaves": 17645,
-      "pair": "6a2ea4cbdc44__4dd6a843614d",
+      "pair": "0a6014b9ea46__808cbb0b83b4",
       "phyloio": {
         "ok": true,
         "received": {
           "leftChars": 639359,
           "rightChars": 471166
         },
-        "app": 1405824,
+        "app": 1408892,
         "data": 485928,
         "other": 0,
         "requests": 6,
         "byUrl": [
           {
             "url": "/phyloio/dist/phylo.js",
-            "bytes": 706321,
+            "bytes": 709137,
             "kind": "app"
           },
           {
             "url": "/phyloio/dist/src_worker_bcn_js.phylo.js",
-            "bytes": 503540,
+            "bytes": 503629,
             "kind": "app"
           },
           {
@@ -437,7 +437,7 @@
           },
           {
             "url": "/phyloio/dist/src_worker_distance_js.phylo.js",
-            "bytes": 194595,
+            "bytes": 194758,
             "kind": "app"
           },
           {
@@ -458,14 +458,14 @@
           "showing 50 of 17,645 leaves · 17,626 behind wedges",
           "showing 50 of 17,646 leaves · 17,643 behind wedges"
         ],
-        "app": 139392,
-        "data": 10008,
+        "app": 139462,
+        "data": 9662,
         "other": 0,
         "requests": 9,
         "byUrl": [
           {
-            "url": "/assets/index-DZE6bipp.js",
-            "bytes": 135877,
+            "url": "/assets/index-MSopFkAX.js",
+            "bytes": 135947,
             "kind": "app"
           },
           {
@@ -474,18 +474,13 @@
             "kind": "app"
           },
           {
-            "url": "/api/v1/trees/4dd6a843614d/slice",
+            "url": "/api/v1/trees/808cbb0b83b4/slice",
             "bytes": 2991,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/6a2ea4cbdc44/slice",
-            "bytes": 2939,
-            "kind": "data"
-          },
-          {
-            "url": "/api/v1/datasets",
-            "bytes": 1680,
+            "url": "/api/v1/trees/0a6014b9ea46/slice",
+            "bytes": 2938,
             "kind": "data"
           },
           {
@@ -494,7 +489,12 @@
             "kind": "data"
           },
           {
-            "url": "/api/v1/comparisons/6a2ea4cbdc44__4dd6a843614d",
+            "url": "/api/v1/datasets",
+            "bytes": 1335,
+            "kind": "data"
+          },
+          {
+            "url": "/api/v1/comparisons/0a6014b9ea46__808cbb0b83b4",
             "bytes": 592,
             "kind": "data"
           },
@@ -508,26 +508,26 @@
     },
     {
       "leaves": 35290,
-      "pair": "2d65bca11fa7__4c28aabc624f",
+      "pair": "35229a82c461__57053a3d073e",
       "phyloio": {
         "ok": true,
         "received": {
           "leftChars": 1045773,
           "rightChars": 1026250
         },
-        "app": 1405824,
+        "app": 1408892,
         "data": 795249,
         "other": 0,
         "requests": 6,
         "byUrl": [
           {
             "url": "/phyloio/dist/phylo.js",
-            "bytes": 706321,
+            "bytes": 709137,
             "kind": "app"
           },
           {
             "url": "/phyloio/dist/src_worker_bcn_js.phylo.js",
-            "bytes": 503540,
+            "bytes": 503629,
             "kind": "app"
           },
           {
@@ -542,7 +542,7 @@
           },
           {
             "url": "/phyloio/dist/src_worker_distance_js.phylo.js",
-            "bytes": 194595,
+            "bytes": 194758,
             "kind": "app"
           },
           {
@@ -558,14 +558,14 @@
           "showing 50 of 35,290 leaves · 35,272 behind wedges",
           "showing 50 of 35,292 leaves · 35,289 behind wedges"
         ],
-        "app": 139392,
-        "data": 9946,
+        "app": 139462,
+        "data": 9596,
         "other": 0,
         "requests": 9,
         "byUrl": [
           {
-            "url": "/assets/index-DZE6bipp.js",
-            "bytes": 135877,
+            "url": "/assets/index-MSopFkAX.js",
+            "bytes": 135947,
             "kind": "app"
           },
           {
@@ -574,18 +574,13 @@
             "kind": "app"
           },
           {
-            "url": "/api/v1/trees/4c28aabc624f/slice",
-            "bytes": 2959,
+            "url": "/api/v1/trees/57053a3d073e/slice",
+            "bytes": 2958,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/2d65bca11fa7/slice",
-            "bytes": 2902,
-            "kind": "data"
-          },
-          {
-            "url": "/api/v1/datasets",
-            "bytes": 1680,
+            "url": "/api/v1/trees/35229a82c461/slice",
+            "bytes": 2901,
             "kind": "data"
           },
           {
@@ -594,8 +589,13 @@
             "kind": "data"
           },
           {
-            "url": "/api/v1/comparisons/2d65bca11fa7__4c28aabc624f",
-            "bytes": 599,
+            "url": "/api/v1/datasets",
+            "bytes": 1335,
+            "kind": "data"
+          },
+          {
+            "url": "/api/v1/comparisons/35229a82c461__57053a3d073e",
+            "bytes": 596,
             "kind": "data"
           },
           {
@@ -608,14 +608,14 @@
     },
     {
       "leaves": 70580,
-      "pair": "65463a257b9f__91440ed82f34",
+      "pair": "92c684b9e08f__f611cecdf2a9",
       "phyloio": {
         "ok": true,
         "received": {
           "leftChars": 2144483,
           "rightChars": 2105440
         },
-        "app": 1405824,
+        "app": 1408892,
         "data": 1601437,
         "other": 0,
         "requests": 6,
@@ -627,7 +627,7 @@
           },
           {
             "url": "/phyloio/dist/phylo.js",
-            "bytes": 706321,
+            "bytes": 709137,
             "kind": "app"
           },
           {
@@ -637,12 +637,12 @@
           },
           {
             "url": "/phyloio/dist/src_worker_bcn_js.phylo.js",
-            "bytes": 503540,
+            "bytes": 503629,
             "kind": "app"
           },
           {
             "url": "/phyloio/dist/src_worker_distance_js.phylo.js",
-            "bytes": 194595,
+            "bytes": 194758,
             "kind": "app"
           },
           {
@@ -658,14 +658,14 @@
           "showing 50 of 70,580 leaves · 70,562 behind wedges",
           "showing 50 of 70,584 leaves · 70,581 behind wedges"
         ],
-        "app": 139392,
-        "data": 9813,
+        "app": 139462,
+        "data": 9470,
         "other": 0,
         "requests": 9,
         "byUrl": [
           {
-            "url": "/assets/index-DZE6bipp.js",
-            "bytes": 135877,
+            "url": "/assets/index-MSopFkAX.js",
+            "bytes": 135947,
             "kind": "app"
           },
           {
@@ -674,18 +674,13 @@
             "kind": "app"
           },
           {
-            "url": "/api/v1/trees/91440ed82f34/slice",
-            "bytes": 2885,
+            "url": "/api/v1/trees/f611cecdf2a9/slice",
+            "bytes": 2887,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/65463a257b9f/slice",
-            "bytes": 2840,
-            "kind": "data"
-          },
-          {
-            "url": "/api/v1/datasets",
-            "bytes": 1680,
+            "url": "/api/v1/trees/92c684b9e08f/slice",
+            "bytes": 2841,
             "kind": "data"
           },
           {
@@ -694,8 +689,13 @@
             "kind": "data"
           },
           {
-            "url": "/api/v1/comparisons/65463a257b9f__91440ed82f34",
-            "bytes": 602,
+            "url": "/api/v1/datasets",
+            "bytes": 1335,
+            "kind": "data"
+          },
+          {
+            "url": "/api/v1/comparisons/92c684b9e08f__f611cecdf2a9",
+            "bytes": 601,
             "kind": "data"
           },
           {
@@ -708,14 +708,14 @@
     },
     {
       "leaves": 141160,
-      "pair": "127c5f679eb3__0c27af99acdf",
+      "pair": "8e25362c4e66__db20b0818b64",
       "phyloio": {
         "ok": true,
         "received": {
           "leftChars": 4341903,
           "rightChars": 4263820
         },
-        "app": 1405824,
+        "app": 1408892,
         "data": 3214382,
         "other": 0,
         "requests": 6,
@@ -732,17 +732,17 @@
           },
           {
             "url": "/phyloio/dist/phylo.js",
-            "bytes": 706321,
+            "bytes": 709137,
             "kind": "app"
           },
           {
             "url": "/phyloio/dist/src_worker_bcn_js.phylo.js",
-            "bytes": 503540,
+            "bytes": 503629,
             "kind": "app"
           },
           {
             "url": "/phyloio/dist/src_worker_distance_js.phylo.js",
-            "bytes": 194595,
+            "bytes": 194758,
             "kind": "app"
           },
           {
@@ -758,14 +758,14 @@
           "showing 50 of 141,160 leaves · 141,144 behind wedges",
           "showing 50 of 141,168 leaves · 141,165 behind wedges"
         ],
-        "app": 139392,
-        "data": 9565,
+        "app": 139462,
+        "data": 9218,
         "other": 0,
         "requests": 9,
         "byUrl": [
           {
-            "url": "/assets/index-DZE6bipp.js",
-            "bytes": 135877,
+            "url": "/assets/index-MSopFkAX.js",
+            "bytes": 135947,
             "kind": "app"
           },
           {
@@ -774,18 +774,13 @@
             "kind": "app"
           },
           {
-            "url": "/api/v1/trees/0c27af99acdf/slice",
-            "bytes": 2752,
+            "url": "/api/v1/trees/db20b0818b64/slice",
+            "bytes": 2750,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/127c5f679eb3/slice",
+            "url": "/api/v1/trees/8e25362c4e66/slice",
             "bytes": 2713,
-            "kind": "data"
-          },
-          {
-            "url": "/api/v1/datasets",
-            "bytes": 1680,
             "kind": "data"
           },
           {
@@ -794,7 +789,12 @@
             "kind": "data"
           },
           {
-            "url": "/api/v1/comparisons/127c5f679eb3__0c27af99acdf",
+            "url": "/api/v1/datasets",
+            "bytes": 1335,
+            "kind": "data"
+          },
+          {
+            "url": "/api/v1/comparisons/8e25362c4e66__db20b0818b64",
             "bytes": 614,
             "kind": "data"
           },
@@ -808,14 +808,14 @@
     },
     {
       "leaves": 282320,
-      "pair": "be0c11f9e6d9__d2112faa5534",
+      "pair": "bf1257c0c248__dfdb2e097198",
       "phyloio": {
         "ok": true,
         "received": {
           "leftChars": 8824968,
           "rightChars": 8668810
         },
-        "app": 1405824,
+        "app": 1408892,
         "data": 6455455,
         "other": 0,
         "requests": 6,
@@ -832,17 +832,17 @@
           },
           {
             "url": "/phyloio/dist/phylo.js",
-            "bytes": 706321,
+            "bytes": 709137,
             "kind": "app"
           },
           {
             "url": "/phyloio/dist/src_worker_bcn_js.phylo.js",
-            "bytes": 503540,
+            "bytes": 503629,
             "kind": "app"
           },
           {
             "url": "/phyloio/dist/src_worker_distance_js.phylo.js",
-            "bytes": 194595,
+            "bytes": 194758,
             "kind": "app"
           },
           {
@@ -858,14 +858,14 @@
           "showing 50 of 282,320 leaves · 282,306 behind wedges",
           "showing 50 of 282,336 leaves · 282,333 behind wedges"
         ],
-        "app": 139392,
-        "data": 8997,
+        "app": 139462,
+        "data": 8652,
         "other": 0,
         "requests": 9,
         "byUrl": [
           {
-            "url": "/assets/index-DZE6bipp.js",
-            "bytes": 135877,
+            "url": "/assets/index-MSopFkAX.js",
+            "bytes": 135947,
             "kind": "app"
           },
           {
@@ -874,18 +874,13 @@
             "kind": "app"
           },
           {
-            "url": "/api/v1/trees/d2112faa5534/slice",
-            "bytes": 2446,
+            "url": "/api/v1/trees/dfdb2e097198/slice",
+            "bytes": 2445,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/be0c11f9e6d9/slice",
-            "bytes": 2436,
-            "kind": "data"
-          },
-          {
-            "url": "/api/v1/datasets",
-            "bytes": 1680,
+            "url": "/api/v1/trees/bf1257c0c248/slice",
+            "bytes": 2435,
             "kind": "data"
           },
           {
@@ -894,8 +889,13 @@
             "kind": "data"
           },
           {
-            "url": "/api/v1/comparisons/be0c11f9e6d9__d2112faa5534",
-            "bytes": 629,
+            "url": "/api/v1/datasets",
+            "bytes": 1335,
+            "kind": "data"
+          },
+          {
+            "url": "/api/v1/comparisons/bf1257c0c248__dfdb2e097198",
+            "bytes": 631,
             "kind": "data"
           },
           {
@@ -908,14 +908,14 @@
     },
     {
       "leaves": 564640,
-      "pair": "983d208aed06__a07b56361ea3",
+      "pair": "7019ce8c4a43__851105db5e2f",
       "phyloio": {
         "ok": true,
         "received": {
           "leftChars": 17896968,
           "rightChars": 17584666
         },
-        "app": 1405824,
+        "app": 1408892,
         "data": 12956411,
         "other": 0,
         "requests": 6,
@@ -932,17 +932,17 @@
           },
           {
             "url": "/phyloio/dist/phylo.js",
-            "bytes": 706321,
+            "bytes": 709137,
             "kind": "app"
           },
           {
             "url": "/phyloio/dist/src_worker_bcn_js.phylo.js",
-            "bytes": 503540,
+            "bytes": 503629,
             "kind": "app"
           },
           {
             "url": "/phyloio/dist/src_worker_distance_js.phylo.js",
-            "bytes": 194595,
+            "bytes": 194758,
             "kind": "app"
           },
           {
@@ -958,14 +958,14 @@
           "showing 50 of 564,640 leaves · 564,630 behind wedges",
           "showing 50 of 564,672 leaves · 564,669 behind wedges"
         ],
-        "app": 139392,
-        "data": 7881,
+        "app": 139462,
+        "data": 7537,
         "other": 0,
         "requests": 9,
         "byUrl": [
           {
-            "url": "/assets/index-DZE6bipp.js",
-            "bytes": 135877,
+            "url": "/assets/index-MSopFkAX.js",
+            "bytes": 135947,
             "kind": "app"
           },
           {
@@ -974,18 +974,13 @@
             "kind": "app"
           },
           {
-            "url": "/api/v1/trees/983d208aed06/slice",
+            "url": "/api/v1/trees/7019ce8c4a43/slice",
             "bytes": 1864,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/a07b56361ea3/slice",
-            "bytes": 1863,
-            "kind": "data"
-          },
-          {
-            "url": "/api/v1/datasets",
-            "bytes": 1680,
+            "url": "/api/v1/trees/851105db5e2f/slice",
+            "bytes": 1864,
             "kind": "data"
           },
           {
@@ -994,7 +989,12 @@
             "kind": "data"
           },
           {
-            "url": "/api/v1/comparisons/983d208aed06__a07b56361ea3",
+            "url": "/api/v1/datasets",
+            "bytes": 1335,
+            "kind": "data"
+          },
+          {
+            "url": "/api/v1/comparisons/7019ce8c4a43__851105db5e2f",
             "bytes": 668,
             "kind": "data"
           },

@@ -75,7 +75,13 @@ server = {r["leaves"]: r for r in load("server_build.json", [])}
 endurance = load("endurance.json", [])
 #: Full builds at pinned thread counts. Table 8 reports the 2-thread column as
 #: the deployment setting; Table 9 compares all three.
-pinned = {n: load(f"thread_builds_{n}.json") for n in (1, 2)}
+#: Pinned-thread builds. 10 is loaded like the others now: it used to be taken
+#: from `server_build.json` on the assumption that the benchmark store had been
+#: built with the default thread count. That assumption silently became false
+#: the moment the store was rebuilt at 2 threads, and the table then showed a
+#: 2-thread run in a column headed "10 threads" — the same failure as the
+#: mislabelled file in DECISIONS Corrections, in the generator this time.
+pinned = {n: load(f"thread_builds_{n}.json") for n in (1, 2, 10)}
 
 #: Build time at the **deployment** thread count, which is what every table that
 #: quotes one precompute figure must use.
@@ -88,6 +94,13 @@ DEPLOY_THREADS = 2
 deploy_build = {
     r["leaves"]: r["build_s"]
     for r in (pinned.get(DEPLOY_THREADS) or {"rungs": []})["rungs"]
+}
+
+
+#: Measured at 10 threads, from its own pinned run — never inferred from
+#: whatever the benchmark store happened to be built with.
+ten_thread = {
+    r["leaves"]: r["build_s"] for r in (pinned.get(10) or {"rungs": []})["rungs"]
 }
 
 
@@ -492,7 +505,7 @@ if all(pinned.values()):
     one = {r["leaves"]: r["build_s"] for r in pinned[1]["rungs"]}
     two = {r["leaves"]: r["build_s"] for r in pinned[2]["rungs"]}
     for leaves in sorted(one):
-        ten = server.get(leaves, {}).get("build_s")
+        ten = ten_thread.get(leaves)
         a, b = one[leaves], two.get(leaves)
         if not (ten and b):
             continue
@@ -502,18 +515,20 @@ if all(pinned.values()):
         mark = ""
         if leaves < 35_290:
             mark = " *(floor-limited — ratios are noise)*"
-        elif leaves == 564_640:
-            mark = " *(see note)*"
+
         print(
             f"| {leaves:,}{mark} | {a:.1f} s | {b:.1f} s | {ten:.1f} s | "
             f"{a / b:.2f}x | {a / ten:.2f}x |"
         )
-    print("\n**Read the middle rows.** From 35,290 to 282,320 the picture is "
-          "clean and monotone: two threads rise 1.33x -> 2.01x, ten rise "
-          "2.00x -> 4.65x. The gain grows with size because below ~70,000 "
-          "leaves the *serial* parts — parse, reconcile, ingest, and the 2 s "
-          "poll — are most of the elapsed time, and threading the search "
-          "cannot touch them. Amdahl's law, visible directly.\n")
+    big = [n for n in sorted(one) if n >= 35_290 and two.get(n) and ten_thread.get(n)]
+    lo, hi = big[0], big[-1]
+    print(f"\n**Read the larger rows.** From {lo:,} to {hi:,} the picture is "
+          f"clean and monotone: two threads rise {one[lo]/two[lo]:.2f}x -> "
+          f"{one[hi]/two[hi]:.2f}x, ten rise {one[lo]/ten_thread[lo]:.2f}x -> "
+          f"{one[hi]/ten_thread[hi]:.2f}x. The gain grows with size because below "
+          f"~70,000 leaves the *serial* parts — parse, reconcile, ingest, and the "
+          f"2 s poll — are most of the elapsed time, and threading the search "
+          f"cannot touch them. Amdahl's law, visible directly.\n")
     print("**Re-measured, each thread count from an idle machine.** The first "
           "version of this table showed a 564,640 row where two threads gave "
           "2.44x — superlinear, therefore impossible for pure parallelism. That "
@@ -530,8 +545,10 @@ if all(pinned.values()):
           "running with. A parameter that describes a run instead of "
           "controlling it will eventually describe it wrongly, in a file that "
           "looks perfectly well-formed (DECISIONS, Corrections).\n")
-    print("**What to choose.** Two threads gives ~2x at 94% efficiency; ten "
-          "gives ~4.7x at 57%. One thread wastes a near-free doubling. If "
+    s2, s10 = one[hi] / two[hi], one[hi] / ten_thread[hi]
+    print(f"**What to choose.** At {hi:,} leaves two threads give {s2:.2f}x at "
+          f"{s2 / 2 * 100:.0f}% efficiency; ten give {s10:.2f}x at "
+          f"{s10 / 10 * 100:.0f}%. One thread wastes a near-free doubling. If "
           "efficiency is the objective, **two is the sweet spot** — but "
           "latency for a single comparison favours more threads, and "
           "throughput for a queue favours fewer per build with more builds at "

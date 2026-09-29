@@ -45,6 +45,11 @@
       "leaves": 282320,
       "build_s": 26.787939583009575,
       "status": "ready"
+    },
+    {
+      "leaves": 564640,
+      "build_s": 125.33082533400739,
+      "status": "ready"
     }
   ]
 }

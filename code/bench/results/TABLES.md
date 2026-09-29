@@ -10,7 +10,7 @@
 | Browser flags | `--js-flags=--max-old-space-size=8192`, `--disable-dev-shm-usage` — **both tools, identically** |
 | Viewport | 1440 x 900; Table 21 varies the height |
 | **Tool compared against** | **phylo.io 2.1.1**, its own prebuilt `dist/`, unmodified; findings re-checked against **2.2.5** (see the Table 15 note) |
-| This project | generated at commit `6c2515a` |
+| This project | generated at commit `8c8050c + uncommitted changes` |
 | Runtimes | Python 3.12.14 (`uv`), Node 26.3.0, Playwright 1.63.0 |
 | Backend database | SQLite, in the store directory |
 | Store location | `/private/tmp/...` — an APFS SSD volume, **not** a RAM disk |
@@ -79,16 +79,16 @@ Cold start to an interactive comparison. Phylo.io is split into *paint* (two tre
 
 | leaves | phylo.io paint | phylo.io compare | phylo.io main-thread heap | PhyloDelta | PhyloDelta heap | PhyloDelta advantage | server precompute |
 |---:|---:|---:|---:|---:|---:|---:|---:|
-| 1,000 | 0.4 s | 5 s | 27.4 MB | 0.29 s | 3.6 MB | **17x** | 0.5 s |
-| 2,500 | 0.9 s | 19 s | 100.2 MB | 0.24 s | 3.6 MB | **78x** | 2.0 s |
-| 5,000 | 1.9 s | 53 s | 291.1 MB | 0.19 s | 3.6 MB | **272x** | 2.6 s |
-| 10,000 | 4.4 s | 199 s | 1,181.4 MB | 0.20 s | 3.6 MB | **1,002x** | 2.0 s |
-| 17,645 | 9.3 s | **did not finish** | 58.7 MB | 0.20 s | 3.6 MB | — | 3.1 s |
-| 35,290 | 25.1 s | **did not finish** | 115.6 MB | 0.19 s | 3.7 MB | — | 4.6 s |
-| 70,580 | **failed** | **failed** | **failed** | 0.57 s | 3.6 MB | **only PhyloDelta** | 10.2 s |
-| 141,160 | **failed** | **failed** | **failed** | 0.34 s | 3.6 MB | **only PhyloDelta** | 31.5 s |
-| 282,320 | **failed** | **failed** | **failed** | 0.94 s | 3.6 MB | **only PhyloDelta** | 115.1 s |
-| 564,640 | **failed** | **failed** | **failed** | 0.75 s | 3.6 MB | **only PhyloDelta** | 492.7 s |
+| 1,000 | 0.4 s | 5 s | 27.4 MB | 0.24 s | 3.7 MB | **20x** | 0.5 s |
+| 2,500 | 0.9 s | 18 s | 100.1 MB | 0.22 s | 3.7 MB | **83x** | 2.0 s |
+| 5,000 | 1.9 s | 53 s | 291.1 MB | 0.22 s | 3.7 MB | **235x** | 2.1 s |
+| 10,000 | 4.4 s | 199 s | 1,181.4 MB | 0.21 s | 3.7 MB | **948x** | 2.0 s |
+| 17,645 | **failed** | **failed** | **failed** | 0.24 s | 3.7 MB | **only PhyloDelta** | 2.6 s |
+| 35,290 | **failed** | **failed** | **failed** | 0.23 s | 3.7 MB | **only PhyloDelta** | 3.6 s |
+| 70,580 | **failed** | **failed** | **failed** | 0.31 s | 3.7 MB | **only PhyloDelta** | 6.1 s |
+| 141,160 | **failed** | **failed** | **failed** | 0.51 s | 3.7 MB | **only PhyloDelta** | 17.2 s |
+| 282,320 | **failed** | **failed** | **failed** | 0.48 s | 3.7 MB | **only PhyloDelta** | 60.8 s |
+| 564,640 | **failed** | **failed** | **failed** | 0.74 s | 3.7 MB | **only PhyloDelta** | 262.6 s |
 
 ## Table 2 — What each tool actually drew
 
@@ -105,8 +105,8 @@ The check that makes Table 1 admissible. An earlier comparison in this project r
 | 2,500 | 1126 | 9,662 | 14 | 50 per panel |
 | 5,000 | 1166 | 9,836 | 14 | 50 per panel |
 | 10,000 | 1254 | 10,166 | 14 | 50 per panel |
-| 17,645 | 670 | 6,921 | 14 | 50 per panel |
-| 35,290 | 640 | 6,506 | 14 | 50 per panel |
+| 17,645 | failed | failed | 14 | 50 per panel |
+| 35,290 | failed | failed | 14 | 50 per panel |
 | 70,580 | failed | failed | 14 | 50 per panel |
 | 141,160 | failed | failed | 14 | 50 per panel |
 | 282,320 | failed | failed | 14 | 50 per panel |
@@ -123,16 +123,16 @@ Rows where the comparison did not finish are marked — their figure excludes th
 
 | leaves | phylo.io main-thread heap | growth vs previous | PhyloDelta heap |
 |---:|---:|---:|---:|
-| 1,000 | 27.4 MB | — | 3.6 MB |
-| 2,500 | 100.2 MB | 3.66x | 3.6 MB |
-| 5,000 | 291.1 MB | 2.91x | 3.6 MB |
-| 10,000 | 1,181.4 MB | 4.06x | 3.6 MB |
-| 17,645 | 58.7 MB *(compare unfinished — worker excluded)* | — | 3.6 MB |
-| 35,290 | 115.6 MB *(compare unfinished — worker excluded)* | — | 3.7 MB |
-| 70,580 | — *(compare unfinished — worker excluded)* | — | 3.6 MB |
-| 141,160 | — *(compare unfinished — worker excluded)* | — | 3.6 MB |
-| 282,320 | — *(compare unfinished — worker excluded)* | — | 3.6 MB |
-| 564,640 | — *(compare unfinished — worker excluded)* | — | 3.6 MB |
+| 1,000 | 27.4 MB | — | 3.7 MB |
+| 2,500 | 100.1 MB | 3.65x | 3.7 MB |
+| 5,000 | 291.1 MB | 2.91x | 3.7 MB |
+| 10,000 | 1,181.4 MB | 4.06x | 3.7 MB |
+| 17,645 | — *(compare unfinished — worker excluded)* | — | 3.7 MB |
+| 35,290 | — *(compare unfinished — worker excluded)* | — | 3.7 MB |
+| 70,580 | — *(compare unfinished — worker excluded)* | — | 3.7 MB |
+| 141,160 | — *(compare unfinished — worker excluded)* | — | 3.7 MB |
+| 282,320 | — *(compare unfinished — worker excluded)* | — | 3.7 MB |
+| 564,640 | — *(compare unfinished — worker excluded)* | — | 3.7 MB |
 
 ## Table 4 — Failure behaviour, given 30 minutes and 16 GB
 
@@ -157,9 +157,10 @@ Phylo.io finds each clade's best corresponding node by maximising Jaccard over *
 
 | leaves | clades | exact match | missed | median gap | worst gap | beat exact |
 |---:|---:|---:|---:|---:|---:|---:|
-| 1000 | 998 | 969 (97.1%) | 29 (2.9%) | 0.108 | 0.333 | 0 |
-| 2500 | 2,498 | 2,356 (94.3%) | 142 (5.7%) | 0.094 | 0.838 | 0 |
-| 5000 | 4,994 | 4,765 (95.4%) | 229 (4.6%) | 0.103 | 0.640 | 0 |
+| 1000 | 998 | 952 (95.4%) | 46 (4.6%) | 0.123 | 0.449 | 0 |
+| 10000 | 9,997 | 9,580 (95.8%) | 417 (4.2%) | 0.133 | 0.750 | 0 |
+| 2500 | 2,493 | 2,396 (96.1%) | 97 (3.9%) | 0.115 | 0.619 | 0 |
+| 5000 | 4,998 | 4,811 (96.3%) | 187 (3.7%) | 0.112 | 0.667 | 0 |
 
 *`beat exact` must be 0: an exhaustive search cannot be beaten by a subset of the same candidates. It is reported as a check on the method, not as a result.*
 
@@ -172,12 +173,12 @@ Its own phase split. Parsing and drawing are cheap and near-linear; **the compar
 
 | leaves | parse | layout | paint | compare | compare as % of total |
 |---:|---:|---:|---:|---:|---:|
-| 1,000 | 0.02 s | 0.18 s | 0.18 s | 5 s | 93% |
-| 2,500 | 0.04 s | 0.41 s | 0.46 s | 19 s | 95% |
-| 5,000 | 0.09 s | 0.94 s | 0.92 s | 53 s | 96% |
-| 10,000 | 0.22 s | 2.32 s | 1.85 s | 199 s | 98% |
-| 17,645 | 0.49 s | 5.30 s | 3.50 s | **>600 s** | — |
-| 35,290 | 0.93 s | 16.91 s | 7.24 s | **>600 s** | — |
+| 1,000 | 0.02 s | 0.19 s | 0.21 s | 5 s | 92% |
+| 2,500 | 0.04 s | 0.40 s | 0.45 s | 18 s | 95% |
+| 5,000 | 0.08 s | 0.92 s | 0.90 s | 53 s | 97% |
+| 10,000 | 0.22 s | 2.34 s | 1.83 s | 199 s | 98% |
+| 17,645 | — | — | — | **failed** | — |
+| 35,290 | — | — | — | **failed** | — |
 | 70,580 | — | — | — | **failed** | — |
 | 141,160 | — | — | — | **failed** | — |
 | 282,320 | — | — | — | **failed** | — |
@@ -216,14 +217,14 @@ Measured through the real upload path: POST the bundle, a worker claims it, poll
 |---:|---:|---:|---:|
 | 1,000 | **0.5 s** | 2.0 s | 0.0 MB |
 | 2,500 | **2.0 s** | 2.0 s | 0.0 MB |
-| 5,000 | **2.6 s** | 2.0 s | 0.1 MB |
-| 10,000 | **2.0 s** | 2.5 s | 0.2 MB |
-| 17,645 | **3.1 s** | 2.6 s | 1.1 MB |
-| 35,290 | **4.6 s** | 3.0 s | 2.1 MB |
-| 70,580 | **10.2 s** | 5.6 s | 4.2 MB |
-| 141,160 | **31.5 s** | 14.4 s | 8.6 MB |
-| 282,320 | **115.1 s** | 49.8 s | 17.5 MB |
-| 564,640 | **492.7 s** | 339.5 s | 35.5 MB |
+| 5,000 | **2.1 s** | 2.0 s | 0.1 MB |
+| 10,000 | **2.0 s** | 2.0 s | 0.2 MB |
+| 17,645 | **2.6 s** | 2.5 s | 1.1 MB |
+| 35,290 | **3.6 s** | 3.0 s | 2.1 MB |
+| 70,580 | **6.1 s** | 6.1 s | 4.2 MB |
+| 141,160 | **17.2 s** | 17.2 s | 8.6 MB |
+| 282,320 | **60.8 s** | 60.8 s | 17.5 MB |
+| 564,640 | **262.6 s** | 251.0 s | 35.5 MB |
 
 *The ~2 s floor at small sizes is the worker's poll interval, not work.*
 
@@ -236,22 +237,24 @@ Table 8 used the default — one thread per hardware thread, **10** on this mach
 
 | leaves | 1 thread | 2 threads | 10 threads | 2 vs 1 | 10 vs 1 |
 |---:|---:|---:|---:|---:|---:|
-| 1,000 *(floor-limited — ratios are noise)* | 2.1 s | 0.5 s | 2.0 s | 3.81x | 1.02x |
-| 2,500 *(floor-limited — ratios are noise)* | 2.1 s | 2.0 s | 2.0 s | 1.01x | 1.01x |
-| 5,000 *(floor-limited — ratios are noise)* | 2.0 s | 2.6 s | 2.0 s | 0.80x | 1.01x |
-| 10,000 *(floor-limited — ratios are noise)* | 2.5 s | 2.0 s | 2.5 s | 1.25x | 1.00x |
-| 17,645 *(floor-limited — ratios are noise)* | 3.1 s | 3.1 s | 2.6 s | 1.00x | 1.19x |
-| 35,290 | 6.1 s | 4.6 s | 3.0 s | 1.33x | 2.00x |
-| 70,580 | 16.7 s | 10.2 s | 5.6 s | 1.65x | 2.98x |
-| 141,160 | 57.8 s | 31.5 s | 14.4 s | 1.84x | 4.03x |
-| 282,320 | 231.7 s | 115.1 s | 49.8 s | 2.01x | 4.65x |
-| 564,640 *(see note)* | 1200.7 s | 492.7 s | 339.5 s | 2.44x | 3.54x |
+| 1,000 *(floor-limited — ratios are noise)* | 0.5 s | 0.5 s | 0.5 s | 1.00x | 1.00x |
+| 2,500 *(floor-limited — ratios are noise)* | 2.1 s | 2.0 s | 2.0 s | 1.00x | 1.00x |
+| 5,000 *(floor-limited — ratios are noise)* | 2.0 s | 2.1 s | 2.1 s | 0.99x | 0.99x |
+| 10,000 *(floor-limited — ratios are noise)* | 2.6 s | 2.0 s | 2.0 s | 1.25x | 1.25x |
+| 17,645 *(floor-limited — ratios are noise)* | 2.6 s | 2.6 s | 2.6 s | 1.00x | 1.00x |
+| 35,290 | 4.1 s | 3.6 s | 2.6 s | 1.14x | 1.60x |
+| 70,580 | 9.1 s | 6.1 s | 4.1 s | 1.49x | 2.22x |
+| 141,160 | 30.9 s | 17.2 s | 9.0 s | 1.79x | 3.42x |
+| 282,320 | 113.4 s | 60.8 s | 26.8 s | 1.87x | 4.23x |
+| 564,640 | 496.2 s | 262.6 s | 125.3 s | 1.89x | 3.96x |
 
-**Read the middle rows.** From 35,290 to 282,320 the picture is clean and monotone: two threads rise 1.33x -> 2.01x, ten rise 2.00x -> 4.65x. The gain grows with size because below ~70,000 leaves the *serial* parts — parse, reconcile, ingest, and the 2 s poll — are most of the elapsed time, and threading the search cannot touch them. Amdahl's law, visible directly.
+**Read the larger rows.** From 35,290 to 564,640 the picture is clean and monotone: two threads rise 1.14x -> 1.89x, ten rise 1.60x -> 3.96x. The gain grows with size because below ~70,000 leaves the *serial* parts — parse, reconcile, ingest, and the 2 s poll — are most of the elapsed time, and threading the search cannot touch them. Amdahl's law, visible directly.
 
-**The 564,640 row should not be quoted as a ratio.** Two threads appear to give 2.44x, which is superlinear and therefore impossible for pure parallelism, and ten threads appear to *fall* to 3.54x, breaking an otherwise monotone trend. Both point at the machine rather than the code: the single-threaded run took **20 minutes**, long enough for thermal state to drift, and this rung's 10-thread baseline is the disputed one (339.5 s here, 196.4 s in another store — see DECISIONS §34.8). Against 196.4 s the 10-thread gain is 6.11x and the trend continues. The absolute times stand; the ratios for this row do not.
+**Re-measured, each thread count from an idle machine.** The first version of this table showed a 564,640 row where two threads gave 2.44x — superlinear, therefore impossible for pure parallelism. That was attributed to thermal drift and the attribution was wrong: the same rung measured cold and then immediately after twenty minutes of saturating load gives 262.6 s and 244.3 s, the hot run marginally *faster*, with no thermal warning recorded by the OS either time.
 
-**What to choose.** Two threads gives ~2x at 94% efficiency; ten gives ~4.7x at 57%. One thread wastes a near-free doubling. If efficiency is the objective, **two is the sweet spot** — but latency for a single comparison favours more threads, and throughput for a queue favours fewer per build with more builds at once. `PHYLODELTA_THREADS` exists so a deployment can choose; there is no single best value.
+The cause was that **the run labelled "2 threads" executed with one**. It matches a fresh single-threaded measurement to within 0.7% at 564,640 leaves, and the gap between old and new is 1.88x — exactly the 2-thread speedup in Table 10. `PHYLODELTA_THREADS` is read by the *worker*; the measuring tool took the thread count only to name its output file and never asked the worker what it was running with. A parameter that describes a run instead of controlling it will eventually describe it wrongly, in a file that looks perfectly well-formed (DECISIONS, Corrections).
+
+**What to choose.** At 564,640 leaves two threads give 1.89x at 94% efficiency; ten give 3.96x at 40%. One thread wastes a near-free doubling. If efficiency is the objective, **two is the sweet spot** — but latency for a single comparison favours more threads, and throughput for a queue favours fewer per build with more builds at once. `PHYLODELTA_THREADS` exists so a deployment can choose; there is no single best value.
 
 ## Table 10 — Thread scaling of the parallel step
 
@@ -311,18 +314,18 @@ The **cause**, where every other table shows the consequence. The same GET the f
 
 | leaves | median | min | max | response | leaves drawn |
 |---:|---:|---:|---:|---:|---:|
-| 1,000 | **3.8 ms** | 3.1 ms | 8.5 ms | 5.4 KB | 50 |
-| 2,500 | **3.0 ms** | 2.8 ms | 11.6 ms | 5.5 KB | 50 |
-| 5,000 | **2.9 ms** | 2.9 ms | 3.2 ms | 5.6 KB | 50 |
-| 10,000 | **2.8 ms** | 2.7 ms | 2.9 ms | 5.6 KB | 50 |
-| 17,645 | **3.2 ms** | 3.0 ms | 3.9 ms | 6.9 KB | 50 |
-| 35,290 | **3.1 ms** | 2.9 ms | 3.3 ms | 6.9 KB | 50 |
-| 70,580 | **2.9 ms** | 2.7 ms | 3.4 ms | 6.8 KB | 50 |
-| 141,160 | **3.2 ms** | 2.9 ms | 34.7 ms | 6.7 KB | 50 |
-| 282,320 | **3.2 ms** | 3.0 ms | 3.4 ms | 6.5 KB | 50 |
-| 564,640 | **2.9 ms** | 2.9 ms | 3.0 ms | 6.0 KB | 50 |
+| 1,000 | **1.9 ms** | 1.6 ms | 2.0 ms | 5.4 KB | 50 |
+| 2,500 | **1.6 ms** | 1.5 ms | 1.7 ms | 5.5 KB | 50 |
+| 5,000 | **1.6 ms** | 1.5 ms | 2.0 ms | 5.6 KB | 50 |
+| 10,000 | **1.8 ms** | 1.6 ms | 1.9 ms | 5.6 KB | 50 |
+| 17,645 | **1.6 ms** | 1.6 ms | 1.7 ms | 6.9 KB | 50 |
+| 35,290 | **1.6 ms** | 1.6 ms | 1.7 ms | 6.9 KB | 50 |
+| 70,580 | **1.6 ms** | 1.5 ms | 1.7 ms | 6.8 KB | 50 |
+| 141,160 | **1.7 ms** | 1.6 ms | 1.7 ms | 6.7 KB | 50 |
+| 282,320 | **1.6 ms** | 1.5 ms | 2.0 ms | 6.5 KB | 50 |
+| 564,640 | **1.6 ms** | 1.6 ms | 1.7 ms | 6.0 KB | 50 |
 
-*From 1,000 to 564,640 leaves — a 565x increase — the median moves 3.8 ms to 2.9 ms and the payload 5.4 KB to 6.0 KB. Seven samples per rung after a warm-up, since the first touch of a store memory-maps it.*
+*From 1,000 to 564,640 leaves — a 565x increase — the median moves 1.9 ms to 1.6 ms and the payload 5.4 KB to 6.0 KB. Seven samples per rung after a warm-up, since the first touch of a store memory-maps it.*
 
 ## Table 13 — What the design costs
 
@@ -332,7 +335,7 @@ The **cause**, where every other table shows the consequence. The same GET the f
 | | phylo.io | PhyloDelta |
 |---|---|---|
 | Server required | no | **yes** |
-| Precompute before first view | none | up to 493 s at 2 threads |
+| Precompute before first view | none | up to 263 s at 2 threads |
 | Whole tree ever visible | yes, in memory | **no, never transferred** |
 | Works offline from a file | yes | no |
 | Comparison recomputed on demand | yes | no, fixed at build |
@@ -359,11 +362,11 @@ The **cause**, where every other table shows the consequence. The same GET the f
 
 | leaves | phylo.io expand | phylo.io back | phylo.io jump | PhyloDelta expand | PhyloDelta back | PhyloDelta jump |
 |---:|---:|---:|---:|---:|---:|---:|
-| 1,000 | 30.9 ms | 31.3 ms | **fails** | 49.6 ms | 49.0 ms | 47.6 ms |
-| 2,500 | 31.1 ms | 31.1 ms | **fails** | 49.2 ms | 49.3 ms | 49.3 ms |
-| 5,000 | 31.5 ms | 32.1 ms | **fails** | 49.2 ms | 49.3 ms | 49.8 ms |
-| 10,000 | 31.5 ms | 31.6 ms | **fails** | 49.3 ms | 49.2 ms | 49.3 ms |
-| 17,645 | *no comparison* | *no comparison* | *no comparison* | 49.2 ms | 49.3 ms | 49.3 ms |
+| 1,000 | 63.5 ms | 64.3 ms | 62.9 ms | 65.8 ms | 65.9 ms | 65.9 ms |
+| 2,500 | 63.5 ms | 62.8 ms | **fails** | 65.9 ms | 65.9 ms | 65.9 ms |
+| 5,000 | 63.8 ms | 64.0 ms | **fails** | 65.9 ms | 65.9 ms | 65.8 ms |
+| 10,000 | 64.3 ms | 64.2 ms | **fails** | 66.0 ms | 65.9 ms | 65.9 ms |
+| 17,645 | *no comparison* | *no comparison* | *no comparison* | 49.3 ms | 49.4 ms | 49.3 ms |
 
 **"No comparison" is not slow navigation.** phylo.io paints both trees at 17,645 leaves but its best-corresponding-node worker never finishes there — Table 1 records `compareComplete=False` against a 600 s budget — so in compare mode there is nothing to navigate. Its navigation is therefore measurable only to **10,000 leaves**, where the comparison completes in 199 s. PhyloDelta is measured at 17,645 anyway, because holding flat is the claim.
 
@@ -381,11 +384,11 @@ The **cause**, where every other table shows the consequence. The same GET the f
 
 | leaves | expand total | of which fetch | back total | of which fetch | back, cache emptied | of which fetch |
 |---:|---:|---:|---:|---:|---:|---:|
-| 1,000 | 49.6 ms | 6.8 ms | 49.0 ms | 0.0 ms | 48.8 ms | 7.8 ms |
-| 2,500 | 49.2 ms | 8.1 ms | 49.3 ms | 0.0 ms | 48.9 ms | 8.4 ms |
-| 5,000 | 49.2 ms | 8.1 ms | 49.3 ms | 0.0 ms | 47.7 ms | 7.9 ms |
-| 10,000 | 49.3 ms | 7.8 ms | 49.2 ms | 0.0 ms | 49.1 ms | 8.1 ms |
-| 17,645 | 49.2 ms | 6.6 ms | 49.3 ms | 0.0 ms | 49.0 ms | 6.7 ms |
+| 1,000 | 65.8 ms | 3.9 ms | 65.9 ms | 0.0 ms | 65.4 ms | 3.8 ms |
+| 2,500 | 65.9 ms | 3.6 ms | 65.9 ms | 0.0 ms | 65.5 ms | 4.0 ms |
+| 5,000 | 65.9 ms | 3.6 ms | 65.9 ms | 0.0 ms | 65.6 ms | 4.0 ms |
+| 10,000 | 66.0 ms | 3.5 ms | 65.9 ms | 0.0 ms | 65.5 ms | 3.9 ms |
+| 17,645 | 49.3 ms | 3.4 ms | 49.4 ms | 0.0 ms | 49.0 ms | 3.5 ms |
 
 *Cached and uncached are interleaved in one page against the same target, because measuring them in separate browsers reported the uncached run as three times FASTER — the first run was paying for a cold server and the second inherited a warm one. The uncached pass runs first, so any residual warming works against the cache.*
 
@@ -478,20 +481,20 @@ So §9's claim that several metrics cost little more than one is **true asymptot
 
 | leaves | phylo.io app | phylo.io data | phylo.io total | PhyloDelta app | PhyloDelta data | PhyloDelta total | data ratio | total ratio |
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1,000 | 8.27 MB | 0.02 MB | 8.28 MB | 0.49 MB | **27.5 KB** | 0.52 MB | **1x** | 16x |
-| 2,500 | 8.27 MB | 0.04 MB | 8.31 MB | 0.49 MB | **27.7 KB** | 0.52 MB | **1x** | 16x |
-| 5,000 | 8.27 MB | 0.08 MB | 8.35 MB | 0.49 MB | **28.3 KB** | 0.52 MB | **3x** | 16x |
-| 10,000 | 8.27 MB | 0.17 MB | 8.43 MB | 0.49 MB | **28.6 KB** | 0.52 MB | **6x** | 16x |
-| 17,645 | 8.27 MB | 1.11 MB | 9.38 MB | 0.49 MB | **31.3 KB** | 0.52 MB | **35x** | 18x |
-| 35,290 | 8.27 MB | 2.07 MB | 10.34 MB | 0.49 MB | **31.2 KB** | 0.52 MB | **65x** | 20x |
-| 70,580 | 8.27 MB | 4.25 MB | 12.52 MB | 0.49 MB | **31.1 KB** | 0.52 MB | **134x** | 24x |
-| 141,160 | 8.27 MB | 8.61 MB | 16.87 MB | 0.49 MB | **30.7 KB** | 0.52 MB | **273x** | 32x |
-| 282,320 | 8.27 MB | 17.50 MB | 25.76 MB | 0.49 MB | **30.1 KB** | 0.52 MB | **567x** | 50x |
-| 564,640 | 8.27 MB | 35.49 MB | 43.75 MB | 0.49 MB | **28.9 KB** | 0.52 MB | **1,199x** | 84x |
+| 1,000 | 8.30 MB | 0.02 MB | 8.31 MB | 0.49 MB | **22.5 KB** | 0.51 MB | **1x** | 16x |
+| 2,500 | 8.30 MB | 0.04 MB | 8.34 MB | 0.49 MB | **22.7 KB** | 0.51 MB | **2x** | 16x |
+| 5,000 | 8.30 MB | 0.08 MB | 8.38 MB | 0.49 MB | **23.3 KB** | 0.51 MB | **4x** | 16x |
+| 10,000 | 8.30 MB | 0.17 MB | 8.47 MB | 0.49 MB | **23.6 KB** | 0.51 MB | **7x** | 16x |
+| 17,645 | 8.30 MB | 1.11 MB | 9.41 MB | 0.49 MB | **26.3 KB** | 0.52 MB | **41x** | 18x |
+| 35,290 | 8.30 MB | 2.07 MB | 10.37 MB | 0.49 MB | **26.2 KB** | 0.52 MB | **77x** | 20x |
+| 70,580 | 8.30 MB | 4.25 MB | 12.55 MB | 0.49 MB | **26.0 KB** | 0.52 MB | **159x** | 24x |
+| 141,160 | 8.30 MB | 8.61 MB | 16.90 MB | 0.49 MB | **25.7 KB** | 0.52 MB | **327x** | 33x |
+| 282,320 | 8.30 MB | 17.50 MB | 25.79 MB | 0.49 MB | **25.1 KB** | 0.52 MB | **681x** | 50x |
+| 564,640 | 8.30 MB | 35.49 MB | 43.78 MB | 0.49 MB | **23.9 KB** | 0.51 MB | **1,451x** | 85x |
 
-**At 564,640 leaves phylo.io must transfer 35.5 MB of tree and still cannot open the comparison** (Table 1). PhyloDelta transfers 28.9 KB and shows it. The data column is the one that matters for the claim: it is flat — 27.5 KB at 1,000 leaves and 28.9 KB at 564,640 — against a download that grows linearly with the tree.
+**At 564,640 leaves phylo.io must transfer 35.5 MB of tree and still cannot open the comparison** (Table 1). PhyloDelta transfers 23.9 KB and shows it. The data column is the one that matters for the claim: it is flat — 22.5 KB at 1,000 leaves and 23.9 KB at 564,640 — against a download that grows linearly with the tree.
 
-**The application bundles run the other way, and by more than expected.** phylo.io's is 8.27 MB — `phylo.js` at 4.0 MB plus two worker chunks at 2.9 and 1.4 MB — against PhyloDelta's 0.49 MB. So PhyloDelta transfers less **in total at every rung including the smallest**, which was not the expected result: the prediction was that it would lose on total bytes on small trees and win only through the data column.
+**The application bundles run the other way, and by more than expected.** phylo.io's is 8.30 MB — `phylo.js` at 4.0 MB plus two worker chunks at 2.9 and 1.4 MB — against PhyloDelta's 0.49 MB. So PhyloDelta transfers less **in total at every rung including the smallest**, which was not the expected result: the prediction was that it would lose on total bytes on small trees and win only through the data column.
 
 *Two caveats, and they pull in opposite directions — stated separately rather than netted off.*
 
@@ -511,18 +514,18 @@ The API had to be compressed in the proxy, because FastAPI ships no `GZipMiddlew
 
 | leaves | phylo.io data | PhyloDelta data | ratio, gzip | ratio, raw |
 |---:|---:|---:|---:|---:|
-| 1,000 | 0.01 MB | **7.4 KB** | **1x** | 1x |
-| 2,500 | 0.02 MB | **7.5 KB** | **2x** | 1x |
-| 5,000 | 0.03 MB | **7.7 KB** | **4x** | 3x |
-| 10,000 | 0.07 MB | **7.8 KB** | **8x** | 6x |
-| 17,645 | 0.49 MB | **9.8 KB** | **49x** | 35x |
-| 35,290 | 0.80 MB | **9.7 KB** | **80x** | 65x |
-| 70,580 | 1.60 MB | **9.6 KB** | **163x** | 134x |
-| 141,160 | 3.21 MB | **9.3 KB** | **336x** | 273x |
-| 282,320 | 6.46 MB | **8.8 KB** | **718x** | 567x |
-| 564,640 | 12.96 MB | **7.7 KB** | **1,644x** | 1,199x |
+| 1,000 | 0.01 MB | **7.1 KB** | **1x** | 1x |
+| 2,500 | 0.02 MB | **7.2 KB** | **2x** | 2x |
+| 5,000 | 0.03 MB | **7.4 KB** | **4x** | 4x |
+| 10,000 | 0.07 MB | **7.4 KB** | **9x** | 7x |
+| 17,645 | 0.49 MB | **9.4 KB** | **50x** | 41x |
+| 35,290 | 0.80 MB | **9.4 KB** | **83x** | 77x |
+| 70,580 | 1.60 MB | **9.2 KB** | **169x** | 159x |
+| 141,160 | 3.21 MB | **9.0 KB** | **349x** | 327x |
+| 282,320 | 6.46 MB | **8.4 KB** | **746x** | 681x |
+| 564,640 | 12.96 MB | **7.4 KB** | **1,719x** | 1,451x |
 
-**Compression widens the gap, which was not the expectation.** At 564,640 leaves the ratio goes from 1,199x to 1,644x. The reason is in the compression factors, not in the design: the slice JSON compresses 3.8x — repeated keys and small integers — while the Newick manages only 2.7x, because at this size it is mostly unique labels and branch lengths, which is close to incompressible.
+**Compression widens the gap, which was not the expectation.** At 564,640 leaves the ratio goes from 1,451x to 1,719x. The reason is in the compression factors, not in the design: the slice JSON compresses 3.2x — repeated keys and small integers — while the Newick manages only 2.7x, because at this size it is mostly unique labels and branch lengths, which is close to incompressible.
 
 This matters for the write-up beyond the number: gzip is what a real deployment serves, so **Table 20 is the honest production figure and Table 19 is the conservative one.** Quoting 19 understates the result.
 
