@@ -54,6 +54,21 @@ def post(left: Path, right: Path, name: str) -> str:
         return json.load(response)["id"]
 
 
+def built_with(comparison_id: str) -> int | None:
+    """The thread count the worker actually used, from the pair's own notes.
+
+    None when the store predates `build.threads` being recorded, so an older
+    store degrades to the previous behaviour rather than refusing everything.
+    """
+    url = f"{BASE}/comparisons/{comparison_id}?metric=rf"
+    try:
+        with urllib.request.urlopen(url, timeout=120) as r:
+            body = json.load(r)
+    except Exception:
+        return None
+    return (body.get("build") or {}).get("threads")
+
+
 def main() -> None:
     rungs = sorted({int(p.name.split("-")[1]) for p in LADDER.glob("ladder-*-a.nwk")})
     out = []
@@ -71,7 +86,32 @@ def main() -> None:
                 break
             time.sleep(0.5)
         elapsed = time.perf_counter() - started
-        out.append({"leaves": leaves, "build_s": elapsed, "status": record["status"]})
+
+        # What the worker ACTUALLY used, read back from the pair it just built.
+        # Not a formality: a previous campaign recorded a run as "2 threads"
+        # that had executed with one, and nothing caught it for three days —
+        # `PHYLODELTA_THREADS` is read by the worker, which this script neither
+        # starts nor controls, so the argument was only ever a filename.
+        # Refusing here is the difference between a parameter that describes a
+        # run and one that is checked against it.
+        if record["status"] == "ready":
+            actual = built_with(comparison_id)
+            if actual is not None and actual != THREADS:
+                raise SystemExit(
+                    f"\nREFUSING TO WRITE: asked for {THREADS} threads, but the "
+                    f"worker built {comparison_id} with {actual}.\n"
+                    f"Start the worker with PHYLODELTA_THREADS={THREADS} and "
+                    f"re-run. Nothing has been written."
+                )
+
+        out.append(
+            {
+                "leaves": leaves,
+                "build_s": elapsed,
+                "status": record["status"],
+                "threads_verified": actual if record["status"] == "ready" else None,
+            }
+        )
         print(f"{leaves:>9,} {elapsed:>9.1f}s  {record['status']}")
         target = Path(__file__).resolve().parents[2] / "bench" / "results" / f"thread_builds_{THREADS}.json"
         target.write_text(json.dumps({"threads": THREADS, "rungs": out}, indent=2))

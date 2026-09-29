@@ -9,14 +9,16 @@
 | Browser | Chrome 154.0.8037.58, **headless**, system Chrome via Playwright's `channel: "chrome"` |
 | Browser flags | `--js-flags=--max-old-space-size=8192`, `--disable-dev-shm-usage` — **both tools, identically** |
 | Viewport | 1440 x 900; Table 21 varies the height |
-| **Tool compared against** | **phylo.io 2.1.1**, its own prebuilt `dist/`, unmodified; findings re-checked against **2.2.5** (see the Table 15 note) |
-| This project | generated at commit `8c8050c + uncommitted changes` |
+| **Tool compared against** | **phylo.io 2.2.5** (2026-01-30), its own published `dist/`, unmodified — the current release at the time of measurement |
+| This project | generated at commit `e99d36c + uncommitted changes` |
 | Runtimes | Python 3.12.14 (`uv`), Node 26.3.0, Playwright 1.63.0 |
 | Backend database | SQLite, in the store directory |
 | Store location | `/private/tmp/...` — an APFS SSD volume, **not** a RAM disk |
 | **Backend threads** | **2 of the 10 cores** (`PHYLODELTA_THREADS=2`) |
 | Transport | one origin, one fresh page per measurement; uncompressed except Table 20, which is gzip |
 | Power state | not controlled (laptop) — bears only on Table 9's 564,640 ratios, already withdrawn there |
+
+**Every figure here was re-measured against 2.2.5**, the current release, on a store rebuilt from scratch. The earlier campaign used 2.1.1 (a 2025-07-02 checkout) and its figures were indistinguishable: 199.1 s against 199.4 s to complete the comparison at 10,000 leaves, and the same memory to the tenth. `api.js` and `worker_bcn.js` are unchanged between the two releases, so that is the expected result — but it is now measured rather than inferred from a diff.
 
 **The two entries that matter most for checking these numbers** are the browser flags and the phylo.io version. The heap cap decides *where* a tool fails, so Table 1's and Table 4's `failed` rows are statements about the tool at an 8 GB cap, not at Chrome's default — and it is raised for both tools, which is what makes a failure the tool's own ceiling. The version matters because several findings are about phylo.io's behaviour: the "Highlight BCN" crash (Table 15) is a fact about **2.1.1** and a later release may fix it.
 

@@ -508,3 +508,47 @@ def test_a_retry_that_succeeds_clears_an_earlier_metric_failure(store):
 
     queue.finish("L0__R0")
     assert db.comparison_for("alice", "L0__R0").metric_errors is None
+
+
+def test_a_built_comparison_records_the_thread_count_that_built_it(client, store):
+    """Provenance on the artefact, not in the intent of whoever launched it.
+
+    A benchmark recorded a run as "2 threads" that had executed with one, and
+    nothing caught it for three days. `PHYLODELTA_THREADS` is read by the
+    *worker*, which the measuring tool neither starts nor interrogates, so the
+    thread count was only ever a filename. Writing the resolved count into the
+    pair and serving it is what lets a measurement be checked against what
+    actually happened rather than against what was meant.
+
+    The **resolved** count, not the setting: 0 means "one per hardware thread",
+    and a reader of the stored pair cannot expand that after the fact.
+    """
+    from phylodelta.precompute.jobs import process_next
+
+    comparison_id = upload(client)
+    assert process_next("w1") is True
+
+    body = client.get(
+        f"/api/v1/comparisons/{comparison_id}?metric=rf", headers={AUTH_HEADER: "alice"}
+    ).json()
+
+    assert "build" in body, "the summary must carry how the pair was produced"
+    threads = body["build"].get("threads")
+    assert isinstance(threads, int) and threads >= 1, (
+        f"expected a resolved thread count, got {threads!r} — 0 or None means "
+        "the setting was stored instead of what the search actually used"
+    )
+
+
+def test_the_recorded_thread_count_follows_the_setting(client, store, monkeypatch):
+    """Pin it to a value and the artefact must say that value."""
+    from phylodelta.precompute.jobs import process_next
+
+    monkeypatch.setenv("PHYLODELTA_THREADS", "3")
+    comparison_id = upload(client)
+    assert process_next("w1") is True
+
+    body = client.get(
+        f"/api/v1/comparisons/{comparison_id}?metric=rf", headers={AUTH_HEADER: "alice"}
+    ).json()
+    assert body["build"]["threads"] == 3

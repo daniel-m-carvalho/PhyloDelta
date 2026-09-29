@@ -321,6 +321,19 @@ class ComparisonSummary(BaseModel):
     #: Null when either tree did not declare a species — "not checked", which
     #: must not be reported as "checked and matching".
     same_species: bool | None = True
+    build: dict = Field(
+        default_factory=dict,
+        description=(
+            "How this comparison was produced, recorded by the process that "
+            "produced it. Currently `threads`: the resolved thread count the "
+            "correspondence search actually used, not the configured setting. "
+            "Served so a measurement can state its own provenance instead of "
+            "relying on whoever launched it having set what they meant to — a "
+            "benchmark once recorded a build as 2-threaded that had run with "
+            "one. Empty for pairs built before this was recorded."
+        ),
+        examples=[{"threads": 2}],
+    )
     caution: str | None = Field(
         None,
         description=(

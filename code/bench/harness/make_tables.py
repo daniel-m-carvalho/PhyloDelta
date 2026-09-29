@@ -217,8 +217,9 @@ print("| Browser flags | `--js-flags=--max-old-space-size=8192`, "
       "`--disable-dev-shm-usage` — **both tools, identically** |")
 print(f"| Viewport | {ceiling.get('viewport', {}).get('width', 1440)} x "
       f"{ceiling.get('viewport', {}).get('height', 900)}; Table 21 varies the height |")
-print("| **Tool compared against** | **phylo.io 2.1.1**, its own prebuilt `dist/`, "
-      "unmodified; findings re-checked against **2.2.5** (see the Table 15 note) |")
+print("| **Tool compared against** | **phylo.io 2.2.5** (2026-01-30), its own "
+      "published `dist/`, unmodified — the current release at the time of "
+      "measurement |")
 # "Generated at", not "this is the commit of this file": committing the generated
 # file necessarily produces a later commit, so the row lags by one by
 # construction. Saying which it means costs a word and stops it reading as wrong.
@@ -232,6 +233,13 @@ print("| Transport | one origin, one fresh page per measurement; uncompressed "
 print("| Power state | not controlled (laptop) — bears only on Table 9's "
       "564,640 ratios, already withdrawn there |")
 print()
+print("**Every figure here was re-measured against 2.2.5**, the current release, "
+      "on a store rebuilt from scratch. The earlier campaign used 2.1.1 (a "
+      "2025-07-02 checkout) and its figures were indistinguishable: 199.1 s "
+      "against 199.4 s to complete the comparison at 10,000 leaves, and the "
+      "same memory to the tenth. `api.js` and `worker_bcn.js` are unchanged "
+      "between the two releases, so that is the expected result — but it is "
+      "now measured rather than inferred from a diff.\n")
 print("**The two entries that matter most for checking these numbers** are the "
       "browser flags and the phylo.io version. The heap cap decides *where* a tool "
       "fails, so Table 1's and Table 4's `failed` rows are statements about the "

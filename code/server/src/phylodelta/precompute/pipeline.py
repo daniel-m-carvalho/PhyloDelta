@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import itertools
+import os
 import sys
 import time
 from dataclasses import dataclass, field
@@ -313,7 +314,21 @@ def compute_pair(
             "dropped_from_right": report.dropped_right,
             "label_match": "identity",
             "same_species": same_species,
-        }
+        },
+        # How this pair was actually built, recorded by the process that built
+        # it. `threads` is what the correspondence search really used, resolved
+        # here rather than read back from an environment the reader may not
+        # share: 0 in the config means "one per hardware thread", so the
+        # resolved number is written, not the setting.
+        #
+        # This exists because a benchmark labelled a run "2 threads" that had
+        # executed with one, for three days, in a file that looked perfectly
+        # well-formed. The tool took the count as an argument, used it to name
+        # its output, and had no way to check it — `PHYLODELTA_THREADS` is read
+        # by the worker, which the tool neither starts nor interrogates. A
+        # measurement should be able to state how it was produced from the
+        # artefact, not from the intent of whoever launched it.
+        "build": {"threads": config.threads() or os.cpu_count() or 1},
     }
     # No caution is written for a declared cross-species pair (user,
     # 2026-09-24). The **fact** is still recorded and still served —

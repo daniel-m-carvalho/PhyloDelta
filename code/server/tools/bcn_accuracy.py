@@ -70,9 +70,16 @@ def fingerprint(sorted_names: list[str]) -> str:
     return f"{base36(a)}.{base36(b)}"
 
 
-def ours(pair_id: str) -> dict[str, tuple[int, float]]:
-    """Exact similarity per clade of the left tree, keyed by leaf-set."""
-    store = Path(config.STORE_DIR)
+def ours(pair_id: str, store_arg: str | None = None) -> dict[str, tuple[int, float]]:
+    """Exact similarity per clade of the left tree, keyed by leaf-set.
+
+    `store_arg` is the optional third command-line argument. It used to be
+    documented and then ignored — the function read `config.STORE_DIR` and the
+    argument went nowhere, so pointing this at another store silently measured
+    the default one. Either a parameter controls what it names or it should not
+    exist; this one now controls it.
+    """
+    store = Path(store_arg) if store_arg else Path(config.STORE_DIR)
     meta = json.loads((store / "pairs" / pair_id / "rf" / "meta.json").read_text())
     left = read_tree(store / "trees" / meta["left"]).to_arrays()
     corr = CorrespondenceReader(store / "pairs" / pair_id / "correspondence")
@@ -95,7 +102,7 @@ def ours(pair_id: str) -> dict[str, tuple[int, float]]:
 def main() -> None:
     extract = json.loads(Path(sys.argv[1]).read_text())
     pair_id = sys.argv[2]
-    exact = ours(pair_id)
+    exact = ours(pair_id, sys.argv[3] if len(sys.argv) > 3 else None)
 
     theirs = extract["clades"]
     matched, missing_key = [], 0

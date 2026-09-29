@@ -3737,6 +3737,58 @@ down. A hand-copied commit is wrong from the next commit onward, which is the wh
 `make_tables.py` exists — and the first version of this row had a literal SHA in it, plus a macOS
 version off by one from confusing the build number for the release.
 
+### 34.11b Re-measured against the current release, and what that found
+
+The whole comparison was re-run against **phylo.io 2.2.5** (2026-01-30), the current release, on a
+store rebuilt from scratch. The figures are indistinguishable from the 2.1.1 campaign — 199.1 s
+against 199.4 s to complete the comparison at 10,000 leaves, 1,181.4 MB against 1,181.4 MB, the same
+ceiling — which is what `api.js` and `worker_bcn.js` being unchanged predicts. The point of running
+it is that the prediction is now a measurement.
+
+`serve.mjs` takes the phylo.io path from `PHYLOIO_HOME`, so the version under test is a property of
+the run rather than an edit to the harness.
+
+#### What the re-run actually caught
+
+Not a difference between releases: **three parameters that described a run instead of controlling
+it**, in one day.
+
+* `measure_thread_builds.py` took the thread count as an argument, used it to name its output file,
+  and never asked the worker what it was running with. It recorded a 1-thread run as 2 threads,
+  which stood for three days and produced the "superlinear, therefore impossible" anomaly that
+  §34.8 explained with thermal drift that does not exist.
+* `bcn_accuracy.py` documented a third argument for the store and then read `config.STORE_DIR`,
+  so pointing it at another store silently measured the default one. This one failed loudly, with
+  a `FileNotFoundError`, which is why it cost minutes rather than days.
+* `make_tables.py` took Table 9's "10 threads" column from `server_build.json`, on the assumption
+  that the benchmark store had been built with the default count. The assumption became false the
+  moment the store was rebuilt at 2 threads, and the table then printed a 2-thread run under a
+  heading saying 10.
+
+The shape is the same every time, and the middle case is the instructive one: **a parameter that
+only labels is a parameter that will eventually label wrongly, silently, in a file that looks
+perfectly well-formed.** The loud failure cost nothing. The quiet ones cost days and put a wrong
+number in the design record with a confident explanation attached to it.
+
+The fix is structural rather than careful: every built pair now records, in its own notes and served
+on its summary, the **resolved** thread count the correspondence search actually used — not the
+configured setting, because 0 means "one per hardware thread" and a later reader cannot expand that.
+`measure_thread_builds.py` reads it back and refuses to write anything if it disagrees with what was
+asked for. An artefact that states how it was made cannot be mislabelled by the intent of whoever
+launched it.
+
+#### A limitation partly closed, unplanned
+
+The accuracy study now reaches **10,000 leaves** at 95.8% exact-match, where §34.12 records it as
+established only to 5,000. The extra rung came free with the re-run.
+
+#### And one methodological hole found the hard way
+
+The laptop suspends after **one minute** of inactivity on battery, and a `sleep 1200` in a chained
+run was observed taking 58 minutes. Unattended long runs were therefore being interrupted, and
+`perf_counter` counts wall time. Everything since is wrapped in `caffeinate -dimsu`. How much of the
+earlier campaign this affected is not known, which is itself a reason the re-run was worth doing.
+
 ### 34.12 Limitations
 
 * **Phylo.io at n=1** per rung; PhyloDelta at n=6.
@@ -3750,9 +3802,10 @@ version off by one from confusing the build number for the release.
   preserving depth and imbalance (564,640 leaves reaches depth 206/474). Real MLST data stops at
   27,962 (clostridium). They are used for performance claims only, never for accuracy. The thesis
   sentence must say *realistically-shaped synthetic trees*, not imply real data at that size.
-* **Accuracy measured to 5,000 leaves only**, because beyond that their comparison does not finish
+* **Accuracy measured to 10,000 leaves only**, because beyond that their comparison does not finish
   in a reasonable time — which is itself the point, but it does mean the miss-rate trend is
-  established over a narrow range.
+  established over a narrow range. (It read 5,000 until the re-run of §34.11b, where the extra rung
+  came free.)
 
 ### 34.13 Why 500,000 leaves is not tested with real data
 

@@ -115,6 +115,7 @@ def comparison_summary(
         dropped_from_right=reconciliation.get("dropped_from_right", []),
         # None where species was not declared; see schemas.ComparisonSummary.
         same_species=reconciliation.get("same_species"),
+        build=notes.get("build", {}),
         caution=notes.get("caution"),
         values=values,
     )
