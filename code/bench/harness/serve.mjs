@@ -18,7 +18,19 @@ import { fileURLToPath } from "node:url";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
 const BENCH = join(here, "..");
-const PHYLOIO = "/Users/danielcarvalho/Documents/masters/Theses/examples/tools/phylo-io";
+/*
+ * Which phylo.io to serve.
+ *
+ * Was a hard-coded path to a 2025-07-02 checkout declaring 2.1.1. Overridable so
+ * the whole comparison can be re-run against a different release without editing
+ * the harness — the version under test is a property of the run, and every table
+ * states it (see the Environment table).
+ *
+ * The path must contain `dist/`, which is what the published package ships.
+ */
+const PHYLOIO =
+  process.env.PHYLOIO_HOME ??
+  "/Users/danielcarvalho/Documents/masters/Theses/examples/tools/phylo-io";
 
 const ROOTS = {
   "/phyloio/": PHYLOIO,

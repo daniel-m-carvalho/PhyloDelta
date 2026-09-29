@@ -3596,13 +3596,30 @@ right. `PHYLODELTA_THREADS` exists for exactly this. The *code* default stays "o
 single researcher waiting on a single upload is the common case and a library should not quietly cap
 a dedicated machine; the *deployment* pins 2, because that is what these numbers describe.
 
-**The 564,640 row's ratios are not usable, and are reported as such.** Two threads appear to give
-2.44x — superlinear, therefore impossible for pure parallelism — while ten appear to *fall* to
-3.54x, breaking an otherwise monotone trend. Both point at the machine rather than the code: the
-single-threaded run took **20 minutes**, long enough for thermal state to drift, and this rung's
-10-thread baseline is the disputed one from §34.9 (339.5 s here, 196.4 s in another store). Against
-196.4 s the 10-thread gain is 6.11x and the trend continues cleanly. The absolute times stand; the
-two ratios do not, and no conclusion rests on them.
+**The first version of this table was measured wrong, and the explanation given for it was also
+wrong.** Both are corrected here because the sequence is instructive.
+
+The symptom was a 564,640 row where two threads appeared to give **2.44x** — superlinear, therefore
+impossible for pure parallelism. That was attributed to thermal drift: the single-threaded run took
+twenty minutes, so the machine must have been hot for the runs that followed. It was a plausible
+story and it was never tested.
+
+Tested, it is false. The same rung measured at 2 threads on a **cold** machine and again
+**immediately after twenty minutes of saturating load** gives 262.6 s and 244.3 s — the hot run is
+marginally *faster*, and macOS recorded no thermal or performance warning in either. Heat does
+nothing here.
+
+The real cause is that **the run labelled "2 threads" was executed with one thread.** It matches a
+fresh single-threaded measurement to within 0.7% at 564,640 leaves, 1.4% at 282,320 and 1.9% at
+141,160, and the ratio between the old and new 2-thread figures is 1.88x — precisely the 2-thread
+speedup §34.7 measures. `PHYLODELTA_THREADS` is read by the *worker*, and `measure_thread_builds.py`
+takes the thread count only to name its output file: it never asks the worker what it is actually
+running with. A parameter that **describes** instead of **controlling** produced a correctly-formatted
+file with the wrong label on it, and nothing anywhere said so.
+
+So the 2.44x was not superlinear and was not a speedup: it compared two single-threaded measurements
+taken under different conditions. The figures in this table are re-measured, each thread count
+starting from an idle machine.
 
 ### 34.9 What the server needs, and the shape that matters
 
@@ -3643,11 +3660,13 @@ leaves, single-threaded; the 10-thread run measured **681 MB** peak for the same
 2-thread run **470 MB**. The single-threaded figure sitting between them is what per-thread scratch
 predicts.
 
-**One discrepancy, reported rather than smoothed.** The 564,640 rung built in **196.4 s** here
-against **339.5 s** in the benchmark store (§34.2, Table 8). Same work, same machine, 1.7x apart.
-The likely cause is page-cache warmth — the 17.6 MB Newick files had been read minutes earlier —
-but it was not isolated, so both figures stand and neither should be quoted as *the* build time.
-The order of magnitude is what the argument rests on.
+**One discrepancy, and the guess about it was also wrong.** The 564,640 rung built in **196.4 s**
+here against **339.5 s** in the benchmark store. Page-cache warmth was offered as the likely cause
+and, like the thermal explanation above, was never isolated. Given what §34.8 now establishes — that
+a thread count was recorded without being verified — an unverified thread count is at least as
+likely an explanation for two build times a factor apart, and it is the one that has since been
+caught doing exactly this. Neither figure should be quoted as *the* build time; the order of
+magnitude is what the argument rests on.
 
 ### 34.10 What the design costs
 
@@ -4308,6 +4327,26 @@ only, never an oracle. Milestone 2 validates against the 200 published pairs in 
 `distance_testing.json`, cross-checked against `phangorn::RF.dist` and against `TreeDiff`, the
 reference C++ implementation of the paper in §1.10 — the closest thing available to an authoritative
 oracle, being by the authors of the algorithm being followed.
+
+**Thermal drift, as an explanation for build times a factor apart.** Offered twice — in §34.8 for a
+"superlinear" 2.44x and in §34.9 for a 1.7x — on the reasoning that a twenty-minute saturating run
+must leave the machine hot for whatever follows. Plausible, repeated as though established, and
+false. Measured directly: the same rung at 2 threads takes 262.6 s on a cold machine and **244.3 s
+immediately after twenty minutes of saturation** — marginally *faster* — with no thermal or
+performance warning recorded by the OS in either case. Low-power mode was off on both power
+profiles.
+
+What it actually was: **a measurement labelled "2 threads" that ran with one.**
+`measure_thread_builds.py` takes the thread count as an argument, uses it to name its output file,
+and never verifies it — `PHYLODELTA_THREADS` is read by the worker process, which the tool does not
+start and does not interrogate. The old file matches a fresh single-threaded run to within 0.7% at
+the top rung, and the discrepancy is 1.88x, which is the 2-thread speedup exactly.
+
+Two lessons, and the second is the one worth carrying: a parameter that **describes** a run rather
+than **controlling** it will eventually describe it wrongly, silently, in a file that looks
+perfectly well-formed. And an explanation that is never tested is not an explanation — it is a story
+that stops people looking, which is worse than admitting the number is unexplained. This one stopped
+the looking for three days.
 
 **"phylo.io's cross-tree jump does not work."** Too strong, and asserted from one page load per
 rung. It fails in *most* loads, not all: the outcome is fixed per load — every node in a load behaves

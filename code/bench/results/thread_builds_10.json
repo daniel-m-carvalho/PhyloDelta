@@ -1,54 +1,49 @@
 {
-  "threads": 1,
+  "threads": 10,
   "rungs": [
     {
       "leaves": 1000,
-      "build_s": 0.5450272079906426,
+      "build_s": 0.5446169999777339,
       "status": "ready"
     },
     {
       "leaves": 2500,
-      "build_s": 2.053335500007961,
+      "build_s": 2.047938500007149,
       "status": "ready"
     },
     {
       "leaves": 5000,
-      "build_s": 2.039499167003669,
+      "build_s": 2.057318667008076,
       "status": "ready"
     },
     {
       "leaves": 10000,
-      "build_s": 2.5512405000044964,
+      "build_s": 2.0459734580363147,
       "status": "ready"
     },
     {
       "leaves": 17645,
-      "build_s": 2.5538016670034267,
+      "build_s": 2.5512900830362923,
       "status": "ready"
     },
     {
       "leaves": 35290,
-      "build_s": 4.075493332988117,
+      "build_s": 2.5551369580207393,
       "status": "ready"
     },
     {
       "leaves": 70580,
-      "build_s": 9.135080542007927,
+      "build_s": 4.11079345800681,
       "status": "ready"
     },
     {
       "leaves": 141160,
-      "build_s": 30.879635374993086,
+      "build_s": 9.034708457998931,
       "status": "ready"
     },
     {
       "leaves": 282320,
-      "build_s": 113.42834170802962,
-      "status": "ready"
-    },
-    {
-      "leaves": 564640,
-      "build_s": 496.2328960419982,
+      "build_s": 26.787939583009575,
       "status": "ready"
     }
   ]
