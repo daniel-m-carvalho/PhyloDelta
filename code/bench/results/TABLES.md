@@ -10,7 +10,7 @@
 | Browser flags | `--js-flags=--max-old-space-size=8192`, `--disable-dev-shm-usage` — **both tools, identically** |
 | Viewport | 1440 x 900; Table 21 varies the height |
 | **Tool compared against** | **phylo.io 2.2.5** (2026-01-30), its own published `dist/`, unmodified — the current release at the time of measurement |
-| This project | generated at commit `7a08f4a + uncommitted changes` |
+| This project | generated at commit `a6cb1bd + uncommitted changes` |
 | Runtimes | Python 3.12.14 (`uv`), Node 26.3.0, Playwright 1.63.0 |
 | Backend database | SQLite, in the store directory |
 | Store location | `/private/tmp/...` — an APFS SSD volume, **not** a RAM disk |
@@ -45,6 +45,7 @@ Eighteen tables is more than a chapter can carry, and most were made to answer a
 - **Table 15** — The other half of interaction: loading is not using. Also carries the finding that the comparison tool's cross-tree jump does not work at all.
 - **Table 19** — The claim as the quantity it is actually about: bytes over the wire. Present it beside Table 12 — 12 is the mechanism, 19 is what the mechanism buys.
 - **Table 21** — The other half of "sized to the viewport". Every other table shows the payload ignoring the tree; only this one shows it following the window, which is what earns the word *sized*.
+- **Table 22** — Correctness again, but against implementations that share nothing with this one. Table 18's agreement is with the same paper's own code; this is the check an examiner will ask for.
 
 **Appendix, or one sentence citing the number** — Defends a choice or a stated limit of a PRESENT table.
 
@@ -566,4 +567,26 @@ Every other table here shows the payload ignoring the **tree**. That is necessar
 **The honest qualification: the steps are coarse.** `readableBudget` rounds to 25 leaves at 14 px each, so the payload only changes every ~350 px of panel — and with the 40-leaf floor, every window from 400 to 1,000 px gets the same 50 tips. So "sized to the viewport" holds with a granularity of about 350 px, and across the ordinary range of laptop windows the payload is in practice constant. The quantisation is deliberate (a settling layout must not cost a request, §29) but it does mean the scaling only bites on tall displays.
 
 *This also caught a sampling error worth keeping: the first run used evenly-spaced heights of 400-1,000 and reported an identical payload four times, which reads as the payload ignoring the viewport when it was the sample sitting inside one quantisation bucket.*
+
+
+## Table 22 — The RF distance across four implementations
+
+<!-- tier: PRESENT -->
+> **PRESENT** — Correctness again, but against implementations that share nothing with this one. Table 18's agreement is with the same paper's own code; this is the check an examiner will ask for.
+
+*Produced by `harness/rf_external.py` against DendroPy 5.1.0 and ETE3 3.1.3, with TreeDiff's `rf_postorder` beside them. Every tool is given the same two trees: rooted, and reconciled to their shared leaf set.*
+
+| leaves | PhyloDelta `rf` | `rf-treediff` | x2 | DendroPy | ETE3 | agree |
+|---:|---:|---:|---:|---:|---:|:---:|
+| 1,000 | 531 | 531 | 1,062 | 1,062 | 1,062 | yes |
+| 2,500 | 1,219 | 1,219 | 2,438 | 2,438 | 2,438 | yes |
+| 5,000 | 2,207 | 2,207 | 4,414 | 4,414 | 4,414 | yes |
+| 10,000 | 4,113 | 4,113 | 8,226 | 8,226 | 8,226 | yes |
+| 17,645 | 6,825 | 6,825 | 13,650 | 13,650 | 13,650 | yes |
+
+**The topology agrees exactly; the convention splits two against two.** 5 of 5 rungs match on every column. `rf-treediff` — TreeDiff's own binary, run as a subprocess by the server — returns this store's number unchanged, while DendroPy and ETE3 return exactly twice it at every rung. The same clades are found shared and the same found exclusive in all four; what differs is that TreeDiff halves the symmetric difference and the two general-purpose libraries do not.
+
+**That is the useful shape of this table.** Table 18's agreement is between two implementations of one paper, so it could not have revealed a convention both inherited — it would have looked exactly like this if the definition were wrong. Adding tools that share nothing with either separates the two questions: the clade sets are confirmed by all four, and the factor of two is isolated as a reporting choice this backend takes from TreeDiff. The thesis has to state which it means, because a reader checking against a published RF for these trees would otherwise find this one off by half.
+
+**Two settings decide whether the comparison is like-for-like**, and both produce a plausible near-miss rather than an error when wrong. *Rooting*: this store counts rooted clades, and DendroPy's unrooted mode gives 1,044 rather than 1,062 at 1,000 leaves, while ETE3 unroots by default. *Reconciliation*: handing the 17,645 pair over as it sits on disk gives 13,654 rather than 13,650, because ST 211 is in only one of the two trees (§2.6).
 

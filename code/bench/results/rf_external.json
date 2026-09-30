@@ -1,0 +1,52 @@
+{
+ "dendropy": "5.1.0",
+ "ete3": "3.1.3",
+ "note": "rooted comparisons, both trees reconciled to their shared leaf set",
+ "rows": [
+  {
+   "leaves": 1000,
+   "phylodelta": 531,
+   "phylodelta_doubled": 1062,
+   "treediff": 531,
+   "dendropy_rooted": 1062,
+   "dendropy_unrooted": 1044,
+   "ete3_rooted": 1062
+  },
+  {
+   "leaves": 2500,
+   "phylodelta": 1219,
+   "phylodelta_doubled": 2438,
+   "treediff": 1219,
+   "dendropy_rooted": 2438,
+   "dendropy_unrooted": 2418,
+   "ete3_rooted": 2438
+  },
+  {
+   "leaves": 5000,
+   "phylodelta": 2207,
+   "phylodelta_doubled": 4414,
+   "treediff": 2207,
+   "dendropy_rooted": 4414,
+   "dendropy_unrooted": 4396,
+   "ete3_rooted": 4414
+  },
+  {
+   "leaves": 10000,
+   "phylodelta": 4113,
+   "phylodelta_doubled": 8226,
+   "treediff": 4113,
+   "dendropy_rooted": 8226,
+   "dendropy_unrooted": 8202,
+   "ete3_rooted": 8226
+  },
+  {
+   "leaves": 17645,
+   "phylodelta": 6825,
+   "phylodelta_doubled": 13650,
+   "treediff": 6825,
+   "dendropy_rooted": 13650,
+   "dendropy_unrooted": 13626,
+   "ete3_rooted": 13650
+  }
+ ]
+}

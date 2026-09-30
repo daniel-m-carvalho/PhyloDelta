@@ -190,6 +190,9 @@ TIERS = {
     21: (PRESENT, "The other half of \"sized to the viewport\". Every other table "
                   "shows the payload ignoring the tree; only this one shows it "
                   "following the window, which is what earns the word *sized*."),
+    22: (PRESENT, "Correctness again, but against implementations that share "
+                  "nothing with this one. Table 18's agreement is with the same "
+                  "paper's own code; this is the check an examiner will ask for."),
 }
 
 
@@ -1156,3 +1159,53 @@ if vp_rows:
           "evenly-spaced heights of 400-1,000 and reported an identical payload "
           "four times, which reads as the payload ignoring the viewport when it "
           "was the sample sitting inside one quantisation bucket.*\n")
+
+
+# --- 10. the distance against implementations that share nothing -----------
+rf_external = load("rf_external.json", {})
+if rf_external.get("rows"):
+    table(22, "The RF distance across four implementations")
+    print(f"*Produced by `harness/rf_external.py` against DendroPy "
+          f"{rf_external['dendropy']} and ETE3 {rf_external['ete3']}, with "
+          "TreeDiff's `rf_postorder` beside them. Every tool is given the same "
+          "two trees: rooted, and reconciled to their shared leaf set.*\n")
+    print("| leaves | PhyloDelta `rf` | `rf-treediff` | x2 | DendroPy | ETE3 | agree |")
+    print("|---:|---:|---:|---:|---:|---:|:---:|")
+    agreed = 0
+    for row in rf_external["rows"]:
+        td = row.get("treediff")
+        ok = (row["phylodelta_doubled"] == row["dendropy_rooted"] == row["ete3_rooted"]
+              and td == row["phylodelta"])
+        agreed += ok
+        print(f"| {row['leaves']:,} | {row['phylodelta']:,} | "
+              f"{'—' if td is None else format(td, ',')} | "
+              f"{row['phylodelta_doubled']:,} | {row['dendropy_rooted']:,} | "
+              f"{row['ete3_rooted']:,} | {'yes' if ok else '**NO**'} |")
+    print(f"\n**The topology agrees exactly; the convention splits two against "
+          f"two.** {agreed} of {len(rf_external['rows'])} rungs match on every "
+          "column. `rf-treediff` — TreeDiff's own binary, run as a subprocess by "
+          "the server — returns this store's number unchanged, while DendroPy and "
+          "ETE3 return exactly twice it at every rung. The same clades are found "
+          "shared and the same found exclusive in all four; what differs is that "
+          "TreeDiff halves the symmetric difference and the two general-purpose "
+          "libraries do not.\n")
+    print("**That is the useful shape of this table.** Table 18's agreement is "
+          "between two implementations of one paper, so it could not have "
+          "revealed a convention both inherited — it would have looked exactly "
+          "like this if the definition were wrong. Adding tools that share "
+          "nothing with either separates the two questions: the clade sets are "
+          "confirmed by all four, and the factor of two is isolated as a "
+          "reporting choice this backend takes from TreeDiff. The thesis has to "
+          "state which it means, because a reader checking against a published "
+          "RF for these trees would otherwise find this one off by half.\n")
+    unrooted = [r for r in rf_external["rows"] if "dendropy_unrooted" in r]
+    if unrooted:
+        first = unrooted[0]
+        print(f"**Two settings decide whether the comparison is like-for-like**, "
+              f"and both produce a plausible near-miss rather than an error when "
+              f"wrong. *Rooting*: this store counts rooted clades, and DendroPy's "
+              f"unrooted mode gives {first['dendropy_unrooted']:,} rather than "
+              f"{first['dendropy_rooted']:,} at {first['leaves']:,} leaves, while "
+              f"ETE3 unroots by default. *Reconciliation*: handing the 17,645 pair "
+              f"over as it sits on disk gives 13,654 rather than 13,650, because "
+              f"ST 211 is in only one of the two trees (\u00a72.6).\n")

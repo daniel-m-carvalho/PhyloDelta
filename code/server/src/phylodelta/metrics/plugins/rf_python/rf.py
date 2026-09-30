@@ -93,7 +93,14 @@ def compute(
     internal_right = right.n_leaves - 1
     # The paper's Algorithm 2: internal-node counts stand in for the number of
     # non-singleton clades (valid only because unary nodes were suppressed,
-    # §1.4/§2.4), and the result is halved, as most implementations do.
+    # §1.4/§2.4), and the result is **halved**.
+    #
+    # The halving is TreeDiff's convention, not the field's. DendroPy and ETE3
+    # both report the symmetric difference whole, and measured against them on
+    # five pruned pairs they return exactly twice this number every time — the
+    # same clades shared, the same exclusive, a different denominator (bench
+    # Table 22). Recorded because the discrepancy looks like an error and is
+    # not, and because changing it now would move every published figure.
     rf = (internal_left + internal_right - 2 * shared_left) / 2
 
     return MetricResult(

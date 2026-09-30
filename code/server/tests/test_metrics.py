@@ -20,6 +20,15 @@ from phylodelta.trees.reconcile import reconcile
 VIBRIO_RF = 6825
 VIBRIO_SHARED = 10_819
 
+#: The same pair through two implementations that share nothing with this one
+#: or with TreeDiff: DendroPy 5.1.0 and ETE3 3.1.3, both rooted, both given the
+#: reconciled trees. Measured by `bench/harness/rf_external.py` (bench Table 22).
+#:
+#: They report the symmetric difference whole where this store halves it, so
+#: the promise being asserted is the factor, not the number. A change to the
+#: convention must fail here rather than silently move every published figure.
+VIBRIO_RF_UNHALVED = 13_650
+
 
 def rf(left, right, best_match: bool = True):
     """Run the metric the way the pipeline does: correspondence first."""
@@ -121,6 +130,20 @@ def test_rf_matches_the_reference_implementation(vibrio_pair):
     r = rf(left, right, best_match=False)
     assert r.summary["rf"] == VIBRIO_RF
     assert r.summary["shared_clusters"] == VIBRIO_SHARED
+
+
+def test_rf_is_half_what_dendropy_and_ete3_report(vibrio_pair):
+    """The convention, pinned against two external implementations.
+
+    Not a second check of the topology — `test_rf_matches_the_reference_
+    implementation` already does that, and Table 18 does it at every rung. This
+    fixes the *denominator*, which is the part no internal cross-check can
+    catch: TreeDiff halves, and so does this store, so the two agree while both
+    differ from the field by a factor of two.
+    """
+    left, right, _ = vibrio_pair
+    r = rf(left, right, best_match=False)
+    assert r.summary["rf"] * 2 == VIBRIO_RF_UNHALVED
 
 
 def test_self_comparison_of_a_real_tree_is_zero(real_store):

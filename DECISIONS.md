@@ -418,7 +418,21 @@ miscount — it **aborts**. The canonicalisation is load-bearing, not tidying.
 `rf_day` is the paper's *baseline for comparison*, not its contribution — the contributions,
 `rf_postorder` and `rf_nextsibling`, are correct on all these inputs. But it means `rf_day` cannot
 be used as an oracle, and any timing comparison against it is comparing against something that does
-not compute the right answer. Noted alongside the `phylodiff` defect in *Corrections*: three of the
+not compute the right answer.
+
+**The error grows with the tree, and the between-tree distances are wrong too.** Re-measured across
+the benchmark ladder, the self-comparison — still an answer that must be 0 — returns 689 at 1,000
+leaves, 1,732 at 2,500, 3,515 at 5,000, 7,066 at 10,000 and 12,493 on the reconciled vibrio pair.
+Monotone in the leaf count, which is what makes it dangerous: it is not an occasional stumble on
+one input but a result that always looks the right *size*. Its distance between the two real trees
+is 13,686, and that number sits between the two defensible answers — this store's 6,825 and the
+13,650 DendroPy and ETE3 report (§34.19) — so it cannot be rescued by reinterpreting the convention
+either.
+
+**Its source was not read.** `rf_day` is 41 KB against the other binaries' 253 KB and appears not to
+link sdsl, so a different input convention is as plausible an explanation as a defect. What is
+established is the failing control, which is enough to exclude it as an oracle and not enough to
+call it broken. Noted alongside the `phylodiff` defect in *Corrections*: three of the
 five RF implementations examined for this project are wrong on real input.
 
 ### 2.6 The conformance target for milestone 2
@@ -4084,6 +4098,43 @@ evenly spaced sample of a step function measures the sampling, not the function 
 re-chosen to cross the steps.
 
 ---
+
+### 34.19 The distance against implementations that share nothing with this one
+
+`rf` was already checked against `rf-treediff` at every rung (Table 18), and that check was worth
+less than it looked. TreeDiff is the reference implementation of the paper this backend follows, so
+the two share a **definition** as well as an answer: had the definition itself been wrong, the table
+would have looked exactly the same. Agreement between two implementations of one paper establishes
+that the code is faithful, not that the quantity is the one the field means.
+
+**Evidence.** The same five pairs through DendroPy 5.1.0 and ETE3 3.1.3, rooted, both trees
+reconciled to their shared leaf set (Table 22):
+
+| leaves | `rf` | `rf-treediff` | x2 | DendroPy | ETE3 |
+|---:|---:|---:|---:|---:|---:|
+| 1,000 | 531 | 531 | 1,062 | 1,062 | 1,062 |
+| 10,000 | 4,113 | 4,113 | 8,226 | 8,226 | 8,226 |
+| 17,645 | **6,825** | 6,825 | 13,650 | **13,650** | **13,650** |
+
+**The clade sets are confirmed and the convention is isolated.** All four find the same clades
+shared and the same exclusive; TreeDiff and this store then halve the symmetric difference and the
+two general-purpose libraries do not. Neither convention is wrong — Robinson and Foulds' own
+definition is the unhalved symmetric difference, and halving is common in the literature that
+follows — but the thesis has to state which it reports, because a reader checking 6,825 against a
+published figure for these trees would find it off by exactly half.
+
+**Two settings decide whether the comparison is like-for-like**, and both fail as a near-miss rather
+than an error. *Rooting*: this store counts rooted clades; ETE3 unroots by default and DendroPy's
+unrooted mode gives 1,044 against 1,062 at 1,000 leaves. *Reconciliation*: handed the 17,645 pair as
+it sits on disk, DendroPy returns 13,654 rather than 13,650, because ST 211 is in the UPGMA tree
+only (§2.6) — four bipartitions' difference, from a single unshared leaf.
+
+**Decision.** Keep the halved convention and state it. Changing it would move every RF figure
+already published here for a cosmetic gain, and the conformance target of 6,825 is TreeDiff's
+number. The check is pinned by `test_rf_is_half_what_dendropy_and_ete3_report`, which asserts the
+*factor* rather than the value, so a change to the convention fails a test instead of silently
+re-scaling the tables. Neither library becomes a dependency: `bench/harness/rf_external.py` carries
+the throwaway-environment recipe and runs once.
 
 ## 35. The frontend holds what it has already seen
 
