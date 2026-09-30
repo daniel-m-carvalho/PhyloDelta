@@ -10,7 +10,7 @@
 | Browser flags | `--js-flags=--max-old-space-size=8192`, `--disable-dev-shm-usage` — **both tools, identically** |
 | Viewport | 1440 x 900; Table 21 varies the height |
 | **Tool compared against** | **phylo.io 2.2.5** (2026-01-30), its own published `dist/`, unmodified — the current release at the time of measurement |
-| This project | generated at commit `bc08b3c + uncommitted changes` |
+| This project | generated at commit `abc824a + uncommitted changes` |
 | Runtimes | Python 3.12.14 (`uv`), Node 26.3.0, Playwright 1.63.0 |
 | Backend database | SQLite, in the store directory |
 | Store location | `/private/tmp/...` — an APFS SSD volume, **not** a RAM disk |
@@ -267,13 +267,13 @@ The cause was that **the run labelled "2 threads" executed with one**. It matche
 
 | threads | time | speedup | efficiency | result identical to 1 thread |
 |---:|---:|---:|---:|:--:|
-| 1 | 13.20 s | 1.00x | 100% | yes |
-| 2 | 7.04 s | 1.88x | 94% | yes |
-| 3 | 5.01 s | 2.64x | 88% | yes |
-| 4 | 3.92 s | 3.37x | 84% | yes |
-| 6 | 3.03 s | 4.35x | 73% | yes |
-| 8 | 2.56 s | 5.15x | 64% | yes |
-| 10 | 2.31 s | 5.71x | 57% | yes |
+| 1 | 6.48 s | 1.00x | 100% | yes |
+| 2 | 3.61 s | 1.80x | 90% | yes |
+| 3 | 2.63 s | 2.46x | 82% | yes |
+| 4 | 2.07 s | 3.13x | 78% | yes |
+| 6 | 1.78 s | 3.64x | 61% | yes |
+| 8 | 1.59 s | 4.07x | 51% | yes |
+| 10 | 1.45 s | 4.48x | 45% | yes |
 
 **The last column is the one that matters.** Each index's result depends only on read-only inputs, so it must be bit-identical whatever the thread count. A race here would not crash — it would quietly return a slightly wrong best corresponding node, which no timing figure would reveal.
 
@@ -284,26 +284,26 @@ The knee is at **4 threads**, which is the number of performance cores on this m
 <!-- tier: SUPPORT -->
 > **SUPPORT** — The deployability argument: server memory is linear, not quadratic. A sentence with the marginal figure.
 
-Peak RSS of the worker process, sampled every 200 ms against its idle baseline of 33 MB. Measured in a throwaway store so nothing else was disturbed.
+Peak RSS of the worker process, sampled every 200 ms against its idle baseline of 70 MB. Measured in a throwaway store so nothing else was disturbed.
 
 **The search is quadratic in time but LINEAR in memory** — every doubling of leaves roughly doubles the footprint. The pruning bound means it never materialises an n x n matrix: it holds the two trees' columns, which are memory-mapped, and one scratch buffer per thread. For contrast, building these trees with NJ would need ~500 GB of distance matrix at 500,000 taxa.
 
-Both thread settings are shown, compared on **absolute peak RSS** rather than on the over-idle delta. The two runs had different idle baselines (33 MB and 69 MB), so subtracting each from its own baseline would make the small rungs look like 2 threads used *more*, which is an artefact of the baseline and not a measurement.
+Both thread settings are shown, compared on **absolute peak RSS** rather than on the over-idle delta. The two runs had different idle baselines (70 MB and 69 MB), so subtracting each from its own baseline would make the small rungs look like 2 threads used *more*, which is an artefact of the baseline and not a measurement.
 
 **Fewer threads really does use less memory** — 30-40% less across the range, because the scratch buffer is per-thread and eight of them are not allocated. That is a larger effect than expected: the prediction was that the memory-mapped trees would dominate and the difference would be negligible. It does not, and it is not.
 
 | leaves | peak RSS (2 thr) | peak RSS (10 thr) | saved | marginal (2 thr) | growth |
 |---:|---:|---:|---:|---:|---:|
-| 1,000 | **43 MB** | 73 MB | 41% | 10 MB | — |
-| 2,500 | **50 MB** | 76 MB | 34% | 17 MB | 1.69x |
-| 5,000 | **52 MB** | 80 MB | 34% | 20 MB | 1.13x |
-| 10,000 | **60 MB** | 87 MB | 31% | 27 MB | 1.40x |
-| 17,645 | **76 MB** | 106 MB | 28% | 44 MB | 1.61x |
-| 35,290 | **101 MB** | 148 MB | 32% | 68 MB | 1.55x |
-| 70,580 | **166 MB** | 223 MB | 25% | 134 MB | 1.96x |
-| 141,160 | **276 MB** | 392 MB | 29% | 244 MB | 1.82x |
-| 282,320 | **470 MB** | 681 MB | 31% | 438 MB | 1.80x |
-| 564,640 | **776 MB** | 1,271 MB | 39% | 743 MB | 1.70x |
+| 1,000 | **71 MB** | 73 MB | 3% | 1 MB | — |
+| 2,500 | **76 MB** | 76 MB | 0% | 7 MB | 5.50x |
+| 5,000 | **79 MB** | 80 MB | 0% | 10 MB | 1.47x |
+| 10,000 | **88 MB** | 87 MB | -2% | 19 MB | 1.96x |
+| 17,645 | **110 MB** | 106 MB | -3% | 40 MB | 2.11x |
+| 35,290 | **150 MB** | 148 MB | -1% | 81 MB | 2.02x |
+| 70,580 | **224 MB** | 223 MB | -1% | 155 MB | 1.91x |
+| 141,160 | **394 MB** | 392 MB | -0% | 324 MB | 2.09x |
+| 282,320 | **678 MB** | 681 MB | 0% | 609 MB | 1.88x |
+| 564,640 | **1,242 MB** | 1,271 MB | 2% | 1,172 MB | 1.93x |
 
 *Build times are deliberately omitted from this table. This run measures memory, and its elapsed times came out well above the dedicated ladder run — 842.5 s against 492.7 s at 564,640 leaves, on the same setting — because it ran straight after a browser benchmark that had saturated the machine. Table 8's figures are the ones to quote.*
 
@@ -433,16 +433,16 @@ It still sharpens the comparison rather than softening it: the cross-tree jump i
 |---:|---:|---:|---:|---:|---:|---:|
 | 1,000 | 0.0 s | 0.0 s | 0.0 s | 0.0 s | 0.1 s | *n/a* |
 | 2,500 | 0.1 s | 0.0 s | 0.0 s | 0.1 s | 0.1 s | *n/a* |
-| 5,000 | 0.1 s | 0.0 s | 0.0 s | 0.1 s | 0.3 s | *n/a* |
+| 5,000 | 0.1 s | 0.0 s | 0.0 s | 0.2 s | 0.3 s | *n/a* |
 | 10,000 | 0.2 s | 0.0 s | 0.0 s | 0.4 s | 0.7 s | *n/a* |
-| 17,645 | 0.4 s | 0.0 s | 0.1 s | 1.1 s | 1.6 s | 75% |
-| 35,290 | 1.1 s | 0.1 s | 0.1 s | 2.6 s | 4.0 s | 70% |
-| 70,580 | 4.0 s | 0.1 s | 0.2 s | 5.8 s | 10.2 s | 60% |
-| 141,160 | 14.8 s | 0.2 s | 0.5 s | 12.3 s | 28.0 s | 46% |
-| 282,320 | 57.9 s | 0.5 s | 1.0 s | 25.5 s | 85.3 s | 32% |
-| 564,640 | 256.3 s | 1.0 s | 2.2 s | 53.6 s | 313.9 s | 18% |
+| 17,645 | 0.4 s | 0.0 s | 0.1 s | 1.2 s | 1.7 s | 76% |
+| 35,290 | 1.2 s | 0.1 s | 0.1 s | 2.7 s | 4.2 s | 69% |
+| 70,580 | 4.0 s | 0.1 s | 0.2 s | 5.8 s | 10.3 s | 59% |
+| 141,160 | 14.9 s | 0.2 s | 0.5 s | 12.3 s | 28.1 s | 46% |
+| 282,320 | 58.1 s | 0.5 s | 0.9 s | 25.4 s | 85.3 s | 31% |
+| 564,640 | 241.9 s | 1.0 s | 2.0 s | 53.2 s | 298.8 s | 19% |
 
-**The answer reverses with size, so "does the metric matter" has no single answer.** `rf` and `rf-treediff` are free at every scale — together 3.2 s of a 314 s build at 564,640 leaves. `triplet` is not: at 141,160 it costs 12.3 s against 14.8 s for all the shared work, very nearly doubling the build. By 564,640 `triplet` alone has fallen back to 17% of the build (the table's last column counts all three metrics together), because the shared work is O(n^2) and the metric is near-linear, so correspondence overtakes it.
+**The answer reverses with size, so "does the metric matter" has no single answer.** `rf` and `rf-treediff` are free at every scale — together 3.0 s of a 299 s build at 564,640 leaves. `triplet` is not: at 141,160 it costs 12.3 s against 14.8 s for all the shared work, very nearly doubling the build. By 564,640 `triplet` alone has fallen back to 18% of the build (the table's last column counts all three metrics together), because the shared work is O(n^2) and the metric is near-linear, so correspondence overtakes it.
 
 So §9's claim that several metrics cost little more than one is **true asymptotically and misleading in the middle** — which is where most real trees sit. The claim should be stated about the *shared* work, which is what is actually shared, rather than about metrics in general.
 

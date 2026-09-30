@@ -1,74 +1,74 @@
 {
-  "idle_rss_mb": 32.7,
+  "idle_rss_mb": 69.5,
   "rungs": [
     {
       "leaves": 1000,
-      "build_s": 0.28355720901163295,
-      "peak_rss_mb": 42.9,
-      "over_idle_mb": 10.2,
+      "build_s": 0.28526620799993907,
+      "peak_rss_mb": 70.7,
+      "over_idle_mb": 1.2,
       "status": "ready"
     },
     {
       "leaves": 2500,
-      "build_s": 2.063697042001877,
-      "peak_rss_mb": 49.9,
-      "over_idle_mb": 17.2,
+      "build_s": 2.084148208999977,
+      "peak_rss_mb": 76.0,
+      "over_idle_mb": 6.6,
       "status": "ready"
     },
     {
       "leaves": 5000,
-      "build_s": 2.3803072909940965,
-      "peak_rss_mb": 52.1,
-      "over_idle_mb": 19.5,
+      "build_s": 2.086608500000011,
+      "peak_rss_mb": 79.2,
+      "over_idle_mb": 9.7,
       "status": "ready"
     },
     {
       "leaves": 10000,
-      "build_s": 2.3963328750105575,
-      "peak_rss_mb": 60.0,
-      "over_idle_mb": 27.3,
+      "build_s": 2.080550707999919,
+      "peak_rss_mb": 88.5,
+      "over_idle_mb": 19.0,
       "status": "ready"
     },
     {
       "leaves": 17645,
-      "build_s": 2.5263301670202054,
-      "peak_rss_mb": 76.5,
-      "over_idle_mb": 43.9,
+      "build_s": 2.597168290999889,
+      "peak_rss_mb": 109.6,
+      "over_idle_mb": 40.1,
       "status": "ready"
     },
     {
       "leaves": 35290,
-      "build_s": 5.460990082996432,
-      "peak_rss_mb": 100.7,
-      "over_idle_mb": 68.0,
+      "build_s": 3.1132326670001476,
+      "peak_rss_mb": 150.4,
+      "over_idle_mb": 80.9,
       "status": "ready"
     },
     {
       "leaves": 70580,
-      "build_s": 11.50501720898319,
-      "peak_rss_mb": 166.3,
-      "over_idle_mb": 133.6,
+      "build_s": 5.938603667000052,
+      "peak_rss_mb": 224.3,
+      "over_idle_mb": 154.8,
       "status": "ready"
     },
     {
       "leaves": 141160,
-      "build_s": 41.08437866595341,
-      "peak_rss_mb": 276.3,
-      "over_idle_mb": 243.6,
+      "build_s": 17.21766337500003,
+      "peak_rss_mb": 393.6,
+      "over_idle_mb": 324.1,
       "status": "ready"
     },
     {
       "leaves": 282320,
-      "build_s": 180.13949095801217,
-      "peak_rss_mb": 470.5,
-      "over_idle_mb": 437.8,
+      "build_s": 60.79101237499981,
+      "peak_rss_mb": 678.2,
+      "over_idle_mb": 608.7,
       "status": "ready"
     },
     {
       "leaves": 564640,
-      "build_s": 842.5064398749964,
-      "peak_rss_mb": 775.7,
-      "over_idle_mb": 743.0,
+      "build_s": 245.8787205000001,
+      "peak_rss_mb": 1241.9,
+      "over_idle_mb": 1172.4,
       "status": "ready"
     }
   ]

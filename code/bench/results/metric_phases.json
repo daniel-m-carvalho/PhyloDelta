@@ -1,5 +1,5 @@
 {
-  "log": "/private/tmp/claude-501/-Users-danielcarvalho-Documents-masters-Theses-repo-theses/6d7e78be-e01a-4acc-ad8f-4348074f8cac/scratchpad/metric-worker.log",
+  "log": "/private/tmp/claude-501/-Users-danielcarvalho-Documents-masters-Theses-repo-theses/7f1903af-67f6-481e-9f28-75748054ec02/scratchpad/met-worker.log",
   "rows": [
     {
       "leaves": 1000,
@@ -8,7 +8,7 @@
           "metrics": [
             "rf"
           ],
-          "wall_s": 2.05,
+          "wall_s": 0.54,
           "total_s": 0.1,
           "shared_s": 0.0,
           "per_metric": {
@@ -40,7 +40,7 @@
             "rf-treediff",
             "triplet"
           ],
-          "wall_s": 2.04,
+          "wall_s": 2.05,
           "total_s": 0.1,
           "shared_s": 0.0,
           "per_metric": {
@@ -66,7 +66,7 @@
           ],
           "wall_s": 2.04,
           "total_s": 0.1,
-          "shared_s": 0.0,
+          "shared_s": 0.1,
           "per_metric": {
             "rf": {
               "seconds": 0.0
@@ -78,7 +78,7 @@
             "rf",
             "rf-treediff"
           ],
-          "wall_s": 2.03,
+          "wall_s": 2.04,
           "total_s": 0.1,
           "shared_s": 0.0,
           "per_metric": {
@@ -96,7 +96,7 @@
             "rf-treediff",
             "triplet"
           ],
-          "wall_s": 2.55,
+          "wall_s": 2.54,
           "total_s": 0.1,
           "shared_s": 0.1,
           "per_metric": {
@@ -120,7 +120,7 @@
           "metrics": [
             "rf"
           ],
-          "wall_s": 2.04,
+          "wall_s": 2.03,
           "total_s": 0.1,
           "shared_s": 0.1,
           "per_metric": {
@@ -134,7 +134,7 @@
             "rf",
             "rf-treediff"
           ],
-          "wall_s": 2.04,
+          "wall_s": 2.03,
           "total_s": 0.1,
           "shared_s": 0.1,
           "per_metric": {
@@ -152,7 +152,7 @@
             "rf-treediff",
             "triplet"
           ],
-          "wall_s": 2.04,
+          "wall_s": 2.03,
           "total_s": 0.3,
           "shared_s": 0.1,
           "per_metric": {
@@ -163,7 +163,7 @@
               "seconds": 0.0
             },
             "triplet": {
-              "seconds": 0.1
+              "seconds": 0.2
             }
           }
         }
@@ -176,7 +176,7 @@
           "metrics": [
             "rf"
           ],
-          "wall_s": 2.55,
+          "wall_s": 2.54,
           "total_s": 0.2,
           "shared_s": 0.2,
           "per_metric": {
@@ -191,7 +191,7 @@
             "rf-treediff"
           ],
           "wall_s": 2.04,
-          "total_s": 0.2,
+          "total_s": 0.3,
           "shared_s": 0.2,
           "per_metric": {
             "rf": {
@@ -208,7 +208,7 @@
             "rf-treediff",
             "triplet"
           ],
-          "wall_s": 2.55,
+          "wall_s": 3.05,
           "total_s": 0.7,
           "shared_s": 0.2,
           "per_metric": {
@@ -232,8 +232,8 @@
           "metrics": [
             "rf"
           ],
-          "wall_s": 2.55,
-          "total_s": 0.4,
+          "wall_s": 2.04,
+          "total_s": 0.5,
           "shared_s": 0.4,
           "per_metric": {
             "rf": {
@@ -246,7 +246,7 @@
             "rf",
             "rf-treediff"
           ],
-          "wall_s": 2.55,
+          "wall_s": 2.54,
           "total_s": 0.5,
           "shared_s": 0.4,
           "per_metric": {
@@ -264,8 +264,8 @@
             "rf-treediff",
             "triplet"
           ],
-          "wall_s": 3.56,
-          "total_s": 1.6,
+          "wall_s": 4.07,
+          "total_s": 1.7,
           "shared_s": 0.4,
           "per_metric": {
             "rf": {
@@ -275,7 +275,7 @@
               "seconds": 0.1
             },
             "triplet": {
-              "seconds": 1.1
+              "seconds": 1.2
             }
           }
         }
@@ -288,9 +288,9 @@
           "metrics": [
             "rf"
           ],
-          "wall_s": 3.57,
-          "total_s": 1.2,
-          "shared_s": 1.1,
+          "wall_s": 3.05,
+          "total_s": 1.3,
+          "shared_s": 1.2,
           "per_metric": {
             "rf": {
               "seconds": 0.1
@@ -302,9 +302,9 @@
             "rf",
             "rf-treediff"
           ],
-          "wall_s": 3.06,
+          "wall_s": 3.54,
           "total_s": 1.4,
-          "shared_s": 1.1,
+          "shared_s": 1.2,
           "per_metric": {
             "rf": {
               "seconds": 0.1
@@ -320,9 +320,9 @@
             "rf-treediff",
             "triplet"
           ],
-          "wall_s": 6.1,
-          "total_s": 4.0,
-          "shared_s": 1.1,
+          "wall_s": 6.09,
+          "total_s": 4.2,
+          "shared_s": 1.2,
           "per_metric": {
             "rf": {
               "seconds": 0.1
@@ -331,7 +331,7 @@
               "seconds": 0.1
             },
             "triplet": {
-              "seconds": 2.6
+              "seconds": 2.7
             }
           }
         }
@@ -344,9 +344,9 @@
           "metrics": [
             "rf"
           ],
-          "wall_s": 6.11,
-          "total_s": 4.1,
-          "shared_s": 3.9,
+          "wall_s": 6.1,
+          "total_s": 4.3,
+          "shared_s": 4.0,
           "per_metric": {
             "rf": {
               "seconds": 0.1
@@ -358,9 +358,9 @@
             "rf",
             "rf-treediff"
           ],
-          "wall_s": 6.61,
-          "total_s": 4.4,
-          "shared_s": 3.9,
+          "wall_s": 6.59,
+          "total_s": 4.5,
+          "shared_s": 4.1,
           "per_metric": {
             "rf": {
               "seconds": 0.1
@@ -376,8 +376,8 @@
             "rf-treediff",
             "triplet"
           ],
-          "wall_s": 12.15,
-          "total_s": 10.2,
+          "wall_s": 12.69,
+          "total_s": 10.3,
           "shared_s": 4.0,
           "per_metric": {
             "rf": {
@@ -400,12 +400,12 @@
           "metrics": [
             "rf"
           ],
-          "wall_s": 17.21,
+          "wall_s": 17.26,
           "total_s": 15.4,
           "shared_s": 14.9,
           "per_metric": {
             "rf": {
-              "seconds": 0.3
+              "seconds": 0.2
             }
           }
         },
@@ -414,12 +414,12 @@
             "rf",
             "rf-treediff"
           ],
-          "wall_s": 17.73,
+          "wall_s": 17.77,
           "total_s": 15.7,
           "shared_s": 14.8,
           "per_metric": {
             "rf": {
-              "seconds": 0.2
+              "seconds": 0.3
             },
             "rf-treediff": {
               "seconds": 0.5
@@ -432,9 +432,9 @@
             "rf-treediff",
             "triplet"
           ],
-          "wall_s": 29.9,
-          "total_s": 28.0,
-          "shared_s": 14.8,
+          "wall_s": 29.92,
+          "total_s": 28.1,
+          "shared_s": 14.9,
           "per_metric": {
             "rf": {
               "seconds": 0.2
@@ -456,9 +456,9 @@
           "metrics": [
             "rf"
           ],
-          "wall_s": 61.74,
-          "total_s": 59.4,
-          "shared_s": 58.5,
+          "wall_s": 61.31,
+          "total_s": 59.2,
+          "shared_s": 58.3,
           "per_metric": {
             "rf": {
               "seconds": 0.5
@@ -470,9 +470,9 @@
             "rf",
             "rf-treediff"
           ],
-          "wall_s": 61.74,
-          "total_s": 60.1,
-          "shared_s": 58.3,
+          "wall_s": 62.34,
+          "total_s": 60.4,
+          "shared_s": 58.5,
           "per_metric": {
             "rf": {
               "seconds": 0.5
@@ -488,18 +488,18 @@
             "rf-treediff",
             "triplet"
           ],
-          "wall_s": 87.58,
+          "wall_s": 87.14,
           "total_s": 85.3,
-          "shared_s": 57.9,
+          "shared_s": 58.1,
           "per_metric": {
             "rf": {
               "seconds": 0.5
             },
             "rf-treediff": {
-              "seconds": 1.0
+              "seconds": 0.9
             },
             "triplet": {
-              "seconds": 25.5
+              "seconds": 25.4
             }
           }
         }
@@ -512,9 +512,9 @@
           "metrics": [
             "rf"
           ],
-          "wall_s": 246.44,
-          "total_s": 244.8,
-          "shared_s": 243.0,
+          "wall_s": 249.35,
+          "total_s": 247.4,
+          "shared_s": 245.7,
           "per_metric": {
             "rf": {
               "seconds": 1.0
@@ -526,9 +526,9 @@
             "rf",
             "rf-treediff"
           ],
-          "wall_s": 249.09,
-          "total_s": 247.1,
-          "shared_s": 243.3,
+          "wall_s": 263.45,
+          "total_s": 261.3,
+          "shared_s": 257.6,
           "per_metric": {
             "rf": {
               "seconds": 1.0
@@ -544,18 +544,18 @@
             "rf-treediff",
             "triplet"
           ],
-          "wall_s": 315.95,
-          "total_s": 313.9,
-          "shared_s": 256.3,
+          "wall_s": 300.98,
+          "total_s": 298.8,
+          "shared_s": 241.9,
           "per_metric": {
             "rf": {
               "seconds": 1.0
             },
             "rf-treediff": {
-              "seconds": 2.2
+              "seconds": 2.0
             },
             "triplet": {
-              "seconds": 53.6
+              "seconds": 53.2
             }
           }
         }
