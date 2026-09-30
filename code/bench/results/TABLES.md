@@ -5,12 +5,12 @@
 | | |
 |---|---|
 | Machine | Apple M4 laptop — **4 performance + 6 efficiency cores**, 24 GB |
-| OS | macOS 27.0 (build 26A428, Darwin 27.0.0) |
+| OS | macOS 27.0.1 (build 26A434, Darwin 27.0.0) |
 | Browser | Chrome 154.0.8037.58, **headless**, system Chrome via Playwright's `channel: "chrome"` |
 | Browser flags | `--js-flags=--max-old-space-size=8192`, `--disable-dev-shm-usage` — **both tools, identically** |
 | Viewport | 1440 x 900; Table 21 varies the height |
 | **Tool compared against** | **phylo.io 2.2.5** (2026-01-30), its own published `dist/`, unmodified — the current release at the time of measurement |
-| This project | generated at commit `e99d36c + uncommitted changes` |
+| This project | generated at commit `bc08b3c + uncommitted changes` |
 | Runtimes | Python 3.12.14 (`uv`), Node 26.3.0, Playwright 1.63.0 |
 | Backend database | SQLite, in the store directory |
 | Store location | `/private/tmp/...` — an APFS SSD volume, **not** a RAM disk |
@@ -145,8 +145,8 @@ Table 1's failures are against a stated budget. This removes the budget: each ru
 
 | leaves | outcome | time to failure | peak renderer |
 |---:|---|---:|---:|
-| 141,160 | **renderer process crashed** | 17.1 min | 10,722 MB |
-| 282,320 | **renderer process crashed** | 25.6 min | 9,690 MB |
+| 141,160 | **renderer process crashed** | 13.3 min | 10,877 MB |
+| 282,320 | **renderer process crashed** | 14.4 min | 10,715 MB |
 
 *Peak memory is sampled every 2 s from process RSS, so it is a lower bound and the two figures should not be read as an ordering.*
 
