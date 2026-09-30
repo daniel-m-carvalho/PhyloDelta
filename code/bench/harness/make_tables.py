@@ -201,6 +201,35 @@ def table(number: int, title: str, lead: str = "\n") -> None:
     print(f"> **{tier}** — {why}\n")
 
 
+#: Binary units throughout, because mixing them is how a table comes to state
+#: two different things under one heading. `ps -o rss` reports KiB and the
+#: harness divides by 1024, so the RSS figures were always binary and were
+#: merely labelled wrongly; the byte counts below were divided by 1e6 and are
+#: converted here rather than relabelled, which would have changed the meaning
+#: of the number without changing the number.
+KIB = 1024
+MIB = 1024 * 1024
+
+
+def kib(byte_count) -> str:
+    return f"{byte_count / KIB:,.1f} KiB"
+
+
+def mib(byte_count) -> str:
+    return f"{byte_count / MIB:,.2f} MiB"
+
+
+def heap_mib(decimal_mb):
+    """Heap readings are stored as decimal MB (the harness divides by 1e6).
+
+    Converted rather than re-measured: the stored value has already lost its
+    raw byte count, and the factor is exact at the precision printed. Fixing it
+    at the source means changing `ceiling.mjs` to record bytes, which is worth
+    doing before the next run but does not retroactively recover these.
+    """
+    return None if decimal_mb is None else decimal_mb * 1e6 / MIB
+
+
 def fmt(value, unit="", nd=1, dash="—"):
     return dash if value is None else f"{value:,.{nd}f}{unit}"
 
@@ -209,7 +238,7 @@ print("# PhyloDelta vs Phylo.io — measured comparison\n")
 print("## Environment\n")
 print("| | |")
 print("|---|---|")
-print("| Machine | Apple M4 laptop — **4 performance + 6 efficiency cores**, 24 GB |")
+print("| Machine | Apple M4 laptop — **4 performance + 6 efficiency cores**, 24 GiB |")
 print(f"| OS | {_os_version()} |")
 print(f"| Browser | {ceiling.get('browser', 'Chrome')}, **headless**, system Chrome "
       "via Playwright's `channel: \"chrome\"` |")
@@ -243,7 +272,7 @@ print("**Every figure here was re-measured against 2.2.5**, the current release,
 print("**The two entries that matter most for checking these numbers** are the "
       "browser flags and the phylo.io version. The heap cap decides *where* a tool "
       "fails, so Table 1's and Table 4's `failed` rows are statements about the "
-      "tool at an 8 GB cap, not at Chrome's default — and it is raised for both "
+      "tool at an 8 GiB cap, not at Chrome's default — and it is raised for both "
       "tools, which is what makes a failure the tool's own ceiling. The version "
       "matters because several findings are about phylo.io's behaviour: the "
       "\"Highlight BCN\" crash (Table 15) is a fact about **2.1.1** and a later "
@@ -291,7 +320,7 @@ print("The PRESENT tables answer, in this order: how far each tool gets (1), "
       "navigation cost (15), for what precompute (8), giving up what (13), "
       "measured on what data (14).\n")
 print("*If only one table can be shown, it is 19.* It states the claim in the "
-      "quantity the claim is about — 28.9 KB against 35.5 MB at 564,640 leaves — "
+      "quantity the claim is about — 28.2 KiB against 33.8 MiB at 564,640 leaves — "
       "and it is the only table whose ratio grows without bound while everything "
       "on this side stays flat.\n")
 print("*Two tables to read together, not separately:* Table 1 without Table 2 "
@@ -324,7 +353,7 @@ for row in rows:
         ph = p.get("phases") or {}
         paint = fmt(ph.get("postFetch", p["ms"]) / 1000, " s")
         comp = fmt(ph["toCompare"] / 1000, " s", 0) if ph.get("compareComplete") else "**did not finish**"
-        heap = fmt(p.get("heap_mb"), " MB")
+        heap = fmt(heap_mib(p.get("heap_mb")), " MiB")
     else:
         paint = comp = heap = "**failed**"
     # Compared against phylo.io's COMPARE time, not its paint: that is the
@@ -340,7 +369,7 @@ for row in rows:
     print(
         f"| {leaves:,} | {paint} | {comp} | {heap} | "
         f"{fmt(d['ms'] / 1000, ' s', 2) if d.get('ok') else '**failed**'} | "
-        f"{fmt(d.get('heap_mb'), ' MB')} | {ratio} | "
+        f"{fmt(heap_mib(d.get('heap_mb')), ' MiB')} | {ratio} | "
         f"{fmt(precompute_s(leaves), ' s')}"
         f"{'' if precompute_is_pinned(leaves) else ' *(10 threads)*'} |"
     )
@@ -390,16 +419,17 @@ for row in rows:
     heap = p.get("heap_mb") if p.get("ok") else None
     growth = f"{heap / previous:.2f}x" if heap and previous and finished else "—"
     note = "" if finished else " *(compare unfinished — worker excluded)*"
-    print(f"| {row['leaves']:,} | {fmt(heap, ' MB')}{note} | {growth} | {fmt(d.get('heap_mb'), ' MB')} |")
+    print(f"| {row['leaves']:,} | {fmt(heap_mib(heap), ' MiB')}{note} | {growth} | "
+          f"{fmt(heap_mib(d.get('heap_mb')), ' MiB')} |")
     if heap and finished:
         previous = heap
 
 # --- 4. failure -----------------------------------------------------------
 if endurance:
-    table(4, "Failure behaviour, given 30 minutes and 16 GB")
+    table(4, "Failure behaviour, given 30 minutes and 16 GiB")
     print("Table 1's failures are against a stated budget. This removes the "
-          "budget: each rung was given **30 minutes** with a 16 GB renderer cap "
-          "on a 24 GB machine.\n")
+          "budget: each rung was given **30 minutes** with a 16 GiB renderer cap "
+          "on a 24 GiB machine.\n")
     print("| leaves | outcome | time to failure | peak renderer (MiB) |")
     print("|---:|---|---:|---:|")
     for r in endurance:
@@ -474,7 +504,7 @@ if repeats:
         beyond = " *(beyond phylo.io — it crashes at 141,160)*" if r["leaves"] > 141160 else ""
         print(
             f"| {r['leaves']:,} | {nodes:,} | **{r['median_ms'] / 1000:.2f} s** | "
-            f"{r['min_ms'] / 1000:.2f} s | {r['max_ms'] / 1000:.2f} s | {r['heap_mb']} MB{beyond} |"
+            f"{r['min_ms'] / 1000:.2f} s | {r['max_ms'] / 1000:.2f} s | {heap_mib(r['heap_mb']):.1f} MiB{beyond} |"
         )
 
 # --- 5d. the server side ---------------------------------------------------
@@ -494,9 +524,9 @@ if server:
         at_two = two_thread.get(leaves)
         print(
             f"| {leaves:,} | **{at_two:.1f} s** | {r['build_s']:.1f} s | "
-            f"{r['bytes'] / 1e6:.1f} MB |"
+            f"{r['bytes'] / MIB:.1f} MiB |"
             if at_two is not None else
-            f"| {leaves:,} | — | {r['build_s']:.1f} s | {r['bytes'] / 1e6:.1f} MB |"
+            f"| {leaves:,} | — | {r['build_s']:.1f} s | {r['bytes'] / MIB:.1f} MiB |"
         )
     print("\n*The ~2 s floor at small sizes is the worker's poll interval, not "
           "work.*")
@@ -594,19 +624,19 @@ memory_ten = load("build_memory_10threads.json")
 if memory:
     table(11, "What the server needs while it builds")
     print("Peak RSS of the worker process, sampled every 200 ms against its "
-          f"idle baseline of {memory['idle_rss_mb']:,.0f} MB. Measured in a "
+          f"idle baseline of {memory['idle_rss_mb']:,.0f} MiB. Measured in a "
           "throwaway store so nothing else was disturbed.\n")
     print("**The search is quadratic in time but LINEAR in memory** — every "
           "doubling of leaves roughly doubles the footprint. The pruning bound "
           "means it never materialises an n x n matrix: it holds the two trees' "
           "columns, which are memory-mapped, and one scratch buffer per "
           "thread. For contrast, building these trees with NJ would need "
-          "~500 GB of distance matrix at 500,000 taxa.\n")
+          "~466 GiB of distance matrix at 500,000 taxa.\n")
     if memory_ten:
         print("Both thread settings are shown, compared on **absolute peak "
               "RSS** rather than on the over-idle delta. The two runs had "
-              f"different idle baselines ({memory['idle_rss_mb']:,.0f} MB and "
-              f"{memory_ten['idle_rss_mb']:,.0f} MB), so subtracting each from "
+              f"different idle baselines ({memory['idle_rss_mb']:,.0f} MiB and "
+              f"{memory_ten['idle_rss_mb']:,.0f} MiB), so subtracting each from "
               "its own baseline would make the small rungs look like 2 threads "
               "used *more*, which is an artefact of the baseline and not a "
               "measurement.\n")
@@ -632,7 +662,7 @@ if memory:
             saved = f"{1 - peak / other['peak_rss_mb']:+.0%}" if other else "—"
             other_peak = f"{other['peak_rss_mb']:,.0f} MiB" if other else "—"
             # Growth is taken on the MARGINAL figure, not on peak RSS: peak
-            # carries a fixed ~33 MB interpreter baseline that dilutes every
+            # carries a fixed ~33 MiB interpreter baseline that dilutes every
             # ratio and would make linear growth read as 1.65x per doubling.
             growth = f"{marginal / previous:.2f}x" if previous else "—"
             print(
@@ -650,10 +680,11 @@ if memory:
               "Corrections. The per-thread scratch buffers are small against "
               "the memory-mapped columns — which is what was predicted before "
               "the bad measurement overturned it.\n")
-        print("*Figures are **MiB** (2^20 bytes): `ps -o rss` reports KiB and "
-              "these divide by 1024. The heap figures in Tables 1 and 3 are MB "
-              "(10^6), which is a different unit — stated rather than "
-              "silently reconciled.*\n")
+        print("*Every byte figure in these tables is binary — KiB, MiB, GiB "
+              "(2^10, 2^20, 2^30). `ps -o rss` reports KiB natively; heap and "
+              "transfer counts are raw byte counts divided by 2^20. Mixing "
+              "decimal and binary is how a table comes to state two different "
+              "things under one heading, and this one did for a while.*\n")
         print("*Build times are omitted here. This run measures memory, and "
               "Table 8's figures are the ones to quote for time.*")
     else:
@@ -683,14 +714,14 @@ if latency:
     for r in latency:
         print(
             f"| {r['leaves']:,} | **{r['median_ms']:.1f} ms** | {r['min_ms']:.1f} ms | "
-            f"{r['max_ms']:.1f} ms | {r['bytes'] / 1024:.1f} KB | {r['displayed_leaves']} |"
+            f"{r['max_ms']:.1f} ms | {r['bytes'] / KIB:.1f} KiB | {r['displayed_leaves']} |"
         )
     first, last = latency[0], latency[-1]
     print(
         f"\n*From {first['leaves']:,} to {last['leaves']:,} leaves — a "
         f"{last['leaves'] / first['leaves']:.0f}x increase — the median moves "
         f"{first['median_ms']:.1f} ms to {last['median_ms']:.1f} ms and the "
-        f"payload {first['bytes'] / 1024:.1f} KB to {last['bytes'] / 1024:.1f} KB. "
+        f"payload {first['bytes'] / KIB:.1f} KiB to {last['bytes'] / KIB:.1f} KiB. "
         "Seven samples per rung after a warm-up, since the first touch of a "
         "store memory-maps it.*")
 
@@ -969,9 +1000,9 @@ if transfer_rows:
             continue
         pi_total, pd_total = pi_app + pi_data, pd_app + pd_data
         print(
-            f"| {row['leaves']:,} | {pi_app / 1e6:,.2f} MB | {pi_data / 1e6:,.2f} MB "
-            f"| {pi_total / 1e6:,.2f} MB | {pd_app / 1e6:,.2f} MB "
-            f"| **{pd_data / 1024:,.1f} KB** | {pd_total / 1e6:,.2f} MB "
+            f"| {row['leaves']:,} | {pi_app / MIB:,.2f} MiB | {pi_data / MIB:,.2f} MiB "
+            f"| {pi_total / MIB:,.2f} MiB | {pd_app / MIB:,.2f} MiB "
+            f"| **{pd_data / KIB:,.1f} KiB** | {pd_total / MIB:,.2f} MiB "
             f"| **{pi_data / pd_data:,.0f}x** | {pi_total / pd_total:,.0f}x |"
         )
 
@@ -979,18 +1010,18 @@ if transfer_rows:
     tpi, tpd = top["phyloio"], top["phylodelta"]
     first = transfer_rows[0]
     print(f"\n**At {top['leaves']:,} leaves phylo.io must transfer "
-          f"{tpi['data'] / 1e6:,.1f} MB of tree and still cannot open the "
+          f"{tpi['data'] / MIB:,.1f} MiB of tree and still cannot open the "
           f"comparison** (Table 1). PhyloDelta transfers "
-          f"{tpd['data'] / 1024:,.1f} KB and shows it. The data column is the one "
+          f"{tpd['data'] / KIB:,.1f} KiB and shows it. The data column is the one "
           f"that matters for the claim: it is flat — "
-          f"{first['phylodelta']['data'] / 1024:,.1f} KB at "
-          f"{first['leaves']:,} leaves and {tpd['data'] / 1024:,.1f} KB at "
+          f"{first['phylodelta']['data'] / KIB:,.1f} KiB at "
+          f"{first['leaves']:,} leaves and {tpd['data'] / KIB:,.1f} KiB at "
           f"{top['leaves']:,} — against a download that grows linearly with the "
           f"tree.\n")
     print("**The application bundles run the other way, and by more than "
-          f"expected.** phylo.io's is {tpi['app'] / 1e6:,.2f} MB — `phylo.js` at "
-          "4.0 MB plus two worker chunks at 2.9 and 1.4 MB — against PhyloDelta's "
-          f"{tpd['app'] / 1e6:,.2f} MB. So PhyloDelta transfers less **in total at "
+          f"expected.** phylo.io's is {tpi['app'] / MIB:,.2f} MiB — `phylo.js` at "
+          "3.81 MiB plus two worker chunks at 2.74 and 1.36 MiB — against PhyloDelta's "
+          f"{tpd['app'] / MIB:,.2f} MiB. So PhyloDelta transfers less **in total at "
           "every rung including the smallest**, which was not the expected result: "
           "the prediction was that it would lose on total bytes on small trees and "
           "win only through the data column.\n")
@@ -999,11 +1030,11 @@ if transfer_rows:
     print("- **Compression is off**, deliberately, so both tools face identical "
           "transport. It was expected to narrow the ratio, since Newick "
           "compresses well. Measured, it **widens** it — see Table 20.\n")
-    print("- **In favour of it:** PhyloDelta's data figure includes a ~13 KB "
+    print("- **In favour of it:** PhyloDelta's data figure includes a ~13 KiB "
           "`GET /api/v1/datasets` catalogue whose size tracks **how many "
           "comparisons the store holds**, not tree size. The benchmark store "
           "holds every ladder rung, so a single-comparison deployment transfers "
-          "closer to 15 KB and the real figure is about half what is shown.\n")
+          "closer to 15 KiB and the real figure is about half what is shown.\n")
 
 # --- 10. the same, compressed ---------------------------------------------
 gz_rows = transfer_gzip.get("rows", [])
@@ -1031,8 +1062,8 @@ if gz_rows:
             if was and was.get("phyloio", {}).get("data") and was.get("phylodelta", {}).get("data")
             else "—"
         )
-        print(f"| {row['leaves']:,} | {pi['data'] / 1e6:,.2f} MB "
-              f"| **{pd['data'] / 1024:,.1f} KB** "
+        print(f"| {row['leaves']:,} | {pi['data'] / MIB:,.2f} MiB "
+              f"| **{pd['data'] / KIB:,.1f} KiB** "
               f"| **{pi['data'] / pd['data']:,.0f}x** | {was_ratio} |")
 
     top_gz = gz_rows[-1]
@@ -1055,7 +1086,7 @@ if gz_rows:
     gz_app_pi = top_gz["phyloio"]["app"]
     gz_app_pd = top_gz["phylodelta"]["app"]
     print(f"*Application bundles compress too, and the asymmetry survives: "
-          f"{gz_app_pi / 1e6:,.2f} MB against {gz_app_pd / 1e6:,.2f} MB, still "
+          f"{gz_app_pi / MIB:,.2f} MiB against {gz_app_pd / MIB:,.2f} MiB, still "
           f"{gz_app_pi / gz_app_pd:,.0f}x apart.*\n")
 
 # --- 11. sized to the viewport, not to the tree ----------------------------
@@ -1081,7 +1112,7 @@ if vp_rows:
         cells = []
         for c in row["cells"]:
             cells.append(
-                f"{c['bytes'] / 1024:,.1f} KB / {c['displayed_leaves']} tips"
+                f"{c['bytes'] / KIB:,.1f} KiB / {c['displayed_leaves']} tips"
                 if c.get("ok") else "—"
             )
         print(f"| {row['height']:,} | {first.get('panel_px', '—')} "
@@ -1097,8 +1128,8 @@ if vp_rows:
         print(f"\n**Across the rows the payload follows the window:** panel "
               f"{lo_panel:,} px to {hi_panel:,} px ({hi_panel / lo_panel:,.0f}x) "
               f"takes the budget from {lo_cell['budget']} to {hi_cell['budget']} "
-              f"tips and the payload from {lo_cell['bytes'] / 1024:,.1f} KB to "
-              f"{hi_cell['bytes'] / 1024:,.1f} KB. Above the floor the ratio of "
+              f"tips and the payload from {lo_cell['bytes'] / KIB:,.1f} KiB to "
+              f"{hi_cell['bytes'] / KIB:,.1f} KiB. Above the floor the ratio of "
               f"panel pixels to budgeted leaves settles at about **14**, which is "
               f"`PIXELS_PER_LEAF` — the design constant recovered from the "
               f"measurement rather than asserted.\n")
@@ -1109,7 +1140,7 @@ if vp_rows:
             print(f"**Down the columns it ignores the tree:** at the same window, "
                   f"{a['total_leaves']:,} leaves and {b['total_leaves']:,} leaves "
                   f"— {b['total_leaves'] / a['total_leaves']:,.0f}x more — cost "
-                  f"{a['bytes'] / 1024:,.1f} KB and {b['bytes'] / 1024:,.1f} KB. "
+                  f"{a['bytes'] / KIB:,.1f} KiB and {b['bytes'] / KIB:,.1f} KiB. "
                   f"The larger tree is marginally *cheaper*, which is label "
                   f"lengths, not structure.\n")
 

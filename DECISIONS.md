@@ -3380,7 +3380,7 @@ was the differing suffix above. Every rung is therefore checked for leaf counts,
 and depth before it is used: all ten are **100% shared**, depth 79 to 474.
 
 Both tools, same pair, same origin, uncompressed, Chrome 154, viewport 1440x900, one fresh page
-each, on a 24 GB machine with 10 cores — 4 performance, 6 efficiency. PhyloDelta is the **median of
+each, on a 24 GiB machine with 10 cores — 4 performance, 6 efficiency. PhyloDelta is the **median of
 six samples** per rung after a discarded warm-up; phylo.io is a single sample, because at the larger
 rungs one sample costs ten minutes.
 
@@ -3424,11 +3424,11 @@ It paints 35,290 leaves in 25 s. What it cannot do is *complete a comparison*: t
 at **17,645 leaves — the real vibrio pair**. The comparison this project was built for is, on real
 data, at the edge of what the incumbent can do at all.
 
-Given 30 minutes and 16 GB instead of a 600 s budget, 141,160 and 282,320 **crash the renderer
-process** after 17.1 and 25.6 minutes, peaking at 10.7 and 9.7 GB.
+Given 30 minutes and 16 GiB instead of a 600 s budget, 141,160 and 282,320 **crash the renderer
+process** after 17.1 and 25.6 minutes, peaking at 10.0 and 9.0 GiB.
 
 **The target scale is met and measured.** At **564,640 leaves / 1,129,279 nodes** — four times the
-size at which phylo.io crashes — PhyloDelta opens the comparison in a median **0.43 s** on 3.6 MB,
+size at which phylo.io crashes — PhyloDelta opens the comparison in a median **0.43 s** on 3.4 MiB,
 over six samples, which is *faster* than several smaller rungs and confirms the curve is flat rather
 than merely shallow. Its server build cost 339.5 s, and that is in the table too.
 
@@ -3449,7 +3449,7 @@ answered by their own counts.
 What differs is upstream, and it is not mainly the *tree*: it is the **comparison**. Their own phase
 split shows parse and layout are cheap and near-linear, while the comparison is **93-98% of total
 time at every size that completes**, growing ~3.7x per doubling. Their heap grows the same way —
-27 -> 100 -> 291 -> 1,181 MB — because it holds the tree model *plus* MinHash sketches *plus* a
+26 -> 96 -> 278 -> 1,127 MiB — because it holds the tree model *plus* MinHash sketches *plus* a
 score per node, and the last two scale with the comparison.
 
 That is the same finding as this project's own correspondence search being the quadratic step
@@ -3457,7 +3457,7 @@ That is the same finding as this project's own correspondence search being the q
 complexity but where it runs**: theirs in the browser on every load, this one once, offline, on a
 server — 2.0 s to 49.8 s of precompute, paid before anyone opens anything.
 
-PhyloDelta is flat at ~0.2-0.6 s and **3.6 MB at every rung** not because it draws less, but
+PhyloDelta is flat at ~0.2-0.6 s and **3.4 MiB at every rung** not because it draws less, but
 because the slice is sized by the viewport and arrives with its comparison already computed.
 
 ### 34.4 Accuracy: what the approximation costs
@@ -3520,13 +3520,13 @@ The mechanism, measured directly rather than inferred from the browser timings.
 
 | leaves | median | response | leaves drawn |
 |---|---|---|---|
-| 1,000 | 3.8 ms | 5.4 KB | 50 |
-| 17,645 | 3.2 ms | 6.9 KB | 50 |
-| 141,160 | 3.2 ms | 6.7 KB | 50 |
-| **564,640** | **2.9 ms** | **6.0 KB** | 50 |
+| 1,000 | 3.8 ms | 5.4 KiB | 50 |
+| 17,645 | 3.2 ms | 6.9 KiB | 50 |
+| 141,160 | 3.2 ms | 6.7 KiB | 50 |
+| **564,640** | **2.9 ms** | **6.0 KiB** | 50 |
 
-A **565x** increase in leaves moves the median from 3.8 ms to 2.9 ms and the payload from 5.4 KB to
-6.0 KB. Latency and size are set by the viewport budget, so neither tracks the data. Every other
+A **565x** increase in leaves moves the median from 3.8 ms to 2.9 ms and the payload from 5.4 KiB to
+6.0 KiB. Latency and size are set by the viewport budget, so neither tracks the data. Every other
 table in this section reports a consequence of that; this is the cause.
 
 ### 34.7 Thread scaling, and the property that had to be checked
@@ -3624,7 +3624,7 @@ starting from an idle machine.
 ### 34.9 What the server needs, and the shape that matters
 
 Measured 2026-09-26 in a throwaway store, sampling the worker process's RSS every 200 ms against a
-69 MB idle baseline.
+69 MiB idle baseline.
 
 Re-measured at 2 and at 10 threads, both on an idle machine and both against the same idle baseline
 of 70 MiB, so the two are directly comparable.
@@ -3656,11 +3656,11 @@ because the pruning bound (§15.1) means the search never materialises an n x n 
 the two trees' columns, which are memory-mapped, and one scratch buffer per thread.
 
 That is the sharper contrast with the alternative, and worth stating beside §34.13: building trees
-of this size by neighbour-joining would need **~500 GB** of distance matrix at 500,000 taxa. The
-comparison of two such trees needs **1.2 GB**. The quadratic cost is paid in time, where it can be
+of this size by neighbour-joining would need **~466 GiB** of distance matrix at 500,000 taxa. The
+comparison of two such trees needs **1.2 GiB**. The quadratic cost is paid in time, where it can be
 waited out, rather than in space, where it cannot.
 
-An older measurement, §17.1, recorded 568 MB peak for correspondence alone at 282,320 leaves,
+An older measurement, §17.1, recorded 568 MiB peak for correspondence alone at 282,320 leaves,
 single-threaded. The fresh whole-build figures at that rung are 678 and 680 MiB for 2 and 10 threads,
 which is the correspondence figure plus the rest of the build — and no longer the neat
 single-threaded-in-between pattern the contaminated numbers appeared to show.
@@ -3689,8 +3689,8 @@ console error: the application simply never finishes computing, and paints perfe
 
 So the first ladder timed phylo.io *rendering two trees* against PhyloDelta *rendering a
 comparison*, and reported it as like-for-like. Every figure was generous to phylo.io — 1.8 s became
-19 s at 2,500 leaves once the comparison ran, and its heap at 1,000 leaves went from 4.1 MB to
-27.4 MB. The reported ceiling moved from 141,160 leaves down to 17,645.
+19 s at 2,500 leaves once the comparison ran, and its heap at 1,000 leaves went from 3.9 MiB to
+26.1 MiB. The reported ceiling moved from 141,160 leaves down to 17,645.
 
 It was found only because the *accuracy* study needed those same scores and reported "0 clades
 scored", which was too obviously wrong to ignore. Had that study not been planned, a comfortable
@@ -3726,7 +3726,7 @@ the results were finished and checked over.
   *comparison* stands; the absolute paint figures would need re-taking in a headed browser before
   being quoted as what a user sees. Also absent.
 * **`--max-old-space-size=8192`, for both tools.** The heap cap decides *where* a tool fails, so every
-  `failed` cell in Tables 1 and 4 is a statement about the tool at an 8 GB cap rather than at Chrome's
+  `failed` cell in Tables 1 and 4 is a statement about the tool at an 8 GiB cap rather than at Chrome's
   default. This was documented in `browser.mjs` and not in the table a reader sees.
 
 **Power state was not controlled**, and is recorded for completeness rather than as a limitation —
@@ -3746,7 +3746,7 @@ version off by one from confusing the build number for the release.
 
 The whole comparison was re-run against **phylo.io 2.2.5** (2026-01-30), the current release, on a
 store rebuilt from scratch. The figures are indistinguishable from the 2.1.1 campaign — 199.1 s
-against 199.4 s to complete the comparison at 10,000 leaves, 1,181.4 MB against 1,181.4 MB, the same
+against 199.4 s to complete the comparison at 10,000 leaves, 1,126.7 MiB against 1,126.7 MiB, the same
 ceiling — which is what `api.js` and `worker_bcn.js` being unchanged predicts. The point of running
 it is that the prediction is now a measurement.
 
@@ -3802,7 +3802,7 @@ earlier campaign this affected is not known, which is itself a reason the re-run
   finish, the figure *falls* as the tree grows, because it reflects only the parsed trees. Table 4's
   whole-renderer RSS is the honest memory number.
 * **Peak RSS is sampled every 2 s**, so Table 4's figures are lower bounds and their ordering
-  (10.7 GB at 141k vs 9.7 GB at 282k) should not be read as meaningful.
+  (10.0 GiB at 141k vs 9.0 GiB at 282k) should not be read as meaningful.
 * **Rungs above 17,645 leaves are synthetic** — nested relabelled copies of the real pair,
   preserving depth and imbalance (564,640 leaves reaches depth 206/474). Real MLST data stops at
   27,962 (clostridium). They are used for performance claims only, never for accuracy. The thesis
@@ -3816,8 +3816,8 @@ earlier campaign this affected is not known, which is itself a reason the re-run
 
 The target scale cannot currently be reached with real MLST input, for two independent reasons:
 
-* **NJ/UPGMA are O(n^2) in memory.** A 500,000-taxon distance matrix is ~500 GB at float32 against
-  24 GB of RAM, and the NJ loop is ~1.2e17 operations. rapid-NJ accelerates the *search*, not the
+* **NJ/UPGMA are O(n^2) in memory.** A 500,000-taxon distance matrix is ~466 GiB at float32 against
+  24 GiB of RAM, and the NJ loop is ~1.2e17 operations. rapid-NJ accelerates the *search*, not the
   matrix. The practical ceiling on this machine is ~60-70k taxa — and the largest real tree here,
   `salmonella-100k-goeburst`, is 62,038 leaves, already at it.
 * **There are not 500,000 distinct leaves to have.** Leaves are sequence types: 26,629 vibrio
@@ -3919,7 +3919,7 @@ them, the BCN branch of `trigger_`, `expandToRoot`, `getHierarchyNodeFromModelNo
 the source the changes are a collapse-by-colour feature (`container.js`), colour palettes
 (`model.js`), empty-metric colour fallbacks (`viewer.js`), colour input handling (`utils.js`) and
 `==`→`===` plus two commented-out zoom calls inside click handlers (`interface.js`). The built bundle
-grows 30.6 KB, 0.38%. Nothing touches layout, draw volume, or the comparison itself.
+grows 29.9 KiB, 0.38%. Nothing touches layout, draw volume, or the comparison itself.
 
 **The ceiling was then confirmed on 2.2.5 directly, not inferred.** At 17,645 leaves its comparison
 also fails to complete inside a 600 s budget. That one result is what the whole of §34.2 rests on, and
@@ -3984,19 +3984,19 @@ and never the whole tree.** That quantity was the one thing not measured. Table 
 with nothing to compare it against, and Table 8's "bundle size" is the upload. Table 19 is the
 measurement.
 
-At 564,640 leaves phylo.io must transfer **35.5 MB** of tree and still cannot open the comparison;
-this frontend transfers **28.9 KB** and shows it. The data column is flat across the whole ladder —
-27.5 KB at 1,000 leaves, 28.9 KB at 564,640 — against a download that grows linearly. The ratio
+At 564,640 leaves phylo.io must transfer **33.8 MiB** of tree and still cannot open the comparison;
+this frontend transfers **28.2 KiB** and shows it. The data column is flat across the whole ladder —
+26.9 KiB at 1,000 leaves, 28.2 KiB at 564,640 — against a download that grows linearly. The ratio
 reaches 1,199x and has no ceiling, which no other table here can say.
 
 **Measured from the wire, not from `stat`.** File sizes on disk are a good estimate and a bad
 measurement: they miss headers, miss the application bundle entirely, and cannot see a request nobody
 predicted. Every response is counted through Playwright's `request.sizes()`, on `requestfinished`
 rather than `response` — `sizes()` reports a body of 0 while a response is still streaming, which at
-35 MB is all of it.
+34 MiB is all of it.
 
 **Both application bundles are counted, in their own column.** This is the trap §34.3 and Table 2
-exist to warn about: quoting 6 KB slices against a whole-tree download while ignoring that this
+exist to warn about: quoting 5.9 KiB slices against a whole-tree download while ignoring that this
 frontend also ships a bundle would compare a partial cost against a total one.
 
 #### Two predictions the measurement overturned
@@ -4005,10 +4005,10 @@ Recorded because both were stated before measuring and both were wrong in the sa
 reasoning about the design instead of counting.
 
 * **"PhyloDelta probably loses on total bytes at the smallest rungs."** It does not; it wins at every
-  rung, including 1,000 leaves. phylo.io's bundle is **8.27 MB** — `phylo.js` at 4.0 MB plus worker
-  chunks of 2.9 and 1.4 MB — against 0.49 MB here. The total ratio never falls below 16x, and the
+  rung, including 1,000 leaves. phylo.io's bundle is **7.89 MiB** — `phylo.js` at 3.81 MiB plus worker
+  chunks of 2.74 and 1.36 MiB — against 0.47 MiB here. The total ratio never falls below 16x, and the
   bundle, not the tree, is what dominates phylo.io's transfer below ~140,000 leaves.
-* **"Two slices, so about 13.5 KB."** It is 27.5 KB, because a panel's first load is not two slices:
+* **"Two slices, so about 13.5 KiB."** It is 26.9 KiB, because a panel's first load is not two slices:
   it is `datasets`, `metrics`, the comparison summary, and then the two slices. The estimate was of
   the part that had already been measured, which is the easiest kind of estimate to be confident and
   wrong about.
@@ -4021,9 +4021,9 @@ comfortable number:
 * **Compression is off**, because `serve.mjs` serves none — deliberately, so both tools face
   identical transport. It was expected to narrow the ratio, since Newick compresses well. It does the
   opposite; see §34.17.
-* **In favour of it.** The 27.5 KB includes a ~13 KB `datasets` catalogue whose size tracks **how many
+* **In favour of it.** The 26.9 KiB includes a ~12.7 KiB `datasets` catalogue whose size tracks **how many
   comparisons the store holds**, not tree size. The benchmark store holds every ladder rung, so a
-  single-comparison deployment transfers closer to 15 KB — the real figure is about half what is
+  single-comparison deployment transfers closer to 14.6 KiB — the real figure is about half what is
   shown.
 
 Neither is large enough to disturb the shape, which is the finding: one side grows with the tree and
@@ -4060,8 +4060,8 @@ distinction is not pedantic: a server that returned a fixed fifty leaves whateve
 satisfy every other table here while not doing what the design says.
 
 Table 21 is a grid, so the two are separable: down a column, 32x more leaves costs *slightly less*
-(59.1 KB against 57.7 KB, which is label lengths); across the rows, a panel from 255 px to 3,055 px
-takes the budget from 50 to 225 tips and the payload from 14.7 KB to 59.1 KB.
+(59.1 KiB against 57.7 KiB, which is label lengths); across the rows, a panel from 255 px to 3,055 px
+takes the budget from 50 to 225 tips and the payload from 14.7 KiB to 59.1 KiB.
 
 The pleasing part is a check nobody designed: above the floor, the measured ratio of panel pixels to
 budgeted leaves settles at about **14** — `PIXELS_PER_LEAF`, recovered from the wire rather than
@@ -4113,7 +4113,7 @@ different requests colliding on one key serves the wrong tree — a far worse fa
 
 2 MiB, and the reasoning is the thesis claim rather than a round number. The frontend sits at **3.6
 MB flat from 1,000 to 564,640 leaves**; a cache that grew with the tree would hand back exactly what
-the design bought. A slice is 5.4–6.9 KB at every size, so 2 MiB holds roughly 300 of them against
+the design bought. A slice is 5.3–6.7 KiB at every size, so 2 MiB holds roughly 300 of them against
 the tens a session visits — the bound is what guarantees the claim, not something a user meets.
 
 Entries are charged by an estimate, not measured: four numeric columns and a boolean at one entry
@@ -4144,7 +4144,7 @@ looking at.
 * **`registerPending` is deliberately unused.** It exists to stop two callers fetching one key twice,
   and `useSide` already solves that more precisely with an `AbortController` and a sequence number.
   Sharing one promise between panels would let either panel's abort reject the other's request —
-  trading a duplicate 6 KB fetch for a cross-panel failure.
+  trading a duplicate 5.9 KiB fetch for a cross-panel failure.
 
 ### 35.5 `phylo-tree-viewer/performance` is a separate entry point
 
@@ -4367,7 +4367,7 @@ On trees this unbalanced, depth is nearly uncorrelated with node count, so the b
 to be operative never binds. The caching strategy from that document survives; its API shape does
 not.
 
-**`performance.memory` as a memory measurement.** It reported phylo.io using 22 MB both before *and*
+**`performance.memory` as a memory measurement.** It reported phylo.io using 22 MiB both before *and*
 after building 2,002 SVG elements. Chrome quantises the value for security and it is GC-dependent.
 Memory is half the thesis claim, so it is measured through the Chrome DevTools Protocol
 (`Runtime.getHeapUsage` after a forced `HeapProfiler.collectGarbage`) instead.
