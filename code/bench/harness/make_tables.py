@@ -400,13 +400,13 @@ if endurance:
     print("Table 1's failures are against a stated budget. This removes the "
           "budget: each rung was given **30 minutes** with a 16 GB renderer cap "
           "on a 24 GB machine.\n")
-    print("| leaves | outcome | time to failure | peak renderer |")
+    print("| leaves | outcome | time to failure | peak renderer (MiB) |")
     print("|---:|---|---:|---:|")
     for r in endurance:
         outcome = "completed" if r.get("ok") else "**renderer process crashed**"
         print(
             f"| {r['leaves']:,} | {outcome} | {r['ms'] / 60000:.1f} min | "
-            f"{r['peak_renderer_mb']:,} MB |"
+            f"{r['peak_renderer_mb']:,} MiB |"
         )
     print("\n*Peak memory is sampled every 2 s from process RSS, so it is a lower "
           "bound and the two figures should not be read as an ordering.*")
@@ -617,30 +617,45 @@ if memory:
               "dominate and the difference would be negligible. It does not, "
               "and it is not.\n")
         ten_by = {r["leaves"]: r for r in memory_ten["rungs"]}
-        print("| leaves | peak RSS (2 thr) | peak RSS (10 thr) | saved | marginal (2 thr) | growth |")
+        print("| leaves | peak RSS (2 thr, MiB) | peak RSS (10 thr, MiB) | difference | marginal (2 thr) | growth |")
         print("|---:|---:|---:|---:|---:|---:|")
         previous = None
         for row in memory["rungs"]:
             other = ten_by.get(row["leaves"])
             peak = row["peak_rss_mb"]
             marginal = row["over_idle_mb"]
-            saved = f"{1 - peak / other['peak_rss_mb']:.0%}" if other else "—"
-            other_peak = f"{other['peak_rss_mb']:,.0f} MB" if other else "—"
+            # "difference", not "saved": measured on an idle machine the two
+            # thread counts are within 0-3%, and an earlier version of this
+            # table reported a 25-39% saving that came from a contaminated
+            # 2-thread figure. A column headed "saved" asserts a direction the
+            # numbers do not support.
+            saved = f"{1 - peak / other['peak_rss_mb']:+.0%}" if other else "—"
+            other_peak = f"{other['peak_rss_mb']:,.0f} MiB" if other else "—"
             # Growth is taken on the MARGINAL figure, not on peak RSS: peak
             # carries a fixed ~33 MB interpreter baseline that dilutes every
             # ratio and would make linear growth read as 1.65x per doubling.
             growth = f"{marginal / previous:.2f}x" if previous else "—"
             print(
-                f"| {row['leaves']:,} | **{peak:,.0f} MB** | {other_peak} | "
-                f"{saved} | {marginal:,.0f} MB | {growth} |"
+                f"| {row['leaves']:,} | **{peak:,.0f} MiB** | {other_peak} | "
+                f"{saved} | {marginal:,.0f} MiB | {growth} |"
             )
             previous = marginal or None
-        print("\n*Build times are deliberately omitted from this table. This "
-              "run measures memory, and its elapsed times came out well above "
-              "the dedicated ladder run — 842.5 s against 492.7 s at 564,640 "
-              "leaves, on the same setting — because it ran straight after a "
-              "browser benchmark that had saturated the machine. Table 8's "
-              "figures are the ones to quote.*")
+        print("\n**The thread count barely affects memory.** Both runs are on an "
+              "idle machine against the same 70 MiB idle baseline, and they "
+              "differ by 0-3%. An earlier version of this table reported "
+              "*fewer threads use 25-39% less memory* and offered it as a "
+              "second reason to prefer two; that came from a 2-thread figure "
+              "of 776 MiB which a fresh run does not reproduce, from the same "
+              "campaign as the mislabelled thread counts in DECISIONS "
+              "Corrections. The per-thread scratch buffers are small against "
+              "the memory-mapped columns — which is what was predicted before "
+              "the bad measurement overturned it.\n")
+        print("*Figures are **MiB** (2^20 bytes): `ps -o rss` reports KiB and "
+              "these divide by 1024. The heap figures in Tables 1 and 3 are MB "
+              "(10^6), which is a different unit — stated rather than "
+              "silently reconciled.*\n")
+        print("*Build times are omitted here. This run measures memory, and "
+              "Table 8's figures are the ones to quote for time.*")
     else:
         print("| leaves | build | peak RSS | over idle | growth |")
         print("|---:|---:|---:|---:|---:|")
@@ -649,8 +664,8 @@ if memory:
             over = r["over_idle_mb"]
             growth = f"{over / previous:.2f}x" if previous else "—"
             print(
-                f"| {r['leaves']:,} | {r['build_s']:.1f} s | {r['peak_rss_mb']:,.0f} MB | "
-                f"**{over:,.0f} MB** | {growth} |"
+                f"| {r['leaves']:,} | {r['build_s']:.1f} s | {r['peak_rss_mb']:,.0f} MiB | "
+                f"**{over:,.0f} MiB** | {growth} |"
             )
             previous = over or None
 

@@ -10,7 +10,7 @@
 | Browser flags | `--js-flags=--max-old-space-size=8192`, `--disable-dev-shm-usage` — **both tools, identically** |
 | Viewport | 1440 x 900; Table 21 varies the height |
 | **Tool compared against** | **phylo.io 2.2.5** (2026-01-30), its own published `dist/`, unmodified — the current release at the time of measurement |
-| This project | generated at commit `abc824a + uncommitted changes` |
+| This project | generated at commit `44d3b70 + uncommitted changes` |
 | Runtimes | Python 3.12.14 (`uv`), Node 26.3.0, Playwright 1.63.0 |
 | Backend database | SQLite, in the store directory |
 | Store location | `/private/tmp/...` — an APFS SSD volume, **not** a RAM disk |
@@ -143,10 +143,10 @@ Rows where the comparison did not finish are marked — their figure excludes th
 
 Table 1's failures are against a stated budget. This removes the budget: each rung was given **30 minutes** with a 16 GB renderer cap on a 24 GB machine.
 
-| leaves | outcome | time to failure | peak renderer |
+| leaves | outcome | time to failure | peak renderer (MiB) |
 |---:|---|---:|---:|
-| 141,160 | **renderer process crashed** | 13.3 min | 10,877 MB |
-| 282,320 | **renderer process crashed** | 14.4 min | 10,715 MB |
+| 141,160 | **renderer process crashed** | 13.3 min | 10,877 MiB |
+| 282,320 | **renderer process crashed** | 14.4 min | 10,715 MiB |
 
 *Peak memory is sampled every 2 s from process RSS, so it is a lower bound and the two figures should not be read as an ordering.*
 
@@ -288,24 +288,28 @@ Peak RSS of the worker process, sampled every 200 ms against its idle baseline o
 
 **The search is quadratic in time but LINEAR in memory** — every doubling of leaves roughly doubles the footprint. The pruning bound means it never materialises an n x n matrix: it holds the two trees' columns, which are memory-mapped, and one scratch buffer per thread. For contrast, building these trees with NJ would need ~500 GB of distance matrix at 500,000 taxa.
 
-Both thread settings are shown, compared on **absolute peak RSS** rather than on the over-idle delta. The two runs had different idle baselines (70 MB and 69 MB), so subtracting each from its own baseline would make the small rungs look like 2 threads used *more*, which is an artefact of the baseline and not a measurement.
+Both thread settings are shown, compared on **absolute peak RSS** rather than on the over-idle delta. The two runs had different idle baselines (70 MB and 70 MB), so subtracting each from its own baseline would make the small rungs look like 2 threads used *more*, which is an artefact of the baseline and not a measurement.
 
 **Fewer threads really does use less memory** — 30-40% less across the range, because the scratch buffer is per-thread and eight of them are not allocated. That is a larger effect than expected: the prediction was that the memory-mapped trees would dominate and the difference would be negligible. It does not, and it is not.
 
-| leaves | peak RSS (2 thr) | peak RSS (10 thr) | saved | marginal (2 thr) | growth |
+| leaves | peak RSS (2 thr, MiB) | peak RSS (10 thr, MiB) | difference | marginal (2 thr) | growth |
 |---:|---:|---:|---:|---:|---:|
-| 1,000 | **71 MB** | 73 MB | 3% | 1 MB | — |
-| 2,500 | **76 MB** | 76 MB | 0% | 7 MB | 5.50x |
-| 5,000 | **79 MB** | 80 MB | 0% | 10 MB | 1.47x |
-| 10,000 | **88 MB** | 87 MB | -2% | 19 MB | 1.96x |
-| 17,645 | **110 MB** | 106 MB | -3% | 40 MB | 2.11x |
-| 35,290 | **150 MB** | 148 MB | -1% | 81 MB | 2.02x |
-| 70,580 | **224 MB** | 223 MB | -1% | 155 MB | 1.91x |
-| 141,160 | **394 MB** | 392 MB | -0% | 324 MB | 2.09x |
-| 282,320 | **678 MB** | 681 MB | 0% | 609 MB | 1.88x |
-| 564,640 | **1,242 MB** | 1,271 MB | 2% | 1,172 MB | 1.93x |
+| 1,000 | **71 MiB** | 72 MiB | +1% | 1 MiB | — |
+| 2,500 | **76 MiB** | 76 MiB | +0% | 7 MiB | 5.50x |
+| 5,000 | **79 MiB** | 80 MiB | +1% | 10 MiB | 1.47x |
+| 10,000 | **88 MiB** | 88 MiB | -0% | 19 MiB | 1.96x |
+| 17,645 | **110 MiB** | 109 MiB | -0% | 40 MiB | 2.11x |
+| 35,290 | **150 MiB** | 151 MiB | +1% | 81 MiB | 2.02x |
+| 70,580 | **224 MiB** | 226 MiB | +1% | 155 MiB | 1.91x |
+| 141,160 | **394 MiB** | 395 MiB | +0% | 324 MiB | 2.09x |
+| 282,320 | **678 MiB** | 680 MiB | +0% | 609 MiB | 1.88x |
+| 564,640 | **1,242 MiB** | 1,274 MiB | +3% | 1,172 MiB | 1.93x |
 
-*Build times are deliberately omitted from this table. This run measures memory, and its elapsed times came out well above the dedicated ladder run — 842.5 s against 492.7 s at 564,640 leaves, on the same setting — because it ran straight after a browser benchmark that had saturated the machine. Table 8's figures are the ones to quote.*
+**The thread count barely affects memory.** Both runs are on an idle machine against the same 70 MiB idle baseline, and they differ by 0-3%. An earlier version of this table reported *fewer threads use 25-39% less memory* and offered it as a second reason to prefer two; that came from a 2-thread figure of 776 MiB which a fresh run does not reproduce, from the same campaign as the mislabelled thread counts in DECISIONS Corrections. The per-thread scratch buffers are small against the memory-mapped columns — which is what was predicted before the bad measurement overturned it.
+
+*Figures are **MiB** (2^20 bytes): `ps -o rss` reports KiB and these divide by 1024. The heap figures in Tables 1 and 3 are MB (10^6), which is a different unit — stated rather than silently reconciled.*
+
+*Build times are omitted here. This run measures memory, and Table 8's figures are the ones to quote for time.*
 
 ## Table 12 — The request a panel actually makes
 

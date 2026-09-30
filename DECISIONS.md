@@ -3626,24 +3626,29 @@ starting from an idle machine.
 Measured 2026-09-26 in a throwaway store, sampling the worker process's RSS every 200 ms against a
 69 MB idle baseline.
 
-Re-measured at the deployment setting of **2 threads**, and compared against the original 10-thread
-run on **absolute peak RSS** — the two runs had different idle baselines (33 MB and 69 MB), so
-subtracting each from its own would make the small rungs appear to use *more* at 2 threads, which is
-an artefact rather than a measurement.
+Re-measured at 2 and at 10 threads, both on an idle machine and both against the same idle baseline
+of 70 MiB, so the two are directly comparable.
 
-| leaves | peak RSS (2 thr) | peak RSS (10 thr) | saved | marginal (2 thr) |
-|---|---|---|---|---|
-| 17,645 | 76 MB | 106 MB | 28% | 44 MB |
-| 70,580 | 166 MB | 223 MB | 25% | 134 MB |
-| 141,160 | 276 MB | 392 MB | 29% | 244 MB |
-| 282,320 | 470 MB | 681 MB | 31% | 438 MB |
-| **564,640** | **776 MB** | 1,271 MB | **39%** | 743 MB |
+| leaves | peak RSS (2 thr) | peak RSS (10 thr) | difference |
+|---|---|---|---|
+| 70,580 | 224 MiB | 226 MiB | 1% |
+| 141,160 | 394 MiB | 395 MiB | 0% |
+| 282,320 | 678 MiB | 680 MiB | 0% |
+| **564,640** | **1,242 MiB** | **1,274 MiB** | **3%** |
 
-**A prediction made before the run, and wrong.** The expectation was that the memory-mapped trees
-would dominate and the thread count would barely matter. It does matter: **fewer threads use 25-39%
-less memory**, because the scratch buffer is per-thread and eight of them are simply not allocated.
-So memory is a *second* reason to prefer two threads, alongside the efficiency argument in §34.8 —
-not the non-factor it was assumed to be.
+**The thread count barely affects memory, and an earlier version of this section said the opposite.**
+It reported *"fewer threads use 25-39% less memory"* and offered that as a second reason to prefer
+two, reasoning that the per-thread scratch buffer is allocated eight fewer times. Measured properly,
+the difference is 0-3%: the scratch buffers are small against the memory-mapped columns, which is
+what the *original* prediction said before it was overturned by a bad measurement and then
+overturned back.
+
+The 25-39% came from a 2-thread figure of 776 MiB that a fresh run does not reproduce — it gives
+1,242 MiB — and which belongs to the same contaminated campaign as §34.8's mislabelled thread counts.
+Comparing it against a 10-thread figure from that same campaign produced a saving that is not there.
+
+So the case for two threads rests on **efficiency alone** (§34.8), which is sufficient: 1.80x at 90%
+against 4.48x at 45%. Memory is not an argument either way.
 
 **Quadratic in time, linear in memory.** Every doubling of leaves roughly doubles the marginal
 footprint — 1.70x to 1.96x across the large rungs —
@@ -3655,10 +3660,10 @@ of this size by neighbour-joining would need **~500 GB** of distance matrix at 5
 comparison of two such trees needs **1.2 GB**. The quadratic cost is paid in time, where it can be
 waited out, rather than in space, where it cannot.
 
-It also corroborates an older measurement: §17.1 recorded 568 MB peak for correspondence at 282,320
-leaves, single-threaded; the 10-thread run measured **681 MB** peak for the same size, and the
-2-thread run **470 MB**. The single-threaded figure sitting between them is what per-thread scratch
-predicts.
+An older measurement, §17.1, recorded 568 MB peak for correspondence alone at 282,320 leaves,
+single-threaded. The fresh whole-build figures at that rung are 678 and 680 MiB for 2 and 10 threads,
+which is the correspondence figure plus the rest of the build — and no longer the neat
+single-threaded-in-between pattern the contaminated numbers appeared to show.
 
 **One discrepancy, and the guess about it was also wrong.** The 564,640 rung built in **196.4 s**
 here against **339.5 s** in the benchmark store. Page-cache warmth was offered as the likely cause
@@ -4106,9 +4111,9 @@ different requests colliding on one key serves the wrong tree — a far worse fa
 
 ### 35.2 The bound is a constant, because the claim is
 
-2 MB, and the reasoning is the thesis claim rather than a round number. The frontend sits at **3.6
+2 MiB, and the reasoning is the thesis claim rather than a round number. The frontend sits at **3.6
 MB flat from 1,000 to 564,640 leaves**; a cache that grew with the tree would hand back exactly what
-the design bought. A slice is 5.4–6.9 KB at every size, so 2 MB holds roughly 300 of them against
+the design bought. A slice is 5.4–6.9 KB at every size, so 2 MiB holds roughly 300 of them against
 the tens a session visits — the bound is what guarantees the claim, not something a user meets.
 
 Entries are charged by an estimate, not measured: four numeric columns and a boolean at one entry

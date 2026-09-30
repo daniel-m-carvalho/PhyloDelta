@@ -34,10 +34,10 @@ import type { TreeSlice } from "./types";
  *
  * And it must stay **independent of tree size**, which is the claim itself:
  * the frontend sits at 3.6 MB flat from 1,000 to 564,640 leaves, so a cache
- * that grew with the tree would give back exactly what the design bought. 2 MB
+ * that grew with the tree would give back exactly what the design bought. 2 MiB
  * is a constant, and a deliberately small one against the heap it is added to.
  */
-export const SLICE_CACHE_BYTES = 2 * 1024 * 1024;
+export const SLICE_CACHE_BYTES = 2 * 1024 * 1024; // 2 MiB, not 2 MB
 
 /** Everything that changes what the server sends back. */
 export interface SliceKeyParts {
