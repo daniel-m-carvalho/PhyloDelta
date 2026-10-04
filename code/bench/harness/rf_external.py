@@ -4,7 +4,11 @@ The built-in `rf` metric is already checked against TreeDiff (Table 18), but
 TreeDiff is the reference implementation of the *same paper* this backend
 follows, so the two share a definition. DendroPy and ETE3 share nothing with
 either: different authors, different representation, and — as it turns out —
-a different reporting convention.
+a different reporting convention — which is how the halved value survived: this
+store and TreeDiff agreed with each other while both differed from the field by
+a factor of two, and no check inside the repository could see it. Since the rf
+metric's v2 the store reports the full symmetric difference and this runner
+checks for **equality**, with TreeDiff's halved output kept in its own column.
 
 Neither library is a dependency of the server, and neither should become one
 for a check that runs once. Build a throwaway environment instead:
@@ -54,9 +58,22 @@ TREEDIFF = (Path(__file__).resolve().parents[2] / "server" / "native"
 #: external check there would be measuring the construction, not the data.
 RUNGS = [1000, 2500, 5000, 10000, 17645]
 
-#: From `uv run python harness/... ` against the built store — the values the
-#: pipeline produces, recorded here so this runner needs no server.
-PHYLODELTA = {1000: 531, 2500: 1219, 5000: 2207, 10000: 4113, 17645: 6825}
+#: The values the pipeline produces, recorded here so this runner needs no
+#: server. Since the rf metric's v2 these are the full symmetric difference
+#: (§34.19); v1 reported half of each.
+PHYLODELTA = {1000: 1062, 2500: 2438, 5000: 4414, 10000: 8226, 17645: 13650}
+
+#: `rf_normalised` for the same pairs: rf over the maximum it could reach for
+#: those two trees. Recorded because the ratio was the half of this that was
+#: actually wrong — v1 divided the halved rf by the full maximum, giving a
+#: figure that could never exceed 0.5.
+PHYLODELTA_NORMALISED = {
+    1000: 1062 / (999 + 999 - 2),
+    2500: 2438 / (2499 + 2499 - 2),
+    5000: 4414 / (4999 + 4999 - 2),
+    10000: 8226 / (9999 + 9999 - 2),
+    17645: 13650 / (17644 + 17644 - 2),
+}
 
 
 def files(leaves: int) -> tuple[Path, Path]:
@@ -155,7 +172,7 @@ for leaves in RUNGS:
     rows.append({
         "leaves": leaves,
         "phylodelta": ours,
-        "phylodelta_doubled": ours * 2,
+        "phylodelta_normalised": round(PHYLODELTA_NORMALISED[leaves], 6),
         "treediff": (treediff_rf(*prepared) if (prepared := treediff_input(leaves)) else None),
         "dendropy_rooted": dendropy_sd(a, b, "force-rooted"),
         "dendropy_unrooted": dendropy_sd(a, b, "force-unrooted"),

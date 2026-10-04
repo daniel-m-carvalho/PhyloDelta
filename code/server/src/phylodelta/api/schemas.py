@@ -310,7 +310,11 @@ class ComparisonSummary(BaseModel):
     summary: dict[str, float | int | str] = Field(
         description=(
             "Metric-specific scalars, e.g. rf, rf_normalised, shared_clusters. "
-            "Free-form because metrics differ; render generically."
+            "Free-form because metrics differ; render generically. `rf` is the "
+            "full symmetric difference of the rooted clade sets, as DendroPy "
+            "and ETE3 report it; `rf_normalised` divides it by the maximum for "
+            "these two trees, so 1 means no clade in common. The `rf-treediff` "
+            "metric reports half of `rf`, which is TreeDiff's own convention."
         )
     )
     shared_leaves: int

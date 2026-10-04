@@ -93,21 +93,52 @@ def compute(
     internal_right = right.n_leaves - 1
     # The paper's Algorithm 2: internal-node counts stand in for the number of
     # non-singleton clades (valid only because unary nodes were suppressed,
-    # §1.4/§2.4), and the result is **halved**.
+    # §1.4/§2.4).
     #
-    # The halving is TreeDiff's convention, not the field's. DendroPy and ETE3
-    # both report the symmetric difference whole, and measured against them on
-    # five pruned pairs they return exactly twice this number every time — the
-    # same clades shared, the same exclusive, a different denominator (bench
-    # Table 22). Recorded because the discrepancy looks like an error and is
-    # not, and because changing it now would move every published figure.
-    rf = (internal_left + internal_right - 2 * shared_left) / 2
+    # **The full symmetric difference, not half of it** (§2.6, §34.19). This
+    # used to be halved, following TreeDiff; DendroPy and ETE3 both report it
+    # whole, and so does the definition — |C(T1)\C(T2)| + |C(T2)\C(T1)|.
+    # TreeDiff still returns the halved value, so `rf-treediff` is now a
+    # different quantity by a factor of two and says so in its manifest.
+    #
+    # Worth knowing why the halved number looked so plausible: it is *also*
+    # exactly the one-sided count |C(T1)\C(T2)|, because after reconciliation
+    # both trees are rooted binary over the same leaf set and therefore have
+    # the same internal-node count, making the two exclusive counts equal. The
+    # coincidence is a property of this pipeline's inputs, not of RF.
+    rf = internal_left + internal_right - 2 * shared_left
+
+    # The maximum the numerator can reach for *these two trees*: no clade
+    # shared, so every counted cluster on each side is exclusive. Counted
+    # clusters are the internal nodes excluding each root — the root's clade is
+    # all taxa and is shared by construction, so it can never contribute, and
+    # leaving it in the denominator would cap the ratio below 1. Single leaves
+    # are excluded too: RF judges only internal branches.
+    #
+    # This matches ETE3's own `max_rf` (35,286 for the 17,645-leaf pair) and
+    # DendroPy's rooted maximum. The previous version divided the *halved* RF by
+    # this *full* maximum, which could never exceed 0.5 — and a test asserting
+    # `> 0.49` for two near-maximally-different trees had pinned that ceiling in
+    # place (DECISIONS, Corrections).
+    max_rf = max(internal_left + internal_right - 2, 1)
+
+    # The thesis's own definition of RF, computed from the similarity column
+    # instead of from the shared count: a clade is absent from the other tree
+    # exactly when its best match is not an exact one. Two routes to one number,
+    # so a change to either side has to break this.
+    exclusive_left = internal_left - shared_left
+    exclusive_right = internal_right - shared_right
+    if rf != exclusive_left + exclusive_right:
+        raise AssertionError(
+            f"rf {rf} is not the count of non-matching clades "
+            f"({exclusive_left} + {exclusive_right})"
+        )
 
     return MetricResult(
         name="rf",
         summary={
             "rf": rf,
-            "rf_normalised": rf / max(internal_left + internal_right - 2, 1),
+            "rf_normalised": rf / max_rf,
             "shared_clusters": shared_left,
             "clusters_left": internal_left,
             "clusters_right": internal_right,

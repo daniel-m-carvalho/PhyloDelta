@@ -24,7 +24,14 @@ export function headline(
   if (scalars.rf !== undefined) {
     return {
       label: "RF",
-      title: "Robinson-Foulds distance",
+      // Spelled out because the number alone is ambiguous: implementations
+      // differ by a factor of two on exactly this quantity. The server reports
+      // the full symmetric difference, as DendroPy and ETE3 do, and the
+      // normalised figure beside it is a fraction of the maximum for these two
+      // trees, so 1 means no clade in common.
+      title:
+        "Robinson-Foulds distance: clades in one tree but not the other, " +
+        "counted in both directions",
       value: Number(scalars.rf),
       normalised: scalars.rf_normalised !== undefined ? Number(scalars.rf_normalised) : undefined,
     };

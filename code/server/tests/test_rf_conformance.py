@@ -5,6 +5,14 @@ backend follows — different authors, a different algorithm, over a different
 representation — so agreement is evidence that neither is wrong in a way the
 other shares.
 
+**The two report different quantities and must not be compared for equality.**
+Since v2 this backend reports the full symmetric difference and TreeDiff still
+halves it (§34.19), so the invariant checked here is `ours == 2 * theirs`. It is
+written as a factor rather than folded into a helper so that the conversion is
+visible at every assertion: the whole value of this file is that the two sides
+were derived independently, and a silent doubling inside `both()` would hide
+exactly the mistake it exists to catch.
+
 That matters more here than it usually would. Of the five RF implementations
 examined for this project, **three return wrong answers on real input**, all of
 them silently: `rf_day` scores a tree against itself as 11,831 (§2.5),
@@ -68,7 +76,7 @@ def both(tmp_path, left, right) -> tuple[float, float]:
 )
 def test_the_two_implementations_agree(tmp_path, left_text, right_text):
     ours, theirs = both(tmp_path, parse_newick(left_text), parse_newick(right_text))
-    assert ours == theirs
+    assert ours == 2 * theirs
 
 
 def test_they_agree_on_the_real_pair(real_store, tmp_path):
@@ -80,7 +88,9 @@ def test_they_agree_on_the_real_pair(real_store, tmp_path):
         read_tree(real_store / "trees" / "vibrio-upgma").to_arrays(),
     )
     ours, theirs = both(tmp_path, left, right)
-    assert ours == 6825
+    # 13,650 is the symmetric difference; 6,825 is TreeDiff's halved report and
+    # the gate this project has carried since milestone 2 (§2.6).
+    assert ours == 13650
     assert theirs == 6825
 
 

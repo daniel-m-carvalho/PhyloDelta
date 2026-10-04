@@ -5,8 +5,8 @@
  "rows": [
   {
    "leaves": 1000,
-   "phylodelta": 531,
-   "phylodelta_doubled": 1062,
+   "phylodelta": 1062,
+   "phylodelta_normalised": 0.532064,
    "treediff": 531,
    "dendropy_rooted": 1062,
    "dendropy_unrooted": 1044,
@@ -14,8 +14,8 @@
   },
   {
    "leaves": 2500,
-   "phylodelta": 1219,
-   "phylodelta_doubled": 2438,
+   "phylodelta": 2438,
+   "phylodelta_normalised": 0.48799,
    "treediff": 1219,
    "dendropy_rooted": 2438,
    "dendropy_unrooted": 2418,
@@ -23,8 +23,8 @@
   },
   {
    "leaves": 5000,
-   "phylodelta": 2207,
-   "phylodelta_doubled": 4414,
+   "phylodelta": 4414,
+   "phylodelta_normalised": 0.441577,
    "treediff": 2207,
    "dendropy_rooted": 4414,
    "dendropy_unrooted": 4396,
@@ -32,8 +32,8 @@
   },
   {
    "leaves": 10000,
-   "phylodelta": 4113,
-   "phylodelta_doubled": 8226,
+   "phylodelta": 8226,
+   "phylodelta_normalised": 0.411382,
    "treediff": 4113,
    "dendropy_rooted": 8226,
    "dendropy_unrooted": 8202,
@@ -41,8 +41,8 @@
   },
   {
    "leaves": 17645,
-   "phylodelta": 6825,
-   "phylodelta_doubled": 13650,
+   "phylodelta": 13650,
+   "phylodelta_normalised": 0.386839,
    "treediff": 6825,
    "dendropy_rooted": 13650,
    "dendropy_unrooted": 13626,

@@ -20,7 +20,7 @@
         "pattern": "(?m)^Robinson Foulds distance is:\\s*([0-9.eE+-]+)",
         "type": "float",
         "required": true,
-        "description": "Should equal the built-in `rf` metric exactly. A disagreement means one of them is wrong. The pattern is anchored to the start of a line on purpose: `rf_postorder` switches to printing \"Weighted Robinson Foulds distance is:\" when its input carries branch lengths, and an unanchored pattern matches that line too \u2014 recording a weighted distance of 1.23e+06 as an RF of 6,825's kind. The server writes this metric's input without lengths, so it does not currently happen; anchoring makes it refuse rather than depend on that staying true."
+        "description": "Should equal **half** the built-in `rf` metric exactly. TreeDiff halves the symmetric difference and the built-in metric does not (since v2, \u00a734.19), so `rf == 2 * this`; any other relationship means one of them is wrong. The pattern is anchored to the start of a line on purpose: `rf_postorder` switches to printing \"Weighted Robinson Foulds distance is:\" when its input carries branch lengths, and an unanchored pattern matches that line too \u2014 recording a weighted distance of 1.23e+06 as an RF of 6,825's kind. The server writes this metric's input without lengths, so it does not currently happen; anchoring makes it refuse rather than depend on that staying true."
       }
     ]
   },
@@ -36,7 +36,7 @@
       {
         "key": "rf",
         "label": "Robinson-Foulds distance (TreeDiff)",
-        "description": "Should equal the built-in `rf` metric exactly. A disagreement means one of them is wrong."
+        "description": "Should equal **half** the built-in `rf` metric exactly. TreeDiff halves the symmetric difference and the built-in metric does not (since v2, \u00a734.19), so `rf == 2 * this`; any other relationship means one of them is wrong."
       }
     ],
     "columns": []

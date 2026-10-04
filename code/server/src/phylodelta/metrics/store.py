@@ -155,6 +155,42 @@ class PairMeta:
     summary: dict = field(default_factory=dict)
     notes: dict = field(default_factory=dict)
     created: str = ""
+    #: The version the metric's manifest declared when this was computed.
+    #: Empty for pairs written before the field existed, which are exactly the
+    #: ones that may hold a superseded definition — see `_check_metric_version`.
+    metric_version: str = ""
+
+
+def _check_metric_version(raw: dict, directory: Path) -> None:
+    """Refuse a stored result computed by a different version of its metric.
+
+    `format_version` guards the *file layout*; this guards the *meaning of the
+    numbers*. They are separate failures: rf v1 and v2 write byte-identical
+    files and differ only in what the scalar means, so a layout check cannot
+    see it and a reader that trusted the bytes would serve a v1 distance under
+    a v2 label. That happened once in the other direction — the `rf` scalar was
+    half the symmetric difference while every document called it RF (§34.19) —
+    and the whole cost of that was that nothing refused.
+
+    Unknown metrics are not refused: a pair may legitimately hold a metric this
+    build does not carry (a plug-in removed, a subprocess tool absent), and
+    `discover()` is the authority on what exists, not this function.
+    """
+    from . import registry
+
+    stored = raw.get("metric_version", "")
+    name = raw.get("metric", "?")
+    manifest = registry.discover().get(name)
+    if manifest is None:
+        return
+    current = str(manifest.raw.get("version", ""))
+    if stored != current:
+        raise ValueError(
+            f"{directory} holds `{name}` computed by version "
+            f"{stored or '(unrecorded)'}, and this build declares version "
+            f"{current}. The stored numbers mean something else; rebuild the "
+            f"comparison (`phylodelta build-all`, or re-upload the pair)."
+        )
 
 
 class PairReader:
@@ -164,12 +200,14 @@ class PairReader:
         self.directory = Path(directory)
         raw = read_header(self.directory)
         _check_version(raw, self.directory)
+        _check_metric_version(raw, self.directory)
         self.meta = PairMeta(
             pair_id=raw["pair_id"], metric=raw["metric"],
             left=raw["left"], right=raw["right"],
             n_left=raw["n_left"], n_right=raw["n_right"],
             summary=raw.get("summary", {}), notes=raw.get("notes", {}),
             created=raw.get("created", ""),
+            metric_version=str(raw.get("metric_version", "")),
         )
         self.reader = ColumnReader(
             directory=self.directory,
@@ -209,10 +247,16 @@ def write_pair(
         columns = values.columns if values is not None else {}
         schema[side] = write_side(directory, side, columns, arrays.n_nodes)
 
+    from . import registry
+
+    manifest = registry.discover().get(result.name)
+    version = str(manifest.raw.get("version", "")) if manifest else ""
+
     meta = PairMeta(
         pair_id=pair_id, metric=result.name, left=left_id, right=right_id,
         n_left=left.n_nodes, n_right=right.n_nodes,
         summary=dict(result.summary), notes=dict(result.notes), created=_stamp(),
+        metric_version=version,
     )
     _write_header(directory, {
         "pair_id": meta.pair_id, "metric": meta.metric,
@@ -220,6 +264,7 @@ def write_pair(
         "n_left": meta.n_left, "n_right": meta.n_right,
         "schema": schema, "summary": meta.summary, "notes": meta.notes,
         "format_version": FORMAT_VERSION, "created": meta.created,
+        "metric_version": meta.metric_version,
     })
     return meta
 

@@ -229,7 +229,7 @@ def test_an_upload_becomes_a_computed_comparison(client, store):
 
     # And it is now actually servable, which is the point.
     body = client.get(f"/api/v1/comparisons/{comparison_id}", headers=headers).json()
-    assert body["summary"]["rf"] == 1
+    assert body["summary"]["rf"] == 2  # one exclusive clade each way
     left_id = comparison_id.split("__")[0]
     assert client.get(f"/api/v1/trees/{left_id}", headers=headers).status_code == 200
     assert (

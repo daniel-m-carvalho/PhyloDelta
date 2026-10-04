@@ -102,7 +102,7 @@ def test_metric_columns_round_trip(tmp_path):
     b = parse_newick("((D,E),(B,(A,C)));")
     _, result = prepared(a, b)
     meta = write_pair(tmp_path / "p", result, "a__b", "a", "b", a, b)
-    assert meta.summary["rf"] == 1
+    assert meta.summary["rf"] == 2  # one exclusive clade each way
 
     back = read_pair(tmp_path / "p")
     assert back.columns("left") == ["exact"]
@@ -110,6 +110,58 @@ def test_metric_columns_round_trip(tmp_path):
         np.asarray(back.column("left", "exact")).astype(bool),
         result.left.columns["exact"],
     )
+
+
+def test_a_stored_metric_records_the_version_that_computed_it(tmp_path):
+    a = parse_newick("(((A,B),C),(D,E));")
+    b = parse_newick("((D,E),(B,(A,C)));")
+    _, result = prepared(a, b)
+    meta = write_pair(tmp_path / "p", result, "a__b", "a", "b", a, b)
+    assert meta.metric_version == "2"
+    assert read_pair(tmp_path / "p").meta.metric_version == "2"
+
+
+def test_a_pair_from_an_older_metric_version_is_refused(tmp_path):
+    """The numbers mean something else, so serving them would be the bug.
+
+    `format_version` cannot catch this: rf v1 and v2 write byte-identical files
+    and differ only in what the scalar means. A reader that trusted the layout
+    would hand a halved distance to a caller expecting the symmetric difference
+    (\u00a734.19) \u2014 and for as long as the convention was undocumented, nothing
+    anywhere would have noticed.
+    """
+    a = parse_newick("(((A,B),C),(D,E));")
+    b = parse_newick("((D,E),(B,(A,C)));")
+    _, result = prepared(a, b)
+    write_pair(tmp_path / "p", result, "a__b", "a", "b", a, b)
+
+    header = tmp_path / "p" / "meta.json"
+    raw = json.loads(header.read_text())
+    raw["metric_version"] = "1"
+    header.write_text(json.dumps(raw))
+
+    with pytest.raises(ValueError) as refused:
+        read_pair(tmp_path / "p")
+    # Named, not generic: which metric, which version, and what to do.
+    assert "rf" in str(refused.value)
+    assert "version 1" in str(refused.value)
+    assert "build-all" in str(refused.value)
+
+
+def test_a_pair_predating_the_version_field_is_refused(tmp_path):
+    """An absent version is the stale case, not a pass."""
+    a = parse_newick("((A,B),(C,D));")
+    b = parse_newick("((A,C),(B,D));")
+    _, result = prepared(a, b)
+    write_pair(tmp_path / "p", result, "a__b", "a", "b", a, b)
+
+    header = tmp_path / "p" / "meta.json"
+    raw = json.loads(header.read_text())
+    del raw["metric_version"]
+    header.write_text(json.dumps(raw))
+
+    with pytest.raises(ValueError, match="unrecorded"):
+        read_pair(tmp_path / "p")
 
 
 def test_a_metric_with_no_columns_is_storable(tmp_path):
@@ -240,7 +292,7 @@ def test_real_pair_end_to_end(real_store, tmp_path):
     write_correspondence(tmp_path / "c", corr, "pair", "vibrio-nj", "vibrio-upgma", left, right)
     write_pair(tmp_path / "p", result, "pair", "vibrio-nj", "vibrio-upgma", left, right)
 
-    assert read_pair(tmp_path / "p").meta.summary["rf"] == 6825
+    assert read_pair(tmp_path / "p").meta.summary["rf"] == 13650
     back = read_correspondence(tmp_path / "c")
     # Exactly two right-tree nodes have no counterpart: ST 211 and the internal
     # node it leaves unary.

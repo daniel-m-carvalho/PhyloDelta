@@ -53,7 +53,7 @@ def client(computed_store, monkeypatch):
 
 def test_summary_carries_scalars_and_provenance(client):
     body = client.get(f"/api/v1/comparisons/{PAIR}").json()
-    assert body["summary"]["rf"] == 6825
+    assert body["summary"]["rf"] == 13650  # the symmetric difference (§34.19)
     assert body["summary"]["shared_clusters"] == 10_819
     assert body["shared_leaves"] == 17_645
     assert body["dropped_from_right"] == ["211"]

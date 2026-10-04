@@ -10,7 +10,7 @@
 | Browser flags | `--js-flags=--max-old-space-size=8192`, `--disable-dev-shm-usage` — **both tools, identically** |
 | Viewport | 1440 x 900; Table 21 varies the height |
 | **Tool compared against** | **phylo.io 2.2.5** (2026-01-30), its own published `dist/`, unmodified — the current release at the time of measurement |
-| This project | generated at commit `a6cb1bd + uncommitted changes` |
+| This project | generated at commit `b31de35 + uncommitted changes` |
 | Runtimes | Python 3.12.14 (`uv`), Node 26.3.0, Playwright 1.63.0 |
 | Backend database | SQLite, in the store directory |
 | Store location | `/private/tmp/...` — an APFS SSD volume, **not** a RAM disk |
@@ -461,20 +461,7 @@ So §9's claim that several metrics cost little more than one is **true asymptot
 <!-- tier: SUPPORT -->
 > **SUPPORT** — Validation: two independent RF implementations agreeing at 1.1M nodes. A sentence, with the table in an appendix.
 
-| leaves | built-in `rf` | `rf-treediff` | agree |
-|---:|---:|---:|:---:|
-| 1,000 | 531 | 531 | yes |
-| 2,500 | 1,219 | 1,219 | yes |
-| 5,000 | 2,207 | 2,207 | yes |
-| 10,000 | 4,113 | 4,113 | yes |
-| 17,645 | 6,825 | 6,825 | yes |
-| 35,290 | 13,650 | 13,650 | yes |
-| 70,580 | 27,300 | 27,300 | yes |
-| 141,160 | 54,600 | 54,600 | yes |
-| 282,320 | 109,200 | 109,200 | yes |
-| 564,640 | 218,400 | 218,400 | yes |
-
-*20 of 20 builds agree exactly.* Different algorithms over different representations by different authors — TreeDiff is the reference implementation of the paper this project follows (§1.10) — so agreement at 1,129,279 nodes is a check on both, and a disagreement would have meant one of them was wrong.
+> **NOT RE-MEASURED.** `metric_builds.json` was written before the `rf` metric's v2 and holds the halved value: every row has `rf == rf-treediff`, which was the v1 invariant and is no longer the right one (§34.19). The implementations have not stopped agreeing — the input predates the question. Re-run `tools/measure_metric_builds.py` against a built store and this table returns; Table 22 checks the same thing against DendroPy and ETE3 on data that *is* current.
 
 
 ## Table 19 — Bytes over the wire
@@ -576,17 +563,19 @@ Every other table here shows the payload ignoring the **tree**. That is necessar
 
 *Produced by `harness/rf_external.py` against DendroPy 5.1.0 and ETE3 3.1.3, with TreeDiff's `rf_postorder` beside them. Every tool is given the same two trees: rooted, and reconciled to their shared leaf set.*
 
-| leaves | PhyloDelta `rf` | `rf-treediff` | x2 | DendroPy | ETE3 | agree |
+| leaves | PhyloDelta `rf` | normalised | DendroPy | ETE3 | `rf-treediff` (half) | equal |
 |---:|---:|---:|---:|---:|---:|:---:|
-| 1,000 | 531 | 531 | 1,062 | 1,062 | 1,062 | yes |
-| 2,500 | 1,219 | 1,219 | 2,438 | 2,438 | 2,438 | yes |
-| 5,000 | 2,207 | 2,207 | 4,414 | 4,414 | 4,414 | yes |
-| 10,000 | 4,113 | 4,113 | 8,226 | 8,226 | 8,226 | yes |
-| 17,645 | 6,825 | 6,825 | 13,650 | 13,650 | 13,650 | yes |
+| 1,000 | **1,062** | 0.532 | 1,062 | 1,062 | 531 | yes |
+| 2,500 | **2,438** | 0.488 | 2,438 | 2,438 | 1,219 | yes |
+| 5,000 | **4,414** | 0.442 | 4,414 | 4,414 | 2,207 | yes |
+| 10,000 | **8,226** | 0.411 | 8,226 | 8,226 | 4,113 | yes |
+| 17,645 | **13,650** | 0.387 | 13,650 | 13,650 | 6,825 | yes |
 
-**The topology agrees exactly; the convention splits two against two.** 5 of 5 rungs match on every column. `rf-treediff` — TreeDiff's own binary, run as a subprocess by the server — returns this store's number unchanged, while DendroPy and ETE3 return exactly twice it at every rung. The same clades are found shared and the same found exclusive in all four; what differs is that TreeDiff halves the symmetric difference and the two general-purpose libraries do not.
+**Exact agreement at every rung.** 5 of 5 rungs have PhyloDelta equal to both DendroPy and ETE3, and equal to twice `rf-treediff`. The clade sets were never in question — Table 18 had already checked those — but the *scale* was, and this is what fixed it.
 
-**That is the useful shape of this table.** Table 18's agreement is between two implementations of one paper, so it could not have revealed a convention both inherited — it would have looked exactly like this if the definition were wrong. Adding tools that share nothing with either separates the two questions: the clade sets are confirmed by all four, and the factor of two is isolated as a reporting choice this backend takes from TreeDiff. The thesis has to state which it means, because a reader checking against a published RF for these trees would otherwise find this one off by half.
+**This table is why the metric changed.** It used to show PhyloDelta at exactly half of DendroPy and ETE3 at every rung: the store reported half the symmetric difference, following TreeDiff, while every document here and the thesis itself defined RF as the whole of it. Table 18 could not have caught that, because TreeDiff is the reference implementation of the same paper and shares the convention — two implementations of one definition agreeing tells you the code is faithful, not that the definition is the field's. The `rf` metric is now at version 2 and reports the full difference; stored comparisons from version 1 are refused by name rather than re-labelled.
+
+**The normalisation was the half that was actually wrong.** Version 1 divided the *halved* RF by the maximum of the *full* RF, so the ratio could not exceed 0.5 whatever the trees — and the test that should have caught it asserted `> 0.49` for two near-unrelated trees, reading the ceiling as "near-maximal". The vibrio pair reported 0.193 and now reports 0.387; two unrelated trees now reach 0.9999 instead of sitting just under the ceiling.
 
 **Two settings decide whether the comparison is like-for-like**, and both produce a plausible near-miss rather than an error when wrong. *Rooting*: this store counts rooted clades, and DendroPy's unrooted mode gives 1,044 rather than 1,062 at 1,000 leaves, while ETE3 unroots by default. *Reconciliation*: handing the 17,645 pair over as it sits on disk gives 13,654 rather than 13,650, because ST 211 is in only one of the two trees (§2.6).
 

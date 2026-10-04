@@ -440,7 +440,10 @@ five RF implementations examined for this project are wrong on real input.
 **Evidence.** vibrio UPGMA vs NJ, restricted to the 17,645 shared leaves (ST 211 is absent from the
 NJ tree, §*Findings carried forward*), unary nodes suppressed in both:
 
-* **RF = 6,825**, agreed by `rf_postorder` and `rf_nextsibling` independently
+* **RF = 6,825**, agreed by `rf_postorder` and `rf_nextsibling` independently — **TreeDiff's
+  halved convention**. This store reported the same number until the `rf` metric's v2 and now
+  reports the full symmetric difference, 13,650 (§34.19); the gate is unchanged, as a statement
+  about TreeDiff
 * both self-comparison controls return **0**
 * computed in **32 ms**
 * wRF on the same pair = **1.2304e6**
@@ -3865,9 +3868,51 @@ item.
 **What the operations are not is equivalent in what they reveal.** phylo.io holds the whole tree and
 so expands clades of up to 1,000 leaves, drawing all of them; the targets here are the wedges in the
 current slice, and expanding one draws about fifty tips. phylo.io therefore does *more* drawing per
-operation at these sizes and is still the faster of the two. That is a real result, and the write-up
-states it rather than explaining it away — it is the navigation counterpart of the asymmetry already
-recorded in §34.3: this design holds less and draws less, and both are the design rather than a win.
+operation at these sizes, which is the navigation counterpart of the asymmetry already recorded in
+§34.3: this design holds less and draws less, and both are the design rather than a win.
+
+#### The measurement is quantised to one animation frame, and the published gap is one frame
+
+**This bounds what Table 15 can be read to say, and it was found after the figures were published.**
+`window.__step` stops its clock only after the built tree's identity has changed *and* two nested
+`requestAnimationFrame` callbacks have run. The double frame is there for a good reason — a reading
+taken after the last script statement is taken before the browser has painted — but it puts a
+**mandatory 16.7–33.3 ms** inside every sample at a 60 Hz refresh, and it quantises the result to the
+frame.
+
+Every published figure is a frame count:
+
+| measurement | value | frames at 16.67 ms |
+|---|---:|---:|
+| PhyloDelta, 17,645 leaves | 49.3 ms | 3 (50.0) |
+| PhyloDelta, 1,000–10,000 | 65.8–66.0 ms | 4 (66.7) |
+| phylo.io, 1,000–10,000 | 63.5–64.3 ms | 4 (66.7) |
+| the earlier ladder's phylo.io | ~31 ms | 2 (33.3) |
+| the earlier ladder's PhyloDelta | ~49 ms | 3 (50.0) |
+
+**So the difference between the two tools is one frame, and the difference between the two ladders is
+also one frame.** The earlier run's "31 ms against 49 ms" read as phylo.io being 58% faster; the
+current run's "64 against 66" reads as 3%. Neither is a measurement of how much work each tool does
+— both are counts of how many frames elapsed before the detector was satisfied, and a 2 ms
+difference in real work flips a sample by a whole frame depending on where it falls against the
+boundary. **The claim that phylo.io is faster at navigation is withdrawn**: the harness cannot
+resolve it.
+
+What survives is the part the frame floor makes *stronger*, not weaker: both tools respond in well
+under the 100 ms that an interaction is allowed, and for this design that is the claim worth making —
+the floor is the display, not the tool. The per-request figures also survive, because they come from
+Resource Timing rather than from the frame clock: ~3.9 ms for an expand's slice and ~6.3 ms for a
+jump's, which is what supports "the difference is not the network".
+
+**The harness is deliberately not changed.** Its numbers are what every published row was measured
+under, and re-timing navigation would mean re-running five rungs and two tools to replace one claim
+that is better simply withdrawn. The quantisation is documented instead.
+
+**The sample unit is an operation, not a page load.** One `browser.newPage()` and one `goto` per tool
+per rung — ten page loads in the whole run — with up to 3 discarded warm-ups and 8 measured
+operations inside each. "phylo.io's jump failed in 15 of 16 page loads" is therefore the wrong unit
+for the same finding: in the current data its jump produced a sample in **2 of 8 operations at 1,000
+leaves and 0 of 8** at 2,500, 5,000 and 10,000.
 
 #### Three measurements had to be discarded first
 
@@ -4129,12 +4174,50 @@ unrooted mode gives 1,044 against 1,062 at 1,000 leaves. *Reconciliation*: hande
 it sits on disk, DendroPy returns 13,654 rather than 13,650, because ST 211 is in the UPGMA tree
 only (§2.6) — four bipartitions' difference, from a single unshared leaf.
 
-**Decision.** Keep the halved convention and state it. Changing it would move every RF figure
-already published here for a cosmetic gain, and the conformance target of 6,825 is TreeDiff's
-number. The check is pinned by `test_rf_is_half_what_dendropy_and_ete3_report`, which asserts the
-*factor* rather than the value, so a change to the convention fails a test instead of silently
-re-scaling the tables. Neither library becomes a dependency: `bench/harness/rf_external.py` carries
-the throwaway-environment recipe and runs once.
+**Decision — withdrawn, and replaced.** The first decision taken here was to *keep* the halved
+convention and document it, on the grounds that changing it would move every published figure for a
+cosmetic gain. That was wrong, and it was wrong on a fact that was already on the page: **the thesis
+defines RF as the full symmetric difference**, `|C(T1)\C(T2)| + |C(T2)\C(T1)|`, and states the
+identity `rf = |{c in C(T1): s(c)<1}| + |{c in C(T2): s(c)<1}|`, which evaluates to 13,650 for this
+pair. A convention the document contradicts is not a convention, it is a defect; "it would move the
+tables" is a reason to be careful, not a reason to be wrong.
+
+**The normalisation was worse, and independent of the convention.** `rf_normalised` divided the
+*halved* RF by the maximum of the *full* RF:
+
+| | v1 | v2 |
+|---|---:|---:|
+| `rf`, vibrio NJ vs UPGMA | 6,825 | **13,650** |
+| `rf_normalised` | 0.193 | **0.387** |
+| ceiling of `rf_normalised`, any input | **0.5** | 1.0 |
+| two unrelated trees (clostridium vs vibrio) | 0.4999 | **0.9999** |
+
+A ratio that cannot reach 1 is not a normalisation, and the test that should have caught it asserted
+`rf_normalised > 0.49` for two near-unrelated trees — reading the arithmetic ceiling as
+"near-maximal". A bound written to an observed value instead of to the promise, which is the failure
+mode this project has recorded twice before, and it held for as long as the defect did.
+
+**What changed.** The `rf` metric is at **version 2**: `rf` is the full symmetric difference and
+`rf_normalised` is `rf / max_rf`, with `max_rf` the internal clusters of both trees after
+reconciliation, each root excluded — the root's clade is all taxa and is shared by construction, so
+leaving it in would cap the ratio below 1. The value matches ETE3's own `max_rf` (35,286 for this
+pair) rather than being asserted.
+
+**TreeDiff still halves it**, so `rf-treediff` is now a *different quantity* and says so in its
+manifest: the invariant is `rf == 2 * rf-treediff`, in the plug-in description, in Table 18's
+generator, and in `test_rf_conformance.py`. Written as a factor at each site rather than normalised
+away inside a helper, because the value of that file is that the two sides were derived
+independently and a silent doubling would hide exactly the mistake it exists to catch. §2.6's
+conformance gate of 6,825 stands as **TreeDiff's** number.
+
+**Stored results are refused, not re-labelled.** v1 and v2 write byte-identical files and differ
+only in what the scalar means, so `format_version` cannot see it: a reader that trusted the layout
+would serve a v1 distance under a v2 label. The metric's own version is now recorded per pair and
+checked on read (`_check_metric_version`), naming the metric, both versions and the remedy. The
+catalogue was rebuilt with `phylodelta build-all`; the deployment needs the same.
+
+Neither external library becomes a dependency: `bench/harness/rf_external.py` carries the
+throwaway-environment recipe and runs once.
 
 ## 35. The frontend holds what it has already seen
 

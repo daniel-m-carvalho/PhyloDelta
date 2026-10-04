@@ -16,18 +16,21 @@ from phylodelta.trees.correspondence import compute_correspondence
 from phylodelta.trees.newick import parse_newick
 from phylodelta.trees.reconcile import reconcile
 
-#: Milestone 2's gate, from the reference implementation (DECISIONS.md §2.6).
-VIBRIO_RF = 6825
+#: The symmetric difference for the vibrio pair: what this store reports since
+#: v2, and what DendroPy 5.1.0 and ETE3 3.1.3 report (rooted, reconciled;
+#: measured by `bench/harness/rf_external.py`, bench Table 22).
+VIBRIO_RF = 13_650
 VIBRIO_SHARED = 10_819
 
-#: The same pair through two implementations that share nothing with this one
-#: or with TreeDiff: DendroPy 5.1.0 and ETE3 3.1.3, both rooted, both given the
-#: reconciled trees. Measured by `bench/harness/rf_external.py` (bench Table 22).
-#:
-#: They report the symmetric difference whole where this store halves it, so
-#: the promise being asserted is the factor, not the number. A change to the
-#: convention must fail here rather than silently move every published figure.
-VIBRIO_RF_UNHALVED = 13_650
+#: Milestone 2's gate (DECISIONS.md §2.6) and TreeDiff's own report: half the
+#: above. Kept as its own constant rather than written as `VIBRIO_RF / 2`, so
+#: that a change to either convention has to be made deliberately on both lines
+#: instead of following silently from the other.
+VIBRIO_RF_TREEDIFF = 6825
+
+#: rf / max_rf for the pair. The previous version divided the halved RF by the
+#: full maximum and reported 0.193, a ratio whose ceiling was 0.5.
+VIBRIO_RF_NORMALISED = 0.3868
 
 
 def rf(left, right, best_match: bool = True):
@@ -43,11 +46,16 @@ def internal_mask(arrays):
 # --- the distance ----------------------------------------------------------
 
 def test_matches_the_papers_documented_example():
-    """TreeDiff reports RF=1 with exclusive clusters at its 1-based 3 and 7."""
+    """TreeDiff reports RF=1 with exclusive clusters at its 1-based 3 and 7.
+
+    One exclusive clade on each side, so the symmetric difference is 2 and
+    TreeDiff's halved report is 1 (§34.19). The clade indexes below are the
+    substance of the check and are unaffected by the convention.
+    """
     a = parse_newick("(((A,B),C),(D,E));")
     b = parse_newick("((D,E),(B,(A,C)));")
     r = rf(a, b)
-    assert r.summary["rf"] == 1
+    assert r.summary["rf"] == 2
     # TreeDiff is 1-based, this store is 0-based (§2.6): its 3 and 7 are our 2 and 6.
     exact_left = r.left.columns["exact"]
     exact_right = r.right.columns["exact"]
@@ -132,18 +140,40 @@ def test_rf_matches_the_reference_implementation(vibrio_pair):
     assert r.summary["shared_clusters"] == VIBRIO_SHARED
 
 
-def test_rf_is_half_what_dendropy_and_ete3_report(vibrio_pair):
+def test_rf_equals_what_dendropy_and_ete3_report(vibrio_pair):
     """The convention, pinned against two external implementations.
 
     Not a second check of the topology — `test_rf_matches_the_reference_
     implementation` already does that, and Table 18 does it at every rung. This
-    fixes the *denominator*, which is the part no internal cross-check can
-    catch: TreeDiff halves, and so does this store, so the two agree while both
-    differ from the field by a factor of two.
+    pins the *scale*, which no internal cross-check can reach: TreeDiff halves
+    the symmetric difference, so this store and TreeDiff agreed with each other
+    while both differed from the field by a factor of two, and nothing in the
+    repository could tell.
     """
     left, right, _ = vibrio_pair
     r = rf(left, right, best_match=False)
-    assert r.summary["rf"] * 2 == VIBRIO_RF_UNHALVED
+    assert r.summary["rf"] == VIBRIO_RF
+    assert r.summary["rf"] == 2 * VIBRIO_RF_TREEDIFF
+
+
+def test_normalised_rf_can_reach_one(vibrio_pair):
+    """The ratio, and the ceiling it used to have.
+
+    `rf_normalised` divided the halved RF by the full maximum, so it could never
+    exceed 0.5 whatever the trees — and the test that should have caught it
+    asserted `> 0.49` for two near-unrelated trees, reading the ceiling as
+    "near-maximal" (DECISIONS, Corrections). Both halves are checked here: the
+    value for the real pair, and that the denominator is the maximum the
+    numerator can actually attain.
+    """
+    left, right, _ = vibrio_pair
+    s = rf(left, right, best_match=False).summary
+    assert s["rf_normalised"] == pytest.approx(VIBRIO_RF_NORMALISED, abs=5e-5)
+
+    max_rf = s["clusters_left"] + s["clusters_right"] - 2
+    assert s["rf_normalised"] == pytest.approx(s["rf"] / max_rf)
+    # Attainable: no clade shared puts the ratio at exactly 1, not 0.5.
+    assert (max_rf - 2 * 0) / max_rf == 1.0
 
 
 def test_self_comparison_of_a_real_tree_is_zero(real_store):
@@ -170,5 +200,13 @@ def test_cross_species_comparison_runs_and_reports_what_it_matched(real_store):
     r = rf(left_r, right_r, best_match=False)
     # Near-maximal distance and almost nothing shared: label collision is not
     # biological correspondence, and the numbers say so without being blocked.
+    #
+    # This used to assert `> 0.49`, which read as "near-maximal" and was in fact
+    # the arithmetic ceiling of a broken normalisation — the halved RF over the
+    # full maximum could not exceed 0.5 for *any* pair of trees, so the
+    # assertion held whatever these two trees were. A bound written to an
+    # observed value instead of to the promise (CLAUDE.md), and it hid the
+    # defect for as long as it existed. Now that the ratio can reach 1, the
+    # promise is that two unrelated trees land very close to it.
     assert r.summary["shared_clusters"] < 10
-    assert r.summary["rf_normalised"] > 0.49
+    assert r.summary["rf_normalised"] > 0.99

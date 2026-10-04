@@ -960,22 +960,51 @@ if phase_rows:
             b = (values.get("rf-treediff") or {}).get("summary", {}).get("rf")
             if a is None or b is None:
                 continue
-            (agree if a == b else disagree).append((row["leaves"], a, b))
-    if agree or disagree:
+            # The invariant is a FACTOR, not equality: this store reports the
+            # full symmetric difference since the rf metric's v2 and TreeDiff
+            # still halves it (§34.19). Written as the factor rather than
+            # normalised away so that build data predating v2 shows up here as
+            # a disagreement, which is what it is.
+            (agree if a == 2 * b else disagree).append((row["leaves"], a, b))
+    # Build data written before the rf metric's v2 holds the halved value, so
+    # every row fails `rf == 2 * treediff` by being *equal* instead. That is a
+    # stale input, not a disagreement between the implementations, and printing
+    # it as a column of NOs under prose about agreement would be worse than
+    # printing nothing: it reads as a regression in the code.
+    stale = bool(disagree) and not agree and all(a == b for _, a, b in disagree)
+    if stale:
         table(18, "Two RF implementations against each other")
-        print("| leaves | built-in `rf` | `rf-treediff` | agree |")
-        print("|---:|---:|---:|:---:|")
+        print("> **NOT RE-MEASURED.** `metric_builds.json` was written before the "
+              "`rf` metric's v2 and holds the halved value: every row has "
+              "`rf == rf-treediff`, which was the v1 invariant and is no longer "
+              "the right one (§34.19). The implementations have not stopped "
+              "agreeing — the input predates the question. Re-run "
+              "`tools/measure_metric_builds.py` against a built store and this "
+              "table returns; Table 22 checks the same thing against DendroPy "
+              "and ETE3 on data that *is* current.\n")
+    elif agree or disagree:
+        table(18, "Two RF implementations against each other")
+        print("| leaves | built-in `rf` | `rf-treediff` | x2 | as expected |")
+        print("|---:|---:|---:|---:|:---:|")
         seen = set()
         for leaves, a, b in agree + disagree:
             if leaves in seen:
                 continue
             seen.add(leaves)
-            print(f"| {leaves:,} | {a:,.0f} | {b:,.0f} | {'yes' if a == b else '**NO**'} |")
-        print(f"\n*{len(agree)} of {len(agree) + len(disagree)} builds agree exactly.* "
+            print(f"| {leaves:,} | {a:,.0f} | {b:,.0f} | {2 * b:,.0f} | "
+                  f"{'yes' if a == 2 * b else '**NO**'} |")
+        print(f"\n*{len(agree)} of {len(agree) + len(disagree)} builds match `rf == 2 x "
+              f"rf-treediff`.* "
               "Different algorithms over different representations by different authors — "
               "TreeDiff is the reference implementation of the paper this project follows (§1.10) "
               "— so agreement at 1,129,279 nodes is a check on both, and a disagreement would "
               "have meant one of them was wrong.\n")
+        print("**What this table cannot check is the scale**, which is why Table 22 exists. "
+              "TreeDiff reports half the symmetric difference and this store used to do the "
+              "same; the two agreed at every rung while both differed from the published "
+              "definition by a factor of two, and nothing here could have revealed it. Agreement "
+              "between two implementations of one paper is evidence that the code is faithful, "
+              "not that the quantity is the one the field means.\n")
 
 # --- 9. the claim as bytes -------------------------------------------------
 transfer_rows = transfer.get("rows", [])
@@ -1169,35 +1198,43 @@ if rf_external.get("rows"):
           f"{rf_external['dendropy']} and ETE3 {rf_external['ete3']}, with "
           "TreeDiff's `rf_postorder` beside them. Every tool is given the same "
           "two trees: rooted, and reconciled to their shared leaf set.*\n")
-    print("| leaves | PhyloDelta `rf` | `rf-treediff` | x2 | DendroPy | ETE3 | agree |")
+    print("| leaves | PhyloDelta `rf` | normalised | DendroPy | ETE3 | `rf-treediff` (half) | equal |")
     print("|---:|---:|---:|---:|---:|---:|:---:|")
     agreed = 0
     for row in rf_external["rows"]:
         td = row.get("treediff")
-        ok = (row["phylodelta_doubled"] == row["dendropy_rooted"] == row["ete3_rooted"]
-              and td == row["phylodelta"])
+        ok = (row["phylodelta"] == row["dendropy_rooted"] == row["ete3_rooted"]
+              and (td is None or 2 * td == row["phylodelta"]))
         agreed += ok
-        print(f"| {row['leaves']:,} | {row['phylodelta']:,} | "
+        norm = row.get("phylodelta_normalised")
+        print(f"| {row['leaves']:,} | **{row['phylodelta']:,}** | "
+              f"{'—' if norm is None else f'{norm:.3f}'} | "
+              f"{row['dendropy_rooted']:,} | {row['ete3_rooted']:,} | "
               f"{'—' if td is None else format(td, ',')} | "
-              f"{row['phylodelta_doubled']:,} | {row['dendropy_rooted']:,} | "
-              f"{row['ete3_rooted']:,} | {'yes' if ok else '**NO**'} |")
-    print(f"\n**The topology agrees exactly; the convention splits two against "
-          f"two.** {agreed} of {len(rf_external['rows'])} rungs match on every "
-          "column. `rf-treediff` — TreeDiff's own binary, run as a subprocess by "
-          "the server — returns this store's number unchanged, while DendroPy and "
-          "ETE3 return exactly twice it at every rung. The same clades are found "
-          "shared and the same found exclusive in all four; what differs is that "
-          "TreeDiff halves the symmetric difference and the two general-purpose "
-          "libraries do not.\n")
-    print("**That is the useful shape of this table.** Table 18's agreement is "
-          "between two implementations of one paper, so it could not have "
-          "revealed a convention both inherited — it would have looked exactly "
-          "like this if the definition were wrong. Adding tools that share "
-          "nothing with either separates the two questions: the clade sets are "
-          "confirmed by all four, and the factor of two is isolated as a "
-          "reporting choice this backend takes from TreeDiff. The thesis has to "
-          "state which it means, because a reader checking against a published "
-          "RF for these trees would otherwise find this one off by half.\n")
+              f"{'yes' if ok else '**NO**'} |")
+    print(f"\n**Exact agreement at every rung.** {agreed} of "
+          f"{len(rf_external['rows'])} rungs have PhyloDelta equal to both "
+          "DendroPy and ETE3, and equal to twice `rf-treediff`. The clade sets "
+          "were never in question — Table 18 had already checked those — but the "
+          "*scale* was, and this is what fixed it.\n")
+    print("**This table is why the metric changed.** It used to show PhyloDelta "
+          "at exactly half of DendroPy and ETE3 at every rung: the store "
+          "reported half the symmetric difference, following TreeDiff, while "
+          "every document here and the thesis itself defined RF as the whole of "
+          "it. Table 18 could not have caught that, because TreeDiff is the "
+          "reference implementation of the same paper and shares the "
+          "convention — two implementations of one definition agreeing tells you "
+          "the code is faithful, not that the definition is the field's. The "
+          "`rf` metric is now at version 2 and reports the full difference; "
+          "stored comparisons from version 1 are refused by name rather than "
+          "re-labelled.\n")
+    print("**The normalisation was the half that was actually wrong.** Version 1 "
+          "divided the *halved* RF by the maximum of the *full* RF, so the ratio "
+          "could not exceed 0.5 whatever the trees — and the test that should "
+          "have caught it asserted `> 0.49` for two near-unrelated trees, reading "
+          "the ceiling as \"near-maximal\". The vibrio pair reported 0.193 and "
+          "now reports 0.387; two unrelated trees now reach 0.9999 instead of "
+          "sitting just under the ceiling.\n")
     unrooted = [r for r in rf_external["rows"] if "dendropy_unrooted" in r]
     if unrooted:
         first = unrooted[0]
