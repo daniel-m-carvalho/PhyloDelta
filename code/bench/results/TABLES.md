@@ -10,7 +10,7 @@
 | Browser flags | `--js-flags=--max-old-space-size=8192`, `--disable-dev-shm-usage` — **both tools, identically** |
 | Viewport | 1440 x 900; Table 21 varies the height |
 | **Tool compared against** | **phylo.io 2.2.5** (2026-01-30), its own published `dist/`, unmodified — the current release at the time of measurement |
-| This project | generated at commit `f83482a + uncommitted changes` |
+| This project | generated at commit `801f465` |
 | Runtimes | Python 3.12.14 (`uv`), Node 26.3.0, Playwright 1.63.0 |
 | Backend database | SQLite, in the store directory |
 | Store location | `/private/tmp/...` — an APFS SSD volume, **not** a RAM disk |
