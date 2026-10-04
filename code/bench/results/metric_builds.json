@@ -1,5 +1,5 @@
 {
-  "api": "http://127.0.0.1:8023/api/v1",
+  "api": "http://127.0.0.1:8010/api/v1",
   "sets": [
     [
       "rf"
@@ -22,16 +22,16 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 0.54,
+          "build_s": 1.57,
           "status": "ready",
           "error": null,
-          "id": "ad3e07628e55__67ec987064b2",
+          "id": "bd870fc4638a__149ab6df9952",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 531.0,
-                "rf_normalised": 0.26603206412825653,
+                "rf": 1062,
+                "rf_normalised": 0.5320641282565131,
                 "shared_clusters": 468,
                 "clusters_left": 999,
                 "clusters_right": 999,
@@ -45,16 +45,16 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 2.04,
+          "build_s": 2.08,
           "status": "ready",
           "error": null,
-          "id": "56ce98abc914__e61a01f1c990",
+          "id": "c3575f9dbbed__fa723f75f898",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 531.0,
-                "rf_normalised": 0.26603206412825653,
+                "rf": 1062,
+                "rf_normalised": 0.5320641282565131,
                 "shared_clusters": 468,
                 "clusters_left": 999,
                 "clusters_right": 999,
@@ -75,16 +75,16 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 2.05,
+          "build_s": 2.06,
           "status": "ready",
           "error": null,
-          "id": "a7b43e737db7__b8d18e46456d",
+          "id": "948cf0b7f6dd__e7166e423979",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 531.0,
-                "rf_normalised": 0.26603206412825653,
+                "rf": 1062,
+                "rf_normalised": 0.5320641282565131,
                 "shared_clusters": 468,
                 "clusters_left": 999,
                 "clusters_right": 999,
@@ -114,16 +114,16 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 2.04,
+          "build_s": 2.05,
           "status": "ready",
           "error": null,
-          "id": "220a5d4ac401__439af0d2e564",
+          "id": "b4078fe1f700__58a509a3ee99",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 1219.0,
-                "rf_normalised": 0.24399519615692555,
+                "rf": 2438,
+                "rf_normalised": 0.4879903923138511,
                 "shared_clusters": 1280,
                 "clusters_left": 2499,
                 "clusters_right": 2499,
@@ -137,16 +137,16 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 2.04,
+          "build_s": 2.06,
           "status": "ready",
           "error": null,
-          "id": "05433a87a461__e7133615194e",
+          "id": "365478e9eab5__a5520ddb1bba",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 1219.0,
-                "rf_normalised": 0.24399519615692555,
+                "rf": 2438,
+                "rf_normalised": 0.4879903923138511,
                 "shared_clusters": 1280,
                 "clusters_left": 2499,
                 "clusters_right": 2499,
@@ -167,16 +167,16 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 2.54,
+          "build_s": 2.06,
           "status": "ready",
           "error": null,
-          "id": "061790f54589__cdc4b0bc6b5f",
+          "id": "ad0dd1774a91__1500bcda1c03",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 1219.0,
-                "rf_normalised": 0.24399519615692555,
+                "rf": 2438,
+                "rf_normalised": 0.4879903923138511,
                 "shared_clusters": 1280,
                 "clusters_left": 2499,
                 "clusters_right": 2499,
@@ -206,16 +206,16 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 2.03,
+          "build_s": 2.05,
           "status": "ready",
           "error": null,
-          "id": "a3ea9e431a7a__21736eddc7ea",
+          "id": "c9647e03244f__6eac928cbf31",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 2207.0,
-                "rf_normalised": 0.22078831532613044,
+                "rf": 4414,
+                "rf_normalised": 0.4415766306522609,
                 "shared_clusters": 2792,
                 "clusters_left": 4999,
                 "clusters_right": 4999,
@@ -229,16 +229,16 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 2.03,
+          "build_s": 2.56,
           "status": "ready",
           "error": null,
-          "id": "745d44a209c6__0cd3c39094b3",
+          "id": "c72c8a32cfd7__2e4e721c30c2",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 2207.0,
-                "rf_normalised": 0.22078831532613044,
+                "rf": 4414,
+                "rf_normalised": 0.4415766306522609,
                 "shared_clusters": 2792,
                 "clusters_left": 4999,
                 "clusters_right": 4999,
@@ -259,16 +259,16 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 2.03,
+          "build_s": 2.05,
           "status": "ready",
           "error": null,
-          "id": "0d4ae0658507__070d5d69582b",
+          "id": "744227da98bf__b97a9a682244",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 2207.0,
-                "rf_normalised": 0.22078831532613044,
+                "rf": 4414,
+                "rf_normalised": 0.4415766306522609,
                 "shared_clusters": 2792,
                 "clusters_left": 4999,
                 "clusters_right": 4999,
@@ -298,16 +298,16 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 2.54,
+          "build_s": 2.04,
           "status": "ready",
           "error": null,
-          "id": "fd6e89d35f4d__e4529d84ad1a",
+          "id": "614a927579d5__dfece8e3b0a9",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 4113.0,
-                "rf_normalised": 0.20569113822764554,
+                "rf": 8226,
+                "rf_normalised": 0.4113822764552911,
                 "shared_clusters": 5886,
                 "clusters_left": 9999,
                 "clusters_right": 9999,
@@ -321,16 +321,16 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 2.04,
+          "build_s": 2.56,
           "status": "ready",
           "error": null,
-          "id": "9a1fa0416201__2198f6ce69d8",
+          "id": "8deaff6b2713__2fc50ada1e90",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 4113.0,
-                "rf_normalised": 0.20569113822764554,
+                "rf": 8226,
+                "rf_normalised": 0.4113822764552911,
                 "shared_clusters": 5886,
                 "clusters_left": 9999,
                 "clusters_right": 9999,
@@ -351,16 +351,16 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 3.05,
+          "build_s": 2.58,
           "status": "ready",
           "error": null,
-          "id": "27fdbbb7fefe__2f71e9467302",
+          "id": "0fbeec2d07e8__8ab88275f1b5",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 4113.0,
-                "rf_normalised": 0.20569113822764554,
+                "rf": 8226,
+                "rf_normalised": 0.4113822764552911,
                 "shared_clusters": 5886,
                 "clusters_left": 9999,
                 "clusters_right": 9999,
@@ -390,16 +390,16 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 2.04,
+          "build_s": 2.57,
           "status": "ready",
           "error": null,
-          "id": "536b66937d53__0dba2a1c72fc",
+          "id": "3145a5d3c9d7__9315b4defc6d",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 6825.0,
-                "rf_normalised": 0.19341948648189083,
+                "rf": 13650,
+                "rf_normalised": 0.38683897296378167,
                 "shared_clusters": 10819,
                 "clusters_left": 17644,
                 "clusters_right": 17644,
@@ -413,16 +413,16 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 2.54,
+          "build_s": 2.58,
           "status": "ready",
           "error": null,
-          "id": "dbea2bf9a0df__fb95e897c5e2",
+          "id": "d4efe0e54ea0__07aa658189f4",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 6825.0,
-                "rf_normalised": 0.19341948648189083,
+                "rf": 13650,
+                "rf_normalised": 0.38683897296378167,
                 "shared_clusters": 10819,
                 "clusters_left": 17644,
                 "clusters_right": 17644,
@@ -443,16 +443,16 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 4.07,
+          "build_s": 3.6,
           "status": "ready",
           "error": null,
-          "id": "f3193344d7fc__baf80a5809f1",
+          "id": "f71fa5c90b79__6e49875f2e7d",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 6825.0,
-                "rf_normalised": 0.19341948648189083,
+                "rf": 13650,
+                "rf_normalised": 0.38683897296378167,
                 "shared_clusters": 10819,
                 "clusters_left": 17644,
                 "clusters_right": 17644,
@@ -482,16 +482,16 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 3.05,
+          "build_s": 3.08,
           "status": "ready",
           "error": null,
-          "id": "4c4c70b62179__074488b5647c",
+          "id": "a1ab5ccd63d4__66c9ba8c53be",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 13650.0,
-                "rf_normalised": 0.193408524144185,
+                "rf": 27300,
+                "rf_normalised": 0.38681704828837,
                 "shared_clusters": 21639,
                 "clusters_left": 35289,
                 "clusters_right": 35289,
@@ -505,16 +505,16 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 3.54,
+          "build_s": 3.07,
           "status": "ready",
           "error": null,
-          "id": "e07e258e85e2__32e867f073fd",
+          "id": "2d227e893eea__2c18631fe870",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 13650.0,
-                "rf_normalised": 0.193408524144185,
+                "rf": 27300,
+                "rf_normalised": 0.38681704828837,
                 "shared_clusters": 21639,
                 "clusters_left": 35289,
                 "clusters_right": 35289,
@@ -535,16 +535,16 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 6.09,
+          "build_s": 6.12,
           "status": "ready",
           "error": null,
-          "id": "e0ae55d6278a__0c0dfddfc8df",
+          "id": "7051a64b159f__62d599006341",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 13650.0,
-                "rf_normalised": 0.193408524144185,
+                "rf": 27300,
+                "rf_normalised": 0.38681704828837,
                 "shared_clusters": 21639,
                 "clusters_left": 35289,
                 "clusters_right": 35289,
@@ -574,16 +574,16 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 6.1,
+          "build_s": 6.15,
           "status": "ready",
           "error": null,
-          "id": "8a8b5f3814e8__41e0833d8c1c",
+          "id": "d064ea1d8453__f9c98f6eb0b7",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 27300.0,
-                "rf_normalised": 0.193403043441299,
+                "rf": 54600,
+                "rf_normalised": 0.386806086882598,
                 "shared_clusters": 43279,
                 "clusters_left": 70579,
                 "clusters_right": 70579,
@@ -597,16 +597,16 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 6.59,
+          "build_s": 6.14,
           "status": "ready",
           "error": null,
-          "id": "14396a974a7b__62418e2da091",
+          "id": "5b82428da054__ea5fa0443443",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 27300.0,
-                "rf_normalised": 0.193403043441299,
+                "rf": 54600,
+                "rf_normalised": 0.386806086882598,
                 "shared_clusters": 43279,
                 "clusters_left": 70579,
                 "clusters_right": 70579,
@@ -627,16 +627,16 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 12.69,
+          "build_s": 12.24,
           "status": "ready",
           "error": null,
-          "id": "a9415501c065__53855aaec47b",
+          "id": "1a4bbc71b397__c0662da16597",
           "values": {
             "rf": {
               "ok": true,
               "summary": {
-                "rf": 27300.0,
-                "rf_normalised": 0.193403043441299,
+                "rf": 54600,
+                "rf_normalised": 0.386806086882598,
                 "shared_clusters": 43279,
                 "clusters_left": 70579,
                 "clusters_right": 70579,
@@ -653,282 +653,6 @@
               "ok": true,
               "summary": {
                 "triplet": 1708289626296
-              }
-            }
-          }
-        }
-      ]
-    },
-    {
-      "leaves": 141160,
-      "builds": [
-        {
-          "metrics": [
-            "rf"
-          ],
-          "build_s": 17.26,
-          "status": "ready",
-          "error": null,
-          "id": "d453dc9c3663__93b942f5b9c1",
-          "values": {
-            "rf": {
-              "ok": true,
-              "summary": {
-                "rf": 54600.0,
-                "rf_normalised": 0.19340030320633617,
-                "shared_clusters": 86559,
-                "clusters_left": 141159,
-                "clusters_right": 141159,
-                "n_leaves": 141160
-              }
-            }
-          }
-        },
-        {
-          "metrics": [
-            "rf",
-            "rf-treediff"
-          ],
-          "build_s": 17.77,
-          "status": "ready",
-          "error": null,
-          "id": "dd9e433ed378__99773a6a68c1",
-          "values": {
-            "rf": {
-              "ok": true,
-              "summary": {
-                "rf": 54600.0,
-                "rf_normalised": 0.19340030320633617,
-                "shared_clusters": 86559,
-                "clusters_left": 141159,
-                "clusters_right": 141159,
-                "n_leaves": 141160
-              }
-            },
-            "rf-treediff": {
-              "ok": true,
-              "summary": {
-                "rf": 54600.0
-              }
-            }
-          }
-        },
-        {
-          "metrics": [
-            "rf",
-            "rf-treediff",
-            "triplet"
-          ],
-          "build_s": 29.92,
-          "status": "ready",
-          "error": null,
-          "id": "69912dd6c9dc__0814b6a71339",
-          "values": {
-            "rf": {
-              "ok": true,
-              "summary": {
-                "rf": 54600.0,
-                "rf_normalised": 0.19340030320633617,
-                "shared_clusters": 86559,
-                "clusters_left": 141159,
-                "clusters_right": 141159,
-                "n_leaves": 141160
-              }
-            },
-            "rf-treediff": {
-              "ok": true,
-              "summary": {
-                "rf": 54600.0
-              }
-            },
-            "triplet": {
-              "ok": true,
-              "summary": {
-                "triplet": 3416579252592
-              }
-            }
-          }
-        }
-      ]
-    },
-    {
-      "leaves": 282320,
-      "builds": [
-        {
-          "metrics": [
-            "rf"
-          ],
-          "build_s": 61.31,
-          "status": "ready",
-          "error": null,
-          "id": "56a25cdf4255__e51aefeb6269",
-          "values": {
-            "rf": {
-              "ok": true,
-              "summary": {
-                "rf": 109200.0,
-                "rf_normalised": 0.19339893311797335,
-                "shared_clusters": 173119,
-                "clusters_left": 282319,
-                "clusters_right": 282319,
-                "n_leaves": 282320
-              }
-            }
-          }
-        },
-        {
-          "metrics": [
-            "rf",
-            "rf-treediff"
-          ],
-          "build_s": 62.34,
-          "status": "ready",
-          "error": null,
-          "id": "3d34985c7189__d979addac552",
-          "values": {
-            "rf": {
-              "ok": true,
-              "summary": {
-                "rf": 109200.0,
-                "rf_normalised": 0.19339893311797335,
-                "shared_clusters": 173119,
-                "clusters_left": 282319,
-                "clusters_right": 282319,
-                "n_leaves": 282320
-              }
-            },
-            "rf-treediff": {
-              "ok": true,
-              "summary": {
-                "rf": 109200.0
-              }
-            }
-          }
-        },
-        {
-          "metrics": [
-            "rf",
-            "rf-treediff",
-            "triplet"
-          ],
-          "build_s": 87.14,
-          "status": "ready",
-          "error": null,
-          "id": "79a2060ca45f__c7fe4d8a36b8",
-          "values": {
-            "rf": {
-              "ok": true,
-              "summary": {
-                "rf": 109200.0,
-                "rf_normalised": 0.19339893311797335,
-                "shared_clusters": 173119,
-                "clusters_left": 282319,
-                "clusters_right": 282319,
-                "n_leaves": 282320
-              }
-            },
-            "rf-treediff": {
-              "ok": true,
-              "summary": {
-                "rf": 109200.0
-              }
-            },
-            "triplet": {
-              "ok": true,
-              "summary": {
-                "triplet": 6833158505184
-              }
-            }
-          }
-        }
-      ]
-    },
-    {
-      "leaves": 564640,
-      "builds": [
-        {
-          "metrics": [
-            "rf"
-          ],
-          "build_s": 249.35,
-          "status": "ready",
-          "error": null,
-          "id": "e73a7a6ff62a__2a7452e2fb87",
-          "values": {
-            "rf": {
-              "ok": true,
-              "summary": {
-                "rf": 218400.0,
-                "rf_normalised": 0.19339824808107142,
-                "shared_clusters": 346239,
-                "clusters_left": 564639,
-                "clusters_right": 564639,
-                "n_leaves": 564640
-              }
-            }
-          }
-        },
-        {
-          "metrics": [
-            "rf",
-            "rf-treediff"
-          ],
-          "build_s": 263.45,
-          "status": "ready",
-          "error": null,
-          "id": "7cabaa450173__97bb0b6b3efd",
-          "values": {
-            "rf": {
-              "ok": true,
-              "summary": {
-                "rf": 218400.0,
-                "rf_normalised": 0.19339824808107142,
-                "shared_clusters": 346239,
-                "clusters_left": 564639,
-                "clusters_right": 564639,
-                "n_leaves": 564640
-              }
-            },
-            "rf-treediff": {
-              "ok": true,
-              "summary": {
-                "rf": 218400.0
-              }
-            }
-          }
-        },
-        {
-          "metrics": [
-            "rf",
-            "rf-treediff",
-            "triplet"
-          ],
-          "build_s": 300.98,
-          "status": "ready",
-          "error": null,
-          "id": "c1fda0df0bb2__a85a723d60ed",
-          "values": {
-            "rf": {
-              "ok": true,
-              "summary": {
-                "rf": 218400.0,
-                "rf_normalised": 0.19339824808107142,
-                "shared_clusters": 346239,
-                "clusters_left": 564639,
-                "clusters_right": 564639,
-                "n_leaves": 564640
-              }
-            },
-            "rf-treediff": {
-              "ok": true,
-              "summary": {
-                "rf": 218400.0
-              }
-            },
-            "triplet": {
-              "ok": true,
-              "summary": {
-                "triplet": 13666317010368
               }
             }
           }

@@ -10,7 +10,7 @@
 | Browser flags | `--js-flags=--max-old-space-size=8192`, `--disable-dev-shm-usage` — **both tools, identically** |
 | Viewport | 1440 x 900; Table 21 varies the height |
 | **Tool compared against** | **phylo.io 2.2.5** (2026-01-30), its own published `dist/`, unmodified — the current release at the time of measurement |
-| This project | generated at commit `b31de35 + uncommitted changes` |
+| This project | generated at commit `f83482a + uncommitted changes` |
 | Runtimes | Python 3.12.14 (`uv`), Node 26.3.0, Playwright 1.63.0 |
 | Backend database | SQLite, in the store directory |
 | Store location | `/private/tmp/...` — an APFS SSD volume, **not** a RAM disk |
@@ -46,6 +46,7 @@ Eighteen tables is more than a chapter can carry, and most were made to answer a
 - **Table 19** — The claim as the quantity it is actually about: bytes over the wire. Present it beside Table 12 — 12 is the mechanism, 19 is what the mechanism buys.
 - **Table 21** — The other half of "sized to the viewport". Every other table shows the payload ignoring the tree; only this one shows it following the window, which is what earns the word *sized*.
 - **Table 22** — Correctness again, but against implementations that share nothing with this one. Table 18's agreement is with the same paper's own code; this is the check an examiner will ask for.
+- **Table 23** — Resolves a version mix in Table 1: the paint figures at 17,645 and 35,290 were measured on 2.1.1 while every other row is 2.2.5. Measured on 2.2.5 they are the same, so the rows stand — but they now say which version they are.
 
 **Appendix, or one sentence citing the number** — Defends a choice or a stated limit of a PRESENT table.
 
@@ -53,7 +54,7 @@ Eighteen tables is more than a chapter can carry, and most were made to answer a
 - **Table 9** — Justifies the 2-thread setting every build figure uses. One sentence plus the table in an appendix.
 - **Table 11** — The deployability argument: server memory is linear, not quadratic. A sentence with the marginal figure.
 - **Table 17** — Why the metric choice is not free, and where §9's claim holds. Relevant only if the thesis discusses metric plugins.
-- **Table 18** — Validation: two independent RF implementations agreeing at 1.1M nodes. A sentence, with the table in an appendix.
+- **Table 18** — Validation: two independent RF implementations in a fixed ratio at every rung. A sentence, with the table in an appendix. Table 22 is the one that pins the scale.
 - **Table 20** — Table 19 under compression, which is what a real deployment serves. Answers the first objection anyone will raise to 19, and answers it the other way from the expected one.
 
 **Keep in the repository, do not present** — Real and reproducible, but a PRESENT table already says it or it answered an internal question.
@@ -459,9 +460,21 @@ So §9's claim that several metrics cost little more than one is **true asymptot
 ## Table 18 — Two RF implementations against each other
 
 <!-- tier: SUPPORT -->
-> **SUPPORT** — Validation: two independent RF implementations agreeing at 1.1M nodes. A sentence, with the table in an appendix.
+> **SUPPORT** — Validation: two independent RF implementations in a fixed ratio at every rung. A sentence, with the table in an appendix. Table 22 is the one that pins the scale.
 
-> **NOT RE-MEASURED.** `metric_builds.json` was written before the `rf` metric's v2 and holds the halved value: every row has `rf == rf-treediff`, which was the v1 invariant and is no longer the right one (§34.19). The implementations have not stopped agreeing — the input predates the question. Re-run `tools/measure_metric_builds.py` against a built store and this table returns; Table 22 checks the same thing against DendroPy and ETE3 on data that *is* current.
+| leaves | built-in `rf` | `rf-treediff` | x2 | as expected |
+|---:|---:|---:|---:|:---:|
+| 1,000 | 1,062 | 531 | 1,062 | yes |
+| 2,500 | 2,438 | 1,219 | 2,438 | yes |
+| 5,000 | 4,414 | 2,207 | 4,414 | yes |
+| 10,000 | 8,226 | 4,113 | 8,226 | yes |
+| 17,645 | 13,650 | 6,825 | 13,650 | yes |
+| 35,290 | 27,300 | 13,650 | 27,300 | yes |
+| 70,580 | 54,600 | 27,300 | 54,600 | yes |
+
+*14 of 14 builds match `rf == 2 x rf-treediff`.* Different algorithms over different representations by different authors — TreeDiff is the reference implementation of the paper this project follows (§1.10) — so agreement at 141,159 nodes is a check on both, and a disagreement would have meant one of them was wrong.
+
+**What this table cannot check is the scale**, which is why Table 22 exists. TreeDiff reports half the symmetric difference and this store used to do the same; the two agreed at every rung while both differed from the published definition by a factor of two, and nothing here could have revealed it. Agreement between two implementations of one paper is evidence that the code is faithful, not that the quantity is the one the field means.
 
 
 ## Table 19 — Bytes over the wire
@@ -578,4 +591,27 @@ Every other table here shows the payload ignoring the **tree**. That is necessar
 **The normalisation was the half that was actually wrong.** Version 1 divided the *halved* RF by the maximum of the *full* RF, so the ratio could not exceed 0.5 whatever the trees — and the test that should have caught it asserted `> 0.49` for two near-unrelated trees, reading the ceiling as "near-maximal". The vibrio pair reported 0.193 and now reports 0.387; two unrelated trees now reach 0.9999 instead of sitting just under the ceiling.
 
 **Two settings decide whether the comparison is like-for-like**, and both produce a plausible near-miss rather than an error when wrong. *Rooting*: this store counts rooted clades, and DendroPy's unrooted mode gives 1,044 rather than 1,062 at 1,000 leaves, while ETE3 unroots by default. *Reconciliation*: handing the 17,645 pair over as it sits on disk gives 13,654 rather than 13,650, because ST 211 is in only one of the two trees (§2.6).
+
+
+## Table 23 — phylo.io 2.2.5: paint and compare, measured separately
+
+<!-- tier: PRESENT -->
+> **PRESENT** — Resolves a version mix in Table 1: the paint figures at 17,645 and 35,290 were measured on 2.1.1 while every other row is 2.2.5. Measured on 2.2.5 they are the same, so the rows stand — but they now say which version they are.
+
+*`harness/phyloio_paint.mjs` against 2.2.5, Chrome 154.0.8037.58, bench commit `b31de35 + uncommitted changes`. 3 page loads per rung.*
+
+**Why this was measured.** Table 1 records `failed` from 17,645 up, and that is a verdict on the *attempt*: `ceiling.mjs` wraps load and comparison together in 660 s against an inner comparison budget of 600 s, which leaves 60 s for a paint that takes 25 s and a worker that will use all 600. Whichever part overruns, the cell says one word. The paint figures quoted at these two rungs therefore came from the earlier **2.1.1** ladder while every other row was 2.2.5 — one table, two versions. Here the outer deadline is 700 s, so the two halves are recorded separately.
+
+| leaves | loads | painted | paint (median) | SVG paths | compare finished in 600 s |
+|---:|---:|---:|---:|---:|:---:|
+| 17,645 | 3 | **2 of 3** | 9.1 s | 670 | **no** |
+| 35,290 | 3 | **1 of 3** | 24.6 s | 640 | **no** |
+
+**It paints, and at the same cost as 2.1.1.** 9.1 s against the earlier 9.3 s at 17,645, and 24.6 s against 25.1 s at 35,290, with the SVG path counts identical to the published ones (670 and 640). So the two rows in Tables 1 and 2 were *right about the current release* and wrong only about which release they described. They can stay; they now have to say 2.2.5.
+
+**The ceiling is unaffected, and that is the claim that matters.** The comparison finished in none of the six loads: painting two trees is not the job, and the best-corresponding-node worker is the half that does not arrive. Table 1's `failed` is therefore correct for the thing being compared — a slice here arrives with its similarity values already in it — and only misleading about why.
+
+**Painting is not reliable at these sizes either.** Two of three loads at 17,645 and one of three at 35,290 completed the attempt; the rest exceeded 700 s. This data cannot say whether those loads hung in the paint or in the comparison poll, because `load()` returns both or neither — the honest reading is that a majority of attempts at 35,290 did not get as far as reporting a paint at all, not that the paint itself took longer than 700 s.
+
+*Node counts are not comparable with Table 2's. This runner counts `querySelectorAll("*")`, Table 2 reads CDP's `domCounters`, which counts text nodes too (3,558 here against 6,921 there at 17,645). The SVG path counts are measured identically and do agree.*
 

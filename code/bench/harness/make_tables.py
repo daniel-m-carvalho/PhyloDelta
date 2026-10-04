@@ -179,8 +179,9 @@ TIERS = {
                   "~49 ms navigation. One sentence, not a table."),
     17: (SUPPORT, "Why the metric choice is not free, and where §9's claim holds. "
                   "Relevant only if the thesis discusses metric plugins."),
-    18: (SUPPORT, "Validation: two independent RF implementations agreeing at 1.1M "
-                  "nodes. A sentence, with the table in an appendix."),
+    18: (SUPPORT, "Validation: two independent RF implementations in a fixed "
+                  "ratio at every rung. A sentence, with the table in an "
+                  "appendix. Table 22 is the one that pins the scale."),
     19: (PRESENT, "The claim as the quantity it is actually about: bytes over the "
                   "wire. Present it beside Table 12 — 12 is the mechanism, 19 is "
                   "what the mechanism buys."),
@@ -190,6 +191,10 @@ TIERS = {
     21: (PRESENT, "The other half of \"sized to the viewport\". Every other table "
                   "shows the payload ignoring the tree; only this one shows it "
                   "following the window, which is what earns the word *sized*."),
+    23: (PRESENT, "Resolves a version mix in Table 1: the paint figures at "
+                  "17,645 and 35,290 were measured on 2.1.1 while every other "
+                  "row is 2.2.5. Measured on 2.2.5 they are the same, so the "
+                  "rows stand — but they now say which version they are."),
     22: (PRESENT, "Correctness again, but against implementations that share "
                   "nothing with this one. Table 18's agreement is with the same "
                   "paper's own code; this is the check an examiner will ask for."),
@@ -997,8 +1002,8 @@ if phase_rows:
               f"rf-treediff`.* "
               "Different algorithms over different representations by different authors — "
               "TreeDiff is the reference implementation of the paper this project follows (§1.10) "
-              "— so agreement at 1,129,279 nodes is a check on both, and a disagreement would "
-              "have meant one of them was wrong.\n")
+              f"— so agreement at {2 * max(l for l, _, _ in agree + disagree) - 1:,} nodes is a "
+              "check on both, and a disagreement would have meant one of them was wrong.\n")
         print("**What this table cannot check is the scale**, which is why Table 22 exists. "
               "TreeDiff reports half the symmetric difference and this store used to do the "
               "same; the two agreed at every rung while both differed from the published "
@@ -1246,3 +1251,53 @@ if rf_external.get("rows"):
               f"ETE3 unroots by default. *Reconciliation*: handing the 17,645 pair "
               f"over as it sits on disk gives 13,654 rather than 13,650, because "
               f"ST 211 is in only one of the two trees (\u00a72.6).\n")
+
+
+# --- 11. does the current release paint where the ladder says it failed? -----
+paint = load("phyloio_paint_2.2.5.json", {})
+if paint.get("rows"):
+    table(23, "phylo.io 2.2.5: paint and compare, measured separately")
+    print(f"*`harness/phyloio_paint.mjs` against {paint['label']}, "
+          f"{paint['browser']}, bench commit `{paint['bench_commit']}`. "
+          f"{paint['rows'][0]['loads']} page loads per rung.*\n")
+    print("**Why this was measured.** Table 1 records `failed` from 17,645 up, "
+          "and that is a verdict on the *attempt*: `ceiling.mjs` wraps load and "
+          "comparison together in 660 s against an inner comparison budget of "
+          "600 s, which leaves 60 s for a paint that takes 25 s and a worker "
+          "that will use all 600. Whichever part overruns, the cell says one "
+          "word. The paint figures quoted at these two rungs therefore came "
+          "from the earlier **2.1.1** ladder while every other row was 2.2.5 — "
+          "one table, two versions. Here the outer deadline is 700 s, so the "
+          "two halves are recorded separately.\n")
+    print("| leaves | loads | painted | paint (median) | SVG paths | compare finished in 600 s |")
+    print("|---:|---:|---:|---:|---:|:---:|")
+    for row in paint["rows"]:
+        ms = row["paint_ms_median"]
+        print(f"| {row['leaves']:,} | {row['loads']} | "
+              f"**{row['painted']} of {row['loads']}** | "
+              f"{'—' if ms is None else f'{ms / 1000:.1f} s'} | "
+              f"{row['paths_median'] or '—'} | "
+              f"{'yes' if row['compare_completed'] else '**no**'} |")
+    print("\n**It paints, and at the same cost as 2.1.1.** 9.1 s against the "
+          "earlier 9.3 s at 17,645, and 24.6 s against 25.1 s at 35,290, with "
+          "the SVG path counts identical to the published ones (670 and 640). "
+          "So the two rows in Tables 1 and 2 were *right about the current "
+          "release* and wrong only about which release they described. They can "
+          "stay; they now have to say 2.2.5.\n")
+    print("**The ceiling is unaffected, and that is the claim that matters.** "
+          "The comparison finished in none of the six loads: painting two trees "
+          "is not the job, and the best-corresponding-node worker is the half "
+          "that does not arrive. Table 1's `failed` is therefore correct for "
+          "the thing being compared — a slice here arrives with its similarity "
+          "values already in it — and only misleading about why.\n")
+    print("**Painting is not reliable at these sizes either.** Two of three "
+          "loads at 17,645 and one of three at 35,290 completed the attempt; "
+          "the rest exceeded 700 s. This data cannot say whether those loads "
+          "hung in the paint or in the comparison poll, because `load()` "
+          "returns both or neither — the honest reading is that a majority of "
+          "attempts at 35,290 did not get as far as reporting a paint at all, "
+          "not that the paint itself took longer than 700 s.\n")
+    print("*Node counts are not comparable with Table 2's. This runner counts "
+          "`querySelectorAll(\"*\")`, Table 2 reads CDP's `domCounters`, which "
+          "counts text nodes too (3,558 here against 6,921 there at 17,645). "
+          "The SVG path counts are measured identically and do agree.*\n")
