@@ -326,7 +326,7 @@ def test_search_finds_a_leaf_behind_a_wedge(client):
         "/api/v1/trees/vibrio-upgma/slice",
         params={"root": context["node"], "budget": 50, "keep": first["node"]},
     ).json()
-    assert kept["kept"] == {"node": first["node"], "exact": True}
+    assert kept["kept"] == {"node": first["node"], "exact": True, "label": label}
 
 
 def test_search_lists_exact_then_longer_and_counts_the_rest(client):
@@ -437,7 +437,9 @@ def test_a_honoured_keep_says_so(client):
         params={"root": 0, "budget": 200, "keep": node},
     ).json()
 
-    assert body["kept"] == {"node": node, "exact": True}
+    assert body["kept"] == {"node": node, "exact": True, "label": body["nodes"]["label"][
+        body["nodes"]["id"].index(node)
+    ]}
     assert node in body["nodes"]["id"]
 
 
@@ -473,6 +475,22 @@ def test_a_keep_that_could_not_be_drawn_names_the_wedge_standing_in_for_it(clien
     index = body["nodes"]["id"].index(stand_in["node"])
     assert body["nodes"]["truncated"][index] is True
     assert stand_in["node"] <= deep
+    # And says what it stands in for: the only place the undrawn node's name
+    # is in the response, so a client can say "found 1203 inside this clade"
+    # rather than "found 15544".
+    leaf = next(
+        n for n in range(deep, deep + 10_000)
+        if _ancestor(client, n, min_leaves=1)["leaves"] == 1
+    )
+    named = client.get(
+        "/api/v1/trees/vibrio-upgma/slice",
+        params={"root": 0, "budget": 60, "keep": leaf},
+    ).json()["kept"]
+    assert named["exact"] is False
+    assert named["label"] == client.get(
+        "/api/v1/trees/vibrio-upgma/slice", params={"root": leaf, "budget": 1}
+    ).json()["nodes"]["label"][0]
+    assert named["label"] not in ("", "_")
 
 
 def test_a_slice_with_no_keep_reports_none(client):

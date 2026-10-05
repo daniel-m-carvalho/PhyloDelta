@@ -270,7 +270,7 @@ def tree_slice(
         root=root,
         budget=budget,
         kept=(
-            KeptNode(node=trace.drawn_as, exact=trace.exact)
+            KeptNode(node=trace.drawn_as, exact=trace.exact, label=reader.label(keep))
             if trace.drawn_as is not None
             else None
         ),

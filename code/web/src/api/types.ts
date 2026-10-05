@@ -68,6 +68,8 @@ export interface KeptNode {
   node: number;
   /** False when `node` is an ancestor wedge rather than the node itself. */
   exact: boolean;
+  /** The label of the node asked for — the only record of it when undrawn. */
+  label: string;
 }
 
 export interface TreeSummary {

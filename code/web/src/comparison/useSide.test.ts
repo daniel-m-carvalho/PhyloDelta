@@ -215,7 +215,7 @@ describe("navigating back to a view already seen", () => {
     }));
     vi.spyOn(api, "slice").mockImplementation(async (_tree, options = {}) => ({
       ...reply(options.root),
-      kept: { node: 7114, exact: false },
+      kept: { node: 7114, exact: false, label: "1203" },
     }));
     const { result } = renderHook(() => useSide("vibrio-upgma", "a__b"));
 
@@ -224,7 +224,7 @@ describe("navigating back to a view already seen", () => {
     // The leaf is still what was asked for, and what the chip names...
     expect(result.current[0].arrivedAt).toBe(3296);
     // ...but the thing to put the mark on is the wedge the server named.
-    expect(result.current[0].markAt).toEqual({ node: 7114, exact: false });
+    expect(result.current[0].markAt).toEqual({ node: 7114, exact: false, label: "1203" });
   });
 
   it("does not pair a new jump's target with the previous slice's mark", async () => {
@@ -243,12 +243,12 @@ describe("navigating back to a view already seen", () => {
     vi.spyOn(api, "slice").mockImplementation(async (_tree, options = {}) => {
       // The second slice is held back, which is the window the bug lived in.
       if (options.keep === 22) await new Promise<void>((done) => (release = done));
-      return { ...reply(options.root), kept: { node: options.keep!, exact: true } };
+      return { ...reply(options.root), kept: { node: options.keep!, exact: true, label: `st${options.keep}` } };
     });
     const { result } = renderHook(() => useSide("vibrio-upgma", "a__b"));
 
     await actAsync(() => result.current[1].focusWithContext(11));
-    expect(result.current[0].markAt).toEqual({ node: 11, exact: true });
+    expect(result.current[0].markAt).toEqual({ node: 11, exact: true, label: "st11" });
 
     await actAsync(() => result.current[1].focusWithContext(22));
     expect(result.current[0].arrivedAt).toBe(22);
@@ -256,7 +256,7 @@ describe("navigating back to a view already seen", () => {
     expect(result.current[0].markAt).toBeNull();
 
     await actAsync(async () => release!());
-    expect(result.current[0].markAt).toEqual({ node: 22, exact: true });
+    expect(result.current[0].markAt).toEqual({ node: 22, exact: true, label: "st22" });
   });
 
   it("has nothing to mark until a jump asks for one", async () => {

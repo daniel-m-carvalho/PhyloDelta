@@ -142,6 +142,14 @@ interface FoundChip {
   exact: boolean;
 }
 
+/** An arrival this view has marked: which node, what the chip calls it. */
+interface Placed {
+  arrival: number;
+  label: string;
+  /** False once a jump into the other panel has taken the mark. */
+  shown: boolean;
+}
+
 /**
  * The library's graph id for a stored node, or null if it is not on screen.
  *
@@ -579,21 +587,27 @@ export function ComparisonView({
   }, [right.tree]);
 
   /*
-   * Flash the leaf a jump was aimed at — once, on the panel it arrived in.
+   * Mark the leaf a jump was aimed at, and keep marking it as the view moves.
    *
-   * `arrivedAt` persists, because the slice needs it as `keep` so the node
-   * stays drawn on any later re-slice of the same root. The *signal* must not:
-   * flashing whenever it happens to be set meant that after a second jump the
-   * other way, both panels lit up — the one that had just been navigated to
-   * and the one still holding the previous arrival — and every window resize
-   * replayed it. So the arrival is consumed: once flashed, it is recorded as
-   * spent and never flashes again.
+   * **Flashed once, on arrival.** `arrivedAt` persists, because the slice
+   * needs it as `keep`; the *signal* must not. Flashing whenever it happened
+   * to be set lit both panels after a second jump the other way, and every
+   * window resize replayed it. So each arrival flashes exactly once.
+   *
+   * **Then followed, quietly** (§37.7). Going back widens the view, and the
+   * leaf may now be drawn as part of a wedge; the slice says which (`markAt`,
+   * `exact: false`). This effect used to stop at "already flashed", so after
+   * back the mark stayed on a graph id from the previous drawing and the chip
+   * still said "Found" for a leaf that had gone behind a wedge — after a menu
+   * jump and after a search alike. Now every new slice re-places the mark on
+   * whatever stands for the leaf, steadily lit (`flash: false`), and the chip
+   * switches to "Found inside … (in this clade)" and back as the view moves.
    *
    * After the slice, not with it: the keys the highlight matches on are minted
    * by the library during layout, so nothing can be pointed at until the new
    * slice has rendered.
    */
-  const flashed = useRef<[number | null, number | null]>([null, null]);
+  const placed = useRef<[Placed | null, Placed | null]>([null, null]);
   useEffect(() => {
     const built = handle.current;
     if (!built) return;
@@ -604,10 +618,9 @@ export function ComparisonView({
       if (wanted === null) {
         // Navigated away: the next arrival here is a new one, even if it is
         // the same leaf.
-        flashed.current[side] = null;
+        placed.current[side] = null;
         return;
       }
-      if (flashed.current[side] === wanted) return;
       const mark = sides.current[side].markAt;
       if (!mark) return;
       // Marked by rendered node, not by name. The slice may have had to
@@ -617,16 +630,34 @@ export function ComparisonView({
       // library's own key generation, so the graph id is resolved through it.
       const target = graphIdOf(panel.viewer, mark.node);
       if (target === null) return;
-      flashed.current[side] = wanted;
+      const comparison = panel.operators.comparison;
+
+      const prior = placed.current[side];
+      if (prior && prior.arrival === wanted) {
+        // The same arrival, drawn anew. Not if a jump into the other panel has
+        // since taken the mark (one mark across both panels): this side still
+        // holds the pin, but showing it again would put two marks on screen.
+        if (!prior.shown) return;
+        if (!comparison?.highlightByNode(target, { center: false, flash: false })) return;
+        const chip: FoundChip = { label: prior.label, exact: mark.exact };
+        setFound((current) => (side === 0 ? [chip, current[1]] : [current[0], chip]));
+        return;
+      }
+
       // Not the library's camera move: the panel was just re-rooted around this
       // node, and centring zooms in far enough to crop the neighbourhood that
       // is the point.
-      if (!panel.operators.comparison?.highlightByNode(target, { center: false })) return;
-      const label = sides.current[side].tree?.byStoredId.get(wanted)?.name;
+      if (!comparison?.highlightByNode(target, { center: false })) return;
+      // The slice's own record of the name, because an undrawn leaf is not in
+      // the tree built from it; the drawn name otherwise; the id as a last
+      // resort, which is still better than a chip naming nothing.
+      const label =
+        mark.label || sides.current[side].tree?.byStoredId.get(wanted)?.name || String(wanted);
+      placed.current[side] = { arrival: wanted, label, shown: true };
       // What the chip says. `exact` false means the mark is on a wedge standing
       // in for the leaf, which the header has to admit rather than let the user
       // read the wedge as the leaf itself.
-      const chip: FoundChip = { label: label || String(wanted), exact: mark.exact };
+      const chip: FoundChip = { label, exact: mark.exact };
       // One mark across both panels: the other side's goes — unless both are
       // halves of one search, where the name was found in each tree and
       // marking it in only one would hide half the answer.
@@ -637,6 +668,8 @@ export function ComparisonView({
         return;
       }
       built.panels[other]?.operators.comparison?.clearHighlight();
+      const superseded = placed.current[other];
+      if (superseded) superseded.shown = false;
       setFound(side === 0 ? [chip, null] : [null, chip]);
     });
   }, [left.slice, right.slice, left.arrivedAt, right.arrivedAt, refreshKeys]);
@@ -653,6 +686,7 @@ export function ComparisonView({
   const clearFound = useCallback(
     (side: 0 | 1) => {
       handle.current?.panels[side]?.operators.comparison?.clearHighlight();
+      placed.current[side] = null;
       setFound((current) => (side === 0 ? [null, current[1]] : [current[0], null]));
       (side === 0 ? leftActions : rightActions).clearMark();
     },

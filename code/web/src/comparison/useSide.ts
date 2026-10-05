@@ -119,7 +119,7 @@ export interface SideState {
    *
    * Null when nothing is marked, or when the pin did not apply at all.
    */
-  markAt: { node: number; exact: boolean } | null;
+  markAt: { node: number; exact: boolean; label?: string } | null;
   /**
    * Why a jump into this panel could not be made, if one could not.
    *

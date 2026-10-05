@@ -4505,6 +4505,50 @@ the two jumps it triggers, each an `/ancestor` call plus a slice, about 2 ms of 
 * **A rebuilt store under the same tree id** keeps serving the old index until restart, as the tree
   readers already do.
 
+### 37.7 The mark follows the leaf when the view changes
+
+Reported after the search shipped, and reproduced in a browser for both ways of arriving. The
+behaviour was identical, and wrong for both. Jump to a leaf and go back. The slice correctly reported
+the leaf behind wedge 15304 (`kept: {node: 15304, exact: false}`), but the wedge was not marked and
+the chip still said "Found: 1203". The mark effect flashed an arrival once and then returned early on
+every later slice, so `exact: false` was only acted on when the *first* landing was already behind a
+wedge. §33's promise ("going back must not drop it") held for `keep` and not for what the user sees.
+
+Now every new slice re-places the mark on whatever stands for the leaf, and the chip switches between
+"Found" and "Found inside … (in this clade)" as the view moves. The move is **steady, not flashed**:
+`highlightByNode(id, { flash: false })`, added to the library for this. Blinking on every step back
+would announce an arrival that did not happen, which is the replay the flash-once rule was written
+to stop. A panel whose mark was taken by a jump into the other one is not re-marked: it still holds
+the pin (§37.6), but showing it again would put two marks on screen.
+
+The slice's `kept` now carries the requested node's `label`. A leaf that arrives already behind a
+wedge is not in the tree built from the slice, so the chip had only its id to show ("Found inside:
+15544").
+
+## 38. Rebuilding a deployed store
+
+Found deploying §37 to the university server. Every comparison answered 500, and the fix suggested
+for that then put seven comparisons nobody asked for on the home page. Three defects, all fixed:
+
+* **A stale metric result was a 500.** The version guard from the RF convention change (§34.19)
+  refused a result computed by the older `rf` correctly, but as a bare `ValueError`. The message
+  naming the fix reached only the server log. It is now `MetricVersionMismatch`, and one handler
+  turns it into **409 `metric_version_mismatch`** wherever a pair is opened, so no route can let it
+  out as a 500. Its hint names `compute-pairs --only <pair>`, not `build-all`: the deployment seeds
+  with `build-all --if-empty`, which on a populated volume does nothing. That is also why the stale
+  results were there.
+* **The sweep paired uploads.** `compute-pairs` took every tree in the store, so on a deployment it
+  paired two users' uploads with the demo trees and with each other. It now sweeps only the trees
+  `datasets/gen_trees` names. `--only` may still name any pair, which is how a stale upload is
+  rebuilt.
+* **The sweep took over what it touched.** `record_computed_pair` overwrote the owner of an existing
+  row with the sweep's. In demo mode everyone is that owner, so nothing showed. Under real logins it
+  would have moved an upload out of its uploader's list. An existing row now keeps its owner.
+
+Each has a test that fails without its fix: the sweep test (an "upload" under `fd53852fb949`
+appeared in the pairs), the ownership test (`[] == ['a__b']`), and the API test (500 for both URLs
+the page requests).
+
 
 ---
 

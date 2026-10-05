@@ -514,14 +514,29 @@ export class ComparisonOperator implements TreeOperator {
    *
    * Returns false when the node is not on screen, so a caller can tell a
    * mark that was placed from one that silently was not.
+   *
+   * `flash: false` lights it steadily at once. For **moving** a mark the user
+   * already saw arrive — the same leaf, now drawn as a different node because
+   * the view changed around it. Blinking again there would announce an
+   * arrival on every step back, and draw the eye to something that did not
+   * happen.
    */
-  highlightByNode(nodeId: string, options: { center?: boolean } = {}): boolean {
+  highlightByNode(
+    nodeId: string,
+    options: { center?: boolean; flash?: boolean } = {},
+  ): boolean {
     if (!this.viewer?.getNodeMap().has(nodeId)) return false;
     // Replaces any earlier mark, of either kind: one located node at a time.
     this.highlightedKey = null;
     this.highlightedNode = nodeId;
     if (options.center ?? true) this.centerOn(nodeId);
-    this.startBlink();
+    if (options.flash ?? true) {
+      this.startBlink();
+    } else {
+      this.stopBlink();
+      this.blinkOn = true;
+      this.viewer?.applyReducers();
+    }
     return true;
   }
 

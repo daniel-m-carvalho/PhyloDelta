@@ -39,8 +39,8 @@ debugging session spent on a fix that was live in the tests and not in the brows
 ## Tests and tools
 
 ```bash
-cd code/server && uv run pytest -q          # 485
-cd code/lib     && npm test                 # 371
+cd code/server && uv run pytest -q          # 488
+cd code/lib     && npm test                 # 372
 cd code/web     && npm test                 # 117
 cd code/lib_demo && npm test                # 41
 ```

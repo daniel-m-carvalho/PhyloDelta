@@ -328,6 +328,13 @@ class KeptNode(BaseModel):
             "user about. A kept node drawn as its own wedge is still exact."
         )
     )
+    label: str = Field(
+        description=(
+            "The label of the node asked for, not of `node`. Where it was not "
+            "drawn the slice has no other record of its name, and a client "
+            "saying \"found inside this clade\" needs to say found *what*."
+        )
+    )
 
 
 class TreeSlice(BaseModel):

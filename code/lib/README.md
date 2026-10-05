@@ -815,7 +815,7 @@ interface ComparisonOptions {
 ```
 - API: `setValues(map)`, `setCorrespondence(map)`, `setMode(mode)`, `getMode()`,
   `setDiffering(keys)`, `setEnabled(on)`, `isEnabled()`, `link(peer)`,
-  `highlightByKey(key)`, `highlightByNode(id)`, `clearHighlight()`,
+  `highlightByKey(key)`, `highlightByNode(id, { flash? })`, `clearHighlight()`,
   `getHighlightedKey()`.
 
 **Two ways to place the mark, and one mark at a time.** `highlightByKey` is the
@@ -829,6 +829,9 @@ matched; the operator does not invent one. Either call replaces the other's
 mark, and `getHighlightedKey()` returns null for a mark placed by node id,
 so the two can never be mistaken for each other. Both return `false` when the
 target is not on screen, rather than leaving the caller to assume it was marked.
+`highlightByNode(id, { flash: false })` lights the node steadily without blinking,
+for *moving* a mark the user already saw arrive: the same thing, drawn as a
+different node because the view changed around it.
 
 ---
 

@@ -405,6 +405,40 @@ describe("how long a located node stays marked", () => {
     }
   });
 
+  it("moves a mark without flashing it again when asked not to", () => {
+    vi.useFakeTimers();
+    try {
+      const h = makeHarness(namedTree());
+      const cmp = new ComparisonOperator({
+        enabled: true,
+        keyOf: keyByName,
+        flashes: 5,
+        flashInterval: 100,
+        persistHighlight: true,
+      });
+      cmp.attach(h.viewer);
+      h.render();
+
+      cmp.highlightByNode("named_c", { center: false, flash: false });
+      // Lit at once and on every tick: there is no off-phase to see.
+      for (let tick = 0; tick < 12; tick += 1) {
+        expect(h.styleOf("named_c").color).toBe("#ff0000");
+        vi.advanceTimersByTime(100);
+      }
+      // A blink still running from an earlier placement is stopped, not left
+      // to toggle the new node.
+      cmp.highlightByNode("named_a", { center: false });
+      vi.advanceTimersByTime(100);
+      cmp.highlightByNode("named_c", { center: false, flash: false });
+      for (let tick = 0; tick < 12; tick += 1) {
+        expect(h.styleOf("named_c").color).toBe("#ff0000");
+        vi.advanceTimersByTime(100);
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("stays lit after flashing when the mark is meant to persist, until cleared", () => {
     vi.useFakeTimers();
     try {
