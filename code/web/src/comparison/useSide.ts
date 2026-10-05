@@ -210,6 +210,13 @@ export function useSide(
     if (!overridden) setBudget(autoBudget);
   }, [autoBudget, overridden]);
   const [slice, setSlice] = useState<TreeSlice | null>(null);
+  /**
+   * The `keep` the slice on screen was asked with — which is not always the
+   * current one. A jump sets `keep` at once and the slice that honours it
+   * arrives later, so in between `slice.kept` answers the *previous* jump.
+   * Read on its own, that paired a new target with the old mark (§37).
+   */
+  const [shownKeep, setShownKeep] = useState<number | null>(null);
   const [tree, setTree] = useState<SliceTree | null>(null);
   const [gradient, setGradient] = useState<Gradient>(NO_GRADIENT);
   const [loading, setLoading] = useState(true);
@@ -242,6 +249,7 @@ export function useSide(
     const show = (fetched: TreeSlice) => {
       const built = treeFromSlice(fetched, { labelClades });
       setSlice(fetched);
+      setShownKeep(parts.keep ?? null);
       setTree(built);
       setGradient(gradientFrom(built, fetched.comparison));
       setLoading(false);
@@ -429,8 +437,9 @@ export function useSide(
       path,
       arrivedAt: keep,
       // From the slice, not inferred: only the server knows which wedge holds
-      // a node it had to summarise.
-      markAt: keep === null ? null : (slice?.kept ?? null),
+      // a node it had to summarise. And only from a slice asked about *this*
+      // node: until it arrives there is nothing to mark yet.
+      markAt: keep === null || shownKeep !== keep ? null : (slice?.kept ?? null),
       jumpError,
       canGoBack: path.length > 0,
     },

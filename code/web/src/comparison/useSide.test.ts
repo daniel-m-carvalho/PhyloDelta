@@ -227,6 +227,38 @@ describe("navigating back to a view already seen", () => {
     expect(result.current[0].markAt).toEqual({ node: 7114, exact: false });
   });
 
+  it("does not pair a new jump's target with the previous slice's mark", async () => {
+    // Found by driving the search (§37) in a browser: a second jump into a
+    // panel that already held a mark set `keep` at once, while the slice on
+    // screen was still the first jump's — so for a render `markAt` said "mark
+    // the first leaf" under the second leaf's name. The view took that, marked
+    // the wrong node, recorded the arrival as done, and never corrected it.
+    vi.spyOn(api, "ancestor").mockImplementation(async (_tree, node) => ({
+      node: node + 1000,
+      leaves: 20,
+      climbed: 1,
+      reached_root: false,
+    }));
+    let release: (() => void) | null = null;
+    vi.spyOn(api, "slice").mockImplementation(async (_tree, options = {}) => {
+      // The second slice is held back, which is the window the bug lived in.
+      if (options.keep === 22) await new Promise<void>((done) => (release = done));
+      return { ...reply(options.root), kept: { node: options.keep!, exact: true } };
+    });
+    const { result } = renderHook(() => useSide("vibrio-upgma", "a__b"));
+
+    await actAsync(() => result.current[1].focusWithContext(11));
+    expect(result.current[0].markAt).toEqual({ node: 11, exact: true });
+
+    await actAsync(() => result.current[1].focusWithContext(22));
+    expect(result.current[0].arrivedAt).toBe(22);
+    // Not {node: 11}: that is the old slice answering the new question.
+    expect(result.current[0].markAt).toBeNull();
+
+    await actAsync(async () => release!());
+    expect(result.current[0].markAt).toEqual({ node: 22, exact: true });
+  });
+
   it("has nothing to mark until a jump asks for one", async () => {
     const { result } = runPanel();
     await actAsync(async () => {});
