@@ -161,6 +161,32 @@ class PairMeta:
     metric_version: str = ""
 
 
+#: Declared metric versions, resolved once per process.
+#:
+#: `registry.discover()` globs the plugins directory and re-parses every
+#: manifest, which is 0.158 ms — fine where it is called once per build, and not
+#: fine here: this check runs on every `read_pair`, so every comparison slice
+#: request was paying it, about 10% of a 1.6 ms slice (§34.12) to be told the
+#: same thing every time. A plug-in's declared version cannot change under a
+#: running process without the files changing, and that is a restart.
+#:
+#: Deliberately NOT a cache inside `discover()`. Builds, uploads and the
+#: manifest tests all want a fresh read, and making the shared function stateful
+#: to speed up one caller would be the wrong trade.
+_declared: dict[str, str] | None = None
+
+
+def _declared_versions() -> dict[str, str]:
+    global _declared
+    if _declared is None:
+        from . import registry
+
+        _declared = {
+            name: str(m.raw.get("version", "")) for name, m in registry.discover().items()
+        }
+    return _declared
+
+
 def _check_metric_version(raw: dict, directory: Path) -> None:
     """Refuse a stored result computed by a different version of its metric.
 
@@ -176,14 +202,12 @@ def _check_metric_version(raw: dict, directory: Path) -> None:
     build does not carry (a plug-in removed, a subprocess tool absent), and
     `discover()` is the authority on what exists, not this function.
     """
-    from . import registry
-
     stored = raw.get("metric_version", "")
     name = raw.get("metric", "?")
-    manifest = registry.discover().get(name)
-    if manifest is None:
+    declared = _declared_versions()
+    if name not in declared:
         return
-    current = str(manifest.raw.get("version", ""))
+    current = declared[name]
     if stored != current:
         raise ValueError(
             f"{directory} holds `{name}` computed by version "
