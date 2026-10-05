@@ -16,6 +16,7 @@ import type {
   DatasetsResponse,
   MetricSummary,
   NodeContext,
+  NodeSearch,
   TreeSlice,
   UploadAccepted,
   WhoAmI,
@@ -141,6 +142,25 @@ export const api = {
     if (options.minLeaves !== undefined) query.set("min_leaves", String(options.minLeaves));
     return request<NodeContext>(
       `/trees/${encodeURIComponent(treeId)}/ancestor?${query}`,
+      { signal: options.signal },
+    );
+  },
+
+  /**
+   * Nodes of one tree whose label is, or starts with, `query` (§37).
+   *
+   * Asked of the server because the panel cannot answer it: it holds the tree
+   * as one slice, and a name behind a wedge is not in it.
+   */
+  search: (
+    treeId: string,
+    query: string,
+    options: { limit?: number; signal?: AbortSignal } = {},
+  ) => {
+    const params = new URLSearchParams({ q: query });
+    if (options.limit !== undefined) params.set("limit", String(options.limit));
+    return request<NodeSearch>(
+      `/trees/${encodeURIComponent(treeId)}/search?${params}`,
       { signal: options.signal },
     );
   },

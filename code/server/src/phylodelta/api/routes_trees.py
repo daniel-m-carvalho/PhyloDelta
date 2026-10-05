@@ -16,7 +16,9 @@ from . import errors
 from .access import tree_or_404
 from .identity import current_owner
 from .routes_meta import API_PREFIX
-from .schemas import KeptNode, NodeContext, SliceNodes, TreeDetail, TreeSlice
+from .schemas import (
+    KeptNode, NodeContext, NodeMatch, NodeSearch, SliceNodes, TreeDetail, TreeSlice,
+)
 from .access import pair_or_404 as access_pair
 from .slicing import ORDER_DESCRIPTION, Order, side_of, summariser_for
 
@@ -26,6 +28,10 @@ router = APIRouter(prefix=f"{API_PREFIX}/trees", tags=["trees"])
 #: already past the point the slicing exists to avoid; the cap stops one request
 #: from materialising an entire 500k-leaf tree.
 MAX_BUDGET = 50_000
+
+#: A list a person reads, not an export. Past this the query is too short to
+#: mean anything, and `total` already says how many there are.
+MAX_SEARCH_RESULTS = 200
 
 
 def _reader(tree_id: str):
@@ -122,6 +128,59 @@ def tree_ancestor(
 
     return NodeContext(
         node=at, leaves=reader.leaf_count_of(at), climbed=climbed, reached_root=False
+    )
+
+
+@router.get(
+    "/{tree_id}/search",
+    response_model=NodeSearch,
+    summary="Nodes whose label is, or starts with, a name",
+)
+def tree_search(
+    tree_id: str = Path(examples=["vibrio-upgma"]),
+    q: str = Query(
+        description="A label as drawn on screen — in these trees, a sequence type.",
+        examples=["1203"],
+    ),
+    limit: int = Query(20, ge=1, le=MAX_SEARCH_RESULTS, description="Most matches to return."),
+    owner: str = Depends(current_owner),
+) -> NodeSearch:
+    """Find nodes by label, in this tree only (§37).
+
+    Here because the client cannot: it holds the tree as one slice, so a name
+    behind a wedge is not there to find. Matches every node with a real label,
+    internal ones included — a tree may put a sequence type on an ancestor —
+    and never an unnamed one.
+
+    No match is a 200 with `total: 0`, not a 404. The tree exists and was
+    searched; that the name is not in it is the answer, and for a comparison it
+    is the useful one.
+    """
+    reader = tree_or_404(owner, tree_id)
+    if not q.strip():
+        # Refused rather than answered with nothing: "no node is called that"
+        # would be a claim about the tree made from a query that asked nothing.
+        raise errors.unprocessable(
+            "empty_query",
+            "The search is empty.",
+            "Pass the label to look for as `q`, e.g. ?q=1203.",
+        )
+    found = registry.label_index(tree_id).search(q, limit)
+    return NodeSearch(
+        tree=tree_id,
+        query=q,
+        total=found.total,
+        exact=found.exact,
+        matches=[
+            NodeMatch(
+                node=m.node,
+                label=reader.label(m.node),
+                exact=m.exact,
+                leaf=reader.is_leaf(m.node),
+                leaves=reader.leaf_count_of(m.node),
+            )
+            for m in found.matches
+        ],
     )
 
 

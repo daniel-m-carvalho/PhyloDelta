@@ -213,6 +213,35 @@ export interface NodeContext {
   reached_root: boolean;
 }
 
+/** One node whose label matched a search. */
+export interface NodeMatch {
+  /** Stored id — what `ancestor` and a slice's `keep` take. */
+  node: number;
+  /** The label as stored, which is what the panels draw. */
+  label: string;
+  /** The label is the query, ignoring case; otherwise it starts with it. */
+  exact: boolean;
+  /** False for a named internal node. */
+  leaf: boolean;
+  leaves: number;
+}
+
+/**
+ * Nodes of ONE tree found by label (§37).
+ *
+ * An empty `matches` is an answer, not a failure: it is how a comparison
+ * learns that a name is in one tree and not the other.
+ */
+export interface NodeSearch {
+  tree: string;
+  query: string;
+  /** Every match; `matches` is the first `limit` of them. */
+  total: number;
+  /** Of `total`, how many are the query exactly. */
+  exact: number;
+  matches: NodeMatch[];
+}
+
 /** A comparison metric this server can compute, from GET /metrics. */
 export interface MetricSummary {
   name: string;

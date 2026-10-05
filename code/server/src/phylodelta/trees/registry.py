@@ -11,6 +11,7 @@ import threading
 from pathlib import Path
 
 from .. import config
+from .search import LabelIndex
 from .store import TreeReader
 
 _lock = threading.Lock()
@@ -73,8 +74,28 @@ def leaf_label_set(tree_id: str) -> frozenset[str]:
         return _leaf_labels.setdefault(tree_id, result)
 
 
+_label_indexes: dict[str, LabelIndex] = {}
+
+
+def label_index(tree_id: str) -> LabelIndex:
+    """The tree's named nodes, sorted for search (§37), built once per process.
+
+    Unlike everything else here this is heap, not a memory map: bisection needs
+    the labels decoded and in order, and the store keeps them in pre-order. It
+    is built on the first search of a tree rather than at startup, so a tree
+    nobody searches costs nothing.
+    """
+    cached = _label_indexes.get(tree_id)
+    if cached is not None:
+        return cached
+    index = LabelIndex(get_tree(tree_id).labels())
+    with _lock:
+        return _label_indexes.setdefault(tree_id, index)
+
+
 def reset_cache() -> None:
     """Drop every open map. Used by tests that rebuild a fixture store."""
     with _lock:
         _readers.clear()
         _leaf_labels.clear()
+        _label_indexes.clear()

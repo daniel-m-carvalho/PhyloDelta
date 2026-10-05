@@ -297,6 +297,69 @@ def test_ancestor_rejects_a_node_outside_the_tree(client):
     )
 
 
+def _search(client, tree, q, **params):
+    return client.get(f"/api/v1/trees/{tree}/search", params={"q": q, **params})
+
+
+def test_search_finds_a_leaf_behind_a_wedge(client):
+    # The case the endpoint exists for: a name the client's slice does not
+    # contain. At budget 50 almost every leaf is folded into a wedge.
+    slice_ = client.get("/api/v1/trees/vibrio-upgma/slice", params={"budget": 50}).json()
+    on_screen = set(slice_["nodes"]["label"])
+    label = next(
+        candidate
+        for candidate in ("1203", "200", "11", "65")
+        if candidate not in on_screen
+    )
+
+    got = _search(client, "vibrio-upgma", label)
+    assert got.status_code == 200, got.text
+    body = got.json()
+    first = body["matches"][0]
+    assert first["label"] == label and first["exact"] is True
+    assert first["leaf"] is True and first["leaves"] == 1
+    assert body["exact"] == 1
+
+    # And the id it returns is one the jump can use.
+    context = _ancestor(client, first["node"], min_leaves=20)
+    kept = client.get(
+        "/api/v1/trees/vibrio-upgma/slice",
+        params={"root": context["node"], "budget": 50, "keep": first["node"]},
+    ).json()
+    assert kept["kept"] == {"node": first["node"], "exact": True}
+
+
+def test_search_lists_exact_then_longer_and_counts_the_rest(client):
+    body = _search(client, "vibrio-upgma", "12", limit=5).json()
+    labels = [m["label"] for m in body["matches"]]
+    assert len(labels) == 5
+    assert all(label.startswith("12") for label in labels)
+    assert [len(label) for label in labels] == sorted(len(label) for label in labels)
+    assert body["total"] > 5
+
+
+def test_a_name_not_in_the_tree_is_an_empty_answer_not_an_error(client):
+    # "Not in this tree" is the answer a comparison needs; a 404 would say the
+    # tree was missing.
+    got = _search(client, "vibrio-upgma", "no-such-sequence-type")
+    assert got.status_code == 200
+    assert got.json()["total"] == 0 and got.json()["matches"] == []
+
+
+def test_search_never_matches_an_unnamed_node(client):
+    assert _search(client, "vibrio-nj", "_").json()["total"] == 0
+
+
+def test_an_empty_search_is_refused_by_name(client):
+    got = _search(client, "vibrio-upgma", "  ")
+    assert got.status_code == 422
+    assert got.json()["code"] == "empty_query"
+
+
+def test_searching_a_tree_that_does_not_exist_is_404(client):
+    assert _search(client, "no-such-tree", "1").status_code == 404
+
+
 def test_slice_keeps_a_named_node_out_of_the_wedges(client):
     # The case /ancestor cannot avoid: a tip whose only ancestor is enormous.
     # Widening then summarises the very node that was asked about, so the jump

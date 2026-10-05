@@ -40,6 +40,8 @@ import {
   type SideState,
 } from "./useSide";
 import { viewMetric } from "./metric";
+import { SearchBox } from "./SearchBox";
+import { absentFrom, type SearchResult, type SearchRow } from "./search";
 
 /**
  * Panels are identical except for their label: the same budget, the same
@@ -366,9 +368,18 @@ export function ComparisonView({
   /**
    * The leaf a jump found, per panel, while it is marked — what the header
    * chip names. One at a time across both panels: a new jump moves the mark
-   * rather than adding one, so marks never pile up.
+   * rather than adding one, so marks never pile up. The one exception is a
+   * search that found the name in both trees, which marks it in both (§37).
    */
   const [found, setFound] = useState<[FoundChip | null, FoundChip | null]>([null, null]);
+  /**
+   * The nodes the last search sent each panel to, null where the name was not
+   * in that tree. Read by the mark effect to tell "both halves of one search"
+   * from "a new jump that moves the mark".
+   */
+  const searched = useRef<[number | null, number | null] | null>(null);
+  /** Per panel: why a picked name did not move it. Shown in that panel only. */
+  const [searchMiss, setSearchMiss] = useState<[string | null, string | null]>([null, null]);
   // What is selected in each panel. The menu acts on this when opened away
   // from a node, which is the interaction the library's selection operator is
   // there for: pick a node, then ask what can be done with it.
@@ -612,12 +623,20 @@ export function ComparisonView({
       // is the point.
       if (!panel.operators.comparison?.highlightByNode(target, { center: false })) return;
       const label = sides.current[side].tree?.byStoredId.get(wanted)?.name;
-      // One mark across both panels: the other side's goes.
-      built.panels[side === 0 ? 1 : 0]?.operators.comparison?.clearHighlight();
       // What the chip says. `exact` false means the mark is on a wedge standing
       // in for the leaf, which the header has to admit rather than let the user
       // read the wedge as the leaf itself.
       const chip: FoundChip = { label: label || String(wanted), exact: mark.exact };
+      // One mark across both panels: the other side's goes — unless both are
+      // halves of one search, where the name was found in each tree and
+      // marking it in only one would hide half the answer.
+      const other = side === 0 ? 1 : 0;
+      const pairedSearch = searched.current;
+      if (pairedSearch && pairedSearch[side] === wanted && pairedSearch[other] !== null) {
+        setFound((current) => (side === 0 ? [chip, current[1]] : [current[0], chip]));
+        return;
+      }
+      built.panels[other]?.operators.comparison?.clearHighlight();
       setFound(side === 0 ? [chip, null] : [null, chip]);
     });
   }, [left.slice, right.slice, left.arrivedAt, right.arrivedAt, refreshKeys]);
@@ -826,6 +845,41 @@ export function ComparisonView({
 
   const dismiss = useCallback(() => setMenu(null), []);
 
+  const leftName = names?.left || pair.left;
+  const rightName = names?.right || pair.right;
+
+  /**
+   * A row picked from the search: each panel that has the name goes to it,
+   * through the same jump the menu uses; a panel that does not stays exactly
+   * where it is and says so in itself (§37).
+   *
+   * A side whose search *failed* is not reported as absent: "not in this
+   * tree" is a claim about the data, and a failed request supports no claim.
+   */
+  const pickSearch = useCallback(
+    (row: SearchRow, failed: SearchResult["failed"]) => {
+      const targets: [number | null, number | null] = [
+        row.sides[0][0]?.node ?? null,
+        row.sides[1][0]?.node ?? null,
+      ];
+      searched.current = targets;
+      const treeNames = [leftName, rightName];
+      setSearchMiss(
+        targets.map((target, side) =>
+          target !== null
+            ? null
+            : failed[side]
+              ? `Could not search ${treeNames[side]}, so it is not known whether ${row.label} is in it. ${failed[side]}`
+              : absentFrom(row.label, treeNames[side]),
+        ) as [string | null, string | null],
+      );
+      targets.forEach((target, side) => {
+        if (target !== null) (side === 0 ? leftActions : rightActions).focusWithContext(target);
+      });
+    },
+    [leftActions, rightActions, leftName, rightName],
+  );
+
   // Whichever panel could not be reached; only one jump is ever in flight.
   const jumpFailure = left.jumpError
     ? { reason: left.jumpError, dismiss: leftActions.dismissJumpFailure }
@@ -850,6 +904,15 @@ export function ComparisonView({
 
   return (
     <div className="comparison">
+      <div className="comparison-tools">
+        <SearchBox
+          trees={[
+            { id: pair.left, name: leftName },
+            { id: pair.right, name: rightName },
+          ]}
+          onPick={pickSearch}
+        />
+      </div>
       <header className="comparison-bar">
         <Side
           label="Left" name={names?.left} state={left} selected={selected[0]}
@@ -862,8 +925,14 @@ export function ComparisonView({
       </header>
 
       <div className="panels">
-        <Panel host={leftHost} state={left} />
-        <Panel host={rightHost} state={right} />
+        <Panel
+          host={leftHost} state={left} miss={searchMiss[0]}
+          onDismissMiss={() => setSearchMiss((current) => [null, current[1]])}
+        />
+        <Panel
+          host={rightHost} state={right} miss={searchMiss[1]}
+          onDismissMiss={() => setSearchMiss((current) => [current[0], null])}
+        />
       </div>
 
       {options.typing ? (
@@ -918,15 +987,38 @@ export function ComparisonView({
 function Panel({
   host,
   state,
+  miss = null,
+  onDismissMiss,
 }: {
   host: React.RefObject<HTMLDivElement | null>;
   state: SideState;
+  /**
+   * A searched name this tree does not have. In the panel rather than in a
+   * modal, because the other panel just moved to it and a dialog over both
+   * would hide the half of the answer that was found.
+   */
+  miss?: string | null;
+  onDismissMiss?: () => void;
 }) {
   return (
     <section className="panel">
       <div className="sigma-host" ref={host} />
       {state.loading ? <p className="panel-note">Loading slice…</p> : null}
       {state.error ? <p className="panel-note error">{state.error}</p> : null}
+      {miss ? (
+        <div className="panel-popup" role="status">
+          <span>{miss}</span>
+          <button
+            type="button"
+            className="found-clear"
+            onClick={onDismissMiss}
+            aria-label="Dismiss"
+            title="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }

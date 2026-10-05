@@ -234,6 +234,34 @@ class NodeContext(BaseModel):
     )
 
 
+class NodeMatch(BaseModel):
+    """One node whose label matched a search."""
+
+    node: int = Field(description="Stored node id — what `/ancestor` and `?keep=` take.")
+    label: str = Field(description="The label as stored, not as typed.")
+    exact: bool = Field(description="The label is the query, ignoring case; otherwise it starts with it.")
+    leaf: bool = Field(
+        description="False for a named internal node: a tree may label an ancestor, e.g. with an ST."
+    )
+    leaves: int = Field(description="Leaves in its subtree; 1 for a leaf.")
+
+
+class NodeSearch(BaseModel):
+    """Nodes of one tree found by label (§37).
+
+    Per tree, not per pair: a name can be in one tree of a comparison and not
+    the other, and an empty `matches` here is how a client learns which.
+    """
+
+    tree: str
+    query: str = Field(description="As sent, before trimming and case-folding.")
+    total: int = Field(description="Every match, of which `matches` is the first `limit`.")
+    exact: int = Field(description="Of `total`, how many are the query exactly.")
+    matches: list[NodeMatch] = Field(
+        description="Exact matches first, then those starting with the query, shortest first."
+    )
+
+
 class SliceNodes(BaseModel):
     """A summarised subtree as parallel arrays, in pre-order.
 

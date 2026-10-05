@@ -159,6 +159,79 @@ body {
 }
 .panel-note.error { color: var(--danger); border-color: currentcolor; }
 
+/* A searched name this panel's tree does not have: in the panel, not over both,
+   because the other panel just moved to it. */
+.panel-popup {
+  position: absolute;
+  left: 50%;
+  top: 16px;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: calc(100% - 32px);
+  padding: 8px 8px 8px 12px;
+  border-radius: var(--radius);
+  background: var(--warn-bg);
+  color: var(--warn);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+}
+
+/* --- search --- */
+.comparison-tools {
+  display: flex;
+  padding: 6px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  flex: 0 0 auto;
+}
+.search { position: relative; width: min(420px, 100%); }
+.search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font: inherit;
+  font-size: 13px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.search-input:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+.search-results {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 100%;
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.search-note { margin: 6px 8px; font-size: 12px; color: var(--muted); }
+.search-note.error { color: var(--danger); }
+.search-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.search-table th {
+  text-align: left;
+  font-weight: normal;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 2px 8px;
+}
+.search-table td { padding: 4px 8px; }
+.search-row { cursor: pointer; }
+.search-row:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.search-kind { color: var(--muted); font-size: 11px; }
+/* ✓ and ✗ carry the meaning in the glyph; colour only repeats it. */
+.search-in { color: var(--accent); width: 3.5em; }
+.search-out { color: var(--danger); width: 3.5em; }
+
 /* --- context menu --- */
 .context-menu {
   position: fixed;

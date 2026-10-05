@@ -4405,6 +4405,106 @@ one fewer option and no explanation on screen — the reason is available from `
 fetches it there. Recorded rather than done, because the uploader at the moment of upload is who was
 actually uninformed.
 
+## 37. Finding a node by name, in both trees
+
+Asked for in review: a way to type a name and find it in both trees. In these trees the name a panel
+draws beside a leaf **is** the sequence type. The labels are bare numbers (`6765`, `9102`), 16,959 of
+vibrio-nj's 17,645 appear in the `ST` column of `vibrio.tsv`, and `fromSlice.ts` draws the label
+unchanged. So "search by ST" and "search by label" are the same feature, and typing what is on
+screen is what must work.
+
+### 37.1 The server answers, because the client cannot
+
+A panel holds its tree as one slice, 50 to 200 nodes. A name behind a wedge is not in it, and
+sending every label so the client could search would be the whole-tree download the thesis argues
+against. `GET /trees/{id}/search?q=&limit=` is per tree and returns stored node ids. Those are what
+the existing jump already takes (`/ancestor`, then a slice with `keep`, §27.4 and §33), so finding a
+node and going to it is the menu's "find this leaf in the other tree" with a different source for
+the id.
+
+### 37.2 What matches
+
+* **Every node with a real label, not only leaves.** Leaves-only was the first proposal. It was
+  changed because goeBURST puts STs on internal nodes (`((9080,24265)8808, …`), and leaves-only would
+  answer "not in this tree" for an ST that is there. goeBURST is out of scope (§1.8), and none of the
+  three served trees names an internal node once stored. vibrio-nj's file names its root `211`, but
+  suppressing the unary root drops it. So today this only matters for uploads. `""` and `_` are not
+  names and never match, the same set the client blanks.
+* **Exact, then "starts with".** Exact comes first so the leaf read on screen leads the list. Prefix
+  matches are ordered shortest first, then alphabetically, which puts numeric STs in numeric order
+  without parsing them. "Contains" was left out: for numbers it is mostly noise (`1203` inside
+  `11203`, `51203`).
+* **Case-insensitive.** It makes no difference for digits. For an uploaded tree with names, not
+  finding `VC_` when typing `vc_` would be a miss nobody could explain.
+* **No match is a 200 with `total: 0`, not a 404.** The tree exists and was searched, and for a
+  comparison "not in this tree" is the useful answer. An empty query is refused by name
+  (`empty_query`). Answering it with nothing would be a claim about the tree made from a question
+  that asked nothing.
+
+### 37.3 Both trees, merged by label
+
+Each tree is searched on its own, and the client merges the two answers into one list keyed by label,
+with ✓ or ✗ per side. A name in one tree only is therefore visible *before* it is picked. Searching
+one tree and following the correspondence would save one bisection (microseconds). But it ties search
+to a pair, makes the two directions asymmetric, and needs a second lookup anyway to say a name is
+absent.
+
+On picking a row:
+
+* **Each panel that has the name jumps to it**, through `focusWithContext`, the same path as the
+  menu.
+* **A panel that does not have it stays exactly where it was** and says so *inside itself*
+  ("211 is not in vibrio nj. This panel has not moved."). This is not the modal `Notice`, because the
+  other panel just moved, and a dialog over both would hide the half of the answer that was found.
+* **A side whose request failed reads `?`, never ✗**, and its message says it could not be searched.
+  "Not in this tree" is a claim about the data, and a failed request supports no claim.
+* **Both panels keep their mark** when the name was found in both. Otherwise one mark across both
+  panels still holds (§33). Marking a found-in-both name in one panel only would hide half the
+  answer.
+
+### 37.4 A race the search exposed in the mark
+
+Driving consecutive searches in a browser marked the wrong node. The chip read `Found: 14971` (a node
+id), and the highlight sat on the previous search's leaf. `markAt` was `keep === null ? null :
+slice.kept`. A jump sets `keep` at once, but the slice that honours it arrives later, so for one render
+the *new* target was paired with the *old* slice's `kept`. The view marked that node, recorded the
+arrival as done, and never corrected it. The menu jump had the same race whenever the target panel
+already held a mark. The search just makes that the common case.
+
+`useSide` now records the `keep` the slice on screen was asked with, and reports `markAt` only when
+it matches the current one. A test holds the second slice back and asserts `markAt` stays null in
+that window. It fails without the change, with `expected { node: 11 } to be null`.
+
+### 37.5 What it costs, measured
+
+The index is two sorted Python lists (keys and node ids), built on a tree's first search and held
+for the life of the process, like the readers beside it. A numpy string array was not used because
+its fixed width is the longest label, so one long name in an upload would size every entry. Measured
+under `tracemalloc`, which slows the build, so the build times are upper bounds:
+
+| Tree | Named nodes | Build | Heap | Exact lookup | `1` (widest prefix) |
+|---|---|---|---|---|---|
+| vibrio-upgma | 17,646 | 30 ms | 1.7 MB | ~2 µs | 0.8 ms |
+| clostridium-upgma | 27,962 | 48 ms | 2.7 MB | ~2 µs | 1.0 ms |
+| synthetic, 500,000 | 500,000 | 684 ms | 45.8 MB | ~6 µs | 9.6 ms |
+
+The build excludes decoding the labels from the store's memory map, which was not measured
+separately. The first search of a large tree pays both, once. After that, a search is dominated by
+the two jumps it triggers, each an `/ancestor` call plus a slice, about 2 ms of server time (§33).
+
+### 37.6 What this does not do
+
+* **Across species, an ST number is not an isolate.** clostridium-upgma and vibrio-upgma both have a
+  leaf `1203`, and the search marks both. The pair already reports `same_species: false` and
+  compares by shared labels on that basis. The search inherits that and adds nothing to it.
+* **The other panel's pin outlives its chip.** When a jump lands in one panel, the other panel's
+  highlight and chip are cleared, but its `keep` is not. This predates the search: the menu jump does
+  it too. The panel goes on holding a leaf out of a wedge with nothing on screen saying why. That is
+  exactly what §33 removed for the header's ×. Not changed here, because clearing it re-slices the
+  panel the user did not act on.
+* **A rebuilt store under the same tree id** keeps serving the old index until restart, as the tree
+  readers already do.
+
 
 ---
 
