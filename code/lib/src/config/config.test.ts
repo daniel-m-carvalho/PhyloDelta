@@ -195,6 +195,21 @@ describe("createComparison", () => {
     }
   });
 
+  it("hands a marked clade to its wedge rather than to the hidden marker", () => {
+    // The wiring the app relies on: without it a marked clade drew a magenta
+    // ball beside a black triangle (see clade_shape.test.ts for the drawing).
+    const handle = createComparison(
+      containers,
+      { ...twoPanels, comparison: { enabled: true } },
+      { trees: [namedTree(), namedTree()] }
+    );
+    for (const panel of handle.panels) {
+      const mark = vi.spyOn(panel.operators.cladeShape!, "mark");
+      panel.operators.comparison!.clearHighlight();
+      expect(mark).toHaveBeenCalledWith(null, null);
+    }
+  });
+
   it("attaches no comparison operator when the block is omitted", () => {
     const handle = createComparison(containers, twoPanels, {
       trees: [namedTree(), namedTree()],

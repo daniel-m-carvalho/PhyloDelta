@@ -224,6 +224,9 @@ export class ComparisonOperator implements TreeOperator {
    * confused for each other by {@link getHighlightedKey}.
    */
   private highlightedNode: string | null = null;
+  /** See {@link drawMarkWith}. */
+  private markDrawer: ((node: string | null, color: string | null) => boolean) | null = null;
+  private markDrawnElsewhere = false;
   private persistHighlight: boolean;
   private blinkOn = true;
   private blinkTimer: ReturnType<typeof setInterval> | null = null;
@@ -433,7 +436,10 @@ export class ComparisonOperator implements TreeOperator {
     }
 
     // Navigation highlight overrides coloring while blinking.
-    if (this.blinkOn && this.isHighlighted(node)) {
+    // Not when something else draws this node's mark — a collapsed clade, whose
+    // marker is hidden in favour of its wedge. Lighting the marker there put a
+    // magenta ball where the user expected the triangle to change colour.
+    if (this.blinkOn && !this.markDrawnElsewhere && this.isHighlighted(node)) {
       const size = (result.size as number) || 4;
       result = { ...result, color: this.highlightColor, size: size + 4, zIndex: 10 };
     }
@@ -535,9 +541,51 @@ export class ComparisonOperator implements TreeOperator {
     } else {
       this.stopBlink();
       this.blinkOn = true;
-      this.viewer?.applyReducers();
+      this.repaintMark();
     }
     return true;
+  }
+
+  /**
+   * Hand the drawing of the mark to someone else for the nodes they draw.
+   *
+   * The node marker is not always what represents a node on screen: a
+   * collapsed clade's marker is hidden and a wedge drawn in its place
+   * ({@link CladeShapePresenter}). A mark painted on the hidden marker
+   * resurrected it as a magenta ball beside the triangle, when the triangle
+   * itself is the thing to recolour.
+   *
+   * `drawer` is called whenever the mark moves or blinks, with the marked
+   * graph id (or null) and the colour to show (null in an off-phase or once
+   * cleared). It returns true when it drew that node, and the operator then
+   * leaves the marker alone. Pass null to take the drawing back.
+   */
+  drawMarkWith(drawer: ((node: string | null, color: string | null) => boolean) | null): void {
+    this.markDrawer?.(null, null);
+    this.markDrawer = drawer;
+    this.repaintMark();
+  }
+
+  /** Tell the mark's other drawer, if any, where the mark is and how it looks. */
+  private syncMark(): void {
+    const node = this.markedGraphId();
+    this.markDrawnElsewhere =
+      this.markDrawer?.(node, node !== null && this.blinkOn ? this.highlightColor : null) ?? false;
+  }
+
+  private repaintMark(): void {
+    this.syncMark();
+    this.viewer?.applyReducers();
+  }
+
+  /** The graph id the mark is on, however it was placed. */
+  private markedGraphId(): string | null {
+    if (this.highlightedNode !== null) return this.highlightedNode;
+    if (this.highlightedKey === null || !this.viewer) return null;
+    for (const [id, layoutNode] of this.viewer.getNodeMap()) {
+      if (this.keyOf(layoutNode.source) === this.highlightedKey) return id;
+    }
+    return null;
   }
 
   /** The key of the marked node, or null. Null for a mark placed by node id. */
@@ -571,21 +619,21 @@ export class ComparisonOperator implements TreeOperator {
     let ticks = 0;
     const last = this.flashes * 2;
     this.blinkOn = true;
-    this.viewer?.applyReducers();
+    this.repaintMark();
     this.blinkTimer = setInterval(() => {
       ticks += 1;
       if (ticks >= last) {
         if (this.persistHighlight) {
           this.stopBlink();
           this.blinkOn = true;
-          this.viewer?.applyReducers();
+          this.repaintMark();
         } else {
           this.clearHighlight();
         }
         return;
       }
       this.blinkOn = !this.blinkOn;
-      this.viewer?.applyReducers();
+      this.repaintMark();
     }, this.flashInterval);
   }
 
@@ -602,7 +650,7 @@ export class ComparisonOperator implements TreeOperator {
     this.highlightedKey = null;
     this.highlightedNode = null;
     this.blinkOn = true;
-    this.viewer?.applyReducers();
+    this.repaintMark();
   }
 
   // --- Overlays (legend + tooltip) ---
@@ -610,6 +658,9 @@ export class ComparisonOperator implements TreeOperator {
   /** Re-attach overlays after a rebuild (Sigma.kill empties the container). */
   private onRender(): void {
     this.attachOverlays();
+    // A re-render can rebuild whatever draws the mark (the wedges are rebuilt
+    // on every render), so it is told again where the mark is.
+    this.syncMark();
     this.refresh();
     this.renderLegend();
   }

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { CladeShapePresenter } from "./clade_shape";
+import { ComparisonOperator } from "./comparison";
 import { ExpandCollapseOperator } from "./expand_collapse";
 import { binaryTree, makeHarness, namedTree } from "./harness";
 
@@ -185,5 +186,67 @@ describe("colouring wedges by value", () => {
 
     shape.setColor(() => "#ffd400");
     expect(wedges(h.container)[0].style.borderRight).toContain("rgb(255, 212, 0)");
+  });
+
+  describe("a located node's mark on a collapsed clade", () => {
+    // Reported from use: marking a clade put a magenta ball beside a black
+    // triangle. The comparison highlight painted the marker this presenter had
+    // hidden; the triangle, which is what represents the clade, never changed.
+    function marked() {
+      const h = makeHarness(namedTree());
+      const shape = new CladeShapePresenter();
+      shape.attach(h.viewer);
+      // Attached after the presenter, as createComparison does — which is what
+      // let its highlight override the hidden marker.
+      const cmp = new ComparisonOperator({
+        enabled: true,
+        keyOf: (n) => n.name ?? "",
+        highlightColor: "#d400ff",
+        persistHighlight: true,
+      });
+      cmp.attach(h.viewer);
+      cmp.drawMarkWith((node, color) => shape.mark(node, color));
+      h.viewer.setCollapseFn((n) => n.name === "b");
+      h.render();
+      return { h, shape, cmp };
+    }
+    const apex = (h: ReturnType<typeof makeHarness>) => wedges(h.container)[0].style.borderRight;
+
+    it("recolours the wedge and leaves the marker hidden", () => {
+      const { h, cmp } = marked();
+      const own = apex(h);
+
+      expect(cmp.highlightByNode("named_b", { center: false, flash: false })).toBe(true);
+      expect(apex(h)).toContain("rgb(212, 0, 255)");
+      expect(h.styleOf("named_b").color).toBe("rgba(0,0,0,0)");
+
+      cmp.clearHighlight();
+      expect(apex(h)).toBe(own);
+    });
+
+    it("survives a re-render, which rebuilds every wedge", () => {
+      const { h, cmp } = marked();
+      cmp.highlightByNode("named_b", { center: false, flash: false });
+      h.render();
+      expect(apex(h)).toContain("rgb(212, 0, 255)");
+      expect(h.styleOf("named_b").color).toBe("rgba(0,0,0,0)");
+    });
+
+    it("still marks a leaf on its marker, where there is no wedge", () => {
+      const { h, cmp } = marked();
+      const own = apex(h);
+      cmp.highlightByNode("named_a", { center: false, flash: false });
+      expect(h.styleOf("named_a").color).toBe("#d400ff");
+      expect(apex(h)).toBe(own);
+    });
+
+    it("moves off the wedge when the mark moves to a leaf", () => {
+      const { h, cmp } = marked();
+      const own = apex(h);
+      cmp.highlightByNode("named_b", { center: false, flash: false });
+      cmp.highlightByNode("named_a", { center: false, flash: false });
+      expect(apex(h)).toBe(own);
+      expect(h.styleOf("named_a").color).toBe("#d400ff");
+    });
   });
 });

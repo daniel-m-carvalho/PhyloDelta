@@ -57,6 +57,8 @@ export interface CladeShapeOptions {
 interface Wedge {
   el: HTMLDivElement;
   halfHeight: number;
+  /** Its own colour, to go back to when a mark leaves it. */
+  color: string;
 }
 
 /**
@@ -101,6 +103,8 @@ export class CladeShapePresenter implements TreeOperator {
   private autoSaturate: { tree: NewickNode; value: number } | null = null;
   private color?: string | ((node: NewickNode) => string | undefined);
   private hideMarker: boolean;
+  /** The wedge carrying a located node's mark, and in what colour; see {@link mark}. */
+  private marked: { id: string; color: string } | null = null;
 
   constructor(options: CladeShapeOptions = {}) {
     this.towardRoot = options.towardRoot ?? true;
@@ -162,6 +166,40 @@ export class CladeShapePresenter implements TreeOperator {
     if (this.renderer) this.rebuild();
   }
 
+  /**
+   * Paint one wedge in a mark colour — the clade a located node is inside.
+   *
+   * The mark belongs on the triangle, because the triangle is what is drawn:
+   * this presenter hides the clade's own marker, and a highlight painted on
+   * the marker brought it back as a coloured ball beside a black wedge.
+   * {@link ComparisonOperator.drawMarkWith} calls this as the mark moves and
+   * blinks; `color` null shows the wedge's own colour.
+   *
+   * Returns whether `nodeId` is drawn as a wedge here, so the caller knows to
+   * leave the marker alone. Remembered across rebuilds: a re-render rebuilds
+   * every wedge, and the mark must survive it.
+   */
+  mark(nodeId: string | null, color: string | null): boolean {
+    const previous = this.marked?.id;
+    this.marked = nodeId !== null && color ? { id: nodeId, color } : null;
+    if (previous !== undefined) this.paint(previous);
+    if (nodeId !== null) this.paint(nodeId);
+    return nodeId !== null && this.wedges.has(nodeId);
+  }
+
+  private paint(id: string): void {
+    const wedge = this.wedges.get(id);
+    if (!wedge) return;
+    const color = this.marked?.id === id ? this.marked.color : wedge.color;
+    wedge.el.style[this.apexSide()] = `${this.length}px solid ${color}`;
+  }
+
+  private apexSide(): "borderRight" | "borderLeft" {
+    // Reflected panels have the root on the right, so the apex flips with them.
+    const apexLeft = this.towardRoot !== !!this.viewer?.isReflected();
+    return apexLeft ? "borderRight" : "borderLeft";
+  }
+
   private onRender(renderer: Sigma): void {
     // Sigma.kill() empties the container on rebuild; re-attach the overlay.
     const container = this.viewer?.getContainer();
@@ -200,10 +238,11 @@ export class CladeShapePresenter implements TreeOperator {
           ? ((graph.getNodeAttribute(node.id, "color") as string) ?? "#e05c5c")
           : "#e05c5c");
 
-      const el = this.makeWedge(halfHeight, color);
+      const shown = this.marked?.id === node.id ? this.marked.color : color;
+      const el = this.makeWedge(halfHeight, shown);
       el.title = `${hiddenLeaves(source).toLocaleString()} leaves`;
       this.layer.appendChild(el);
-      this.wedges.set(node.id, { el, halfHeight });
+      this.wedges.set(node.id, { el, halfHeight, color });
     }
 
     this.position();
@@ -248,8 +287,6 @@ export class CladeShapePresenter implements TreeOperator {
   /** A CSS-border triangle: apex on the tree side, base facing the tips. */
   private makeWedge(halfHeight: number, color: string): HTMLDivElement {
     const el = document.createElement("div");
-    // Reflected panels have the root on the right, so the apex flips with them.
-    const apexLeft = this.towardRoot !== !!this.viewer?.isReflected();
     Object.assign(el.style, {
       position: "absolute",
       width: "0",
@@ -259,8 +296,7 @@ export class CladeShapePresenter implements TreeOperator {
     } as CSSStyleDeclaration);
     // Set the apex side separately: a computed key would widen the object to an
     // index signature, which no longer matches CSSStyleDeclaration.
-    const apexSide = apexLeft ? "borderRight" : "borderLeft";
-    el.style[apexSide] = `${this.length}px solid ${color}`;
+    el.style[this.apexSide()] = `${this.length}px solid ${color}`;
     return el;
   }
 

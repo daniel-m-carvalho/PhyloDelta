@@ -425,6 +425,13 @@ function buildPanel(
     operators.comparison = comparison;
   }
 
+  // A located node inside a collapsed clade is marked on the wedge, not on the
+  // marker the wedge replaces (which would reappear as a ball beside it).
+  if (operators.comparison && operators.cladeShape) {
+    const shape = operators.cladeShape;
+    operators.comparison.drawMarkWith((node, color) => shape.mark(node, color));
+  }
+
   const unsub: Array<() => void> = [];
   if (providers.onNodeClick) {
     const cb = providers.onNodeClick;

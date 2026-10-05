@@ -833,6 +833,14 @@ target is not on screen, rather than leaving the caller to assume it was marked.
 for *moving* a mark the user already saw arrive: the same thing, drawn as a
 different node because the view changed around it.
 
+**A marked collapsed clade is marked on its wedge.** `CladeShapePresenter` hides
+a collapsed clade's marker and draws a triangle instead, so a highlight painted on
+the marker would bring it back as a ball beside a black wedge.
+`comparison.drawMarkWith(drawer)` hands the mark to whoever draws a node, and
+`createComparison` wires it to `cladeShape.mark(id, color)` whenever both are
+attached: the triangle takes the highlight colour, blink included, and the marker
+stays hidden. A leaf, which has no wedge, is still marked on its marker.
+
 ---
 
 ## 10. Color scale (`color/color_scale.ts`)
