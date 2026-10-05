@@ -81,8 +81,17 @@ def tree_ancestor(
     wrong trade: a 60-leaf ceiling put **27% of jumps below the floor and 2.4%
     on a two-leaf clade**, which on screen is two dots and a line — it says the
     leaf exists and nothing about where it sits. Keeping the target drawn is
-    `keep`'s job on the slice (§27.4), and `keep` works at any size, so the
-    climb is free to go as wide as the floor requires.
+    `keep`'s job on the slice (§27.4), so the climb is free to go as wide as the
+    floor requires.
+
+    **`keep` holds at any subtree size, not at any budget.** It works by sending
+    the branch that contains the node first, which costs nothing while there is
+    budget left to send — but the per-child allotment still has to reach 2 for a
+    clade to be expanded rather than drawn as a wedge, and down a deep path from
+    a distant root it does not. Measured on vibrio-nj at the tree's own root:
+    `keep` is honoured at a budget of 200 and not at 50, which is the viewport
+    default. Within the ancestor this endpoint picks it is reliable, which is
+    what it was added for; across the whole tree it is best-effort (§33).
 
     Walks the memory-mapped parent column, so it reads a handful of integers
     rather than materialising the tree.

@@ -97,6 +97,74 @@ describe("arriving from the other panel", () => {
   });
 });
 
+describe("the mark a jump leaves", () => {
+  const leaf = 3296;
+  const ancestorAt = 3266;
+
+  function mounted() {
+    vi.spyOn(api, "ancestor").mockImplementation(async () => ({
+      node: ancestorAt,
+      leaves: 20,
+      climbed: 12,
+      reached_root: false,
+    }));
+    vi.spyOn(api, "slice").mockImplementation(
+      () => new Promise(() => {}) as ReturnType<typeof api.slice>,
+    );
+    return renderHook(() => useSide("vibrio-upgma", "a__b"));
+  }
+
+  afterEach(() => vi.restoreAllMocks());
+
+  it("survives going back, so the leaf stays drawn as the view widens", async () => {
+    // Reported from use: the found leaf re-collapsed behind a wedge the moment
+    // the view widened, so "where is this leaf in the whole tree" was the one
+    // question the mark could not answer (§33). Going back is safe to carry it
+    // through — the new root is an ancestor, so the node is still inside.
+    const { result } = mounted();
+    await actAsync(() => result.current[1].focusWithContext(leaf));
+    expect(result.current[0].arrivedAt).toBe(leaf);
+
+    await actAsync(() => result.current[1].back());
+
+    expect(result.current[0].path).toEqual([]);
+    expect(result.current[0].arrivedAt).toBe(leaf);
+  });
+
+  it("survives a reset to the whole tree", async () => {
+    const { result } = mounted();
+    await actAsync(() => result.current[1].focusWithContext(leaf));
+
+    await actAsync(() => result.current[1].reset());
+
+    expect(result.current[0].path).toEqual([]);
+    expect(result.current[0].arrivedAt).toBe(leaf);
+  });
+
+  it("is dropped by clearMark, which is what the header's x calls", async () => {
+    // The pin and the mark are one state, so clearing the mark must unpin:
+    // otherwise the view holds a leaf out of a wedge for a mark that is no
+    // longer on screen or in the header.
+    const { result } = mounted();
+    await actAsync(() => result.current[1].focusWithContext(leaf));
+
+    await actAsync(() => result.current[1].clearMark());
+
+    expect(result.current[0].arrivedAt).toBeNull();
+  });
+
+  it("is dropped by focusing a different clade, which may not contain it", async () => {
+    // The one navigation that can move somewhere the node is not. Carrying the
+    // mark there would pin a node outside the view.
+    const { result } = mounted();
+    await actAsync(() => result.current[1].focusWithContext(leaf));
+
+    await actAsync(() => result.current[1].focus(9999));
+
+    expect(result.current[0].arrivedAt).toBeNull();
+  });
+});
+
 describe("navigating back to a view already seen", () => {
   afterEach(() => {
     vi.restoreAllMocks();

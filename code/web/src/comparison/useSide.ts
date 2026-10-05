@@ -136,6 +136,8 @@ export interface SideActions {
   dismissJumpFailure: () => void;
   back: () => void;
   reset: () => void;
+  /** Drop the mark a jump left, and with it the guarantee that it stays drawn. */
+  clearMark: () => void;
   setBudget: (budget: number) => void;
   expandAll: () => void;
   collapseAll: () => void;
@@ -172,10 +174,20 @@ export function useSide(
    *
    * Held alongside the path rather than inside it because it is not a
    * navigation step: the panel is rooted at an ancestor, and this only says
-   * which node inside it was actually asked for. Cleared by any ordinary
-   * navigation — expanding a clade or going back is a new question, and
-   * carrying the old answer into it would keep re-expanding a branch the user
-   * has moved on from.
+   * which node inside it was actually asked for.
+   *
+   * **This is the mark, so it lives as long as the mark does** (§33): set by a
+   * jump, moved by the next one, and otherwise removed only when the user asks
+   * — the header's `×` or Escape, through {@link SideActions.clearMark}.
+   *
+   * It used to be cleared by *any* navigation, going back included, which is
+   * what a supervisor reported: the found leaf re-collapsed behind a wedge the
+   * moment you widened the view, so the one question a mark exists to answer —
+   * where is this leaf in the whole tree — was the question it could not
+   * survive. Going back is safe to carry it through because the new root is
+   * always an **ancestor** of the old one, so the kept node is still inside the
+   * view; only {@link SideActions.focus} into a different clade can move
+   * somewhere the node is not, and that is the one case that still clears it.
    */
   const [keep, setKeep] = useState<number | null>(null);
   const [jumpError, setJumpError] = useState<string | null>(null);
@@ -349,17 +361,19 @@ export function useSide(
 
     dismissJumpFailure: useCallback(() => setJumpError(null), []),
 
+    // Both of these widen the view, so the marked node stays inside it and
+    // stays pinned: see `keep`. Neither clears the mark — that is `clearMark`.
     back: useCallback(() => {
-      setKeep(null);
       setPath((current) => current.slice(0, -1));
     }, []),
 
     reset: useCallback(() => {
-      setKeep(null);
       setPath([]);
       setOverridden(false);
       setBudget(autoBudget);
     }, [autoBudget]),
+
+    clearMark: useCallback(() => setKeep(null), []),
 
     setBudget,
 

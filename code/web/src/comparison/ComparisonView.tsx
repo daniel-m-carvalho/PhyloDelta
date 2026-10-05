@@ -581,10 +581,23 @@ export function ComparisonView({
     });
   }, [left.slice, right.slice, left.arrivedAt, right.arrivedAt, refreshKeys]);
 
-  const clearFound = useCallback((side: 0 | 1) => {
-    handle.current?.panels[side]?.operators.comparison?.clearHighlight();
-    setFound((current) => (side === 0 ? [null, current[1]] : [current[0], null]));
-  }, []);
+  /**
+   * Clearing the mark also unpins the leaf.
+   *
+   * Three things carry the mark and all three have to go together: the
+   * library's highlight, the chip in the header, and the slice's `keep`, which
+   * is what forces the node to stay drawn. Leaving `keep` behind meant the
+   * view went on holding a leaf out of a wedge for a mark that was no longer
+   * on screen or in the header — a pin nothing explained.
+   */
+  const clearFound = useCallback(
+    (side: 0 | 1) => {
+      handle.current?.panels[side]?.operators.comparison?.clearHighlight();
+      setFound((current) => (side === 0 ? [null, current[1]] : [current[0], null]));
+      (side === 0 ? leftActions : rightActions).clearMark();
+    },
+    [leftActions, rightActions],
+  );
 
   // Escape clears the mark — unless it was pressed to close something else
   // (a menu, a notice), which claims the key with preventDefault.

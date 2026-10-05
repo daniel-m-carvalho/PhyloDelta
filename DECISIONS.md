@@ -3337,6 +3337,39 @@ away, too long for whoever has already found the leaf. Blinking that lasts is al
 asks to be stoppable beyond five seconds — so a longer blink needs a stop control anyway, which is
 this design with the distraction left in.
 
+**Correction: "until the user clears it" did not include going back.** Reported from use, after the
+mark shipped: jump to a leaf, then widen the view one level, and the leaf re-collapsed behind a
+wedge with nothing to show where it had gone. So the one question a mark exists to answer — where
+does this leaf sit in the whole tree — was the question it could not survive.
+
+The cause was that `keep` carried two meanings and one lifetime. It is both the slice parameter that
+forces a node to stay drawn *and* the mark itself (`arrivedAt`), and `back()` cleared it, on a rule
+written for a different case: that carrying a stale `keep` into a navigation would re-expand a
+branch the user had moved on from. True of {@link focus} into another clade, which can land
+somewhere the node is not. Not true of **back** or **reset**, where the new root is always an
+*ancestor* of the old one, so the marked node is still inside the view and pinning it is exactly
+what was wanted.
+
+**Decision:** the mark and the pin are one state with one lifetime — set by a jump, moved by the
+next, dropped by `focus` into a different clade, and otherwise removed only when the user asks.
+Clearing it from the header now also unpins (`clearMark`): leaving `keep` behind held a leaf out of
+a wedge for a mark that was no longer on screen or in the header, which is a pin nothing explains.
+
+**What is still not fixed.** `keep` holds at any subtree size but **not at any budget**: it sends
+the containing branch first, which is free while budget remains, but a clade still needs an
+allotment of 2 to be expanded rather than drawn as a wedge, and down a deep path from a distant root
+it does not get one. Measured on vibrio-nj from the tree's own root, `keep` is honoured at a budget
+of 200 and not at 50 — and 50 is the viewport default. So pressing back repeatedly up to the whole
+tree can still lose the leaf behind a wedge. The header chip still names it, and the library still
+holds the mark, so nothing is silently wrong; what is missing is any indication of *which* wedge
+contains it.
+
+Marking that wedge cannot be done in the client: a wedge's subtree is not in the slice at all, so
+the browser has no way to test containment. The server does — `_holds` is an interval test it
+already performs — so the fix is for the slice to report which returned node stands in for `keep`
+when `keep` itself was summarised. Not done; recorded as the remaining half, because a partial fix
+whose limit is undocumented is how a "fixed" bug comes back.
+
 **What §27.4c was protecting against still holds** — for a mark the *view* leaves behind unasked,
 which would go on claiming a node is special. A mark the user asked for, named on screen and with a
 visible way to remove it, is their state rather than the view's claim. That is why the library

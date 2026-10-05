@@ -43,6 +43,7 @@ function actions(): SideActions & { calls: string[] } {
     reportJumpFailure: vi.fn((why: string) => calls.push(`jumpFailure:${why}`)),
     dismissJumpFailure: vi.fn(),
     back: vi.fn(() => calls.push("back")),
+    clearMark: vi.fn(() => calls.push("clearMark")),
     reset: vi.fn(() => calls.push("reset")),
     setBudget: vi.fn(),
     expandAll: vi.fn(() => calls.push("expandAll")),
