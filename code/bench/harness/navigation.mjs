@@ -403,7 +403,20 @@ async function runPhylodelta(pairId) {
       fetches.jump.push(found.fetch_ms);
       // Back to where the right panel was, so each jump starts from the same
       // place rather than from wherever the last one landed.
-      await page.evaluate(() => window.__step(1, (actions) => actions.reset()));
+      //
+      // `clearMark` as well as `reset`, and explicitly: a jump leaves a mark,
+      // and since the mark now outlives navigation (§33 — it answers "where is
+      // this leaf in the whole tree", so widening the view must not drop it)
+      // `reset` alone leaves the previous jump's leaf still pinned. Each sample
+      // would then start from a root slice carrying the last one's `keep`,
+      // which is not the same place. Stating both here rather than relying on
+      // `reset` to do it is also what keeps this run independent of that
+      // decision being revisited.
+      await page.evaluate(() => {
+        const actions = window.__phylodelta.actions()[1];
+        actions.clearMark();
+        actions.reset();
+      });
     }
 
     const drawn = await page.evaluate(() => ({
