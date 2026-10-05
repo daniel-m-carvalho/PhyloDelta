@@ -201,6 +201,38 @@ describe("navigating back to a view already seen", () => {
     return { slice, ...renderHook(() => useSide("vibrio-upgma", "a__b")) };
   }
 
+  it("marks the wedge the server says stands in for an undrawable leaf", async () => {
+    // The half the client cannot compute: a wedge's subtree is not in the
+    // slice, so there is nothing here to test containment against. `keep` is
+    // best-effort — widen far enough and the marked leaf goes behind a wedge —
+    // and without this the header named a leaf with nothing on screen to point
+    // at (§33).
+    vi.spyOn(api, "ancestor").mockImplementation(async () => ({
+      node: 2,
+      leaves: 20,
+      climbed: 3,
+      reached_root: false,
+    }));
+    vi.spyOn(api, "slice").mockImplementation(async (_tree, options = {}) => ({
+      ...reply(options.root),
+      kept: { node: 7114, exact: false },
+    }));
+    const { result } = renderHook(() => useSide("vibrio-upgma", "a__b"));
+
+    await actAsync(() => result.current[1].focusWithContext(3296));
+
+    // The leaf is still what was asked for, and what the chip names...
+    expect(result.current[0].arrivedAt).toBe(3296);
+    // ...but the thing to put the mark on is the wedge the server named.
+    expect(result.current[0].markAt).toEqual({ node: 7114, exact: false });
+  });
+
+  it("has nothing to mark until a jump asks for one", async () => {
+    const { result } = runPanel();
+    await actAsync(async () => {});
+    expect(result.current[0].markAt).toBeNull();
+  });
+
   it("serves a slice it already holds instead of asking again", async () => {
     // The gap this closes: pressing Back onto a view that had just been on
     // screen went to the network for bytes the browser already had. It was

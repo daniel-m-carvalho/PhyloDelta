@@ -212,6 +212,18 @@ export class ComparisonOperator implements TreeOperator {
    * names the same node through all of them.
    */
   private highlightedKey: string | null = null;
+  /**
+   * A mark on one *rendered* node, for when no key can name it.
+   *
+   * {@link highlightByKey} is the right tool whenever the backend's key
+   * identifies the node — a leaf's own label usually does. A **collapsed
+   * clade** is the case it cannot serve: a wedge has no identifier of its own,
+   * being a group rather than a thing, so keying by name matches every unnamed
+   * internal node at once. Held separately rather than folded into
+   * `highlightedKey` so that a key-keyed mark and a node-keyed one cannot be
+   * confused for each other by {@link getHighlightedKey}.
+   */
+  private highlightedNode: string | null = null;
   private persistHighlight: boolean;
   private blinkOn = true;
   private blinkTimer: ReturnType<typeof setInterval> | null = null;
@@ -430,6 +442,7 @@ export class ComparisonOperator implements TreeOperator {
   }
 
   private isHighlighted(node: string): boolean {
+    if (this.highlightedNode !== null) return this.highlightedNode === node;
     if (this.highlightedKey === null) return false;
     const layoutNode = this.viewer?.getNodeMap().get(node);
     return !!layoutNode && this.keyOf(layoutNode.source) === this.highlightedKey;
@@ -483,14 +496,36 @@ export class ComparisonOperator implements TreeOperator {
       }
     }
     if (!foundId) return false;
-    // Replaces any earlier mark: one located node at a time.
+    // Replaces any earlier mark, of either kind: one located node at a time.
+    this.highlightedNode = null;
     this.highlightedKey = key;
     if (options.center ?? true) this.centerOn(foundId);
     this.startBlink();
     return true;
   }
 
-  /** The key of the marked node, or null. */
+  /**
+   * Mark one rendered node by its graph id, whatever it is called.
+   *
+   * For a node the comparison key cannot name — a collapsed clade standing in
+   * for something inside it, say. The caller resolves the id from
+   * {@link TreeViewer.getNodeMap}, which is where a consumer's own identity
+   * (an id in `metadata`) can be matched; the operator does not invent one.
+   *
+   * Returns false when the node is not on screen, so a caller can tell a
+   * mark that was placed from one that silently was not.
+   */
+  highlightByNode(nodeId: string, options: { center?: boolean } = {}): boolean {
+    if (!this.viewer?.getNodeMap().has(nodeId)) return false;
+    // Replaces any earlier mark, of either kind: one located node at a time.
+    this.highlightedKey = null;
+    this.highlightedNode = nodeId;
+    if (options.center ?? true) this.centerOn(nodeId);
+    this.startBlink();
+    return true;
+  }
+
+  /** The key of the marked node, or null. Null for a mark placed by node id. */
   getHighlightedKey(): string | null {
     return this.highlightedKey;
   }
@@ -550,6 +585,7 @@ export class ComparisonOperator implements TreeOperator {
   clearHighlight(): void {
     this.stopBlink();
     this.highlightedKey = null;
+    this.highlightedNode = null;
     this.blinkOn = true;
     this.viewer?.applyReducers();
   }

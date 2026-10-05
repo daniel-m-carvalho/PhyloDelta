@@ -299,6 +299,60 @@ describe("pointing at a node the view is already arranged around", () => {
     expect(h.styleOf("named_a").color).toBe("#d400ff");
   });
 
+  it("marks a node the key cannot name, by its graph id", () => {
+    // The case this exists for: a collapsed clade. A wedge has no identifier of
+    // its own — it is a group, not a thing — so keying by name matches every
+    // unnamed internal node at once, and the app that drives this needs to
+    // point at the wedge holding a leaf the slice could not draw.
+    const h = makeHarness(namedTree());
+    const cmp = new ComparisonOperator({
+      enabled: true,
+      keyOf: keyByName,
+      highlightColor: "#d400ff",
+    });
+    cmp.attach(h.viewer);
+    h.render();
+
+    expect(cmp.highlightByNode("named_a", { center: false })).toBe(true);
+    expect(h.styleOf("named_a").color).toBe("#d400ff");
+    // Not a key-keyed mark, so nothing should claim it is one.
+    expect(cmp.getHighlightedKey()).toBeNull();
+  });
+
+  it("says so rather than marking nothing when the node is not on screen", () => {
+    const h = makeHarness(namedTree());
+    const cmp = new ComparisonOperator({ enabled: true, keyOf: keyByName });
+    cmp.attach(h.viewer);
+    h.render();
+
+    expect(cmp.highlightByNode("not_in_this_view")).toBe(false);
+  });
+
+  it("holds one mark at a time across both ways of placing it", () => {
+    // Two marks painted at once would be two answers to "where is it".
+    const h = makeHarness(namedTree());
+    const cmp = new ComparisonOperator({
+      enabled: true,
+      keyOf: keyByName,
+      highlightColor: "#d400ff",
+    });
+    cmp.attach(h.viewer);
+    h.render();
+
+    cmp.highlightByKey("a", { center: false });
+    cmp.highlightByNode("named_c", { center: false });
+    expect(h.styleOf("named_c").color).toBe("#d400ff");
+    expect(h.styleOf("named_a").color).not.toBe("#d400ff");
+
+    cmp.highlightByKey("a", { center: false });
+    expect(h.styleOf("named_a").color).toBe("#d400ff");
+    expect(h.styleOf("named_c").color).not.toBe("#d400ff");
+
+    cmp.clearHighlight();
+    expect(h.styleOf("named_a").color).not.toBe("#d400ff");
+    expect(h.styleOf("named_c").color).not.toBe("#d400ff");
+  });
+
   it("can blink without moving the camera", () => {
     const h = makeHarness(namedTree());
     const cmp = new ComparisonOperator({ enabled: true, keyOf: keyByName });

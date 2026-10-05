@@ -3355,20 +3355,28 @@ next, dropped by `focus` into a different clade, and otherwise removed only when
 Clearing it from the header now also unpins (`clearMark`): leaving `keep` behind held a leaf out of
 a wedge for a mark that was no longer on screen or in the header, which is a pin nothing explains.
 
-**What is still not fixed.** `keep` holds at any subtree size but **not at any budget**: it sends
-the containing branch first, which is free while budget remains, but a clade still needs an
-allotment of 2 to be expanded rather than drawn as a wedge, and down a deep path from a distant root
-it does not get one. Measured on vibrio-nj from the tree's own root, `keep` is honoured at a budget
-of 200 and not at 50 — and 50 is the viewport default. So pressing back repeatedly up to the whole
-tree can still lose the leaf behind a wedge. The header chip still names it, and the library still
-holds the mark, so nothing is silently wrong; what is missing is any indication of *which* wedge
-contains it.
+**`keep` is still best-effort, so the slice now says where the node went.** It holds at any subtree
+size but **not at any budget**: it sends the containing branch first, which is free while budget
+remains, but a clade still needs an allotment of 2 to be expanded rather than drawn as a wedge, and
+down a deep path from a distant root it does not get one. Measured on vibrio-nj from the tree's own
+root, `keep` is honoured at a budget of 200 and not at 50 — and 50 is the viewport default. So
+backing out to the whole tree still puts the marked leaf behind a wedge.
 
-Marking that wedge cannot be done in the client: a wedge's subtree is not in the slice at all, so
-the browser has no way to test containment. The server does — `_holds` is an interval test it
-already performs — so the fix is for the slice to report which returned node stands in for `keep`
-when `keep` itself was summarised. Not done; recorded as the remaining half, because a partial fix
-whose limit is undocumented is how a "fixed" bug comes back.
+That cannot be resolved in the client: a wedge's subtree is not in the slice at all, so the browser
+has nothing to test containment against. The server does — `_holds` is an interval test the
+summariser already performs — so the slice reports it, as `kept: {node, exact}`: the node itself
+where it was drawn, the wedge containing it where it was not. `exact` is the flag worth having,
+because it is the difference the user has to be told about.
+
+With it the frontend marks the wedge and says so — **"Found inside: 6555 (in this clade)"** rather
+than "Found: 6555" — and the mark is placed by rendered node rather than by comparison key, because
+a wedge has no key: it is a group, not a thing, so keying by name matches every unnamed internal node
+at once. That is what `ComparisonOperator.highlightByNode` is for, and why identity in this app
+travels in `metadata.storedId` rather than in a label.
+
+**An out-of-range `keep` is now refused rather than ignored.** A node outside the requested *root*
+is legitimate — a client can race a navigation — and comes back as `kept: null`. An id the tree does
+not have cannot ever become valid, and swallowing it returned a slice that looked perfectly fine.
 
 **What §27.4c was protecting against still holds** — for a mark the *view* leaves behind unasked,
 which would go on claiming a node is special. A mark the user asked for, named on screen and with a

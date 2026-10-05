@@ -356,6 +356,86 @@ def test_keeping_a_very_deep_node_degrades_without_losing_leaves(client):
     )
 
 
+def test_a_honoured_keep_says_so(client):
+    leaf = client.get(
+        "/api/v1/trees/vibrio-upgma/slice", params={"root": 0, "budget": 200}
+    ).json()
+    target = next(
+        i
+        for i, (cut, count) in enumerate(
+            zip(leaf["nodes"]["truncated"], leaf["nodes"]["true_leaf_count"])
+        )
+        if not cut and count == 1
+    )
+    node = leaf["nodes"]["id"][target]
+
+    body = client.get(
+        "/api/v1/trees/vibrio-upgma/slice",
+        params={"root": 0, "budget": 200, "keep": node},
+    ).json()
+
+    assert body["kept"] == {"node": node, "exact": True}
+    assert node in body["nodes"]["id"]
+
+
+def test_a_keep_that_could_not_be_drawn_names_the_wedge_standing_in_for_it(client):
+    """The half a client cannot work out for itself.
+
+    `keep` is best-effort — a clade needs an allotment of two to be expanded,
+    and a deep path from a distant root does not get one. When it is missed the
+    node is somewhere inside a wedge, and the response is the only place that
+    can say *which*: a wedge's subtree is not in it, so there is nothing for the
+    caller to test containment against. Without this the frontend named a marked
+    leaf in its header with nothing on screen to point at (\u00a733).
+    """
+    whole = client.get(
+        "/api/v1/trees/vibrio-upgma/slice", params={"root": 0, "budget": 60}
+    ).json()
+    wedge = next(
+        i for i, cut in zip(whole["nodes"]["id"], whole["nodes"]["truncated"]) if cut
+    )
+    deep = wedge + 1  # inside something already too deep to draw
+
+    body = client.get(
+        "/api/v1/trees/vibrio-upgma/slice",
+        params={"root": 0, "budget": 60, "keep": deep},
+    ).json()
+
+    stand_in = body["kept"]
+    assert stand_in is not None, "a missed keep must still say where it went"
+    assert stand_in["exact"] is False
+    assert deep not in body["nodes"]["id"], "if it were drawn, exact would be True"
+
+    # The stand-in is in the response, is a wedge, and really does contain it.
+    index = body["nodes"]["id"].index(stand_in["node"])
+    assert body["nodes"]["truncated"][index] is True
+    assert stand_in["node"] <= deep
+
+
+def test_a_slice_with_no_keep_reports_none(client):
+    body = client.get(
+        "/api/v1/trees/vibrio-upgma/slice", params={"root": 0, "budget": 60}
+    ).json()
+    assert body["kept"] is None
+
+
+def test_a_keep_the_tree_does_not_have_is_refused_by_name(client):
+    """A node outside the *root* is legitimate; one outside the tree is not.
+
+    The first can happen to an honest client racing a navigation and comes back
+    as `kept: null`. The second cannot ever become valid, and ignoring it would
+    answer with a slice that looks perfectly fine.
+    """
+    detail = client.get(
+        "/api/v1/trees/vibrio-upgma/slice",
+        params={"root": 0, "budget": 60, "keep": 999_999},
+    )
+    assert detail.status_code == 404
+    body = detail.json()
+    assert body["code"] == "node_out_of_range"
+    assert "keep=999999" in body["detail"]
+
+
 def test_slice_ignores_a_keep_outside_the_subtree(client):
     top = client.get("/api/v1/trees/vibrio-upgma/slice", params={"budget": 20}).json()
     wedge = next(
@@ -370,3 +450,6 @@ def test_slice_ignores_a_keep_outside_the_subtree(client):
         params={"root": wedge, "budget": 20, "keep": 0},
     ).json()
     assert with_keep["nodes"] == plain["nodes"]
+    # And it says the pin did not apply, rather than leaving the caller to
+    # infer it from a slice that looks the same either way.
+    assert with_keep["kept"] is None

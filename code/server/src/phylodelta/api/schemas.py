@@ -272,6 +272,36 @@ class SliceNodes(BaseModel):
     )
 
 
+class KeptNode(BaseModel):
+    """What became of the node `?keep=` asked to have drawn.
+
+    `keep` is best-effort. It sends the branch containing the node first, which
+    costs nothing while budget remains, but a clade still needs an allotment of
+    two to be expanded rather than drawn as a wedge, and down a deep path from a
+    distant root it does not get one: on vibrio-nj from the tree's own root,
+    `keep` is honoured at a budget of 200 and not at 50.
+
+    When it is not honoured the caller still needs somewhere to point, which is
+    what `node` is for. A client marking a leaf it asked to find can mark the
+    wedge that contains it instead, and say so, rather than naming a node with
+    nothing on screen to show for it.
+    """
+
+    node: int = Field(
+        description=(
+            "The returned node standing in for the requested one: the node "
+            "itself where it was drawn, otherwise the wedge containing it."
+        )
+    )
+    exact: bool = Field(
+        description=(
+            "True when `node` IS the node asked for. False when it is an "
+            "ancestor wedge standing in for it — the case worth telling the "
+            "user about. A kept node drawn as its own wedge is still exact."
+        )
+    )
+
+
 class TreeSlice(BaseModel):
     """A subtree reduced to a leaf budget, largest clades first."""
 
@@ -288,6 +318,15 @@ class TreeSlice(BaseModel):
             "displayed_leaves - (wedge count) + hidden_leaves: a slice defers, "
             "it never discards."
         )
+    )
+    kept: "KeptNode | None" = Field(
+        None,
+        description=(
+            "Present when ?keep=<node> was given and that node lies inside this "
+            "root. Says which returned node stands in for it, which the client "
+            "cannot work out for itself: a wedge's subtree is not in the "
+            "response, so there is nothing to test containment against."
+        ),
     )
     nodes: SliceNodes
     comparison: "ComparisonValues | None" = Field(

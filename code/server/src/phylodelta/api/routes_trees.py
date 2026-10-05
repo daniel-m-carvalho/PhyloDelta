@@ -10,13 +10,13 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Path, Query
 
 from ..trees import registry
-from ..trees.summarise import count_leaves, flatten
+from ..trees.summarise import KeepTrace, count_leaves, flatten
 from .routes_comparisons import values_at
 from . import errors
 from .access import tree_or_404
 from .identity import current_owner
 from .routes_meta import API_PREFIX
-from .schemas import NodeContext, SliceNodes, TreeDetail, TreeSlice
+from .schemas import KeptNode, NodeContext, SliceNodes, TreeDetail, TreeSlice
 from .access import pair_or_404 as access_pair
 from .slicing import ORDER_DESCRIPTION, Order, side_of, summariser_for
 
@@ -170,9 +170,23 @@ def tree_slice(
             "Node ids come from a slice's nodes.id, not from the source file.",
         )
 
+    if keep is not None and keep >= reader.meta.n_nodes:
+        # Refused, not ignored. A `keep` that is merely outside the requested
+        # root is legitimate — a client can race a navigation — and comes back
+        # as `kept: null`. An id the tree does not have at all is a different
+        # thing: it cannot become valid, and swallowing it would answer a
+        # question nobody asked with a slice that looks fine.
+        raise errors.not_found(
+            "node_out_of_range",
+            f"keep={keep} is outside {tree_id!r}, which has "
+            f"{reader.meta.n_nodes:,} nodes (0..{reader.meta.n_nodes - 1}).",
+            "Node ids come from a slice's nodes.id, not from the source file.",
+        )
+
     pair = access_pair(owner, compare, metric) if compare is not None else None
     summariser = summariser_for(reader, tree_id, order, pair, metric)
-    node = summariser.summarise(root, budget, keep=keep)
+    trace = KeepTrace()
+    node = summariser.summarise(root, budget, keep=keep, trace=trace)
     if node is None:  # unreachable while budget >= 1, but do not serve a lie
         raise errors.ApiError(
             500, "empty_slice", "Summarisation produced nothing."
@@ -196,6 +210,11 @@ def tree_slice(
         tree=tree_id,
         root=root,
         budget=budget,
+        kept=(
+            KeptNode(node=trace.drawn_as, exact=trace.exact)
+            if trace.drawn_as is not None
+            else None
+        ),
         displayed_leaves=displayed,
         hidden_leaves=hidden,
         total_leaves=int(reader.leaf_count[root]),

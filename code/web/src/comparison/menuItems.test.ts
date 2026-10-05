@@ -28,6 +28,7 @@ function sideOf(over: Partial<SideState> = {}): SideState {
     error: null,
     path: [],
     arrivedAt: null,
+    markAt: null,
     jumpError: null,
     canGoBack: false,
     ...over,

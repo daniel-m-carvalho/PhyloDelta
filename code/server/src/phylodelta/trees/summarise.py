@@ -102,6 +102,35 @@ class _Frame:
     keep: int | None = None
 
 
+@dataclass(slots=True)
+class KeepTrace:
+    """Where ``keep`` ended up, filled in by {@link Summariser.summarise}.
+
+    ``keep`` is best-effort: it sends the branch containing the node first,
+    which costs nothing while budget remains, but a clade still needs an
+    allotment of 2 to be expanded rather than drawn as a wedge, and down a deep
+    path from a distant root it does not get one. On vibrio-nj from the tree's
+    own root, ``keep`` is honoured at a budget of 200 and not at 50.
+
+    So the caller needs to know not only *whether* the node was drawn but
+    *which* returned node stands in for it when it was not. Only the server can
+    answer the second question: a wedge's subtree is not in the slice at all, so
+    a client holding the response has no way to test containment. Without this
+    the frontend could name a marked leaf in its header and have nothing on
+    screen to point at (§33).
+    """
+
+    #: The returned node standing in for ``keep``: the node itself where it was
+    #: drawn, the wedge containing it where it was not, and None when no
+    #: ``keep`` was asked for or it lay outside the subtree being drawn.
+    drawn_as: int | None = None
+    #: Whether `drawn_as` IS the kept node. False means it is an ancestor
+    #: wedge standing in for it, which is the case a caller has to explain to
+    #: the user. A kept node drawn as its own wedge is still exact: it is on
+    #: screen, and still the right thing to mark.
+    exact: bool = False
+
+
 class Summariser:
     """Summarises subtrees of one stored tree.
 
@@ -157,7 +186,11 @@ class Summariser:
         )
 
     def summarise(
-        self, root: int, budget: int, keep: int | None = None
+        self,
+        root: int,
+        budget: int,
+        keep: int | None = None,
+        trace: KeepTrace | None = None,
     ) -> DisplayNode | None:
         """Summarise the subtree at ``root`` to at most ``budget`` leaves.
 
@@ -180,12 +213,23 @@ class Summariser:
         if budget <= 0:
             return None
         if self.is_leaf(root):
+            if trace is not None and keep == root:
+                trace.drawn_as, trace.exact = root, True
             return self._terminal(root, truncated=False)
         if budget == 1:
+            # One tip for the whole subtree: the root's own wedge is what any
+            # node inside it is represented by, `keep` included.
+            if trace is not None and self._holds(root, keep):
+                trace.drawn_as, trace.exact = root, keep == root
             return self._terminal(root, truncated=True)
         # Only meaningful for something actually inside the subtree being drawn.
         if keep is not None and not root <= keep < self.reader.subtree_end_of(root):
             keep = None
+        if trace is not None and keep is not None:
+            # Assume it is drawn, and let a truncation below correct that. Every
+            # path that folds the keep-holding branch into a wedge writes over
+            # this; if none does, the node survived and is its own stand-in.
+            trace.drawn_as, trace.exact = keep, True
 
         stack = [self._frame(root, budget, keep)]
         completed: tuple[DisplayNode | None, int] | None = None
@@ -224,6 +268,18 @@ class Summariser:
                 if self.is_leaf(child):
                     completed = (self._terminal(child, truncated=False), 1)
                 elif allotted == 1:
+                    if trace is not None and holds_keep:
+                        # The branch carrying `keep` is being folded, so this
+                        # wedge is what the kept node is represented by. Only
+                        # one branch per level carries `keep`, and the descent
+                        # stops here, so this fires at most once and names the
+                        # deepest wedge containing it.
+                        # `exact` asks whether this IS the kept node, not
+                        # whether it escaped truncation: a kept node drawn as
+                        # its own wedge is still on screen and still the right
+                        # thing to mark.
+                        trace.drawn_as = child
+                        trace.exact = child == frame.keep
                     # One unit of budget buys one tip. Spend it on a wedge that
                     # reports the whole clade rather than on one leaf that
                     # misrepresents it as the only thing there.

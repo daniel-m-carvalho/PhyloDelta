@@ -815,7 +815,20 @@ interface ComparisonOptions {
 ```
 - API: `setValues(map)`, `setCorrespondence(map)`, `setMode(mode)`, `getMode()`,
   `setDiffering(keys)`, `setEnabled(on)`, `isEnabled()`, `link(peer)`,
-  `highlightByKey(key)`.
+  `highlightByKey(key)`, `highlightByNode(id)`, `clearHighlight()`,
+  `getHighlightedKey()`.
+
+**Two ways to place the mark, and one mark at a time.** `highlightByKey` is the
+one to reach for: the backend's key usually names the node, and a leaf's own
+label always does. `highlightByNode` takes a **graph id** instead, for a node no
+key can name — a *collapsed clade*, which has no identifier of its own because
+it is a group rather than a thing, so keying it by name would match every
+unnamed internal node at once. Resolve the id from `TreeViewer.getNodeMap()`,
+which is where a consumer's own identity (something in `metadata`) can be
+matched; the operator does not invent one. Either call replaces the other's
+mark, and `getHighlightedKey()` returns null for a mark placed by node id,
+so the two can never be mistaken for each other. Both return `false` when the
+target is not on screen, rather than leaving the caller to assume it was marked.
 
 ---
 

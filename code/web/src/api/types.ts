@@ -49,8 +49,25 @@ export interface TreeSlice {
   displayed_leaves: number;
   hidden_leaves: number;
   total_leaves: number;
+  /**
+   * What became of the node `keep` asked to have drawn, when one was asked for.
+   *
+   * `keep` is best-effort: a clade needs room for two tips to be expanded
+   * rather than drawn as a wedge, and a deep path from a distant root does not
+   * get it. When it is missed the leaf is inside a wedge, and only the server
+   * can say which one — a wedge's subtree is not in this response, so there is
+   * nothing here to test containment against.
+   */
+  kept?: KeptNode | null;
   nodes: SliceNodes;
   comparison?: ComparisonValues | null;
+}
+
+export interface KeptNode {
+  /** The node standing in: the one asked for where it was drawn, else its wedge. */
+  node: number;
+  /** False when `node` is an ancestor wedge rather than the node itself. */
+  exact: boolean;
 }
 
 export interface TreeSummary {

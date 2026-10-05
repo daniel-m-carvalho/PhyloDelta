@@ -109,6 +109,18 @@ export interface SideState {
    */
   arrivedAt: number | null;
   /**
+   * The node to actually mark for {@link arrivedAt}, which is not always it.
+   *
+   * `keep` is best-effort (§33): widen far enough — back out to the whole tree
+   * at the viewport's own budget — and the marked leaf goes behind a wedge.
+   * The slice reports which wedge, because nothing here could work it out: a
+   * wedge's subtree is not in the response. `exact` is false in that case, and
+   * the view says the mark is standing in rather than quietly moving it.
+   *
+   * Null when nothing is marked, or when the pin did not apply at all.
+   */
+  markAt: { node: number; exact: boolean } | null;
+  /**
    * Why a jump into this panel could not be made, if one could not.
    *
    * Separate from `error`, which is about the slice on screen: this is about a
@@ -416,6 +428,9 @@ export function useSide(
       error,
       path,
       arrivedAt: keep,
+      // From the slice, not inferred: only the server knows which wedge holds
+      // a node it had to summarise.
+      markAt: keep === null ? null : (slice?.kept ?? null),
       jumpError,
       canGoBack: path.length > 0,
     },

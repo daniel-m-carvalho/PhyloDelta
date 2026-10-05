@@ -108,6 +108,14 @@ body {
   font-size: 12px;
 }
 .found-chip strong { color: #a000c0; }
+/* The mark is on a wedge standing in for the leaf, not on the leaf: said in
+   words rather than by a different colour, which would need its own legend. */
+.found-approx {
+  color: var(--muted);
+  font-style: normal;
+  font-size: 11px;
+  cursor: help;
+}
 .found-clear {
   border: 0;
   background: none;

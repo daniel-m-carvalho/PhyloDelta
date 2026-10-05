@@ -20,6 +20,7 @@ import {
   type BarScale,
   type ComparisonHandle,
   type Config,
+  type NewickNode,
   type SequentialColorScale,
 } from "phylo-tree-viewer";
 import type { ComparisonSummary, PairSummary } from "../api/types";
@@ -125,6 +126,35 @@ function wedgeColorFrom(scale: SequentialColorScale) {
  * it, is theirs rather than a claim the view makes.
  */
 const ARRIVAL_FLASHES = 5;
+
+/**
+ * What the header says about a mark.
+ *
+ * `exact` false means the mark sits on a **wedge standing in** for the leaf,
+ * because the slice could not draw it (§33). The chip has to say so: a magenta
+ * triangle read as the leaf itself would be a worse answer than none, since the
+ * wedge holds thousands of other tips too.
+ */
+interface FoundChip {
+  label: string;
+  exact: boolean;
+}
+
+/**
+ * The library's graph id for a stored node, or null if it is not on screen.
+ *
+ * Identity travels in `metadata.storedId`, not in the name: a leaf's label is
+ * its sequence type, but a wedge has no label at all, so there is nothing to
+ * key a lookup on. The node map is the only place the two numbering schemes
+ * meet.
+ */
+function graphIdOf(viewer: { getNodeMap(): Map<string, { source: NewickNode }> },
+                   storedId: number): string | null {
+  for (const [id, layoutNode] of viewer.getNodeMap()) {
+    if (layoutNode.source.metadata?.storedId === storedId) return id;
+  }
+  return null;
+}
 
 /**
  * What a branch with no value at all is called, and the colour it is drawn in.
@@ -338,7 +368,7 @@ export function ComparisonView({
    * chip names. One at a time across both panels: a new jump moves the mark
    * rather than adding one, so marks never pile up.
    */
-  const [found, setFound] = useState<[string | null, string | null]>([null, null]);
+  const [found, setFound] = useState<[FoundChip | null, FoundChip | null]>([null, null]);
   // What is selected in each panel. The menu acts on this when opened away
   // from a node, which is the interaction the library's selection operator is
   // there for: pick a node, then ask what can be done with it.
@@ -567,17 +597,28 @@ export function ComparisonView({
         return;
       }
       if (flashed.current[side] === wanted) return;
-      const label = sides.current[side].tree?.byStoredId.get(wanted)?.name;
-      if (!label) return;
+      const mark = sides.current[side].markAt;
+      if (!mark) return;
+      // Marked by rendered node, not by name. The slice may have had to
+      // summarise the leaf, in which case the thing to point at is the wedge
+      // holding it — and a wedge has no name to key on (every unnamed internal
+      // node shares one). `metadata.storedId` is the identity that survives the
+      // library's own key generation, so the graph id is resolved through it.
+      const target = graphIdOf(panel.viewer, mark.node);
+      if (target === null) return;
       flashed.current[side] = wanted;
-      // The flashing is the library's, and it keys by name — which is what
-      // `keyBy: "name"` means here, and is exact for a leaf. Not its camera
-      // move: the panel was just re-rooted around this node, and centring
-      // zooms in far enough to crop the neighbourhood that is the point.
-      if (!panel.operators.comparison?.highlightByKey(label, { center: false })) return;
+      // Not the library's camera move: the panel was just re-rooted around this
+      // node, and centring zooms in far enough to crop the neighbourhood that
+      // is the point.
+      if (!panel.operators.comparison?.highlightByNode(target, { center: false })) return;
+      const label = sides.current[side].tree?.byStoredId.get(wanted)?.name;
       // One mark across both panels: the other side's goes.
       built.panels[side === 0 ? 1 : 0]?.operators.comparison?.clearHighlight();
-      setFound(side === 0 ? [label, null] : [null, label]);
+      // What the chip says. `exact` false means the mark is on a wedge standing
+      // in for the leaf, which the header has to admit rather than let the user
+      // read the wedge as the leaf itself.
+      const chip: FoundChip = { label: label || String(wanted), exact: mark.exact };
+      setFound(side === 0 ? [chip, null] : [null, chip]);
     });
   }, [left.slice, right.slice, left.arrivedAt, right.arrivedAt, refreshKeys]);
 
@@ -903,7 +944,7 @@ function Side({
   state: SideState;
   selected: number | null;
   /** The leaf a jump found and marked here, if any. */
-  found?: string | null;
+  found?: FoundChip | null;
   onClearFound?: () => void;
 }) {
   const slice = state.slice;
@@ -916,7 +957,21 @@ function Side({
         ) : null}
         {found ? (
           <span className="found-chip">
-            Found: <strong>{found}</strong>
+            {found.exact ? "Found: " : "Found inside: "}
+            <strong>{found.label}</strong>
+            {found.exact ? null : (
+              <em
+                className="found-approx"
+                title={
+                  "This clade is too large to draw at the current detail, so " +
+                  "the mark is on the clade holding the leaf rather than on " +
+                  "the leaf. Expand it, or raise the detail, to reach the leaf."
+                }
+              >
+                {" "}
+                (in this clade)
+              </em>
+            )}
             <button
               type="button"
               className="found-clear"
