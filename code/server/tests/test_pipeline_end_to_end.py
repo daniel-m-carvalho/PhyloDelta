@@ -36,7 +36,7 @@ def built(tmp_path_factory):
 
     store = tmp_path_factory.mktemp("mini")
     assert ingest_trees(datasets_dir=FIXTURES, store_dir=store) == 0
-    assert compute_pairs(store_dir=store, metrics=["rf"]) == 0
+    assert compute_pairs(store_dir=store, metrics=["rf"], datasets_dir=FIXTURES) == 0
     assert ingest_all(datasets_dir=FIXTURES, store_dir=store) == 0
     return store
 
@@ -204,3 +204,62 @@ def test_build_all_if_empty_skips_a_built_store(datasets_dir, tmp_path, monkeypa
 
     assert pipeline.build_all(if_empty=True) == 0
     assert ran == [], "nothing should have been rebuilt"
+
+
+def test_the_sweep_leaves_uploaded_trees_alone(tmp_path):
+    """Only the catalogue's trees are paired, whatever else the store holds.
+
+    The regression: a deployment rebuilt its demo comparisons after a metric
+    version change with `compute-pairs`, which then paired every tree in the
+    store — two uploads included — and put seven comparisons nobody asked for
+    on the home page.
+    """
+    import shutil
+
+    from phylodelta import db
+    from phylodelta.precompute.pipeline import compute_pairs, ingest_trees
+
+    store = tmp_path / "store"
+    assert ingest_trees(datasets_dir=FIXTURES, store_dir=store) == 0
+    # An upload, as far as the store is concerned: a tree under an opaque id
+    # that no file in datasets/ names.
+    shutil.copytree(store / "trees" / "mini-nj", store / "trees" / "fd53852fb949")
+    with db.using_store(store):
+        db.register_dataset(
+            dataset_id="fd53852fb949", owner_id="alice", kind=db.DatasetKind.TREE,
+            display_name="an upload", store_path="trees/fd53852fb949",
+        )
+
+    assert compute_pairs(store_dir=store, metrics=["rf"], datasets_dir=FIXTURES) == 0
+    pairs = sorted(p.name for p in (store / "pairs").iterdir())
+    assert pairs == [PAIR]
+    with db.using_store(store):
+        assert db.comparison_by_id("fd53852fb949__mini-upgma") is None
+        assert db.comparison_by_id("fd53852fb949__mini-nj") is None
+
+    # Named explicitly, an upload's pair is still computable — that is how a
+    # stale one is rebuilt.
+    uploaded = "fd53852fb949__mini-upgma"
+    assert compute_pairs(store_dir=store, metrics=["rf"], only=uploaded) == 0
+    assert (store / "pairs" / uploaded / "rf" / "meta.json").exists()
+
+
+def test_recomputing_a_comparison_does_not_change_who_owns_it(tmp_path):
+    """The sweep's owner is for rows it creates, not for rows it touches."""
+    from phylodelta import db
+
+    with db.using_store(tmp_path):
+        db.create_schema()
+        for tree in ("a", "b"):
+            db.register_dataset(
+                dataset_id=tree, owner_id="alice", kind=db.DatasetKind.TREE,
+                display_name=tree, store_path=f"trees/{tree}",
+            )
+        db.record_computed_pair(
+            pair_id="a__b", left_id="a", right_id="b", owner_id="alice", display_name="mine",
+        )
+        db.record_computed_pair(
+            pair_id="a__b", left_id="a", right_id="b", owner_id="demo", display_name="a vs b",
+        )
+        assert [c.id for c in db.comparisons_for("alice")] == ["a__b"]
+        assert db.comparisons_for("demo") == []

@@ -91,6 +91,25 @@ def install(app: FastAPI) -> None:
             status_code=exc.status, content=_body(exc.detail, exc.code, exc.hint)
         )
 
+    from ..metrics.store import MetricVersionMismatch
+
+    @app.exception_handler(MetricVersionMismatch)
+    async def _stale_result(_: Request, exc: MetricVersionMismatch) -> JSONResponse:
+        # Wherever a stored pair is opened — the comparison header, a slice
+        # with `compare`, the values — one handler, so no route can let it
+        # out as a 500. 409: the request is fine and the stored result is
+        # what conflicts with this build.
+        return JSONResponse(
+            status_code=409,
+            content=_body(
+                str(exc),
+                "metric_version_mismatch",
+                "The comparison has to be recomputed by this version. On a "
+                "deployment: `phylodelta compute-pairs --only <pair id>`; for an "
+                "upload, upload the pair again.",
+            ),
+        )
+
     @app.exception_handler(StarletteHTTPException)
     async def _http_error(_: Request, exc: StarletteHTTPException) -> JSONResponse:
         # Raised by the framework itself (an unrouted path, a wrong method) and

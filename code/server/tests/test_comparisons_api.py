@@ -363,3 +363,46 @@ def test_metrics_endpoint_describes_what_a_column_means(client):
     assert exact["render"] == "overlay"
     assert exact["label"] and exact["description"]
     assert {s["key"] for s in rf["outputs"]["summary"]} >= {"rf", "rf_normalised"}
+
+
+def test_a_result_from_an_older_metric_version_is_refused_by_name(
+    computed_store, tmp_path, monkeypatch
+):
+    """Not a 500. The deployment that found this showed "Internal Server
+    Error" on every comparison, while the message naming the fix was only in
+    the server log — so both requests the page makes must carry it."""
+    import shutil
+
+    from phylodelta import config, db
+    from phylodelta.api.app import create_app
+    from phylodelta.metrics import registry_pairs
+    from phylodelta.trees import registry
+
+    store = tmp_path / "stale"
+    shutil.copytree(computed_store, store)
+    header = store / "pairs" / PAIR / "rf" / "meta.json"
+    raw = json.loads(header.read_text())
+    raw["metric_version"] = "1"
+    header.write_text(json.dumps(raw))
+
+    db.reset()
+    monkeypatch.setattr(config, "STORE_DIR", store)
+    monkeypatch.setattr(config, "TREES_DIR", store / "trees")
+    monkeypatch.setattr(config, "PAIRS_DIR", store / "pairs")
+    monkeypatch.setattr(config, "ISOLATES_DIR", store / "isolates")
+    registry.reset_cache()
+    registry_pairs.reset_cache()
+    try:
+        client = TestClient(create_app())
+        for url in (
+            f"/api/v1/comparisons/{PAIR}?metric=rf",
+            f"/api/v1/trees/vibrio-upgma/slice?budget=50&compare={PAIR}&metric=rf",
+        ):
+            got = client.get(url)
+            assert got.status_code == 409, (url, got.status_code, got.text)
+            body = got.json()
+            assert body["code"] == "metric_version_mismatch"
+            assert f"compute-pairs --only {PAIR}" in body["detail"]
+    finally:
+        registry.reset_cache()
+        registry_pairs.reset_cache()

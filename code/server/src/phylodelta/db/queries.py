@@ -203,6 +203,11 @@ def record_computed_pair(
     arrive at the same store layout by different routes; if only uploads left a
     row, the listing would have to union the database with a directory scan and
     the two could disagree. Idempotent, because the sweep is.
+
+    **An existing row keeps its owner.** `owner_id` is who a *new* row belongs
+    to. Overwriting it handed any comparison the sweep touched — an upload
+    included, rebuilt with `--only` after a metric change — to the sweep's
+    owner, so it left its uploader's list without anything saying why.
     """
     with session() as active:
         existing = active.get(Comparison, pair_id)
@@ -217,7 +222,6 @@ def record_computed_pair(
                 )
             )
             return
-        existing.owner_id = owner_id
         existing.status = ComparisonStatus.READY
         existing.error = None
         existing.finished_at = _utcnow()

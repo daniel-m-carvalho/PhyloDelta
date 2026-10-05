@@ -16,6 +16,7 @@ from phylodelta.metrics.contract import MetricResult, MetricSide
 from phylodelta.metrics.plugins.rf_python.rf import compute
 from phylodelta.metrics.project import project, project_correspondence
 from phylodelta.metrics.store import (
+    MetricVersionMismatch,
     read_correspondence,
     read_pair,
     write_correspondence,
@@ -140,12 +141,14 @@ def test_a_pair_from_an_older_metric_version_is_refused(tmp_path):
     raw["metric_version"] = "1"
     header.write_text(json.dumps(raw))
 
-    with pytest.raises(ValueError) as refused:
+    with pytest.raises(MetricVersionMismatch) as refused:
         read_pair(tmp_path / "p")
-    # Named, not generic: which metric, which version, and what to do.
+    # Named, not generic: which metric, which version, and what to do — the
+    # command for this pair, not `build-all`, which a deployment seeded with
+    # `--if-empty` turns into a no-op.
     assert "rf" in str(refused.value)
     assert "version 1" in str(refused.value)
-    assert "build-all" in str(refused.value)
+    assert "compute-pairs --only a__b" in str(refused.value)
 
 
 def test_a_pair_predating_the_version_field_is_refused(tmp_path):

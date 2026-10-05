@@ -156,8 +156,16 @@ def compute_pairs(
     metrics: list[str] | None = None,
     only: str | None = None,
     force: bool = False,
+    datasets_dir: Path | None = None,
 ) -> int:
     """Compute comparisons for every comparable pair and write them to the store.
+
+    **Only the catalogue's trees are swept** — the ones `datasets/gen_trees`
+    names — unless `only` names a pair, which may be any. The store also holds
+    trees users uploaded, and sweeping "every tree in the store" paired those
+    with the catalogue and with each other: run on a deployment to rebuild the
+    demo after a metric version change, it put seven comparisons nobody asked
+    for on the home page, between uploads and demo trees.
 
     This is the expensive half of the backend, and it is why the backend exists
     in this shape: a comparison is computed once here, offline, so that serving
@@ -184,12 +192,18 @@ def compute_pairs(
         if (p / "meta.json").exists()
     }
 
-    # Any two trees sharing leaf labels are comparable. Cross-species pairs are
-    # included: whether such a comparison is meaningful is the user's judgement,
-    # and the reconciliation report records exactly what was matched.
-    pairs = [(left, right) for left, right in itertools.combinations(sorted(readers), 2)]
+    # Any two catalogue trees sharing leaf labels are comparable. Cross-species
+    # pairs are included: whether such a comparison is meaningful is the user's
+    # judgement, and the reconciliation report records exactly what was matched.
     if only:
-        pairs = [p for p in pairs if f"{p[0]}__{p[1]}" == only]
+        pairs = [
+            p for p in itertools.combinations(sorted(readers), 2)
+            if f"{p[0]}__{p[1]}" == only
+        ]
+    else:
+        catalogue_ids = {source.id for source in catalogue.discover_tree_sources(datasets_dir)}
+        swept = sorted(tree_id for tree_id in readers if tree_id in catalogue_ids)
+        pairs = list(itertools.combinations(swept, 2))
     if not pairs:
         print("no comparable pairs found", file=sys.stderr)
         return 1

@@ -187,6 +187,16 @@ def _declared_versions() -> dict[str, str]:
     return _declared
 
 
+class MetricVersionMismatch(ValueError):
+    """A stored result computed by a different version of its metric.
+
+    Its own type so the API can refuse it by name. As a bare `ValueError` it
+    reached the browser as a 500 with nothing in it: a deployment updated
+    without rebuilding showed every comparison as "Internal Server Error",
+    while the message saying exactly what to run sat in the server log.
+    """
+
+
 def _check_metric_version(raw: dict, directory: Path) -> None:
     """Refuse a stored result computed by a different version of its metric.
 
@@ -209,11 +219,12 @@ def _check_metric_version(raw: dict, directory: Path) -> None:
         return
     current = declared[name]
     if stored != current:
-        raise ValueError(
+        raise MetricVersionMismatch(
             f"{directory} holds `{name}` computed by version "
             f"{stored or '(unrecorded)'}, and this build declares version "
-            f"{current}. The stored numbers mean something else; rebuild the "
-            f"comparison (`phylodelta build-all`, or re-upload the pair)."
+            f"{current}. The stored numbers mean something else; recompute it "
+            f"(`phylodelta compute-pairs --only {raw.get('pair_id', '<pair id>')}`, "
+            f"or upload the pair again)."
         )
 
 
