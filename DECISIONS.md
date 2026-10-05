@@ -4551,6 +4551,29 @@ just answered.
 
 Checked in a browser on ST 211: the message is there at 1.5 s and 5 s, gone at 7 s, with no modal.
 
+### 37.9 A search flashes in both panels
+
+A search that found a name in both trees flashed it in only one panel, and searching the same name
+again flashed neither. The mark effect runs for both panels whenever either panel's slice changes.
+When the second panel's slice arrived, the effect re-placed the first panel's mark steadily
+(§37.7's quiet move) and so stopped the blink still running from its own arrival. A repeated search
+was not a new arrival at all.
+
+The decision is now a tested function, `markAction(prior, arrival, slice)`: *flash* a new arrival,
+*move* quietly only when **this** panel's own slice changed, otherwise *keep* and leave it alone.
+A search pick also asks each panel it moves to flash the searched node when it arrives, even one
+already marked, and only that node. The panel's previous mark, still on screen until the new slice
+lands, does not flash on the way out. The menu's jump is unchanged: it flashes once in the panel it
+lands in.
+
+Measured by counting magenta pixels per panel in screenshots every ~100 ms for 3 s after the search
+(on/off changes, left/right):
+
+| | First search for 1203 | Same name again |
+|---|---|---|
+| Before | 10 / **0** | **0 / 0** |
+| After | 10 / 10 | 10 / 10 |
+
 ## 38. Rebuilding a deployed store
 
 Found deploying §37 to the university server. Every comparison answered 500, and the fix suggested

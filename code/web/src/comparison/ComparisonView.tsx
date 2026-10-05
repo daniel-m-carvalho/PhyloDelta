@@ -40,6 +40,7 @@ import {
 } from "./useSide";
 import { viewMetric } from "./metric";
 import { SearchBox } from "./SearchBox";
+import { markAction, type Placed } from "./markPlacement";
 import { PanelNotice } from "./PanelNotice";
 import { absentFrom, type SearchResult, type SearchRow } from "./search";
 
@@ -140,14 +141,6 @@ const ARRIVAL_FLASHES = 5;
 interface FoundChip {
   label: string;
   exact: boolean;
-}
-
-/** An arrival this view has marked: which node, what the chip calls it. */
-interface Placed {
-  arrival: number;
-  label: string;
-  /** False once a jump into the other panel has taken the mark. */
-  shown: boolean;
 }
 
 /**
@@ -386,6 +379,18 @@ export function ComparisonView({
    * from "a new jump that moves the mark".
    */
   const searched = useRef<[number | null, number | null] | null>(null);
+  /**
+   * Bumped by every search pick, so the mark effect runs even when a panel's
+   * view does not change — searching again for a name already marked must
+   * still flash it (§37.9).
+   */
+  const [searchPicks, setSearchPicks] = useState(0);
+  /**
+   * Per panel, the node a search pick should flash when it arrives, whether or
+   * not it is new. Only that node: the panel's previous mark, still on screen
+   * until the new slice lands, must not flash on the way out.
+   */
+  const reflash = useRef<[number | null, number | null]>([null, null]);
   // What is selected in each panel. The menu acts on this when opened away
   // from a node, which is the interaction the library's selection operator is
   // there for: pick a node, then ask what can be done with it.
@@ -630,13 +635,15 @@ export function ComparisonView({
       if (target === null) return;
       const comparison = panel.operators.comparison;
 
+      const slice = sides.current[side].slice;
       const prior = placed.current[side];
-      if (prior && prior.arrival === wanted) {
-        // The same arrival, drawn anew. Not if a jump into the other panel has
-        // since taken the mark (one mark across both panels): this side still
-        // holds the pin, but showing it again would put two marks on screen.
-        if (!prior.shown) return;
+      const forced = reflash.current[side] === wanted;
+      const action = forced ? "flash" : markAction(prior, wanted, slice);
+      if (action === "keep") return;
+      if (action === "move" && prior) {
+        // The same arrival, drawn anew by this panel's own new slice.
         if (!comparison?.highlightByNode(target, { center: false, flash: false })) return;
+        prior.slice = slice;
         const chip: FoundChip = { label: prior.label, exact: mark.exact };
         setFound((current) => (side === 0 ? [chip, current[1]] : [current[0], chip]));
         return;
@@ -651,7 +658,8 @@ export function ComparisonView({
       // resort, which is still better than a chip naming nothing.
       const label =
         mark.label || sides.current[side].tree?.byStoredId.get(wanted)?.name || String(wanted);
-      placed.current[side] = { arrival: wanted, label, shown: true };
+      placed.current[side] = { arrival: wanted, label, shown: true, slice };
+      if (forced) reflash.current[side] = null;
       // What the chip says. `exact` false means the mark is on a wedge standing
       // in for the leaf, which the header has to admit rather than let the user
       // read the wedge as the leaf itself.
@@ -670,7 +678,7 @@ export function ComparisonView({
       if (superseded) superseded.shown = false;
       setFound(side === 0 ? [chip, null] : [null, chip]);
     });
-  }, [left.slice, right.slice, left.arrivedAt, right.arrivedAt, refreshKeys]);
+  }, [left.slice, right.slice, left.arrivedAt, right.arrivedAt, searchPicks, refreshKeys]);
 
   /**
    * Clearing the mark also unpins the leaf.
@@ -895,6 +903,11 @@ export function ComparisonView({
         row.sides[1][0]?.node ?? null,
       ];
       searched.current = targets;
+      // Every panel the search moves is a new arrival and flashes, even one
+      // already showing that leaf. A panel the name is not in keeps its mark
+      // as it was.
+      reflash.current = [...targets];
+      setSearchPicks((n) => n + 1);
       const treeNames = [leftName, rightName];
       // Through the panel's own "why I did not move", the same one the menu's
       // jump uses, so the two say the same thing in the same place (§37.8).
