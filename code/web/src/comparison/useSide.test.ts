@@ -78,6 +78,30 @@ describe("arriving from the other panel", () => {
     expect(result.current[0].path).toEqual([3266]);
   });
 
+  it("clears an earlier jump's message once a jump lands", async () => {
+    // "211 is not in this tree" is about a question the next jump answers;
+    // left up, it sits over a panel that has since moved.
+    const { result } = runJump(async () => ({
+      node: 3266, leaves: 20, climbed: 12, reached_root: false,
+    }));
+    await actAsync(() => result.current[1].reportJumpFailure("211 is not in vibrio-upgma.", true));
+    expect(result.current[0].jumpError).not.toBeNull();
+    expect(result.current[0].jumpErrorFades).toBe(true);
+
+    await actAsync(() => result.current[1].focusWithContext(leaf));
+    expect(result.current[0].jumpError).toBeNull();
+  });
+
+  it("does not let a failed request fade", async () => {
+    const { result } = runJump(async () => {
+      throw new ApiError(404, { detail: "Not Found", code: "not_found" });
+    });
+    await actAsync(() => result.current[1].reportJumpFailure("earlier answer", true));
+    await actAsync(() => result.current[1].focusWithContext(leaf));
+    expect(result.current[0].jumpError).toMatch(/could not work out where/i);
+    expect(result.current[0].jumpErrorFades).toBe(false);
+  });
+
   it("does not move the view when the widening fails", async () => {
     // What shipped: the failure silently fell back to focusing the bare node,
     // so when the running server predated /ancestor every jump 404'd and

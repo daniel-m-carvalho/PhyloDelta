@@ -4525,6 +4525,32 @@ The slice's `kept` now carries the requested node's `label`. A leaf that arrives
 wedge is not in the tree built from the slice, so the chip had only its id to show ("Found inside:
 15544").
 
+**The wedge carries the mark, not a ball beside it.** Once the mark landed on a wedge it still
+showed as the generic highlight: an enlarged magenta circle next to a black triangle. The clade
+presenter hides a collapsed clade's marker, but the comparison operator's highlight runs after it in
+the reducer chain and painted that marker back. The library now lets the comparison operator hand
+the mark to whoever draws a node (`drawMarkWith`), and `createComparison` wires it to the clade
+presenter. The triangle turns magenta, blinking on arrival like any mark, and the marker stays
+hidden. The tests attach the presenter first, as `createComparison` does, which is the order that
+produced the ball. Both fail without the hook.
+
+### 37.8 One message for a jump that could not land, in the panel, and fading
+
+The search said "211 is not in vibrio nj" inside the panel that did not move. The menu's "find this
+leaf in the other tree" said the same thing in a modal dialog over both panels, in different words.
+Both now go through the panel's own `jumpError` and read the same sentence (`absentFrom`): "*label*
+is not in *tree*. This panel has not moved." That includes a search whose request failed, which used
+its own state. The modal is gone from the comparison view.
+
+**"Not in this tree" fades after six seconds**, with a short fade-out at the end. It is an answer,
+read once, and left up it covers a panel the user has gone back to working in. **A failed request
+does not fade.** "Could not work out where that leaf sits" stays until dismissed: an error that
+vanished while the user was looking at the other panel would be an error they never saw. A jump that
+lands clears an earlier message in that panel, because the message was about a question the jump has
+just answered.
+
+Checked in a browser on ST 211: the message is there at 1.5 s and 5 s, gone at 7 s, with no modal.
+
 ## 38. Rebuilding a deployed store
 
 Found deploying §37 to the university server. Every comparison answered 500, and the fix suggested

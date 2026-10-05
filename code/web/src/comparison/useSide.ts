@@ -128,6 +128,13 @@ export interface SideState {
    * failed.
    */
   jumpError: string | null;
+  /**
+   * Whether {@link jumpError} should go away on its own. True for "that name
+   * is not in this tree" — an answer, read once — and false for a request that
+   * failed, which must stay until dismissed: an error that vanishes while the
+   * user is looking at the other panel is an error they never saw (§37.8).
+   */
+  jumpErrorFades: boolean;
 }
 
 export interface SideActions {
@@ -144,7 +151,7 @@ export interface SideActions {
    */
   focusWithContext: (storedId: number) => void;
   /** Report that a jump into this panel is impossible, for the view to show. */
-  reportJumpFailure: (reason: string) => void;
+  reportJumpFailure: (reason: string, fades?: boolean) => void;
   dismissJumpFailure: () => void;
   back: () => void;
   reset: () => void;
@@ -203,6 +210,7 @@ export function useSide(
    */
   const [keep, setKeep] = useState<number | null>(null);
   const [jumpError, setJumpError] = useState<string | null>(null);
+  const [jumpErrorFades, setJumpErrorFades] = useState(false);
   // Follows the viewport until the user overrides it with expand/collapse all.
   const [overridden, setOverridden] = useState(false);
 
@@ -359,7 +367,12 @@ export function useSide(
           // The node asked about is kept drawn inside whatever it widened to,
           // however wide that is — see JUMP_CONTEXT_LEAVES and the slice's
           // `keep`.
-          .then((context) => focus(context.node, storedId))
+          .then((context) => {
+            // A message from an earlier jump that could not land here is
+            // about a question this one has just answered.
+            setJumpError(null);
+            focus(context.node, storedId);
+          })
           .catch((failed) => {
             // Emphatically NOT a silent fall back to the bare node. That is
             // what this did first, and when the running server turned out to
@@ -368,6 +381,7 @@ export function useSide(
             // added to remove, with nothing on screen to say a call had
             // failed. A wrong view that looks deliberate is worse than an
             // error, so the view does not move and the panel says why.
+            setJumpErrorFades(false);
             setJumpError(
               `Could not work out where that leaf sits in ${treeId}. ` +
                 (failed instanceof ApiError ? failed.message : String(failed)),
@@ -377,7 +391,10 @@ export function useSide(
       [treeId, focus],
     ),
 
-    reportJumpFailure: useCallback((reason: string) => setJumpError(reason), []),
+    reportJumpFailure: useCallback((reason: string, fades = false) => {
+      setJumpErrorFades(fades);
+      setJumpError(reason);
+    }, []),
 
     dismissJumpFailure: useCallback(() => setJumpError(null), []),
 
@@ -441,6 +458,7 @@ export function useSide(
       // node: until it arrives there is nothing to mark yet.
       markAt: keep === null || shownKeep !== keep ? null : (slice?.kept ?? null),
       jumpError,
+      jumpErrorFades,
       canGoBack: path.length > 0,
     },
     actions,

@@ -178,6 +178,21 @@ body {
   box-shadow: var(--shadow);
   font-size: 13px;
 }
+.panel-popup.error {
+  background: var(--surface);
+  color: var(--danger);
+  border: 1px solid currentcolor;
+}
+/* "Not in this tree": readable for most of its life, then gone. The timer in
+   PanelNotice removes it; this only makes the exit visible rather than abrupt. */
+.panel-popup.fading { animation: panel-popup-fade 6s ease-in forwards; }
+@keyframes panel-popup-fade {
+  0%, 85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel-popup.fading { animation: none; }
+}
 
 /* --- search --- */
 .comparison-tools {

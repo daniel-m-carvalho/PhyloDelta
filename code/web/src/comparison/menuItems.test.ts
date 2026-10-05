@@ -30,6 +30,7 @@ function sideOf(over: Partial<SideState> = {}): SideState {
     arrivedAt: null,
     markAt: null,
     jumpError: null,
+    jumpErrorFades: false,
     canGoBack: false,
     ...over,
   };
@@ -175,8 +176,13 @@ describe("right-clicking a node", () => {
     expect(jump.disabledBecause).toBeUndefined();
 
     jump.onSelect!();
-    expect(rightAct.reportJumpFailure).toHaveBeenCalled();
-    expect(rightAct.calls[0]).toMatch(/is not in vibrio-upgma/);
+    // The same sentence the search uses for a name in one tree only, and one
+    // that fades rather than waiting to be dismissed (§37.8).
+    const label = base.tree!.byStoredId.get(leaf)!.name;
+    expect(rightAct.reportJumpFailure).toHaveBeenCalledWith(
+      `${label} is not in vibrio-upgma. This panel has not moved.`,
+      true,
+    );
     // And nothing moved, because there is nowhere to move to.
     expect(rightAct.focusWithContext).not.toHaveBeenCalled();
   });

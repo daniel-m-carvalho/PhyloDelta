@@ -18,6 +18,7 @@
 
 import type { MenuItem, MenuPosition } from "../menu/ContextMenu";
 import { EXPAND_ALL_LIMIT, type SideActions, type SideState } from "./useSide";
+import { absentFrom } from "./search";
 
 export interface PendingMenu {
   side: 0 | 1;
@@ -69,6 +70,8 @@ export function buildMenu(
   menu: PendingMenu,
   states: [SideState, SideState],
   actions: [SideActions, SideActions],
+  /** What to call each tree in a message; the ids otherwise. */
+  names?: [string, string],
 ): MenuItem[] {
   const here = states[menu.side];
   const act = actions[menu.side];
@@ -123,10 +126,15 @@ export function buildMenu(
         ? undefined
         : partner === undefined
           ? () =>
+              // The same sentence, in the same place, as a search that finds
+              // a name in one tree only (§37.8): said in the panel that did
+              // not move, and gone after a few seconds.
               actThere.reportJumpFailure(
-                `${here.tree?.byStoredId.get(storedId)?.name ?? "That leaf"} is not in ` +
-                  `${there.treeId}. The two trees were reconciled to the leaves they ` +
-                  `share, and this one is not among them.`,
+                absentFrom(
+                  here.tree?.byStoredId.get(storedId)?.name || "That leaf",
+                  names?.[otherSide] ?? there.treeId,
+                ),
+                true,
               )
           : () => actThere.focusWithContext(partner),
     });

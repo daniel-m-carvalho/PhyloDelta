@@ -28,7 +28,6 @@ import type { ViewOptions } from "../useUrlState";
 import { exportReport } from "../export/buildReport";
 import { ExportPanel, type ExportChoices } from "../export/ExportPanel";
 import { ContextMenu } from "../menu/ContextMenu";
-import { Notice } from "../ui/Notice";
 import { TypingLegend } from "../typing/TypingLegend";
 import { datumFor, useTypingData } from "../typing/useTypingData";
 import { buildMenu, menuTitle, type PendingMenu } from "./menuItems";
@@ -41,6 +40,7 @@ import {
 } from "./useSide";
 import { viewMetric } from "./metric";
 import { SearchBox } from "./SearchBox";
+import { PanelNotice } from "./PanelNotice";
 import { absentFrom, type SearchResult, type SearchRow } from "./search";
 
 /**
@@ -386,8 +386,6 @@ export function ComparisonView({
    * from "a new jump that moves the mark".
    */
   const searched = useRef<[number | null, number | null] | null>(null);
-  /** Per panel: why a picked name did not move it. Shown in that panel only. */
-  const [searchMiss, setSearchMiss] = useState<[string | null, string | null]>([null, null]);
   // What is selected in each panel. The menu acts on this when opened away
   // from a node, which is the interaction the library's selection operator is
   // there for: pick a node, then ask what can be done with it.
@@ -898,28 +896,24 @@ export function ComparisonView({
       ];
       searched.current = targets;
       const treeNames = [leftName, rightName];
-      setSearchMiss(
-        targets.map((target, side) =>
-          target !== null
-            ? null
-            : failed[side]
-              ? `Could not search ${treeNames[side]}, so it is not known whether ${row.label} is in it. ${failed[side]}`
-              : absentFrom(row.label, treeNames[side]),
-        ) as [string | null, string | null],
-      );
+      // Through the panel's own "why I did not move", the same one the menu's
+      // jump uses, so the two say the same thing in the same place (§37.8).
       targets.forEach((target, side) => {
-        if (target !== null) (side === 0 ? leftActions : rightActions).focusWithContext(target);
+        const act = side === 0 ? leftActions : rightActions;
+        if (target !== null) {
+          act.focusWithContext(target);
+        } else if (failed[side]) {
+          act.reportJumpFailure(
+            `Could not search ${treeNames[side]}, so it is not known whether ` +
+              `${row.label} is in it. ${failed[side]}`,
+          );
+        } else {
+          act.reportJumpFailure(absentFrom(row.label, treeNames[side]), true);
+        }
       });
     },
     [leftActions, rightActions, leftName, rightName],
   );
-
-  // Whichever panel could not be reached; only one jump is ever in flight.
-  const jumpFailure = left.jumpError
-    ? { reason: left.jumpError, dismiss: leftActions.dismissJumpFailure }
-    : right.jumpError
-      ? { reason: right.jumpError, dismiss: rightActions.dismissJumpFailure }
-      : null;
 
   // A menu opened on empty canvas still acts on the selected node, if there is
   // one — selecting and then right-clicking is the flow the menus were asked
@@ -933,7 +927,7 @@ export function ComparisonView({
     : null;
 
   const items = resolved
-    ? buildMenu(resolved, [left, right], [leftActions, rightActions])
+    ? buildMenu(resolved, [left, right], [leftActions, rightActions], [leftName, rightName])
     : [];
 
   return (
@@ -959,14 +953,8 @@ export function ComparisonView({
       </header>
 
       <div className="panels">
-        <Panel
-          host={leftHost} state={left} miss={searchMiss[0]}
-          onDismissMiss={() => setSearchMiss((current) => [null, current[1]])}
-        />
-        <Panel
-          host={rightHost} state={right} miss={searchMiss[1]}
-          onDismissMiss={() => setSearchMiss((current) => [current[0], null])}
-        />
+        <Panel host={leftHost} state={left} onDismissJump={leftActions.dismissJumpFailure} />
+        <Panel host={rightHost} state={right} onDismissJump={rightActions.dismissJumpFailure} />
       </div>
 
       {options.typing ? (
@@ -993,19 +981,6 @@ export function ComparisonView({
         />
       ) : null}
 
-      {/*
-        Only failure speaks. A jump that worked is visible — the panel moved
-        and the leaf flashed — so saying so as well is noise on a screen that
-        already has two trees on it.
-      */}
-      {jumpFailure ? (
-        <Notice
-          title="That leaf could not be located"
-          detail={jumpFailure.reason}
-          onDismiss={jumpFailure.dismiss}
-        />
-      ) : null}
-
       {resolved ? (
         <ContextMenu
           at={resolved.at}
@@ -1021,37 +996,29 @@ export function ComparisonView({
 function Panel({
   host,
   state,
-  miss = null,
-  onDismissMiss,
+  onDismissJump,
 }: {
   host: React.RefObject<HTMLDivElement | null>;
   state: SideState;
-  /**
-   * A searched name this tree does not have. In the panel rather than in a
-   * modal, because the other panel just moved to it and a dialog over both
-   * would hide the half of the answer that was found.
-   */
-  miss?: string | null;
-  onDismissMiss?: () => void;
+  onDismissJump: () => void;
 }) {
   return (
     <section className="panel">
       <div className="sigma-host" ref={host} />
       {state.loading ? <p className="panel-note">Loading slice…</p> : null}
       {state.error ? <p className="panel-note error">{state.error}</p> : null}
-      {miss ? (
-        <div className="panel-popup" role="status">
-          <span>{miss}</span>
-          <button
-            type="button"
-            className="found-clear"
-            onClick={onDismissMiss}
-            aria-label="Dismiss"
-            title="Dismiss"
-          >
-            ×
-          </button>
-        </div>
+      {/*
+        Only failure speaks. A jump that worked is visible — the panel moved
+        and the leaf is marked — so saying so as well is noise. Keyed by the
+        text so a new message starts its fade from the beginning.
+      */}
+      {state.jumpError ? (
+        <PanelNotice
+          key={state.jumpError}
+          text={state.jumpError}
+          fades={state.jumpErrorFades}
+          onDismiss={onDismissJump}
+        />
       ) : null}
     </section>
   );
