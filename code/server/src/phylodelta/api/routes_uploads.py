@@ -75,7 +75,7 @@ def _validated_metrics(raw: str | None) -> list[str]:
     "",
     response_model=UploadAccepted,
     status_code=status.HTTP_202_ACCEPTED,
-    summary="Upload two trees and their typing data as one comparison.",
+    summary="Upload two trees and their isolate data as one comparison.",
     response_description="Accepted for processing; poll the status endpoint.",
 )
 def upload_comparison(
@@ -85,13 +85,13 @@ def upload_comparison(
     left_isolates: UploadFile | None = File(
         default=None,
         description=(
-            "Typing data for the left tree, tab-separated. Optional: omit it "
+            "Isolate data for the left tree, tab-separated. Optional: omit it "
             "when there is none, or send it only once when both trees are the "
             "same species."
         ),
     ),
     right_isolates: UploadFile | None = File(
-        default=None, description="Typing data for the right tree, tab-separated."
+        default=None, description="Isolate data for the right tree, tab-separated."
     ),
     name: str | None = Form(
         default=None,

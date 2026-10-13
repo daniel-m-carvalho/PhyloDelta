@@ -154,7 +154,7 @@ export function App() {
               },
               {
                 key: "typing",
-                label: "Typing data",
+                label: "Isolate data",
                 checked: options.typing,
                 note: "A bar of isolates on each leaf",
               },
@@ -270,7 +270,7 @@ export function App() {
         <Notice
           title={`Remove ${removing.left} vs ${removing.right}?`}
           detail={
-            "This deletes the comparison, both trees, and any typing data only it " +
+            "This deletes the comparison, both trees, and any isolate data only it " +
             "was using. Trees another comparison still needs are kept. It cannot be undone."
           }
           confirm={{ label: "Remove", onConfirm: () => void remove(removing) }}

@@ -18,7 +18,7 @@ import { MetricReferences } from "./MetricReferences";
 import { clearDraft, loadFields, loadFiles, saveFields, saveFile, type Slot } from "./draft";
 
 const TREE_HINT = "Newick — .nwk, .newick, .tree";
-const TABLE_HINT = "Tab-separated typing data — .tsv";
+const TABLE_HINT = "Tab-separated isolate data — .tsv";
 
 /**
  * The opening claim of a metric's description.
@@ -147,7 +147,7 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
     <section className="upload">
       <h2>New comparison</h2>
       <p className="upload-lead">
-        Two trees, and optionally the typing data that goes with them. They are
+        Two trees, and optionally the isolate data that goes with them. They are
         uploaded together and compared on the server.
       </p>
 
@@ -169,7 +169,7 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
       </div>
 
       <fieldset className="typing">
-        <legend>Typing data (optional)</legend>
+        <legend>Isolate data (optional)</legend>
         <label className="switch">
           <input
             type="checkbox"
@@ -184,7 +184,7 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
 
         <div className="drop-row">
           <DropZone
-            label={sharedTyping ? "Typing data" : "Left typing data"}
+            label={sharedTyping ? "Isolate data" : "Left isolate data"}
             hint={TABLE_HINT}
             accept=".tsv,.tab,.txt"
             file={files.left_isolates}
@@ -192,7 +192,7 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
           />
           {sharedTyping ? null : (
             <DropZone
-              label="Right typing data"
+              label="Right isolate data"
               hint={TABLE_HINT}
               accept=".tsv,.tab,.txt"
               file={files.right_isolates}
