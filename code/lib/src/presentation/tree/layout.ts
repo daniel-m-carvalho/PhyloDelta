@@ -1,5 +1,5 @@
 import Graph from "graphology";
-import type { ChildOrder, IsCollapsed, LayoutMode, NewickNode } from "./types";
+import type { ChildOrder, IsCollapsed, LayoutMode, LengthScale, NewickNode } from "./types";
 import { NEVER_COLLAPSED } from "./types";
 import {
   countLeaves,
@@ -59,8 +59,13 @@ export interface LayoutNode {
 export interface LayoutContext {
   maxDepth: number;
   totalLeaves: number;
-  maxDist: number; // clamped max root-to-leaf distance (phylogram)
-  clampLength: (len: number) => number;
+  maxDist: number; // max root-to-leaf distance as drawn (phylogram)
+  /**
+   * A branch's length as it is *drawn*: capped when clamping is on, then put
+   * through the length scale. Only positions use it; the labels show the real
+   * length (`branchLength` on each branch edge).
+   */
+  drawnLength: (len: number) => number;
 }
 
 /**
@@ -91,7 +96,8 @@ export function buildGraph(
   rerootOn?: string,
   reflect: boolean = false,
   order: ChildOrder = orderByName,
-  clampBranches: boolean = false
+  clampBranches: boolean = false,
+  lengthScale: LengthScale = "linear"
 ): BuiltGraph {
   const graph = new Graph();
 
@@ -129,9 +135,16 @@ export function buildGraph(
   const clampLength = clampBranches
     ? (len: number) => Math.min(len, branchCap)
     : (len: number) => len;
+  // log1p, not log: defined at 0 and nearly linear for short branches, so
+  // what the log scale changes is the long ones. Negative lengths (an NJ tree
+  // can have them) keep their sign rather than producing NaN.
+  const drawnLength =
+    lengthScale === "log"
+      ? (len: number) => Math.sign(len) * Math.log1p(Math.abs(clampLength(len)))
+      : clampLength;
 
   function clampedMaxRootDist(node: NewickNode, dist = 0): number {
-    const d = dist + clampLength(node.length || 0);
+    const d = dist + drawnLength(node.length || 0);
     if (!node.branchset?.length) return d;
     return Math.max(...node.branchset.map((c) => clampedMaxRootDist(c, d)));
   }
@@ -140,7 +153,7 @@ export function buildGraph(
     maxDepth: maxD,
     totalLeaves,
     maxDist: clampedMaxRootDist(prepared) || 1,
-    clampLength,
+    drawnLength,
   };
 
   const engine = LAYOUT_ENGINES[layoutMode] || LAYOUT_ENGINES.cladogram;
@@ -198,7 +211,7 @@ function makeRectEngine(mode: LayoutMode): LayoutEngine {
           id = `n${nodeSeq++}`;
         }
 
-        const myDist = distFromRoot + ctx.clampLength(node.length || 0);
+        const myDist = distFromRoot + ctx.drawnLength(node.length || 0);
         const hasChildren = !!node.branchset?.length;
         const isCollapsed = !!node.collapsed;
         const isLeaf = !hasChildren && !isCollapsed;
@@ -227,7 +240,7 @@ function makeRectEngine(mode: LayoutMode): LayoutEngine {
         return { id, label: node.name || "", x, y, isLeaf: false, isCollapsed: false, named: !!node.name, children, source: node };
       }
 
-      const root = layout(prepared, -ctx.clampLength(prepared.length || 0), 0);
+      const root = layout(prepared, -ctx.drawnLength(prepared.length || 0), 0);
 
       // Center vertically so root.y === 0.
       (function shift(n: LayoutNode, dy: number) {
@@ -278,6 +291,10 @@ function makeRectEngine(mode: LayoutMode): LayoutEngine {
 
         for (const child of n.children) {
           renderNode(child);
+          // The real length, unclamped and unscaled, on the edge that draws
+          // the branch — what BranchLengthPresenter writes beside it (§44).
+          const length = child.source.length;
+          const branchLength = typeof length === "number" && Number.isFinite(length) ? length : undefined;
           const hStart = `h_${connSeq++}`;
           graph.addNode(hStart, { label: "", x: n.x, y: child.y, size: 0, color: "rgba(0,0,0,0)" });
           if (child.branchX !== undefined && child.branchX !== child.x) {
@@ -286,10 +303,10 @@ function makeRectEngine(mode: LayoutMode): LayoutEngine {
             // operator leaves it alone rather than painting layout as data.
             const hEnd = `t_${connSeq++}`;
             graph.addNode(hEnd, { label: "", x: child.branchX, y: child.y, size: 0, color: "rgba(0,0,0,0)" });
-            graph.addEdge(hStart, hEnd, { color: BRANCH_COLOR, size: 1, nodeId: child.id });
+            graph.addEdge(hStart, hEnd, { color: BRANCH_COLOR, size: 1, nodeId: child.id, branchLength });
             graph.addEdge(hEnd, child.id, { color: LEADER_COLOR, size: 1, leader: true });
           } else {
-            graph.addEdge(hStart, child.id, { color: BRANCH_COLOR, size: 1, nodeId: child.id });
+            graph.addEdge(hStart, child.id, { color: BRANCH_COLOR, size: 1, nodeId: child.id, branchLength });
           }
         }
       }

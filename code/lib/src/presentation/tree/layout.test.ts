@@ -250,3 +250,49 @@ describe("buildGraph — budget and ordering", () => {
     expect(names).toEqual(["a", "c", "d"]);
   });
 });
+
+describe("branch lengths (§44)", () => {
+  /** root(short:1, long:100): one branch a hundred times the other. */
+  const lopsided = (): NewickNode => ({
+    name: "root",
+    branchset: [
+      { name: "short", length: 1 },
+      { name: "long", length: 100 },
+    ],
+  });
+  const tipEnd = (lengthScale: "linear" | "log", tip: string) =>
+    buildGraph(lopsided(), undefined, Infinity, "phylogram", true, undefined, false, orderByName, false, lengthScale)
+      .nodeMap.get(`named_${tip}`)!.branchX!;
+
+  it("draws a phylogram's lengths linearly by default", () => {
+    expect(tipEnd("linear", "short")).toBeCloseTo(1);
+    expect(tipEnd("linear", "long")).toBeCloseTo(100);
+  });
+
+  it("draws them as log(1 + length) on the log scale, so a long branch no longer flattens the short", () => {
+    expect(tipEnd("log", "long")).toBeCloseTo(100);
+    expect(tipEnd("log", "short")).toBeCloseTo((Math.log1p(1) / Math.log1p(100)) * 100);
+    expect(tipEnd("log", "short")).toBeGreaterThan(10 * tipEnd("linear", "short"));
+  });
+
+  it("leaves a cladogram as it was: it ignores lengths", () => {
+    const at = (lengthScale: "linear" | "log") =>
+      buildGraph(tree(), undefined, Infinity, "cladogram", true, undefined, false, orderByName, false, lengthScale)
+        .nodeMap.get("named_b")!.x;
+    expect(at("log")).toBe(at("linear"));
+  });
+
+  it("puts the real length on the edge that draws each branch, on either scale", () => {
+    for (const scale of ["linear", "log"] as const) {
+      const { graph } = buildGraph(lopsided(), undefined, Infinity, "phylogram", true, undefined, false, orderByName, false, scale);
+      const lengths = graph
+        .filterEdges((_e, attrs) => typeof attrs.branchLength === "number")
+        .map((e) => graph.getEdgeAttribute(e, "branchLength"))
+        .sort((a, b) => a - b);
+      // One per branch, and never on a leader.
+      expect(lengths).toEqual([1, 100]);
+      expect(graph.filterEdges((_e, attrs) => attrs.leader && attrs.branchLength !== undefined)).toEqual([]);
+    }
+  });
+});
+

@@ -1,7 +1,8 @@
 import { TreeViewer, type TreeViewerOptions } from "../presentation/viewer/tree_viewer";
-import type { LayoutMode, NewickNode } from "../presentation/tree/types";
+import type { LayoutMode, LengthScale, NewickNode } from "../presentation/tree/types";
 import { ExpandCollapseOperator, type ExpandMode } from "../presentation/operators/expand_collapse";
 import { CladeShapePresenter } from "../presentation/operators/clade_shape";
+import { BranchLengthPresenter } from "../presentation/operators/branch_lengths";
 import { SelectionOperator } from "../presentation/operators/selection";
 import { BarChartPresenter, type BarScale } from "../presentation/operators/barchart_presenter";
 import { ComparisonOperator, type ComparisonMode } from "../presentation/operators/comparison";
@@ -38,6 +39,8 @@ import type { LeafDataProvider, LeafDatum } from "../presentation/data/leaf_data
 /** Viewer options, serializable subset of {@link TreeViewerOptions}. */
 export interface ViewerConfig {
   layoutMode?: LayoutMode;
+  /** See {@link TreeViewerOptions.lengthScale}. */
+  lengthScale?: LengthScale;
   maxNodes?: number;
   hideInternalNodes?: boolean;
   reflect?: boolean;
@@ -161,6 +164,11 @@ export interface OperatorsConfig {
   expandCollapse?: boolean | ExpandCollapseConfig;
   /** Draw collapsed clades as wedges (default true). */
   cladeShape?: boolean | CladeShapeConfig;
+  /**
+   * Write branch lengths beside the branches where they fit (§44). Attached
+   * always, drawn only when enabled; `true` or `{ enabled }`.
+   */
+  branchLengths?: boolean | { enabled?: boolean };
   selection?: SelectionConfig;
   barcharts?: BarChartConfig;
   // No `comparison` here on purpose — it lives at the top level of `Config`,
@@ -236,6 +244,7 @@ export interface ComparisonProviders extends DataProviders {
 export interface PanelOperators {
   expandCollapse?: ExpandCollapseOperator;
   cladeShape?: CladeShapePresenter;
+  branchLengths?: BranchLengthPresenter;
   selection?: SelectionOperator;
   barcharts?: BarChartPresenter;
   comparison?: ComparisonOperator;
@@ -315,6 +324,7 @@ function buildPanel(
 
   const viewerOptions: TreeViewerOptions = {
     layoutMode: v.layoutMode,
+    lengthScale: v.lengthScale,
     maxNodes: v.maxNodes,
     hideInternalNodes: v.hideInternalNodes,
     reflect: v.reflect,
@@ -364,6 +374,17 @@ function buildPanel(
     operators.cladeShape = shape;
   }
 
+
+  // Branch lengths — attached always so the app can switch them on and off;
+  // drawn only when enabled.
+  {
+    const bl = ops.branchLengths;
+    const lengths = new BranchLengthPresenter({
+      enabled: bl === true || (typeof bl === "object" && bl.enabled === true),
+    });
+    lengths.attach(viewer);
+    operators.branchLengths = lengths;
+  }
 
   // Selection — on unless explicitly disabled.
   if (!ops.selection || ops.selection.enabled !== false) {
@@ -452,6 +473,7 @@ function buildPanel(
       operators.barcharts?.detach();
       operators.selection?.detach();
       operators.cladeShape?.detach();
+      operators.branchLengths?.detach();
       operators.expandCollapse?.detach();
       viewer.destroy();
     },

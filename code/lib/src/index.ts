@@ -15,7 +15,7 @@
  */
 
 // --- Tree model & data ---
-export type { NewickNode, LayoutMode, IsCollapsed, ChildOrder } from "./presentation/tree/types";
+export type { NewickNode, LayoutMode, LengthScale, IsCollapsed, ChildOrder } from "./presentation/tree/types";
 export { NEVER_COLLAPSED } from "./presentation/tree/types";
 export {
   maxRootDist,
@@ -77,6 +77,8 @@ export { ExpandCollapseOperator } from "./presentation/operators/expand_collapse
 export type { ExpandCollapseOptions } from "./presentation/operators/expand_collapse";
 export { CladeShapePresenter } from "./presentation/operators/clade_shape";
 export type { CladeShapeOptions } from "./presentation/operators/clade_shape";
+export { BranchLengthPresenter, formatBranchLength } from "./presentation/operators/branch_lengths";
+export type { BranchLengthOptions } from "./presentation/operators/branch_lengths";
 export type { ExpandMode } from "./presentation/operators/expand_collapse";
 export { SubtreeNavigator } from "./presentation/operators/subtree_navigator";
 export type { SubtreeStep } from "./presentation/operators/subtree_navigator";

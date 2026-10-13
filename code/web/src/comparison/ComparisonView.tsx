@@ -814,6 +814,17 @@ export function ComparisonView({
     handle.current?.panels.forEach((panel) => panel.viewer.setLayoutMode(options.layout));
   }, [options.layout, bothLoaded]);
 
+  // Branch lengths beside the branches, and how a phylogram scales them
+  // (§44). `bothLoaded` for the same reason as the layout above: the panels
+  // exist only once both trees have arrived.
+  useEffect(() => {
+    handle.current?.panels.forEach((panel) => panel.operators.branchLengths?.setEnabled(options.lengths));
+  }, [options.lengths, bothLoaded]);
+
+  useEffect(() => {
+    handle.current?.panels.forEach((panel) => panel.viewer.setLengthScale(options.lengthScale));
+  }, [options.lengthScale, bothLoaded]);
+
   // Move the gradient between the branches and the wedges. Both operators are
   // involved because the wedge is not a Sigma node marker but an overlay the
   // clade presenter draws, so the comparison operator cannot reach it; the

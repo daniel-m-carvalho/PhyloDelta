@@ -4809,6 +4809,39 @@ in it in both panels; "Reset colours" gives every category back its palette colo
 Checked in a browser: choosing black for a category turned its swatch and 16 bar segments black,
 wrote it to the link, survived a reload, and reset cleanly. The layout check still passes.
 
+## 44. Branch lengths: written beside the branches, and a log scale
+
+Asked for in review: show each branch's length, and let the lengths be drawn on a linear or a
+logarithmic scale.
+
+**Written beside the branches, in both layouts.** A View options switch ("Branch lengths", `bl=1` in
+the URL) turns on a new library presenter, `BranchLengthPresenter`. It writes each branch's length on
+its horizontal stretch, formatted to at most three decimals with trailing zeros dropped (0.5, 1.235,
+12). A length that would round to zero reads "<0.001", not "0", which would claim the branch has no
+length.
+
+* **Only where it fits.** A slice can hold 600 tips. A label is drawn only when its branch is drawn
+  wider than the text, and not over a label already placed: where rows sit closer than a line, the
+  second of a pair is left out. Zooming in reveals more. Measured on vibrio-upgma: in a linear
+  phylogram a few branches of ~500 leave room for a handful of labels, and zooming in brings out the
+  short internal ones (0.36, 0.38, …).
+* **Decided per frame, on the presenter's own canvas.** Visibility depends on screen width, which
+  changes with the camera, and the graph's reducers run when the graph is processed, not when the
+  camera moves. Sigma's built-in edge labels were not usable: Sigma draws an edge's label only when
+  both extremities' labels are visible, and a branch here runs between invisible connector points.
+* **The real length.** The layout puts `branchLength` on the edge that draws each branch: unclamped
+  and unscaled, and never on a phylogram's leader. A log-scaled phylogram still says how long a branch
+  really is.
+
+**Log scale.** `LengthScale` (`linear` | `log`, `ls=log` in the URL) is offered in View options only
+for a phylogram, since a cladogram ignores lengths. On the log scale each branch is drawn as
+`log(1 + length)` and positions are still the sum along the path, so the topology is unchanged.
+`log1p`, not `log`, because it is defined at 0 and nearly linear for short branches; negative NJ
+lengths keep their sign. On vibrio-upgma, where a few branches of ~500 flatten everything in a
+linear phylogram, the log scale spreads the tree out and makes most lengths readable.
+
+Checked in a browser in both layouts and both scales. The layout and mark checks still pass.
+
 ---
 
 ## References and provenance
