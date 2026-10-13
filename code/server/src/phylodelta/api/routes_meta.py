@@ -21,6 +21,7 @@ from .schemas import (
     HealthResponse,
     IsolateSummary,
     MetricOutputsDescription,
+    MetricReference,
     MetricSummary,
     PairSummary,
     ScalarDescription,
@@ -224,6 +225,10 @@ def metrics() -> list[MetricSummary]:
             available=is_available(manifest),
             version=manifest.version,
             capabilities=manifest.capabilities,
+            references=[
+                MetricReference(citation=r.citation, role=r.role, doi=r.doi, url=r.url)
+                for r in manifest.references
+            ],
             outputs=MetricOutputsDescription(
                 summary=[
                     ScalarDescription(

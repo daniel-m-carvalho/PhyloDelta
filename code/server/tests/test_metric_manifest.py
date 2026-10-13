@@ -169,3 +169,44 @@ def test_treediff_rf_refuses_a_weighted_distance():
 
     assert re.search(pattern, "Robinson Foulds distance is: 6825").group(1) == "6825"
     assert re.search(pattern, "Weighted Robinson Foulds distance is: 1.23025e+06") is None
+
+
+# --- references (§42) -------------------------------------------------------
+
+def test_references_are_parsed_with_their_role_and_link():
+    manifest = MetricManifest.from_json({
+        **BASE,
+        "references": [
+            {"citation": "A. Paper. 2020.", "role": "metric", "doi": "10.1000/xyz123"},
+            {"citation": "A program. 2021.", "role": "implementation"},
+        ],
+    })
+    first, second = manifest.references
+    assert (first.role, first.doi, first.url) == ("metric", "10.1000/xyz123", "https://doi.org/10.1000/xyz123")
+    assert (second.role, second.doi, second.url) == ("implementation", "", "")
+
+
+@pytest.mark.parametrize(
+    "bad, says",
+    [
+        ({"role": "metric"}, "needs a 'citation'"),
+        ({"citation": "  ", "role": "metric"}, "needs a 'citation'"),
+        ({"citation": "X", "role": "inspiration"}, "role must be one of"),
+        ({"citation": "X", "role": "metric", "doi": "https://doi.org/10.1/x"}, "is not a DOI"),
+    ],
+)
+def test_a_malformed_reference_is_refused_by_name(bad, says):
+    # It would reach the interface as a citation that does not say what it
+    # cites, or a link that goes nowhere.
+    with pytest.raises(ValueError, match=says) as refused:
+        MetricManifest.from_json({**BASE, "references": [bad]})
+    assert "'demo'" in str(refused.value)
+
+
+def test_every_shipped_metric_cites_the_paper_that_defines_it():
+    from phylodelta.metrics import registry
+
+    for name, manifest in registry.discover().items():
+        roles = [r.role for r in manifest.references]
+        assert "metric" in roles, f"{name} names no paper for what it computes"
+        assert all(r.doi for r in manifest.references), f"{name} has a reference without a DOI"

@@ -4764,6 +4764,28 @@ each one it skipped and why. Other trees are compared the way any user compares 
 them. Built from the real folder with a `staphylococcus-nj` tree in it, the store holds exactly
 `clostridium-upgma`, `vibrio-nj` and `vibrio-upgma`.
 
+## 42. A metric names the papers it rests on
+
+Asked for in review: where a metric is offered, cite the paper behind it. Each `metric.json` now carries
+`references`, a list of `{citation, role, doi}`. `role` says what the paper is the reference **for**:
+`metric` for the definition, `implementation` for what computes it. A metric computed by someone
+else's program rests on two papers, and an unlabelled list would leave the reader to guess which is
+which.
+
+* **Checked at load, refused by name.** A reference with no citation, an unknown role, or a DOI that
+  is not `10.xxxx/…` stops the metric loading with the metric's name in the error. A test also
+  requires every shipped metric to cite the paper that defines it, with a DOI.
+* **Served by `/metrics`** with a resolved `https://doi.org/…` link, and shown in the upload panel
+  under the chosen metric: "Defined in …" and "Computed as in …".
+* **Every DOI was checked against Crossref** before it was written down:
+  Robinson & Foulds 1981 (`10.1016/0025-5564(81)90043-2`), Critchlow, Pearl & Qian 1996
+  (`10.1093/sysbio/45.3.323`), and Branco, Vaz & Francisco 2024 (`10.3390/a17010015`; Crossref dates
+  it to its online publication in 2023, in volume 17, which is 2024).
+
+To confirm with the supervisors: the built-in `rf` cites Branco, Vaz & Francisco as its
+implementation because this backend follows that paper's formulation (§1.10), and `triplet` cites it
+because the triplet distance is computed by TreeDiff, the program that paper describes.
+
 ---
 
 ## References and provenance

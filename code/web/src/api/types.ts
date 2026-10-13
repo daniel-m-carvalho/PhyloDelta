@@ -254,4 +254,16 @@ export interface MetricSummary {
   available: boolean;
   version: string;
   capabilities: Record<string, unknown>;
+  /** The papers it rests on, the definition first (§42). */
+  references?: MetricReference[];
+}
+
+/** A paper a metric rests on. */
+export interface MetricReference {
+  citation: string;
+  /** "metric" for the definition, "implementation" for what computes it. */
+  role: "metric" | "implementation";
+  doi: string;
+  /** https://doi.org/<doi>, or "" without a DOI. */
+  url: string;
 }
