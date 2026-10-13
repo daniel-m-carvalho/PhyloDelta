@@ -1,0 +1,100 @@
+# Runs the project's own checks on every push and pull request, so nothing
+# reaches main — or the VM, which rebuilds from main — broken.
+#
+# Three independent jobs, run in parallel:
+#   server    the Python suite, with the C++ extension and TreeDiff built, so
+#             it tests the code path production runs and the RF conformance
+#             check against an independent implementation
+#   frontend  typecheck and tests for the library, the demo and the web app
+#   docker    builds the deployment images without pushing them, so a broken
+#             Dockerfile is found here rather than on the VM
+#
+# Not here: the browser checks in code/bench/harness (check_marks,
+# check_layout_stability, measure_requests). They need the API, the web app
+# and Chrome running together; run them locally after touching navigation,
+# the panels or the layout.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch makes an older run pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  server:
+    name: Server (pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: code/server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: code/server/uv.lock
+
+      # Python 3.12 is pinned by pyproject.toml; uv provisions it.
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Build the native extension
+        run: ./native/build.sh
+
+      # An outside repository, cloned at build time. If it is unreachable or
+      # stops building, say so and carry on: its conformance tests skip, and
+      # the rest of the suite still has to pass.
+      - name: Build TreeDiff (RF conformance oracle)
+        continue-on-error: true
+        run: ./native/build_treediff.sh
+
+      - name: Run the tests
+        run: uv run pytest -q
+
+  frontend:
+    name: Library, demo and web (typecheck + vitest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: code
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: code/package-lock.json
+
+      # code/ is an npm workspace: one install covers lib, lib_demo, web and
+      # bench. Playwright's browsers are not downloaded by this.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run the tests
+        run: npm test
+
+  docker:
+    name: Docker images build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The same build the VM runs with `docker compose up -d --build`, minus
+      # starting anything.
+      - name: Build the images
+        run: docker compose build

@@ -1,5 +1,7 @@
 # Phylogenetic tree visualisation
 
+[![CI](https://github.com/daniel-m-carvalho/PhyloDelta/actions/workflows/ci.yml/badge.svg)](https://github.com/daniel-m-carvalho/PhyloDelta/actions/workflows/ci.yml)
+
 A browser library for exploring large phylogenetic trees side by side, with a
 demo application that uses it. Built on [Sigma.js](https://www.sigmajs.org/) and
 [graphology](https://graphology.github.io/); part of a master's thesis.
