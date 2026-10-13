@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>phylo.io — BCN accuracy extraction</title>
+    <style>
+      html, body { margin: 0; height: 100%; }
+      #panels { display: flex; height: 100vh; }
+      #left, #right { flex: 1 1 0; overflow: hidden; }
+    </style>
+    <script src="/phyloio/dist/src_worker_bcn_js.phylo.js"></script>
+    <script src="/phyloio/dist/src_worker_distance_js.phylo.js"></script>
+    <script src="/phyloio/dist/phylo.js"></script>
+  </head>
+  <body>
+    <div id="panels"><div id="left"></div><div id="right"></div></div>
+    <script>
+      /*
+       * Extract phylo.io's per-clade similarity so it can be compared against
+       * an exact search over the same clades.
+       *
+       * Their score lives on the model node as `elementS[other_container_uid]`
+       * and is the best Jaccard among **ten** candidates retrieved by
+       * MinHash/LSH (`worker_bcn.js`: `target_forest.query(node.min_hash, 10)`).
+       * An exact search maximises over every node, so ours is an upper bound
+       * on theirs and any gap is what the approximation cost.
+       *
+       * Clades are joined between the two implementations by their LEAF SET,
+       * not by node id — the two tools number nodes differently and neither
+       * numbering is part of either's contract. `deepLeafList` carries both
+       * leaf names and `|__|`-joined clade signatures, so it is filtered the
+       * same way phylo.io filters it internally, or the two would be scoring
+       * different things.
+       */
+      function isLeafName(str) { return !str.includes("|__|"); }
+
+      // 2x32-bit FNV-1a over the sorted leaf set. Paired with the set size it
+      // identifies a clade compactly enough to ship 17k of them as JSON;
+      // sending the leaf lists themselves would be tens of megabytes.
+      function fingerprint(sortedNames) {
+        let a = 0x811c9dc5, b = 0x01000193;
+        for (const name of sortedNames) {
+          for (let i = 0; i < name.length; i++) {
+            a ^= name.charCodeAt(i); a = Math.imul(a, 0x01000193) >>> 0;
+            b = (b + name.charCodeAt(i)) >>> 0; b = Math.imul(b, 0x85ebca6b) >>> 0;
+          }
+          a ^= 0x2c; a = Math.imul(a, 0x01000193) >>> 0;
+          b = (b ^ 0x2c) >>> 0;
+        }
+        return `${a.toString(36)}.${b.toString(36)}`;
+      }
+
+      window.__bench = {
+        async extract(leftUrl, rightUrl) {
+          const [a, b] = await Promise.all([
+            fetch(leftUrl).then((r) => r.text()),
+            fetch(rightUrl).then((r) => r.text()),
+          ]);
+
+          const phylo = PhyloIO.init();
+          const c1 = phylo.create_container("left");
+          const c2 = phylo.create_container("right");
+          phylo.settings.compareMode = true;
+          phylo.bound_container = [c1, c2];
+          c1.add_tree(a);
+          c2.add_tree(b);
+
+          const started = performance.now();
+          phylo.start();
+
+          /*
+           * Two things the obvious version gets wrong.
+           *
+           * 1. The scores are computed in a Web Worker and `api.js` then
+           *    builds a NEW Model, so `models[0]` is the original unscored
+           *    tree. `container.message_loader` carries the progress text and
+           *    is set back to null when the worker returns — that is the
+           *    completion signal, and waiting on it is the difference between
+           *    reading scores and reading an empty object.
+           * 2. `deepLeafList` does NOT exist on the rendered model; it lives
+           *    inside the worker. Leaf sets are therefore computed here from
+           *    the topology, which is also what makes the join to an exact
+           *    implementation trustworthy — it depends on the tree, not on a
+           *    private field.
+           */
+          for (let waited = 0; waited < 900_000; waited += 250) {
+            if (c1.message_loader === null || c1.message_loader === undefined) break;
+            await new Promise((r) => setTimeout(r, 250));
+          }
+          const elapsed = performance.now() - started;
+
+          const root = (c1.viewer && c1.viewer.model && c1.viewer.model.data) || c1.models[0].data;
+
+          // Iterative post-order: these trees are ~180 deep at the small rungs
+          // and deeper as they grow, and recursion here risks a stack overflow
+          // in exactly the cases the thesis is about.
+          const order = [];
+          const stack = [root];
+          while (stack.length) {
+            const node = stack.pop();
+            order.push(node);
+            const kids = node.children || node.branchset || [];
+            for (const kid of kids) stack.push(kid);
+          }
+
+          const sets = new Map();
+          const out = [];
+          let scored = 0, unscored = 0;
+
+          for (let i = order.length - 1; i >= 0; i--) {
+            const node = order[i];
+            const kids = node.children || node.branchset || [];
+            let names;
+            if (kids.length === 0) {
+              names = [node.name];
+            } else {
+              names = [];
+              for (const kid of kids) names = names.concat(sets.get(kid) || []);
+            }
+            sets.set(node, names);
+
+            if (kids.length > 0 && names.length > 0) {
+              const scores = node.elementS ? Object.values(node.elementS) : [];
+              if (scores.length) scored++; else unscored++;
+              out.push({
+                n: names.length,
+                k: fingerprint([...names].sort()),
+                s: scores.length ? scores[0] : null,
+              });
+            }
+          }
+
+          return {
+            clades: out,
+            scored,
+            unscored,
+            compare_ms: elapsed,
+            finished: c1.message_loader === null || c1.message_loader === undefined,
+          };
+        },
+      };
+      window.__benchReady = true;
+    </script>
+  </body>
+</html>

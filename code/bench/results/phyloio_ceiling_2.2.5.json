@@ -1,0 +1,17 @@
+{
+  "label": "2.2.5",
+  "browser": "Chrome 154.0.8037.58",
+  "leaves": 17645,
+  "loads": 1,
+  "loads_with_any_success": 0,
+  "loads_all_failed": 1,
+  "attempts_total": 0,
+  "attempts_succeeded": 0,
+  "per_load": [
+    {
+      "completed": false,
+      "attempted": 0,
+      "succeeded": 0
+    }
+  ]
+}

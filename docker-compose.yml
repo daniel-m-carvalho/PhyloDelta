@@ -1,0 +1,141 @@
+services:
+  # Builds the example catalogue into the volume the first time the stack comes
+  # up: the trees, their comparisons, and the typing data that goes with them.
+  # Without it a fresh volume leaves the app showing "nothing yet", and the
+  # typing-data switch with nothing to switch on.
+  #
+  # `--if-empty` makes every later start a no-op, so this costs one run rather
+  # than one per restart. Delete the volume to rebuild from scratch.
+  phylodelta-seed:
+    image: phylodelta-service:local
+    build:
+      context: ./code/server
+    command: ["phylodelta", "build-all", "--if-empty"]
+    restart: "no"
+    environment:
+      PHYLODELTA_STORE: /data/store
+      PHYLODELTA_DATASETS: /data/datasets
+      # Two, like the others. A one-off seed could justify taking every core,
+      # but then the deployment's own build time would not be the figure this
+      # project reports — and watching it seed is the first thing anyone does
+      # with a fresh deployment.
+      PHYLODELTA_THREADS: "2"
+    volumes:
+      - phylodelta-data:/data/store
+      - ./datasets:/data/datasets:ro
+
+  phylodelta-service:
+    image: phylodelta-service:local
+    build:
+      context: ./code/server
+    restart: unless-stopped
+    ports:
+      # Published so the API can be used directly — curl, /docs, another
+      # client — without going through the web container's proxy.
+      - "${PHYLODELTA_PORT:-8001}:8000"
+    environment:
+      PHYLODELTA_STORE: /data/store
+      PHYLODELTA_DATASETS: /data/datasets
+      # Two, matching the worker. The API does not run the correspondence
+      # search, so this only bites on a rebuild invoked through it; set here so
+      # one file gives one answer instead of three services disagreeing.
+      PHYLODELTA_THREADS: "2"
+      # --- authentication -------------------------------------------------
+      # `mock` attaches a hardcoded user to every request and checks nothing,
+      # so the app runs with no identity provider. It is opt-in and the
+      # service logs a warning at startup while it is on.
+      #
+      # For real authentication set PHYLODELTA_AUTH=jwt and supply the issuer,
+      # the audience, and either a JWKS URL (RS256 — Google, an institutional
+      # IdP, PHYLOViZ) or a shared secret of at least 32 bytes (HS256). The
+      # service refuses to start if these are incomplete, rather than running
+      # in an undefined auth state.
+      #
+      #   PHYLODELTA_AUTH: jwt
+      #   PHYLODELTA_JWT_ISSUER: https://accounts.google.com
+      #   PHYLODELTA_JWT_AUDIENCE: <this service's client id>
+      #   PHYLODELTA_JWT_JWKS_URL: https://www.googleapis.com/oauth2/v3/certs
+      PHYLODELTA_AUTH: "${PHYLODELTA_AUTH:-mock}"
+      # Narrow this to the frontend's origin once it is known.
+      PHYLODELTA_CORS_ORIGINS: "${PHYLODELTA_CORS_ORIGINS:-*}"
+    volumes:
+      # The store is derived and rebuildable, but recomputing it costs minutes
+      # to hours, so it is kept rather than discarded with the container.
+      - phylodelta-data:/data/store
+      # Source data, read-only: the container ingests it and never writes it.
+      - ./datasets:/data/datasets:ro
+    depends_on:
+      phylodelta-seed:
+        condition: service_completed_successfully
+    healthcheck:
+      # Checks that the service answers, not that the store is populated — a
+      # fresh volume is empty until `build-all` has run, and the container must
+      # still come up so that job can be run against it.
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import json, urllib.request; response=urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3); raise SystemExit(0 if json.load(response).get('status') == 'ok' else 1)",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # The other half of the 202. The API accepts an upload and records it as
+  # pending; nothing computes on the request path, because ingesting a
+  # 500k-node tree and building its correspondence is seconds to minutes.
+  #
+  # A separate service rather than a thread inside the API, for two reasons.
+  # A comparison saturates every core it is given, and sharing a process with
+  # the API would make request latency depend on whatever job is running. And
+  # the two scale differently: uploads are cheap and bursty, comparisons are
+  # expensive and serial, so `--scale phylodelta-worker=N` is the knob that
+  # matters. Claiming is safe with any number of workers (db/jobs.py).
+  phylodelta-worker:
+    image: phylodelta-service:local
+    build:
+      context: ./code/server
+    restart: unless-stopped
+    command: ["phylodelta", "worker"]
+    environment:
+      PHYLODELTA_STORE: /data/store
+      PHYLODELTA_DATASETS: /data/datasets
+      # Two, not one per core. This is the service that runs the correspondence
+      # search, so this is the setting every measured build time describes: two
+      # threads give ~2x at 94% efficiency where ten give ~4.7x at 57%, so the
+      # further eight cores buy the last 2.3x at a steeply falling rate
+      # (DECISIONS §34.8, Table 9). It also leaves the machine usable, which
+      # matters when the API and the web container share it.
+      PHYLODELTA_THREADS: "2"
+    volumes:
+      # The same store the API serves from, read-write: this is the process
+      # that writes it. Both containers must agree on the path, since the
+      # database rows hold store-relative paths.
+      - phylodelta-data:/data/store
+      - ./datasets:/data/datasets:ro
+    depends_on:
+      phylodelta-seed:
+        condition: service_completed_successfully
+      phylodelta-service:
+        condition: service_healthy
+
+  # The thesis frontend. Its nginx proxies /api/v1/ to phylodelta-service, so
+  # this one port is all a browser needs. lib_demo is deliberately not
+  # deployed: it is the frozen static-file proof, not the application.
+  phylodelta-web:
+    build:
+      # The workspace root, not code/web: the app consumes the library as a
+      # workspace package and npm cannot resolve it otherwise.
+      context: ./code
+      dockerfile: web/Dockerfile
+    ports:
+      - "${PHYLODELTA_WEB_PORT:-3001}:80"
+    restart: unless-stopped
+    depends_on:
+      phylodelta-service:
+        condition: service_healthy
+
+volumes:
+  phylodelta-data:

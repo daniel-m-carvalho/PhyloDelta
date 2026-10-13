@@ -1,0 +1,56 @@
+{
+  "pair": "33d8e1e121f1__1faa6052c8a5",
+  "leaves": 70580,
+  "repeats": 3,
+  "rungs": [
+    {
+      "threads": 1,
+      "seconds": 6.48252254099998,
+      "speedup": 1.0,
+      "efficiency": 1.0,
+      "identical_to_single_thread": true
+    },
+    {
+      "threads": 2,
+      "seconds": 3.610142875000065,
+      "speedup": 1.7956415481201318,
+      "efficiency": 0.8978207740600659,
+      "identical_to_single_thread": true
+    },
+    {
+      "threads": 3,
+      "seconds": 2.633690165999951,
+      "speedup": 2.4613838881608596,
+      "efficiency": 0.8204612960536198,
+      "identical_to_single_thread": true
+    },
+    {
+      "threads": 4,
+      "seconds": 2.0734168339999997,
+      "speedup": 3.126492673686849,
+      "efficiency": 0.7816231684217122,
+      "identical_to_single_thread": true
+    },
+    {
+      "threads": 6,
+      "seconds": 1.7788317919998917,
+      "speedup": 3.6442583105127992,
+      "efficiency": 0.6073763850854665,
+      "identical_to_single_thread": true
+    },
+    {
+      "threads": 8,
+      "seconds": 1.5925009999998565,
+      "speedup": 4.070655240405227,
+      "efficiency": 0.5088319050506533,
+      "identical_to_single_thread": true
+    },
+    {
+      "threads": 10,
+      "seconds": 1.4483479579998857,
+      "speedup": 4.475804660885566,
+      "efficiency": 0.4475804660885566,
+      "identical_to_single_thread": true
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+"""Where things live.
+
+Both directories are overridable by environment variable so the service can be
+deployed with the store somewhere other than the repository, and so tests can
+point at a fixture store without touching the real one.
+"""
+
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+# .../code/server/src/phylodelta/config.py -> .../repo/theses
+_REPO_ROOT = Path(__file__).resolve().parents[3].parent
+
+
+def _dir_from_env(var: str, default: Path) -> Path:
+    raw = os.environ.get(var)
+    return Path(raw).expanduser().resolve() if raw else default
+
+
+#: Read-only source data: the Newick trees and the isolate TSVs.
+DATASETS_DIR = _dir_from_env("PHYLODELTA_DATASETS", _REPO_ROOT / "datasets")
+
+#: The species the demo is built from (§41). `datasets/gen_trees` is also where
+#: a tree gets dropped to try it, and anything matching the filename pattern
+#: was loaded and compared with everything else — a *Staphylococcus* tree put
+#: there would have been paired with vibrio and clostridium on the home page,
+#: matching sequence-type numbers that mean nothing across species. Other
+#: trees are compared by uploading them. Comma-separated to override.
+DEMO_SPECIES: tuple[str, ...] = tuple(
+    part.strip()
+    for part in os.environ.get("PHYLODELTA_DEMO_SPECIES", "vibrio,clostridium").split(",")
+    if part.strip()
+)
+
+#: Generated artefacts. Rebuildable from DATASETS_DIR, so it is gitignored.
+STORE_DIR = _dir_from_env("PHYLODELTA_STORE", Path(__file__).resolve().parents[2] / "store")
+
+TREES_DIR = STORE_DIR / "trees"
+PAIRS_DIR = STORE_DIR / "pairs"
+ISOLATES_DIR = STORE_DIR / "isolates"
+
+#: Scratch space for work that is not an artefact: trees materialised as Newick
+#: for a subprocess metric to read, and anything else with a lifetime shorter
+#: than a run.
+#:
+#: Inside STORE_DIR rather than the system temp directory, deliberately. These
+#: files can be hundreds of KB per tree and are written per pair; keeping them
+#: beside the store they derive from means one directory to point at a large
+#: disk, one to clean, and no surprise when a container's /tmp turns out to be
+#: a small tmpfs. It is safe to delete at any time.
+SCRATCH_DIR = STORE_DIR / "scratch"
+
+#: Where built native helpers live — the conformance oracle, and any metric that
+#: is a binary rather than a Python function. Sources and build scripts are in
+#: the repository; what they produce is not, so this is gitignored and
+#: rebuildable (see native/build_treediff.sh).
+NATIVE_DIR = _dir_from_env(
+    "PHYLODELTA_NATIVE", Path(__file__).resolve().parents[2] / "native"
+)
+
+
+def threads() -> int:
+    """How many threads the native search may use. 0 means one per core.
+
+    Overridable because a shared machine should not have its whole CPU taken by
+    an offline batch, and because the tests pin it to compare thread counts —
+    the result must not depend on this value.
+    """
+    raw = os.environ.get("PHYLODELTA_THREADS")
+    if not raw:
+        return 0
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return 0

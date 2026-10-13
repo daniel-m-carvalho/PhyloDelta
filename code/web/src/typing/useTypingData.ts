@@ -1,0 +1,253 @@
+/**
+ * Typing data for the leaves currently on screen.
+ *
+ * **Only for what is displayed.** A slice shows tens of leaves out of tens of
+ * thousands, and the composition of the rest is not needed to draw it — so the
+ * request carries the visible sequence types and nothing else. This is the
+ * bargain the tree slicing already makes, applied to the metadata.
+ *
+ * **More than one column can be shown at once**, and the segments are merged
+ * into one bar (user's choice, 2026-09-24). One consequence, recorded here
+ * because it is not visible from the screen: the backend segments by a single
+ * column per request and every isolate appears in every column, so an isolate
+ * is counted once *per selected column*. Showing two columns makes a bar twice
+ * as long as the leaf's isolate count. Lengths stay comparable **between
+ * leaves** — every leaf is inflated by the same factor — but they do not read
+ * as "how many isolates". The user asked for the on-screen note about this to
+ * be removed; the behaviour is deliberate, not a defect.
+ */
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { api, ApiError } from "../api/client";
+import type { LeafComposition, ValueCount } from "../api/types";
+import type { SliceTree } from "../tree/fromSlice";
+
+/** "Not recorded" as one category, whatever the export wrote. */
+export const UNRECORDED = "(not recorded)";
+
+export interface TypingData {
+  /** Merged segments by leaf label, ready for the library's bar charts. */
+  byLeaf: Map<string, LeafComposition>;
+  /** Every category present, so a legend is complete before a bar is drawn. */
+  categories: string[];
+  /** The columns currently shown. */
+  segmentKeys: string[];
+  /** Every column that can segment. */
+  keys: string[];
+  loading: boolean;
+  error: string | null;
+}
+
+const EMPTY: TypingData = {
+  byLeaf: new Map(),
+  categories: [],
+  segmentKeys: [],
+  keys: [],
+  loading: false,
+  error: null,
+};
+
+/**
+ * The key a segment is coloured by.
+ *
+ * Qualified by its column when more than one is shown, because values collide
+ * across columns — "Environment" is both a Source Niche and a Source Type, and
+ * merging them into one swatch would claim they are the same thing. With a
+ * single column the prefix is noise, so it is left off.
+ */
+function segmentKey(column: string, value: string, qualify: boolean): string {
+  const name = value || UNRECORDED;
+  return qualify ? `${column}: ${name}` : name;
+}
+
+export function datumFor(composition: LeafComposition | undefined) {
+  if (!composition || composition.total <= 0) return undefined;
+  const segments = composition.segments
+    .filter((segment) => segment.count > 0)
+    .map((segment) => ({ key: segment.value, value: segment.count }));
+  // A leaf with no segments gets no datum: handed one, the library falls back
+  // to keying the bar by the *leaf identifier*, which turned sequence types
+  // into colour categories of their own.
+  if (segments.length === 0) return undefined;
+  return { total: composition.total, segments };
+}
+
+/** Leaf labels in a slice — the real ones, not the clades folded into wedges. */
+export function displayedLeafLabels(tree: SliceTree | null): string[] {
+  if (!tree) return [];
+  const labels: string[] = [];
+  for (const storedId of tree.leaves) {
+    const node = tree.byStoredId.get(storedId);
+    const label = node?.metadata?.label;
+    if (typeof label === "string" && label && label !== "_") labels.push(label);
+  }
+  return labels;
+}
+
+/** Combine one response per column into a single composition per leaf. */
+export function mergeColumns(
+  responses: { column: string; leaves: LeafComposition[] }[],
+): Map<string, LeafComposition> {
+  const qualify = responses.length > 1;
+  const merged = new Map<string, LeafComposition>();
+
+  for (const { column, leaves } of responses) {
+    for (const leaf of leaves) {
+      const existing = merged.get(leaf.leaf);
+      const segments: ValueCount[] = leaf.segments
+        .filter((segment) => segment.count > 0)
+        .map((segment) => ({
+          value: segmentKey(column, segment.value, qualify),
+          count: segment.count,
+        }));
+      if (!existing) {
+        merged.set(leaf.leaf, { ...leaf, segments });
+        continue;
+      }
+      merged.set(leaf.leaf, {
+        leaf: leaf.leaf,
+        // Summed across columns, which is the inflation this returns openly.
+        total: existing.total + leaf.total,
+        available: Math.max(existing.available, leaf.available),
+        segments: [...existing.segments, ...segments],
+      });
+    }
+  }
+  return merged;
+}
+
+export function useTypingData(
+  isolateSet: string | null,
+  tree: SliceTree | null,
+  enabled: boolean,
+  segmentKeys: string[],
+): TypingData {
+  const [keys, setKeys] = useState<string[]>([]);
+  const [byLeaf, setByLeaf] = useState<Map<string, LeafComposition>>(new Map());
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const labels = useMemo(() => displayedLeafLabels(tree), [tree]);
+  const labelKey = labels.join(",");
+  const columnKey = segmentKeys.join(",");
+
+  /**
+   * The request that failed, so it is not immediately reissued.
+   *
+   * A failed fetch sets `error`, which re-renders, which can bring the effect
+   * back round to the same request — and with the backend unreachable that
+   * repeats for as long as the page is open. Observed in the field as panels
+   * "shaking constantly": not a layout problem at all, but this component
+   * re-rendering on every failure, with the console showing the same
+   * `compositions` request dozens of times.
+   *
+   * Keyed by the request rather than a boolean, so this stops a *repeat* and
+   * not a *retry*: choosing different columns, navigating to different leaves
+   * or toggling typing off and on all produce a different key and are tried
+   * again. What cannot happen is the same request going out twice with nothing
+   * having changed in between.
+   *
+   * **This is defence in depth, not the fix.** The fix is the dependency list
+   * below: with `labels` and `segmentKeys` removed, a failure no longer brings
+   * the effect back round at all, and removing this guard breaks no test. It is
+   * kept because the failure it prevents is a request storm from every open
+   * browser against a backend that is already down, and because React's
+   * StrictMode double-invokes effects in development. If it ever has to earn
+   * its place, that is the argument — not a test.
+   */
+  const failedRequest = useRef<string | null>(null);
+
+  // Which columns can segment. Once per isolate set, not per slice.
+  useEffect(() => {
+    if (!enabled || !isolateSet) return;
+    let live = true;
+    api
+      .isolateKeys(isolateSet)
+      .then((info) => {
+        if (live) setKeys(info.facets.filter((f) => f.segmentable).map((f) => f.name));
+      })
+      .catch(() => live && setKeys([]));
+    return () => {
+      live = false;
+    };
+  }, [enabled, isolateSet]);
+
+  useEffect(() => {
+    if (!enabled || !isolateSet || segmentKeys.length === 0 || labels.length === 0) {
+      setByLeaf(new Map());
+      // Turning typing off and on again is the user asking for another go.
+      failedRequest.current = null;
+      return;
+    }
+    const request = `${isolateSet}\u0000${columnKey}\u0000${labelKey}`;
+    // Already tried and failed, with nothing changed since: the error is
+    // already on screen, so returning here leaves it there rather than
+    // clearing it and asking again.
+    if (failedRequest.current === request) return;
+
+    let live = true;
+    setLoading(true);
+    setError(null);
+    // One request per column: the API segments by a single column at a time,
+    // which is the right shape for it — the merging is a presentation choice
+    // and belongs here.
+    Promise.all(
+      segmentKeys.map((column) =>
+        api
+          .compositions(isolateSet, { leaves: labels, segment_by: column })
+          .then((response) => ({ column, leaves: response.leaves })),
+      ),
+    )
+      .then((responses) => {
+        if (!live) return;
+        failedRequest.current = null;
+        setByLeaf(mergeColumns(responses));
+        setLoading(false);
+      })
+      .catch((failed: unknown) => {
+        // Recorded before the state update, because that update is what
+        // re-renders and brings the effect back here.
+        failedRequest.current = request;
+        if (!live) return;
+        setError(failed instanceof ApiError ? failed.message : String(failed));
+        setLoading(false);
+      });
+    return () => {
+      live = false;
+    };
+    // `labels` and `segmentKeys` are deliberately absent: `labelKey` and
+    // `columnKey` are their joined forms, and comparing those by VALUE is the
+    // whole point. Listing the arrays as well puts identity back in, so a
+    // re-render holding an equal-but-new array refetches for no reason — which
+    // is how a single failure became a request loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, isolateSet, columnKey, labelKey]);
+
+  const categories = useMemo(() => {
+    const seen = new Set<string>();
+    for (const composition of byLeaf.values()) {
+      for (const segment of composition.segments) {
+        if (segment.count > 0) seen.add(segment.value);
+      }
+    }
+    return [...seen].sort((a, b) => a.localeCompare(b));
+  }, [byLeaf]);
+
+  // Memoised: consumers put this in effect dependencies, and a fresh object
+  // every render made such an effect run every render — one that also set
+  // state looped until the page died.
+  return useMemo(
+    () =>
+      enabled
+        ? {
+            byLeaf,
+            categories,
+            segmentKeys,
+            keys,
+            loading,
+            error,
+          }
+        : EMPTY,
+    [enabled, byLeaf, categories, segmentKeys, keys, loading, error],
+  );
+}

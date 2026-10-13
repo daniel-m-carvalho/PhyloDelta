@@ -1,0 +1,12 @@
+.DS_Store
+node_modules/
+dist/
+CLAUDE.md
+.claude/
+# Benchmark ladder trees: 32 MB of generated Newick, reproducible in minutes
+# from the real pair with `tools/make_ladder.py`. The generator is the record;
+# the trees are not.
+code/bench/trees/ladder/
+# The reconciled real pair, written by `server/tools/prepare_rf_input.py` from
+# datasets/ in a second. Derived from committed inputs, so it is not committed.
+code/bench/trees/vibrio/

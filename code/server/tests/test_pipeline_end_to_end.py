@@ -1,0 +1,299 @@
+"""The whole pipeline, on a committed fixture dataset.
+
+Every other test needs `datasets/` — the real 20 MB of EnteroBase exports — and
+skips without it. This one does not: the fixture in `tests/fixtures/datasets`
+is 6 KB and lives in the repository, so the suite proves the pipeline works
+anywhere, including on a machine that has only ever cloned the code.
+
+The fixture deliberately reproduces the awkward shapes found in the real data,
+because those are what broke things:
+
+* a tree with a **unary root** (vibrio-nj's shape, §1.4 — it crashes the
+  reference implementation)
+* **mismatched leaf sets**, one tree missing a leaf the other has (ST 211, §3.1)
+* **sequence types with no isolates**, and isolates whose ST is in no tree (§7.5)
+* **blank cells** in every isolate column (§7.5)
+* a **goeBURST file**, which the catalogue must skip (§1.8)
+* a **constant column**, which facet selection must drop (§7.4)
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+
+FIXTURES = Path(__file__).parent / "fixtures" / "datasets"
+PAIR = "mini-nj__mini-upgma"
+
+
+@pytest.fixture(scope="module", autouse=True)
+def mini_is_the_demo():
+    """The fixture trees are species `mini`, so that is this module's demo (§41)."""
+    from phylodelta import config
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(config, "DEMO_SPECIES", ("mini",))
+        yield
+
+
+@pytest.fixture(scope="module")
+def built(tmp_path_factory, mini_is_the_demo):
+    """Run all three offline stages, exactly as the CLI does."""
+    from phylodelta.isolates.ingest import ingest_all
+    from phylodelta.precompute.pipeline import compute_pairs, ingest_trees
+
+    store = tmp_path_factory.mktemp("mini")
+    assert ingest_trees(datasets_dir=FIXTURES, store_dir=store) == 0
+    assert compute_pairs(store_dir=store, metrics=["rf"], datasets_dir=FIXTURES) == 0
+    assert ingest_all(datasets_dir=FIXTURES, store_dir=store) == 0
+    return store
+
+
+@pytest.fixture()
+def client(built, monkeypatch):
+    from phylodelta import config, db
+    from phylodelta.api.app import create_app
+    from phylodelta.isolates import registry as isolate_registry
+    from phylodelta.metrics import registry_pairs
+    from phylodelta.trees import registry as tree_registry
+
+    db.reset()
+    monkeypatch.setattr(config, "STORE_DIR", built)
+    monkeypatch.setattr(config, "TREES_DIR", built / "trees")
+    monkeypatch.setattr(config, "PAIRS_DIR", built / "pairs")
+    monkeypatch.setattr(config, "ISOLATES_DIR", built / "isolates")
+    for registry in (tree_registry, registry_pairs, isolate_registry):
+        registry.reset_cache()
+    yield TestClient(create_app())
+    for registry in (tree_registry, registry_pairs, isolate_registry):
+        registry.reset_cache()
+
+
+def test_health_reports_a_ready_store(client):
+    body = client.get("/api/v1/health").json()
+    assert body["status"] == "ok" and body["store_ready"] is True
+
+
+def test_goeburst_is_not_ingested(client):
+    ids = {t["id"] for t in client.get("/api/v1/datasets").json()["trees"]}
+    assert ids == {"mini-upgma", "mini-nj"}
+
+
+def test_the_unary_root_was_canonicalised(client):
+    """The fixture's nj tree wraps its real root, as vibrio-nj's does."""
+    assert client.get("/api/v1/trees/mini-nj").json()["suppressed_unary"] == 1
+    assert client.get("/api/v1/trees/mini-upgma").json()["suppressed_unary"] == 0
+
+
+def test_mismatched_leaf_sets_are_reconciled_and_reported(client):
+    body = client.get(f"/api/v1/comparisons/{PAIR}").json()
+    assert body["shared_leaves"] == 39
+    assert body["dropped_from_right"] == ["7"]
+    assert body["dropped_from_left"] == []
+
+
+def test_a_tree_compared_with_itself_would_score_zero(built):
+    from phylodelta.metrics.plugins.rf_python.rf import compute
+    from phylodelta.trees.correspondence import compute_correspondence
+    from phylodelta.trees.store import read_tree
+
+    arrays = read_tree(built / "trees" / "mini-upgma").to_arrays()
+    correspondence = compute_correspondence(arrays, arrays, best_match=False)
+    assert compute(arrays, arrays, correspondence).summary["rf"] == 0
+
+
+def test_slice_conserves_every_leaf(client):
+    for budget in (1, 2, 5, 40, 500):
+        body = client.get(
+            "/api/v1/trees/mini-upgma/slice", params={"budget": budget}
+        ).json()
+        wedges = sum(body["nodes"]["truncated"])
+        assert body["displayed_leaves"] <= budget
+        assert (
+            body["displayed_leaves"] - wedges + body["hidden_leaves"]
+            == body["total_leaves"] == 40
+        )
+
+
+def test_slice_and_comparison_align(client):
+    body = client.get(
+        "/api/v1/trees/mini-nj/slice", params={"budget": 20, "compare": PAIR}
+    ).json()
+    assert body["comparison"]["id"] == body["nodes"]["id"]
+    separate = client.get(
+        f"/api/v1/comparisons/{PAIR}/slice", params={"tree": "mini-nj", "budget": 20}
+    ).json()
+    assert separate["nodes"] == body["comparison"]
+
+
+def test_both_orderings_work(client):
+    for order in ("size", "difference"):
+        body = client.get(
+            "/api/v1/trees/mini-nj/slice",
+            params={"budget": 15, "compare": PAIR, "order": order},
+        ).json()
+        assert body["displayed_leaves"] <= 15
+
+
+def test_constant_column_is_not_a_facet(client):
+    names = {f["name"] for f in client.get("/api/v1/isolates/mini/keys").json()["facets"]}
+    assert "Differences" not in names, "one distinct value: cannot divide anything"
+    assert "Barcode" not in names and "Uberstrain" not in names
+    assert {"Source Niche", "Country", "Continent"} <= names
+
+
+def test_compositions_distinguish_no_data_from_filtered_out(client):
+    body = client.post(
+        "/api/v1/isolates/mini/compositions",
+        json={"leaves": [str(i) for i in range(1, 41)], "segment_by": "Country"},
+    ).json()
+    assert len(body["leaves"]) == 40
+    # The fixture gives some STs no isolates at all; that must be visible.
+    assert any(leaf["available"] == 0 for leaf in body["leaves"])
+    assert all(leaf["total"] <= leaf["available"] for leaf in body["leaves"])
+
+
+def test_errors_share_one_shape(client):
+    for request, expected in (
+        (("GET", "/api/v1/trees/nope"), "tree_not_found"),
+        (("GET", "/api/v1/trees/mini-upgma/slice?root=99999"), "node_out_of_range"),
+        (("GET", "/api/v1/isolates/nope/keys"), "isolates_not_found"),
+    ):
+        method, url = request
+        response = client.request(method, url)
+        body = response.json()
+        assert response.status_code == 404
+        assert body["code"] == expected
+        assert isinstance(body["detail"], str) and body["detail"]
+
+
+def test_invalid_parameters_use_the_same_error_shape(client):
+    body = client.get("/api/v1/trees/mini-upgma/slice", params={"budget": 0}).json()
+    assert body["code"] == "invalid_request"
+    assert "budget" in body["detail"]
+    assert body["errors"][0]["field"] == "budget"
+
+
+# --- seeding a fresh deployment ---------------------------------------------
+
+def test_a_half_built_store_does_not_count_as_populated(tmp_path):
+    """The guard the container start-up relies on.
+
+    A run interrupted between stages leaves trees without comparisons, and
+    calling that "populated" would leave the demo half-built with no sign of
+    why — the app would list trees and no pairs, which reads like a bug rather
+    than an unfinished build.
+    """
+    from phylodelta.precompute.pipeline import store_is_populated
+
+    assert store_is_populated(tmp_path) is False
+
+    for part in ("trees", "pairs", "isolates"):
+        (tmp_path / part).mkdir()
+        assert store_is_populated(tmp_path) is False, f"empty {part} should not count"
+        (tmp_path / part / "something").mkdir()
+
+    assert store_is_populated(tmp_path) is True
+
+
+def test_build_all_if_empty_skips_a_built_store(datasets_dir, tmp_path, monkeypatch):
+    """So a restart costs nothing. Seeding runs on every container start."""
+    from phylodelta import config
+    from phylodelta.precompute import pipeline
+
+    monkeypatch.setattr(config, "STORE_DIR", tmp_path)
+    monkeypatch.setattr(config, "DATASETS_DIR", datasets_dir)
+    for part in ("trees", "pairs", "isolates"):
+        (tmp_path / part / "x").mkdir(parents=True)
+
+    ran: list[str] = []
+    for stage in ("ingest_trees", "compute_pairs"):
+        monkeypatch.setattr(pipeline, stage, lambda *a, _s=stage, **k: ran.append(_s) or 0)
+
+    assert pipeline.build_all(if_empty=True) == 0
+    assert ran == [], "nothing should have been rebuilt"
+
+
+def test_the_sweep_leaves_uploaded_trees_alone(tmp_path):
+    """Only the catalogue's trees are paired, whatever else the store holds.
+
+    The regression: a deployment rebuilt its demo comparisons after a metric
+    version change with `compute-pairs`, which then paired every tree in the
+    store — two uploads included — and put seven comparisons nobody asked for
+    on the home page.
+    """
+    import shutil
+
+    from phylodelta import db
+    from phylodelta.precompute.pipeline import compute_pairs, ingest_trees
+
+    store = tmp_path / "store"
+    assert ingest_trees(datasets_dir=FIXTURES, store_dir=store) == 0
+    # An upload, as far as the store is concerned: a tree under an opaque id
+    # that no file in datasets/ names.
+    shutil.copytree(store / "trees" / "mini-nj", store / "trees" / "fd53852fb949")
+    with db.using_store(store):
+        db.register_dataset(
+            dataset_id="fd53852fb949", owner_id="alice", kind=db.DatasetKind.TREE,
+            display_name="an upload", store_path="trees/fd53852fb949",
+        )
+
+    assert compute_pairs(store_dir=store, metrics=["rf"], datasets_dir=FIXTURES) == 0
+    pairs = sorted(p.name for p in (store / "pairs").iterdir())
+    assert pairs == [PAIR]
+    with db.using_store(store):
+        assert db.comparison_by_id("fd53852fb949__mini-upgma") is None
+        assert db.comparison_by_id("fd53852fb949__mini-nj") is None
+
+    # Named explicitly, an upload's pair is still computable — that is how a
+    # stale one is rebuilt.
+    uploaded = "fd53852fb949__mini-upgma"
+    assert compute_pairs(store_dir=store, metrics=["rf"], only=uploaded) == 0
+    assert (store / "pairs" / uploaded / "rf" / "meta.json").exists()
+
+
+def test_recomputing_a_comparison_does_not_change_who_owns_it(tmp_path):
+    """The sweep's owner is for rows it creates, not for rows it touches."""
+    from phylodelta import db
+
+    with db.using_store(tmp_path):
+        db.create_schema()
+        for tree in ("a", "b"):
+            db.register_dataset(
+                dataset_id=tree, owner_id="alice", kind=db.DatasetKind.TREE,
+                display_name=tree, store_path=f"trees/{tree}",
+            )
+        db.record_computed_pair(
+            pair_id="a__b", left_id="a", right_id="b", owner_id="alice", display_name="mine",
+        )
+        db.record_computed_pair(
+            pair_id="a__b", left_id="a", right_id="b", owner_id="demo", display_name="a vs b",
+        )
+        assert [c.id for c in db.comparisons_for("alice")] == ["a__b"]
+        assert db.comparisons_for("demo") == []
+
+
+def test_a_tree_of_another_species_is_not_part_of_the_demo(tmp_path, capsys):
+    """Dropped into gen_trees, it is named and left out — not loaded and paired
+    with the demo trees, which across species would compare sequence-type
+    numbers that mean nothing (§41)."""
+    import shutil
+
+    from phylodelta.precompute.pipeline import compute_pairs, ingest_trees
+
+    datasets = tmp_path / "datasets"
+    shutil.copytree(FIXTURES, datasets)
+    shutil.copy(
+        datasets / "gen_trees" / "mini-nj-tree.nwk",
+        datasets / "gen_trees" / "staphylococcus-nj-tree.nwk",
+    )
+    store = tmp_path / "store"
+
+    assert ingest_trees(datasets_dir=datasets, store_dir=store) == 0
+    assert sorted(p.name for p in (store / "trees").iterdir()) == ["mini-nj", "mini-upgma"]
+    assert "skipped staphylococcus-nj-tree.nwk: 'staphylococcus' is not a demo species" in capsys.readouterr().err
+
+    assert compute_pairs(store_dir=store, metrics=["rf"], datasets_dir=datasets) == 0
+    assert sorted(p.name for p in (store / "pairs").iterdir()) == [PAIR]

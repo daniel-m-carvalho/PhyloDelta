@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>phylo.io — transfer benchmark</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+      #panels { display: flex; height: 100vh; }
+      #left, #right { flex: 1 1 0; border-right: 1px solid #ddd; overflow: hidden; }
+    </style>
+    <!-- The real bundle, loaded the way phylo.io's own Quick Start loads it, so
+         the application bytes counted here are the ones a user pays. -->
+    <script src="/phyloio/dist/src_worker_bcn_js.phylo.js"></script>
+    <script src="/phyloio/dist/src_worker_distance_js.phylo.js"></script>
+    <script src="/phyloio/dist/phylo.js"></script>
+  </head>
+  <body>
+    <div id="panels"><div id="left"></div><div id="right"></div></div>
+
+    <script>
+      /*
+       * What phylo.io must transfer before it can attempt a comparison.
+       *
+       * **Fetch only, deliberately.** `phyloio.html` also parses and renders,
+       * which is what Table 1 measures and what fails above 17,645 leaves. The
+       * quantity here is the download, and it is measurable at every rung
+       * *including* the ones where the tool then dies — "it transfers 35 MB and
+       * still cannot open the comparison" is a sharper statement than "failed",
+       * and it cannot be made without separating the two.
+       *
+       * This is faithful to what the app does: `load()` in the other page fetches
+       * exactly these two URLs as its first act, with no conditional request and
+       * no partial read. There is no smaller download that would do — the format
+       * is one Newick string per tree and the parser needs all of it.
+       */
+      window.__transfer = {
+        async fetchTrees(leftUrl, rightUrl) {
+          const [a, b] = await Promise.all([
+            fetch(leftUrl).then((r) => r.text()),
+            fetch(rightUrl).then((r) => r.text()),
+          ]);
+          // Returned so the driver can cross-check its wire measurement against
+          // the payload the page actually received.
+          return { leftChars: a.length, rightChars: b.length };
+        },
+      };
+      window.__transferReady = true;
+    </script>
+  </body>
+</html>

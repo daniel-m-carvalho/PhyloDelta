@@ -1,0 +1,723 @@
+/*
+ * The trees are the interface.
+ *
+ * PhyloLens puts every action in a drawer of buttons; here the actions live on
+ * the thing they act on, which frees the whole window for the two panels. What
+ * chrome remains states what is on screen against what it stands for — the
+ * claim this project makes, visible while you use it.
+ */
+
+:root {
+  /* Light only. The viewer draws branches and the divergence gradient onto a
+     canvas with its own palette, and those were chosen against a light
+     background; following the operating system into dark mode would leave the
+     chrome dark and the trees unchanged. */
+  color-scheme: light;
+  --bg: #fbfbfd;
+  --surface: #ffffff;
+  --line: #e2e4ea;
+  --ink: #16181d;
+  --muted: #6b7180;
+  --accent: #2f5fd0;
+  --warn: #9a6400;
+  --warn-bg: #fff6e0;
+  --danger: #a11b1b;
+  --radius: 10px;
+  --shadow: 0 8px 28px rgb(16 18 25 / 12%);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/*
+ * The page never scrolls; only regions inside it do (§39).
+ *
+ * The app is one window-sized layout, and every list that can grow (the
+ * chooser, the menus, the legends) scrolls in its own box. A scrollable page
+ * added nothing — and on Windows, where a scrollbar takes ~17px, it was a
+ * feedback loop: half a pixel of overflow brought in a scrollbar, the
+ * scrollbar narrowed the panels until the overflow went away, the scrollbar
+ * left, and the panels widened again, every frame. Users saw the app tremble
+ * when they zoomed the right panel or switched the typing data on.
+ */
+html, body, #root { height: 100%; }
+html, body { overflow: hidden; }
+
+.app { display: flex; flex-direction: column; height: 100%; }
+
+/* --- top bar --- */
+.app-bar {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  flex: 0 0 auto;
+}
+.app-bar h1 { font-size: 17px; margin: 0; letter-spacing: -0.01em; }
+.tagline { margin: 0; color: var(--muted); font-size: 13px; }
+.spacer { flex: 1; }
+.headline { font-size: 14px; color: var(--muted); }
+.headline strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+.headline em { font-style: normal; }
+
+.chip {
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+}
+.chip.warn { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
+
+.caution {
+  margin: 0;
+  padding: 8px 16px;
+  background: var(--warn-bg);
+  color: var(--warn);
+  font-size: 13px;
+  border-bottom: 1px solid var(--line);
+}
+.app-error {
+  margin: 0;
+  padding: 10px 16px;
+  color: var(--danger);
+  font-size: 13px;
+}
+
+/* --- comparison --- */
+.comparison { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+.comparison-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--line);
+  border-bottom: 1px solid var(--line);
+  flex: 0 0 auto;
+}
+.side-summary { background: var(--surface); padding: 8px 14px; }
+.side-name { margin: 0; font-size: 13px; color: var(--muted); }
+.side-name strong { color: var(--ink); }
+.selected-node { color: var(--accent); }
+
+/* The found leaf: the jump's magenta, so the chip and the mark read as one. */
+.found-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 10px;
+  padding: 1px 4px 1px 8px;
+  border: 1px solid #d400ff;
+  border-radius: 999px;
+  background: color-mix(in srgb, #d400ff 8%, transparent);
+  color: var(--ink);
+  font-size: 12px;
+}
+.found-chip strong { color: #a000c0; }
+/* The mark is on a wedge standing in for the leaf, not on the leaf: said in
+   words rather than by a different colour, which would need its own legend. */
+.found-approx {
+  color: var(--muted);
+  font-style: normal;
+  font-size: 11px;
+  cursor: help;
+}
+.found-clear {
+  border: 0;
+  background: none;
+  padding: 0 4px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+}
+.found-clear:hover, .found-clear:focus-visible { color: var(--ink); }
+.side-counts {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.side-counts strong { color: var(--accent); }
+
+.panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--line);
+  flex: 1;
+  min-height: 0;
+}
+/*
+ * Clipped, so nothing drawn in a panel can make the page larger (§39). Sigma
+ * sizes its canvases in whole pixels: a panel 639.5px wide got 640px canvases,
+ * and the right panel's half pixel landed past the edge of the window. The
+ * left panel's lands in the gap between them, which is why only the right one
+ * set it off.
+ */
+.panel { position: relative; background: var(--surface); min-height: 0; overflow: hidden; }
+.sigma-host { position: absolute; inset: 0; }
+.panel-note {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+}
+.panel-note.error { color: var(--danger); border-color: currentcolor; }
+
+/* A searched name this panel's tree does not have: in the panel, not over both,
+   because the other panel just moved to it. */
+.panel-popup {
+  position: absolute;
+  left: 50%;
+  top: 16px;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: calc(100% - 32px);
+  padding: 8px 8px 8px 12px;
+  border-radius: var(--radius);
+  background: var(--warn-bg);
+  color: var(--warn);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+}
+.panel-popup.error {
+  background: var(--surface);
+  color: var(--danger);
+  border: 1px solid currentcolor;
+}
+/* "Not in this tree": readable for most of its life, then gone. The timer in
+   PanelNotice removes it; this only makes the exit visible rather than abrupt. */
+.panel-popup.fading { animation: panel-popup-fade 6s ease-in forwards; }
+@keyframes panel-popup-fade {
+  0%, 85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel-popup.fading { animation: none; }
+}
+
+/* --- search --- */
+.comparison-tools {
+  display: flex;
+  padding: 6px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  flex: 0 0 auto;
+}
+.search { position: relative; width: min(420px, 100%); }
+.search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font: inherit;
+  font-size: 13px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.search-input:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+.search-results {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 100%;
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.search-note { margin: 6px 8px; font-size: 12px; color: var(--muted); }
+.search-note.error { color: var(--danger); }
+.search-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.search-table th {
+  text-align: left;
+  font-weight: normal;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 2px 8px;
+}
+.search-table td { padding: 4px 8px; }
+.search-row { cursor: pointer; }
+.search-row:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.search-kind { color: var(--muted); font-size: 11px; }
+/* ✓ and ✗ carry the meaning in the glyph; colour only repeats it. */
+.search-in { color: var(--accent); width: 3.5em; }
+.search-out { color: var(--danger); width: 3.5em; }
+
+/* --- context menu --- */
+.context-menu {
+  position: fixed;
+  z-index: 40;
+  min-width: 240px;
+  max-width: 320px;
+  padding: 5px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.context-menu-title {
+  margin: 4px 8px 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.context-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.context-menu-item:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.context-menu-item:disabled { opacity: 0.45; cursor: default; }
+.context-menu-item.separated { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 9px; }
+.context-menu-detail { display: block; font-size: 12px; color: var(--muted); }
+
+/* --- chooser --- */
+.chooser {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(360px, 1.2fr);
+  gap: 20px;
+  padding: 20px;
+  overflow: auto;
+  align-content: start;
+}
+.chooser h2 { font-size: 15px; margin: 0 0 10px; }
+.empty { color: var(--muted); font-size: 14px; }
+
+.pair-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+
+/* The row and its remove control sit side by side; the control is a sibling
+   rather than a child, since a button inside a button is invalid markup. */
+.pair-list li { position: relative; display: flex; align-items: stretch; gap: 6px; }
+.pair-list li .pair { flex: 1; min-width: 0; }
+
+.pair-remove {
+  flex: none;
+  width: 34px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  /* Reads as a quiet affordance until reached for: it is destructive, and a
+     list of them competing with the rows would be the loudest thing here. */
+  opacity: 0.45;
+  transition: opacity 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.pair-list li:hover .pair-remove,
+.pair-remove:focus-visible {
+  opacity: 1;
+}
+
+.pair-remove:hover,
+.pair-remove:focus-visible {
+  color: #c92a2a;
+  border-color: #f1aeae;
+}
+
+.notice-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+.primary.danger { background: #c92a2a; border-color: #c92a2a; }
+.primary.danger:hover:not(:disabled) { background: #a61e1e; border-color: #a61e1e; }
+.pair {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.pair:hover:not(:disabled) { border-color: var(--accent); }
+.pair:disabled { opacity: 0.6; cursor: default; }
+.pair-name { font-weight: 600; }
+.pair-status { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.pair-status.ready { color: var(--accent); }
+.pair-status.failed { color: var(--danger); }
+.pair-detail { font-size: 12px; color: var(--muted); }
+
+/* --- upload --- */
+.upload {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 16px;
+}
+.upload h2 { margin-top: 0; }
+.upload-lead { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+.drop-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.drop-zone {
+  border: 1.5px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.drop-zone:hover, .drop-zone.over { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.drop-zone.filled { border-style: solid; border-color: var(--accent); }
+.drop-label { margin: 0 0 4px; font-weight: 600; font-size: 13px; }
+.drop-hint { margin: 0; font-size: 12px; color: var(--muted); }
+.drop-file { margin: 0; font-size: 13px; word-break: break-all; }
+
+.typing { border: 1px solid var(--line); border-radius: var(--radius); margin: 14px 0; padding: 12px; }
+.typing legend { font-size: 12px; color: var(--muted); padding: 0 6px; }
+.switch { display: block; font-size: 13px; margin-bottom: 10px; }
+.switch-note { display: block; font-size: 12px; color: var(--muted); margin-left: 22px; }
+
+.fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 6px; }
+.fields label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.fields input,
+.fields select {
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+}
+.field-help { margin: 0 0 14px; font-size: 12px; color: var(--muted); }
+
+.primary {
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.primary:disabled { opacity: 0.45; cursor: default; }
+
+.upload-status { margin: 12px 0 0; font-size: 13px; color: var(--muted); }
+.upload-status.failed { color: var(--danger); }
+.upload-status.ready { color: var(--accent); }
+/*
+ * A comparison that succeeded with part of what was asked for missing. Warn,
+ * not danger: the result is usable, and colouring it like a failure would say
+ * the upload did not work when it did.
+ */
+.upload-status.partial { color: var(--warn); }
+
+/*
+ * Leaving a comparison is a navigation, so it looks like a button rather than
+ * a link — it was a small blue "Choose another" that read as incidental text,
+ * next to the panel's own "Back to whole tree" link, which does something
+ * quite different.
+ */
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.back-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.link-button {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+@media (max-width: 900px) {
+  .chooser, .drop-row, .fields { grid-template-columns: 1fr; }
+  .panels, .comparison-bar { grid-template-columns: 1fr; }
+}
+
+/* --- typing data --- */
+.switch.inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.switch.inline input { margin: 0; }
+
+.typing-legend {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  padding: 8px 14px;
+  /*
+   * Deliberately NOT `overflow: auto`. The column dropdown is an absolutely
+   * positioned child that opens upward, out of this box — and an
+   * overflow-scrolling ancestor clips exactly that. The menu was rendered and
+   * then cut away entirely: clicks at its position reached the tree canvas
+   * underneath, so the drawer looked dead. The swatch list carries the scroll
+   * instead, which is the part that actually grows.
+   */
+}
+.legend-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.legend-label { font-size: 12px; color: var(--muted); flex: 0 0 auto; }
+
+
+.checkbox-menu { position: relative; display: flex; align-items: center; gap: 6px; }
+.menu-title { font-size: 12px; color: var(--muted); }
+
+/*
+ * Sized and bordered to sit beside the bar-length select as a pair: the
+ * closed state is a normal dropdown, and only the open state differs.
+ */
+.picker-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 150px;
+  max-width: 260px;
+  justify-content: space-between;
+  padding: 3px 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.picker-button:hover { border-color: var(--accent); }
+.picker-summary { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.picker-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  min-width: 240px;
+  max-height: 280px;
+  overflow: auto;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 2px;
+}
+/* Opens upward where the control sits at the foot of the window. */
+.picker-menu.up { top: auto; bottom: calc(100% + 6px); }
+.picker-menu.right { left: auto; right: 0; }
+
+.picker-menu label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.picker-menu label:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.picker-menu input { margin: 2px 0 0; }
+.menu-note { display: block; font-size: 12px; color: var(--muted); }
+
+/* A labelled rule inside a CheckboxMenu, separating a group of radios from
+   the toggles above it. */
+.menu-heading {
+  display: block;
+  margin: 6px 0 2px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.legend-scale { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.legend-scale select {
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+}
+
+.legend-note { font-size: 12px; color: var(--muted); }
+.legend-note.error { color: var(--danger); }
+
+.legend-swatches {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 84px;
+  overflow: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.legend-swatches li { display: flex; align-items: center; gap: 5px; }
+.swatch {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  flex: 0 0 auto;
+  border: 1px solid rgb(0 0 0 / 12%);
+}
+
+/* --- export --- */
+.export-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgb(16 18 25 / 32%);
+  padding: 20px;
+}
+.export-panel {
+  width: min(520px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  padding: 20px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.export-panel h2 { margin: 0 0 4px; font-size: 16px; }
+.export-lead { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+.export-field { display: grid; gap: 4px; font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+.export-field input {
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+}
+.export-contents {
+  margin: 14px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.export-contents li { margin-bottom: 2px; }
+.export-error { color: var(--danger); font-size: 13px; margin: 12px 0 0; }
+.export-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+
+/* Said only when an action cannot happen. It sits over the panels because the
+   thing it reports is the absence of a change there. */
+.notice-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 18, 22, 0.35);
+  z-index: 50;
+}
+
+.notice {
+  max-width: 420px;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  box-shadow: 0 12px 32px rgba(15, 18, 22, 0.22);
+}
+
+.notice-title {
+  margin: 0 0 8px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.notice-detail {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* The format choice, styled as the switches beside it rather than as a form
+   control: it is one more decision about the report, not a different kind. */
+.export-formats {
+  margin: 0 0 4px;
+  padding: 0;
+  border: 0;
+}
+
+.export-formats legend {
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* The metric: one of several, so a select like the bar length in the typing
+   footer. Its note is the chosen metric's first sentence, under the select. */
+.fields .upload-metric .field-help { margin: 0; }

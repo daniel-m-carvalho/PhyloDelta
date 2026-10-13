@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>phylo.io — navigation benchmark</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+      #panels { display: flex; height: 100vh; }
+      #left, #right { flex: 1 1 0; border-right: 1px solid #ddd; overflow: hidden; }
+    </style>
+    <script src="/phyloio/dist/src_worker_bcn_js.phylo.js"></script>
+    <script src="/phyloio/dist/src_worker_distance_js.phylo.js"></script>
+    <script src="/phyloio/dist/phylo.js"></script>
+  </head>
+  <body>
+    <div id="panels"><div id="left"></div><div id="right"></div></div>
+
+    <script>
+      /*
+       * Navigating phylo.io, driven the way its own context menu drives it.
+       *
+       * Every operation below calls `container.trigger_(action, node.data,
+       * node)`, which is *literally* what the menu items do — `viewer.js` line
+       * 1137 for Collapse/Expand and the `'BCN'` branch of `container.js`
+       * `trigger_` for "find in the other tree". Nothing here reaches past the
+       * menu's own entry point into the rendering internals, so what is timed
+       * is phylo.io doing its job, not a reimplementation of it.
+       *
+       * The counterpart on the PhyloDelta side calls that app's menu actions
+       * (`focus`, `back`, `focusWithContext`) for the same reason. Both are
+       * driven one layer below the click, which is the only way the two can be
+       * compared without one of them also paying for canvas hit-testing.
+       *
+       * Unlike `phyloio.html`, this page KEEPS the containers. Navigation is a
+       * sequence of operations on a loaded comparison, so the driver has to
+       * come back to the same instance between measurements.
+       */
+      let phylo = null;
+      let c1 = null;
+      let c2 = null;
+
+      /** Resolves after the browser has actually painted, not after the call. */
+      const painted = () =>
+        new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
+
+      window.__nav = {
+        async load(leftUrl, rightUrl, compareBudgetMs) {
+          const [a, b] = await Promise.all([
+            fetch(leftUrl).then((r) => r.text()),
+            fetch(rightUrl).then((r) => r.text()),
+          ]);
+
+          phylo = PhyloIO.init();
+          c1 = phylo.create_container("left");
+          c2 = phylo.create_container("right");
+          phylo.settings.compareMode = true;
+          phylo.bound_container = [c1, c2];
+          c1.add_tree(a);
+          c2.add_tree(b);
+          phylo.start();
+          await painted();
+
+          // The BCN worker must finish or "find in the other tree" has nothing
+          // to find: `elementBCN` is populated by it. A navigation measurement
+          // taken before it lands would be measuring an unfinished tool.
+          const deadline = performance.now() + (compareBudgetMs || 600000);
+          while (performance.now() < deadline) {
+            if (c1.message_loader === null || c1.message_loader === undefined) {
+              return { ready: true };
+            }
+            await new Promise((r) => setTimeout(r, 250));
+          }
+          return { ready: false };
+        },
+
+        /**
+         * Candidate nodes to navigate on, newest layout first.
+         *
+         * `_children` present means d3 is holding the subtree back — the node
+         * is collapsed, so expanding it is real work. `children` present means
+         * it is open and can be collapsed. Both are offered with their leaf
+         * count so the driver can match targets against the other tool by
+         * size, which is the only basis the two have in common: a phylo.io
+         * node is identified by its leaf set and a PhyloDelta node by a stored
+         * index.
+         */
+        candidates(limit) {
+          const out = [];
+          const walk = (d) => {
+            const kids = d.children || d._children;
+            if (!kids) return;
+            // `leaves` is the array of leaf nodes; `deepLeafList` is NOT it —
+            // it counts every node, reporting 1,998 for a 1,000-leaf tree. The
+            // other tool's `true_leaf_count` is leaves, so using deepLeafList
+            // would have compared two different quantities under one heading.
+            const leaves = Array.isArray(d.data.leaves) ? d.data.leaves.length : 0;
+            if (leaves > 1) {
+              // `at` indexes __navNodes, which is how the driver names a node
+              // back to this page: a d3 node cannot cross into Playwright.
+              out.push({
+                at: window.__navNodes.push(d) - 1,
+                leaves,
+                collapsed: Boolean(d.data.collapse),
+                hasBcn: Boolean(
+                  d.data.elementBCN && d.data.elementBCN[c2.viewer.model.uid],
+                ),
+              });
+            }
+            for (const k of kids) walk(k);
+          };
+          window.__navNodes = [];
+          walk(c1.viewer.hierarchy);
+          // Largest first: the expensive end, and the one a user actually
+          // opens. Taking the first N in traversal order would mostly sample
+          // two-leaf cherries and report them as navigation cost.
+          return out.sort((x, y) => y.leaves - x.leaves).slice(0, limit || 12);
+        },
+
+        /** Collapse or expand one node, exactly as the menu item does. */
+        async toggle(at) {
+          const node = window.__navNodes[at];
+          try {
+            const t0 = performance.now();
+            c1.trigger_("collapse", node.data, node);
+            await painted();
+            return { ms: performance.now() - t0, collapsed: Boolean(node.data.collapse) };
+          } catch (failed) {
+            return { error: String((failed && failed.message) || failed) };
+          }
+        },
+
+        /**
+         * "Find in the other tree", exactly as the menu item does.
+         *
+         * Returns `{ms}` or `{error}` rather than throwing: this operation does
+         * not survive in compare mode (see below), and letting the exception
+         * cross into the driver would cost the expand and back measurements
+         * their cell too.
+         *
+         * **Why it fails.** `api.js` rebuilds BOTH models from the worker's
+         * reply — `new Model(e.data[0].data, …)` and `new Model(e.data[1].data,
+         * …)` — but the `elementBCN` references inside the first reply point at
+         * that reply's own embedded copy of the second tree, not at the model
+         * built from the second. So `getHierarchyNodeFromModelNode` compares
+         * `d.data === modelNode` against an object graph neither container
+         * owns, returns null, and `expandToRoot` hands that null to
+         * `apply_collapse_from_data_to_d3`, which reads `d._children`. The
+         * target objects are parentless, which is the visible symptom of being
+         * detached.
+         */
+        async bcn(at) {
+          const node = window.__navNodes[at];
+          const uid = c2.viewer.model.uid;
+          if (!node.data.elementBCN || !node.data.elementBCN[uid]) {
+            return { error: "no BCN recorded for this node" };
+          }
+          const target = node.data.elementBCN[uid];
+          let reachable = false;
+          const seek = (n) => {
+            if (n.data === target) reachable = true;
+            const kids = n.children || n._children;
+            if (kids) kids.forEach(seek);
+          };
+          seek(c2.viewer.hierarchy);
+          try {
+            const t0 = performance.now();
+            c1.trigger_("BCN", node.data, node);
+            await painted();
+            return { ms: performance.now() - t0, reachable };
+          } catch (failed) {
+            return {
+              error: String((failed && failed.message) || failed),
+              reachable,
+              targetHasParent: Boolean(target.parent),
+            };
+          }
+        },
+
+        /** What is on screen, so a row can say what was actually drawn. */
+        drawn() {
+          return {
+            paths: document.querySelectorAll("path").length,
+            texts: document.querySelectorAll("text").length,
+            circles: document.querySelectorAll("circle").length,
+          };
+        },
+      };
+      window.__navReady = true;
+    </script>
+  </body>
+</html>

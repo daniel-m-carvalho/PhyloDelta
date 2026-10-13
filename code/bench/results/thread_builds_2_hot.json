@@ -1,0 +1,10 @@
+{
+  "threads": 2,
+  "rungs": [
+    {
+      "leaves": 564640,
+      "build_s": 244.25526304199593,
+      "status": "ready"
+    }
+  ]
+}

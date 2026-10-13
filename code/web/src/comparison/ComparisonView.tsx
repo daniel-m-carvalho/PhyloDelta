@@ -1,0 +1,1193 @@
+/**
+ * Two trees, side by side, driven by server slices.
+ *
+ * The library owns rendering and the operators; this owns navigation and the
+ * menus. The seam is narrow on purpose: `createComparison` is called **once**
+ * and the trees are replaced with `setTree` afterwards, because rebuilding
+ * both panels on every navigation would tear down and re-create two Sigma
+ * renderers for what is a change of contents.
+ *
+ * Providers are read through refs rather than captured. The library keeps the
+ * provider functions it was given at construction; a closure over `gradient`
+ * would keep serving the first slice's values forever.
+ */
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  createComparison,
+  DIFF_PALETTE,
+  snapshotViewer,
+  type BarScale,
+  type ComparisonHandle,
+  type Config,
+  type NewickNode,
+  type SequentialColorScale,
+} from "phylo-tree-viewer";
+import type { ComparisonSummary, PairSummary } from "../api/types";
+import type { ViewOptions } from "../useUrlState";
+import { exportReport } from "../export/buildReport";
+import { ExportPanel, type ExportChoices } from "../export/ExportPanel";
+import { ContextMenu } from "../menu/ContextMenu";
+import { TypingLegend } from "../typing/TypingLegend";
+import { datumFor, useTypingData } from "../typing/useTypingData";
+import { buildMenu, menuTitle, type PendingMenu } from "./menuItems";
+import {
+  PIXELS_PER_LEAF,
+  readableBudget,
+  useSide,
+  type SideActions,
+  type SideState,
+} from "./useSide";
+import { viewMetric } from "./metric";
+import { SearchBox } from "./SearchBox";
+import { markAction, type Placed } from "./markPlacement";
+import { PanelNotice } from "./PanelNotice";
+import { absentFrom, type SearchResult, type SearchRow } from "./search";
+
+/**
+ * Panels are identical except for their label: the same budget, the same
+ * gradient, the same shaping. Anything asymmetric would make the two sides
+ * incomparable by eye, which is the entire task.
+ */
+/**
+ * `maxNodes` is raised deliberately.
+ *
+ * The viewer carries its own budget (default 200) and prunes with
+ * `prepareTree`. Here the **server** already budgeted, and it did so with
+ * information the client does not have — which clades diverge — so a second,
+ * blinder pruning on top would throw most of that away. The server's slice is
+ * shown as it arrived.
+ *
+ * `expandCollapse` is off for the same reason: collapsing is the server's job
+ * in this app, and a client-side operator with its own collapse state would be
+ * a second opinion about what is collapsed.
+ */
+const VIEWER = {
+  layoutMode: "cladogram",
+  hideInternalNodes: true,
+  maxNodes: 100_000,
+  /**
+   * Sigma thins labels by keeping the largest node per grid cell, which suits
+   * a graph spread over two dimensions. A dendrogram pins every tip to one x,
+   * so the whole column falls inside one column of cells: at the 100px default
+   * a 550px panel drew a single label for fifty tips.
+   *
+   * A cell close to the row spacing gives roughly one label per row, which is
+   * as many as can be read at this size anyway.
+   */
+  labelDensity: 2,
+  labelGridCellSize: PIXELS_PER_LEAF,
+} as const;
+
+/**
+ * Wedge size, tied to the row spacing rather than left at the library default.
+ *
+ * The default tops out at a half-height of 13 — a 26px triangle. The budget
+ * puts a tip every `PIXELS_PER_LEAF` pixels, so at that size neighbouring
+ * clades overlapped by more than double and the column of them read as one
+ * black bar. Deriving the two from each other keeps them in step if either is
+ * retuned.
+ */
+const CLADE_SHAPE = {
+  enabled: true,
+  // Black, as in the library's own demo: the wedge is structure, and colouring
+  // it competes with the divergence gradient, which is the thing on screen
+  // that actually carries a value.
+  color: "#000000",
+  minHalfHeight: Math.max(1, PIXELS_PER_LEAF * 0.12),
+  maxHalfHeight: PIXELS_PER_LEAF * 0.42,
+} as const;
+
+/**
+ * Divergence as a wedge colour, for the "clades" colour target.
+ *
+ * Takes the handle's own scale rather than building one: the branches, the
+ * legend and the export's colour key all read that instance, and a second
+ * would agree with it only by coincidence.
+ *
+ * Reads the clade's own value rather than looking one up: ids are per-tree
+ * pre-order indices and the two trees' ranges overlap (see `valueFor`).
+ */
+function wedgeColorFrom(scale: SequentialColorScale) {
+  return (node: { metadata?: Record<string, unknown> }): string | undefined => {
+    const similarity = node.metadata?.similarity;
+    return typeof similarity === "number" ? scale.color(1 - similarity) : undefined;
+  };
+}
+
+/**
+ * How a jump announces where it landed.
+ *
+ * Five flashes to catch the eye — the change is what draws it, so the node
+ * going dark between flashes is half of the signal — and then the leaf stays
+ * marked until the user clears it or jumps again (§33).
+ *
+ * It used to be five flashes and then nothing, on the argument that a lasting
+ * mark would go on claiming the node is special. In use the leaf was lost the
+ * moment the flashing stopped, while the eye was still going between panels.
+ * A mark the user asked for, named in the panel header with a way to remove
+ * it, is theirs rather than a claim the view makes.
+ */
+const ARRIVAL_FLASHES = 5;
+
+/**
+ * What the header says about a mark.
+ *
+ * `exact` false means the mark sits on a **wedge standing in** for the leaf,
+ * because the slice could not draw it (§33). The chip has to say so: a magenta
+ * triangle read as the leaf itself would be a worse answer than none, since the
+ * wedge holds thousands of other tips too.
+ */
+interface FoundChip {
+  label: string;
+  exact: boolean;
+  /** Still marked, but the view on screen does not contain it (§37.10). */
+  offView?: boolean;
+}
+
+/**
+ * The library's graph id for a stored node, or null if it is not on screen.
+ *
+ * Identity travels in `metadata.storedId`, not in the name: a leaf's label is
+ * its sequence type, but a wedge has no label at all, so there is nothing to
+ * key a lookup on. The node map is the only place the two numbering schemes
+ * meet.
+ */
+function graphIdOf(viewer: { getNodeMap(): Map<string, { source: NewickNode }> },
+                   storedId: number): string | null {
+  for (const [id, layoutNode] of viewer.getNodeMap()) {
+    if (layoutNode.source.metadata?.storedId === storedId) return id;
+  }
+  return null;
+}
+
+/**
+ * What a branch with no value at all is called, and the colour it is drawn in.
+ *
+ * A leaf reconciliation dropped has no counterpart and therefore no
+ * similarity, so its branch keeps the tree's own black rather than a colour
+ * from the ramp. Right — inventing a mid-scale value would be a lie — but it
+ * puts a third colour on screen, and both the legend and the export have to
+ * name it. Across species it is most of a panel: clostridium-upgma against
+ * vibrio-nj shares 17,489 of 27,962 leaves, so 10,473 are drawn this way.
+ */
+const ABSENT_LABEL = "Not in the other tree";
+/*
+ * Red, and deliberately not the tree's own colour: black is also what an
+ * unstyled branch looks like, so "no data" and "nothing has happened here"
+ * read as the same picture.
+ */
+const ABSENT_COLOR = "#e03131";
+
+/**
+ * The colour a jump's target blinks in.
+ *
+ * Magenta because every other hue in this view is spoken for: the divergence
+ * ramp runs blue → cyan → green → yellow, and red now means "not in the other
+ * tree". A flash says *look here* for three seconds; sharing a hue with a
+ * permanent statement about a branch would make it read as one.
+ */
+const ARRIVAL_COLOR = "#d400ff";
+
+
+const CONFIG: Config = {
+  panels: [
+    {
+      id: "left",
+      viewer: { ...VIEWER },
+      operators: {
+        expandCollapse: false,
+        selection: { enabled: true },
+        cladeShape: { ...CLADE_SHAPE },
+        // Attached always, enabled on demand: the presenter can be switched
+        // without rebuilding the panels, and a leaf with no datum simply gets
+        // no bar.
+        barcharts: { enabled: false, scale: "log" },
+      },
+    },
+    {
+      id: "right",
+      // Mirrored so the two trees face each other and corresponding clades sit
+      // opposite rather than both running left to right.
+      viewer: { ...VIEWER, reflect: true },
+      operators: {
+        expandCollapse: false,
+        selection: { enabled: true },
+        cladeShape: { ...CLADE_SHAPE },
+        barcharts: { enabled: false, scale: "log" },
+      },
+    },
+  ],
+  comparison: {
+    enabled: true,
+    mode: "gradient",
+    keyBy: "name",
+    colorEdges: true,
+    // Never the node markers. The clade presenter already hides a collapsed
+    // node's circular marker so the wedge stands alone, and colouring markers
+    // puts the ball straight back — every clade showed a coloured dot beside
+    // its triangle. The "clades" colour target paints the *wedge* instead
+    // (`setColor` on the presenter), which is the marker as far as the eye is
+    // concerned; `colorEdges` is what the switch moves.
+    colorNodes: false,
+    flashes: ARRIVAL_FLASHES,
+    persistHighlight: true,
+    legend: true,
+    legendLabels: ["Identical", "Diverged"],
+    /*
+     * The third thing on screen. A leaf reconciliation dropped has no
+     * counterpart and therefore no similarity, so its branch keeps the tree's
+     * own black rather than a colour from the ramp — right, because inventing
+     * a mid-scale value would be a lie, but it leaves a colour the legend does
+     * not explain. Across species that is most of a panel: clostridium-upgma
+     * against vibrio-nj shares 17,489 of 27,962 leaves, so 10,473 are drawn
+     * this way.
+     */
+    absentLabel: ABSENT_LABEL,
+    absentColor: ABSENT_COLOR,
+    highlightColor: ARRIVAL_COLOR,
+  },
+  /**
+   * Panels are NOT linked.
+   *
+   * Linking makes a click highlight the "corresponding" node in the other
+   * panel, keyed by `keyOf`. With `keyBy: "name"` an unnamed internal node
+   * keys to the empty string — and every clade in a slice is unnamed, because
+   * the source Newick labels them `_` and we blank it. So `highlightByKey("")`
+   * matched the first empty-named node on the other side, which is its root:
+   * clicking any clade tracked to the other tree's root, every time.
+   *
+   * Supplying a correspondence map would fix the aim, but not the idea. A
+   * clade's counterpart is a best-overlap match, and following it on every
+   * click moves the view the user is comparing against, using an
+   * approximation they did not ask for. Locating something in the other tree
+   * is a deliberate act, so it lives in the menu — and only for leaves, where
+   * the match is exact (§ the menu's "Find this leaf in the other tree").
+   */
+  link: false,
+};
+
+/**
+ * Where to put the menu, in page coordinates.
+ *
+ * The viewer reports a right-click in coordinates relative to **its own
+ * container**, and the menu is positioned `fixed`, which is relative to the
+ * viewport. Used directly, a click at x=120 in the right-hand panel opened the
+ * menu at x=120 on the page — over in the left panel. The two panels made it
+ * obvious; with one it would have looked like a small offset.
+ */
+function toViewport(container: HTMLElement, x: number, y: number) {
+  const box = container.getBoundingClientRect();
+  return { x: box.left + x, y: box.top + y };
+}
+
+/**
+ * The benchmark harness's handle on a live comparison (see the effect below).
+ *
+ * Declared here rather than in a .d.ts so it sits beside the only code that
+ * writes it: a global whose declaration is somewhere else is a global nobody
+ * knows the owner of.
+ */
+/** What a panel's highlight is on: the library's graph id, and the stored node behind it. */
+interface MarkProbe {
+  graphId: string | null;
+  storedId: number | null;
+}
+
+declare global {
+  interface Window {
+    __phylodelta?: {
+      state: () => [SideState, SideState];
+      actions: () => [SideActions, SideActions];
+      marks: () => [MarkProbe, MarkProbe];
+    };
+  }
+}
+
+export function ComparisonView({
+  pair,
+  initial,
+  onNavigate,
+  isolateSets = [null, null],
+  names,
+  options,
+  onOptions,
+  summary = null,
+  exporting = false,
+  onExportClose,
+}: {
+  pair: PairSummary;
+  initial?: { left: number[]; right: number[] };
+  onNavigate?: (left: number[], right: number[]) => void;
+  /** Isolate-set id per side; null where that tree has no typing data. */
+  isolateSets?: [string | null, string | null];
+  /** What to call the comparison and each tree; the ids otherwise. */
+  names?: { pair: string; left: string; right: string };
+  /** Everything the View menu and the typing footer decide; see ViewOptions. */
+  options: ViewOptions;
+  /** Report a footer change so it reaches the URL with the rest of the view. */
+  onOptions: (change: Partial<ViewOptions>) => void;
+  /** The computed scalars, for the report. */
+  summary?: ComparisonSummary | null;
+  /** Opened from the header; the panel lives here because the viewers do. */
+  exporting?: boolean;
+  onExportClose?: () => void;
+}) {
+  // Both panels are the same height, so one measurement serves both — and
+  // both must ask for the same detail or the two sides stop being comparable
+  // by eye, which is the entire task.
+  const [panelHeight, setPanelHeight] = useState(0);
+  const autoBudget = readableBudget(panelHeight);
+
+  const metric = viewMetric(pair);
+  const [left, leftActions] = useSide(
+    pair.left, pair.id, metric, initial?.left, autoBudget, options.cladeSizes,
+  );
+  const [right, rightActions] = useSide(
+    pair.right, pair.id, metric, initial?.right, autoBudget, options.cladeSizes,
+  );
+
+  // Which typing columns to show. Several at once is allowed; see
+  // `useTypingData` for what that does to a bar's length.
+  const segmentKeys = options.columns;
+  const setSegmentKeys = useCallback(
+    (columns: string[]) => onOptions({ columns }),
+    [onOptions],
+  );
+  const barScale = options.barScale as BarScale;
+  const setBarScale = useCallback(
+    (scale: BarScale) => onOptions({ barScale: scale as ViewOptions["barScale"] }),
+    [onOptions],
+  );
+  const leftTyping = useTypingData(isolateSets[0], left.tree, options.typing, segmentKeys);
+  const rightTyping = useTypingData(isolateSets[1], right.tree, options.typing, segmentKeys);
+
+  // Start on the first column the store offers, once it is known.
+  const offered = leftTyping.keys.length ? leftTyping.keys : rightTyping.keys;
+  useEffect(() => {
+    if (segmentKeys.length === 0 && offered.length > 0) setSegmentKeys([offered[0]]);
+  }, [offered, segmentKeys]);
+  const typing = useRef([leftTyping, rightTyping]);
+  typing.current = [leftTyping, rightTyping];
+  const [swatches, setSwatches] = useState<ReadonlyMap<string, string>>(new Map());
+
+  const leftHost = useRef<HTMLDivElement>(null);
+  const rightHost = useRef<HTMLDivElement>(null);
+  const handle = useRef<ComparisonHandle | null>(null);
+  const [menu, setMenu] = useState<PendingMenu | null>(null);
+  /**
+   * The leaf a jump found, per panel, while it is marked — what the header
+   * chip names. One at a time across both panels: a new jump moves the mark
+   * rather than adding one, so marks never pile up. The one exception is a
+   * search that found the name in both trees, which marks it in both (§37).
+   */
+  const [found, setFound] = useState<[FoundChip | null, FoundChip | null]>([null, null]);
+  /**
+   * The nodes the last search sent each panel to, null where the name was not
+   * in that tree. Read by the mark effect to tell "both halves of one search"
+   * from "a new jump that moves the mark".
+   */
+  const searched = useRef<[number | null, number | null] | null>(null);
+  /**
+   * Bumped by every search pick, so the mark effect runs even when a panel's
+   * view does not change — searching again for a name already marked must
+   * still flash it (§37.9).
+   */
+  const [searchPicks, setSearchPicks] = useState(0);
+  /**
+   * Per panel, the node a search pick should flash when it arrives, whether or
+   * not it is new. Only that node: the panel's previous mark, still on screen
+   * until the new slice lands, must not flash on the way out.
+   */
+  const reflash = useRef<[number | null, number | null]>([null, null]);
+  // What is selected in each panel. The menu acts on this when opened away
+  // from a node, which is the interaction the library's selection operator is
+  // there for: pick a node, then ask what can be done with it.
+  const [selected, setSelected] = useState<[number | null, number | null]>([null, null]);
+  /**
+   * The last clade actually chosen, per panel — kept alive across the clear
+   * that opening a menu causes.
+   *
+   * Right-clicking empty canvas makes the selection operator drop the
+   * selection, and it does so before the menu is built. Reading the live
+   * selection therefore always found nothing, and "select a clade, then
+   * right-click to act on it" — the whole interaction — silently degraded to
+   * the view menu. This holds the choice until the user makes another one or
+   * explicitly clears it with a left click on empty canvas.
+   */
+  const lastSelected = useRef<[number | null, number | null]>([null, null]);
+  /**
+   * Sigma key → the backend's stored id, per panel.
+   *
+   * Built from the library's own node map, because the key is the library's to
+   * choose: it prefixes names (`named_10049`) and generates `n47` for anything
+   * unnamed. Reconstructing that format here would be a guess that silently
+   * stops matching the day it changes; the node map is the library telling us
+   * directly, and `source.metadata` carries the id through `prepareTree`'s
+   * cloning.
+   */
+  const keyToStoredId = useRef<[Map<string, number>, Map<string, number>]>([
+    new Map(),
+    new Map(),
+  ]);
+
+  /**
+   * Re-read a panel's key mapping.
+   *
+   * Pulled from `getNodeMap()` rather than taken from the `render` event
+   * payload alone, because `createComparison` renders during construction —
+   * before there is anything to subscribe with. Listening only for the event
+   * left the map empty until the next re-render, so on first load selecting a
+   * clade resolved to nothing and the menu fell back to the view.
+   */
+  const refreshKeys = useCallback((side: 0 | 1, viewer: { getNodeMap: () => Map<string, { source: { metadata?: Record<string, unknown> } }> }) => {
+    const resolved = new Map<string, number>();
+    for (const [key, layoutNode] of viewer.getNodeMap()) {
+      const storedId = layoutNode.source.metadata?.storedId;
+      if (typeof storedId === "number") resolved.set(key, storedId);
+    }
+    keyToStoredId.current[side] = resolved;
+  }, []);
+
+  // Read by the library's providers on every lookup, so they always see the
+  // slice currently displayed rather than the one present at construction.
+  const sides = useRef<[SideState, SideState]>([left, right]);
+  sides.current = [left, right];
+
+  /*
+   * A seam for the benchmark harness, and only for it.
+   *
+   * The navigation comparison has to drive both tools at the **same layer** or
+   * it measures different things and says it measured one. phylo.io's context
+   * menu item does `container.trigger_("collapse", …)`, so the harness calls
+   * `trigger_` directly; the fair counterpart here is the action the menu item
+   * calls — `focus`, `back`, `focusWithContext` — not a synthetic click on a
+   * WebGL canvas, which would add hit-testing to one side of the comparison
+   * and not the other.
+   *
+   * Exposed rather than hidden behind a dev-only flag because the benchmark
+   * measures the **shipping build** (`web/dist`, served by `bench/serve.mjs`);
+   * a hook compiled out of that build could not be used to measure it. It
+   * reads and moves the view, which is all the UI can already do.
+   */
+  //
+  // **Installed once, on mount** (§40). It used to be deleted and re-created
+  // whenever the actions changed — every render, since they are rebuilt each
+  // time — and React 19 can run that cleanup and the next setup in separate
+  // tasks during a heavy render. A runner polling every 20 ms then found the
+  // seam missing mid-walk, at the same step every time, and died. Reading the
+  // live actions through a ref gives the same answers with no gap.
+  const actionsNow = useRef<[SideActions, SideActions]>([leftActions, rightActions]);
+  actionsNow.current = [leftActions, rightActions];
+  useEffect(() => {
+    window.__phylodelta = {
+      state: () => sides.current,
+      actions: () => actionsNow.current,
+      // Which stored node each panel's highlight is on right now, resolved
+      // through the drawing it is in — what check_marks.mjs asserts against
+      // the slice's own answer (§37.10).
+      marks: () =>
+        ([0, 1] as const).map((side) => {
+          const panel = handle.current?.panels[side];
+          const graphId = panel?.operators.comparison?.getHighlightedNode() ?? null;
+          const drawn = graphId ? panel?.viewer.getNodeMap().get(graphId) : undefined;
+          const storedId = drawn?.source.metadata?.storedId;
+          return { graphId, storedId: typeof storedId === "number" ? storedId : null };
+        }) as [MarkProbe, MarkProbe],
+    };
+    return () => {
+      delete window.__phylodelta;
+    };
+  }, []);
+
+  const bothLoaded = Boolean(left.tree && right.tree);
+
+  // --- build the panels, once ------------------------------------------
+  useEffect(() => {
+    if (!bothLoaded || handle.current) return;
+    if (!leftHost.current || !rightHost.current) return;
+
+    const built = createComparison([leftHost.current, rightHost.current], CONFIG, {
+      trees: [sides.current[0].tree!.root, sides.current[1].tree!.root],
+      onSelectionChange: (keys: string[], panelIndex: number) => {
+        const key = keys[keys.length - 1];
+        const storedId =
+          key === undefined ? null : (keyToStoredId.current[panelIndex].get(key) ?? null);
+        if (storedId !== null) lastSelected.current[panelIndex] = storedId;
+        setSelected((current) => {
+          const next: [number | null, number | null] = [...current];
+          next[panelIndex] = storedId;
+          return next;
+        });
+      },
+      // Typing data for one leaf. Read through a ref so it follows the slice
+      // rather than staying whatever was loaded when the panels were built.
+      dataOf: (identifier: string) => {
+        const [l, r] = typing.current;
+        return datumFor(l.byLeaf.get(identifier) ?? r.byLeaf.get(identifier));
+      },
+      tooltipOf: (identifier: string, datum) => {
+        const [l, r] = typing.current;
+        const found = l.byLeaf.get(identifier) ?? r.byLeaf.get(identifier);
+        const hidden = found ? found.available - found.total : 0;
+        const total = datum.total ?? 0;
+        return `${identifier}: ${total.toLocaleString()} isolates${
+          hidden > 0 ? ` (+${hidden.toLocaleString()} unrecorded)` : ""
+        }`;
+      },
+      /**
+       * **Divergence**, which is 1 − similarity.
+       *
+       * The backend reports `similarity`: the overlap with the best matching
+       * clade in the other tree, where 1.0 means identical. The scale runs
+       * blue to yellow and is labelled "identical" to "diverged", so feeding
+       * it similarity drew every shared clade at the diverged end — a leaf
+       * present in both trees scores 1.0 and came out the colour reserved for
+       * "no counterpart at all".
+       *
+       * The node carries its own value rather than being looked up by id: an
+       * id is a pre-order index *within one tree*, and the two trees' ranges
+       * overlap, so a lookup could paint a panel with the other tree's
+       * numbers.
+       */
+      valueFor: (_key: string, node) => {
+        const similarity = node.metadata?.similarity;
+        return typeof similarity === "number" ? 1 - similarity : undefined;
+      },
+    });
+    handle.current = built;
+
+    const unsubscribe = built.panels.map((panel, index) => {
+      const side = index as 0 | 1;
+      // Once now, because the first render already happened inside
+      // createComparison, and again on every later one: pruning and re-layout
+      // mint new keys.
+      refreshKeys(side, panel.viewer);
+
+      // Mark the leaf this panel was sent to. The library centres and blinks
+      // it on arrival, which draws the eye once; this is what is still there
+      // when the user looks back, and it lasts until they navigate away.
+      const off = [
+        panel.viewer.events.on("render", () => refreshKeys(side, panel.viewer)),
+        panel.viewer.events.on("rightClickNode", ({ node, x, y, original }) => {
+          // The emit is synchronous inside the DOM dispatch, so this still
+          // suppresses the browser's own menu.
+          original.preventDefault?.();
+          setMenu({
+            side,
+            at: toViewport(panel.viewer.getContainer(), x, y),
+            storedId: keyToStoredId.current[side].get(node),
+          });
+        }),
+        panel.viewer.events.on("rightClickStage", ({ x, y, original }) => {
+          original.preventDefault?.();
+          setMenu({
+            side,
+            at: toViewport(panel.viewer.getContainer(), x, y),
+            storedId: lastSelected.current[side] ?? undefined,
+          });
+        }),
+        // A left click on empty canvas is the deliberate "never mind".
+        // Measured: Sigma emits `clickStage` only when no node was hit, so
+        // this does not fire on the click that made a selection.
+        panel.viewer.events.on("clickStage", () => {
+          lastSelected.current[side] = null;
+          setSelected((current) => {
+            const next: [number | null, number | null] = [...current];
+            next[side] = null;
+            return next;
+          });
+        }),
+      ];
+      return () => off.forEach((fn) => fn());
+    });
+
+    return () => {
+      unsubscribe.forEach((fn) => fn());
+      built.destroy();
+      handle.current = null;
+    };
+  }, [bothLoaded]);
+
+  // --- replace contents on navigation -----------------------------------
+  useEffect(() => {
+    if (left.tree) handle.current?.panels[0]?.viewer.setTree(left.tree.root);
+  }, [left.tree]);
+
+  useEffect(() => {
+    if (right.tree) handle.current?.panels[1]?.viewer.setTree(right.tree.root);
+  }, [right.tree]);
+
+  /*
+   * Mark the leaf a jump was aimed at, and keep marking it as the view moves.
+   *
+   * **Flashed once, on arrival.** `arrivedAt` persists, because the slice
+   * needs it as `keep`; the *signal* must not. Flashing whenever it happened
+   * to be set lit both panels after a second jump the other way, and every
+   * window resize replayed it. So each arrival flashes exactly once.
+   *
+   * **Then followed, quietly** (§37.7). Going back widens the view, and the
+   * leaf may now be drawn as part of a wedge; the slice says which (`markAt`,
+   * `exact: false`). This effect used to stop at "already flashed", so after
+   * back the mark stayed on a graph id from the previous drawing and the chip
+   * still said "Found" for a leaf that had gone behind a wedge — after a menu
+   * jump and after a search alike. Now every new slice re-places the mark on
+   * whatever stands for the leaf, steadily lit (`flash: false`), and the chip
+   * switches to "Found inside … (in this clade)" and back as the view moves.
+   *
+   * After the slice, not with it: the keys the highlight matches on are minted
+   * by the library during layout, so nothing can be pointed at until the new
+   * slice has rendered.
+   */
+  const placed = useRef<[Placed | null, Placed | null]>([null, null]);
+  useEffect(() => {
+    const built = handle.current;
+    if (!built) return;
+    // A panel whose mark this pass has just taken is not looked at again in
+    // the same pass: its state here is from *before* the take, so it would
+    // read as a fresh arrival, take the mark straight back, and clear the
+    // jump that took it. That is what happened — a jump into one panel while
+    // the other held a mark moved the view and lost the mark, both panels'
+    // (§40, found by measure_requests.mjs waiting for a jump that never took).
+    const takenThisPass = new Set<0 | 1>();
+    built.panels.forEach((panel, index) => {
+      const side = index as 0 | 1;
+      refreshKeys(side, panel.viewer);
+      if (takenThisPass.has(side)) return;
+      const state = sides.current[side];
+      const wanted = state.arrivedAt;
+      const comparison = panel.operators.comparison;
+      const prior = placed.current[side];
+      // **The one rule** (§37.10): the library holds a highlight by graph id,
+      // and every redraw hands graph ids out again. So after a redraw a mark is
+      // either re-placed by stored id or removed — never left where it was,
+      // because "where it was" is now some other node. Left there, expanding
+      // the marked wedge lit an unrelated clade while the chip went on saying
+      // "Found inside".
+      const setChip = (chip: FoundChip | null) =>
+        setFound((current) => (side === 0 ? [chip, current[1]] : [current[0], chip]));
+
+      if (wanted === null) {
+        // Unmarked: the next arrival here is a new one, even if it is the
+        // same leaf.
+        if (prior) {
+          comparison?.clearHighlight();
+          setChip(null);
+        }
+        placed.current[side] = null;
+        return;
+      }
+      const tree = state.tree;
+      if (state.markOffView) {
+        // Still marked, but this view does not contain the leaf — a clade
+        // elsewhere was focused. Nothing on screen is it, so nothing is lit;
+        // the chip says so, and going back re-places it.
+        if (prior && prior.arrival === wanted && prior.shown) {
+          comparison?.clearHighlight();
+          prior.drawn = tree;
+          setChip({ label: prior.label, exact: false, offView: true });
+        }
+        return;
+      }
+      const mark = state.markAt;
+      // The slice that answers this mark has not arrived yet.
+      if (!mark) return;
+      // Marked by rendered node, not by name. The slice may have had to
+      // summarise the leaf, in which case the thing to point at is the wedge
+      // holding it — and a wedge has no name to key on (every unnamed internal
+      // node shares one). `metadata.storedId` is the identity that survives the
+      // library's own key generation, so the graph id is resolved through it.
+      const target = graphIdOf(panel.viewer, mark.node);
+      if (target === null) {
+        if (prior && prior.arrival === wanted && prior.shown) comparison?.clearHighlight();
+        return;
+      }
+
+      const forced = reflash.current[side] === wanted;
+      // Compared against the drawn tree, not the slice: the tree is rebuilt
+      // without a new slice when clade-size labels are switched, and that
+      // redraw reassigns graph ids just the same.
+      const action = forced ? "flash" : markAction(prior, wanted, tree);
+      if (action === "keep") return;
+      if (action === "move" && prior) {
+        // The same arrival, drawn anew.
+        prior.drawn = tree;
+        if (!comparison?.highlightByNode(target, { center: false, flash: false })) {
+          comparison?.clearHighlight();
+          return;
+        }
+        setChip({ label: prior.label, exact: mark.exact });
+        return;
+      }
+
+      // Not the library's camera move: the panel was just re-rooted around this
+      // node, and centring zooms in far enough to crop the neighbourhood that
+      // is the point.
+      if (!comparison?.highlightByNode(target, { center: false })) return;
+      // The slice's own record of the name, because an undrawn leaf is not in
+      // the tree built from it; the drawn name otherwise; the id as a last
+      // resort, which is still better than a chip naming nothing.
+      const label = mark.label || tree?.byStoredId.get(wanted)?.name || String(wanted);
+      placed.current[side] = { arrival: wanted, label, shown: true, drawn: tree };
+      if (forced) reflash.current[side] = null;
+      // What the chip says. `exact` false means the mark is on a wedge standing
+      // in for the leaf, which the header has to admit rather than let the user
+      // read the wedge as the leaf itself.
+      const chip: FoundChip = { label, exact: mark.exact };
+      // One mark across both panels: the other side's goes — unless both are
+      // halves of one search, where the name was found in each tree and
+      // marking it in only one would hide half the answer.
+      const other = side === 0 ? 1 : 0;
+      const pairedSearch = searched.current;
+      if (pairedSearch && pairedSearch[side] === wanted && pairedSearch[other] !== null) {
+        setFound((current) => (side === 0 ? [chip, current[1]] : [current[0], chip]));
+        return;
+      }
+      // The other panel's mark goes whole — highlight, chip *and* pin, as its
+      // × would (§37.10). Taking only the highlight and chip left it pinning a
+      // leaf nothing on screen mentioned: its view went on reshaping itself
+      // around that leaf, and once it moved, reported "outside this view" for
+      // a mark the user could no longer see or clear.
+      built.panels[other]?.operators.comparison?.clearHighlight();
+      placed.current[other] = null;
+      takenThisPass.add(other);
+      (other === 0 ? leftActions : rightActions).clearMark();
+      setFound(side === 0 ? [chip, null] : [null, chip]);
+    });
+  }, [left.tree, right.tree, left.markOffView, right.markOffView, left.arrivedAt, right.arrivedAt, searchPicks, refreshKeys]);
+
+  /**
+   * Clearing the mark also unpins the leaf.
+   *
+   * Three things carry the mark and all three have to go together: the
+   * library's highlight, the chip in the header, and the slice's `keep`, which
+   * is what forces the node to stay drawn. Leaving `keep` behind meant the
+   * view went on holding a leaf out of a wedge for a mark that was no longer
+   * on screen or in the header — a pin nothing explained.
+   */
+  const clearFound = useCallback(
+    (side: 0 | 1) => {
+      handle.current?.panels[side]?.operators.comparison?.clearHighlight();
+      placed.current[side] = null;
+      setFound((current) => (side === 0 ? [null, current[1]] : [current[0], null]));
+      (side === 0 ? leftActions : rightActions).clearMark();
+    },
+    [leftActions, rightActions],
+  );
+
+  // Escape clears the mark — unless it was pressed to close something else
+  // (a menu, a notice), which claims the key with preventDefault.
+  useEffect(() => {
+    if (!found[0] && !found[1]) return;
+    const key = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented || exporting) return;
+      clearFound(0);
+      clearFound(1);
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [found, exporting, clearFound]);
+
+  // Report where we are, so the URL names it and a refresh comes back here.
+  useEffect(() => {
+    onNavigate?.(left.path, right.path);
+  }, [left.path, right.path, onNavigate]);
+
+  // The divergence gradient is a presentation, not a fact about the data, so
+  // it is switched rather than rebuilt: the operator keeps its values and
+  // simply stops colouring. Turning it off also hides its own legend, which
+  // the operator handles.
+  useEffect(() => {
+    handle.current?.panels.forEach((panel) => {
+      panel.operators.comparison?.setEnabled(options.gradient);
+    });
+    // `bothLoaded`: the panels are built only once both trees arrive, so a
+    // link with the gradient off (`g=0`) was applied to no panel and opened
+    // coloured. Same for the colour target below and the layout above.
+  }, [options.gradient, bothLoaded]);
+
+  // Cladogram or phylogram. The viewer re-lays itself out from the tree it
+  // already holds, so switching costs a render and no request. `bothLoaded`
+  // too, because the panels are built only once both trees arrive: a URL
+  // asking for a phylogram was otherwise applied to no viewer and lost.
+  useEffect(() => {
+    handle.current?.panels.forEach((panel) => panel.viewer.setLayoutMode(options.layout));
+  }, [options.layout, bothLoaded]);
+
+  // Move the gradient between the branches and the wedges. Both operators are
+  // involved because the wedge is not a Sigma node marker but an overlay the
+  // clade presenter draws, so the comparison operator cannot reach it; the
+  // switch turns one off as it turns the other on, and with the gradient off
+  // altogether the wedges go back to structural black.
+  useEffect(() => {
+    const built = handle.current;
+    if (!built) return;
+    const wedgeColor = wedgeColorFrom(built.diffScale);
+    built.panels.forEach((panel) => {
+      panel.operators.comparison?.setColorTargets({
+        edges: options.gradient && options.colorTarget === "branches",
+      });
+      panel.operators.cladeShape?.setColor(
+        options.gradient && options.colorTarget === "clades" ? wedgeColor : CLADE_SHAPE.color,
+      );
+    });
+  }, [options.gradient, options.colorTarget, bothLoaded]);
+
+  // Feed the bar charts, and keep the legend in step with the scale that is
+  // actually colouring them. The scale is primed with every category present
+  // so the legend is complete before a bar for that category is drawn.
+  useEffect(() => {
+    const built = handle.current;
+    if (!built) return;
+    const categories = [...new Set([...leftTyping.categories, ...rightTyping.categories])];
+    built.colorScale.prime(categories);
+    built.panels.forEach((panel, index) => {
+      const bars = panel.operators.barcharts;
+      if (!bars) return;
+      const source = index === 0 ? leftTyping : rightTyping;
+      const data = new Map<string, ReturnType<typeof datumFor> & object>();
+      for (const [leaf, composition] of source.byLeaf) {
+        const datum = datumFor(composition);
+        // Leaves with nothing are left out rather than passed as empty: an
+        // empty datum makes the library key the bar by the leaf's own name.
+        if (datum) data.set(leaf, datum);
+      }
+      bars.setData(data);
+      bars.setScale(barScale);
+      bars.setEnabled(options.typing);
+    });
+    // Built from the categories **currently** shown, not from every assignment
+    // the scale has ever made. The scale accumulates across segment keys and
+    // is never reset, so reading it wholesale left the legend listing "Human"
+    // and "Food" after switching to Continent.
+    //
+    // Only set when it actually changed: this is a fresh Map each time, so
+    // assigning it unconditionally is a state change on every render.
+    const next = new Map(
+      categories.map((category) => [category, built.colorScale.color(category)]),
+    );
+    setSwatches((current) =>
+      current.size === next.size && [...next].every(([k, v]) => current.get(k) === v)
+        ? current
+        : next,
+    );
+  }, [options.typing, leftTyping, rightTyping, barScale]);
+
+  // Re-measure on resize, so the detail tracks the window rather than a
+  // constant chosen for whatever window it was written on.
+  useEffect(() => {
+    const host = leftHost.current;
+    if (!host || typeof ResizeObserver === "undefined") return;
+    const measure = () => setPanelHeight(host.clientHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(host);
+    return () => observer.disconnect();
+  }, []);
+
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const runExport = useCallback(
+    async (choices: ExportChoices) => {
+      setExportBusy(true);
+      setExportError(null);
+      try {
+        const panels = handle.current?.panels ?? [];
+        // Snapshots are taken now, from the live viewers, so the report shows
+        // what the screen shows rather than a default view of the same pair.
+        const images = choices.images
+          ? {
+              left: panels[0] ? await snapshotViewer(panels[0].viewer) : undefined,
+              right: panels[1] ? await snapshotViewer(panels[1].viewer) : undefined,
+            }
+          : {};
+
+        const showing = (state: SideState) =>
+          state.slice
+            ? `showing ${state.slice.displayed_leaves.toLocaleString()} of ${state.slice.total_leaves.toLocaleString()} leaves`
+            : "no slice loaded";
+
+        await exportReport(
+          {
+            pair,
+            names: names ? { left: names.left, right: names.right } : undefined,
+            summary,
+            title: choices.title,
+            images,
+            showing: { left: showing(left), right: showing(right) },
+            typing: options.typing ? { columns: segmentKeys, scale: barScale } : null,
+            gradient: options.gradient,
+            gradientOn: options.colorTarget,
+            swatches: options.typing ? swatches : undefined,
+            // The ends of the scale the operator actually draws with, rather
+            // than colours named here that could drift from it.
+            gradientEnds: {
+              identical: DIFF_PALETTE[0],
+              diverged: DIFF_PALETTE[DIFF_PALETTE.length - 1],
+            },
+            // Unconditional, as on screen: a colour key that lists only what
+            // this particular view happened to contain cannot be learnt, and
+            // the reader of a report cannot navigate to find out.
+            absent: options.gradient
+              ? { label: ABSENT_LABEL, color: ABSENT_COLOR }
+              : undefined,
+          },
+          `${choices.title.replace(/[^\w.-]+/g, "-").toLowerCase()}`,
+          choices.format,
+        );
+        onExportClose?.();
+      } catch (failed) {
+        setExportError(failed instanceof Error ? failed.message : String(failed));
+      } finally {
+        setExportBusy(false);
+      }
+    },
+    [
+      pair,
+      names,
+      summary,
+      left,
+      right,
+      options.typing,
+      segmentKeys,
+      barScale,
+      options.gradient,
+      options.colorTarget,
+      swatches,
+      onExportClose,
+    ],
+  );
+
+  const dismiss = useCallback(() => setMenu(null), []);
+
+  const leftName = names?.left || pair.left;
+  const rightName = names?.right || pair.right;
+
+  /**
+   * A row picked from the search: each panel that has the name goes to it,
+   * through the same jump the menu uses; a panel that does not stays exactly
+   * where it is and says so in itself (§37).
+   *
+   * A side whose search *failed* is not reported as absent: "not in this
+   * tree" is a claim about the data, and a failed request supports no claim.
+   */
+  const pickSearch = useCallback(
+    (row: SearchRow, failed: SearchResult["failed"]) => {
+      const targets: [number | null, number | null] = [
+        row.sides[0][0]?.node ?? null,
+        row.sides[1][0]?.node ?? null,
+      ];
+      searched.current = targets;
+      // Every panel the search moves is a new arrival and flashes, even one
+      // already showing that leaf. A panel the name is not in keeps its mark
+      // as it was.
+      reflash.current = [...targets];
+      setSearchPicks((n) => n + 1);
+      const treeNames = [leftName, rightName];
+      // Through the panel's own "why I did not move", the same one the menu's
+      // jump uses, so the two say the same thing in the same place (§37.8).
+      targets.forEach((target, side) => {
+        const act = side === 0 ? leftActions : rightActions;
+        if (target !== null) {
+          act.focusWithContext(target);
+        } else if (failed[side]) {
+          act.reportJumpFailure(
+            `Could not search ${treeNames[side]}, so it is not known whether ` +
+              `${row.label} is in it. ${failed[side]}`,
+          );
+        } else {
+          act.reportJumpFailure(absentFrom(row.label, treeNames[side]), true);
+        }
+      });
+    },
+    [leftActions, rightActions, leftName, rightName],
+  );
+
+  // A menu opened on empty canvas still acts on the selected node, if there is
+  // one — selecting and then right-clicking is the flow the menus were asked
+  // for, and it is also the only way to reach a node too small to hit.
+  const resolved: PendingMenu | null = menu
+    ? {
+        ...menu,
+        storedId:
+          menu.storedId ?? selected[menu.side] ?? lastSelected.current[menu.side] ?? undefined,
+      }
+    : null;
+
+  const items = resolved
+    ? buildMenu(resolved, [left, right], [leftActions, rightActions], [leftName, rightName])
+    : [];
+
+  return (
+    <div className="comparison">
+      <div className="comparison-tools">
+        <SearchBox
+          trees={[
+            { id: pair.left, name: leftName },
+            { id: pair.right, name: rightName },
+          ]}
+          onPick={pickSearch}
+        />
+      </div>
+      <header className="comparison-bar">
+        <Side
+          label="Left" name={names?.left} state={left} selected={selected[0]}
+          found={found[0]} onClearFound={() => clearFound(0)}
+        />
+        <Side
+          label="Right" name={names?.right} state={right} selected={selected[1]}
+          found={found[1]} onClearFound={() => clearFound(1)}
+        />
+      </header>
+
+      <div className="panels">
+        <Panel host={leftHost} state={left} onDismissJump={leftActions.dismissJumpFailure} />
+        <Panel host={rightHost} state={right} onDismissJump={rightActions.dismissJumpFailure} />
+      </div>
+
+      {options.typing ? (
+        <TypingLegend
+          assignments={swatches}
+          segmentKeys={segmentKeys}
+          keys={offered}
+          onSegmentKeys={setSegmentKeys}
+          scale={barScale}
+          onScale={setBarScale}
+          loading={leftTyping.loading || rightTyping.loading}
+          error={leftTyping.error ?? rightTyping.error}
+        />
+      ) : null}
+
+      {exporting ? (
+        <ExportPanel
+          defaultTitle={names?.pair ?? `${pair.left} vs ${pair.right}`}
+          pairLabel="report"
+          busy={exportBusy}
+          error={exportError}
+          onCancel={() => onExportClose?.()}
+          onExport={(choices) => void runExport(choices)}
+        />
+      ) : null}
+
+      {resolved ? (
+        <ContextMenu
+          at={resolved.at}
+          title={menuTitle(resolved, [left, right])}
+          items={items}
+          onDismiss={dismiss}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function Panel({
+  host,
+  state,
+  onDismissJump,
+}: {
+  host: React.RefObject<HTMLDivElement | null>;
+  state: SideState;
+  onDismissJump: () => void;
+}) {
+  return (
+    <section className="panel">
+      <div className="sigma-host" ref={host} />
+      {state.loading ? <p className="panel-note">Loading slice…</p> : null}
+      {state.error ? <p className="panel-note error">{state.error}</p> : null}
+      {/*
+        Only failure speaks. A jump that worked is visible — the panel moved
+        and the leaf is marked — so saying so as well is noise. Keyed by the
+        text so a new message starts its fade from the beginning.
+      */}
+      {state.jumpError ? (
+        <PanelNotice
+          key={state.jumpError}
+          text={state.jumpError}
+          fades={state.jumpErrorFades}
+          onDismiss={onDismissJump}
+        />
+      ) : null}
+    </section>
+  );
+}
+
+function Side({
+  label,
+  name,
+  state,
+  selected,
+  found = null,
+  onClearFound,
+}: {
+  label: string;
+  name?: string;
+  state: SideState;
+  selected: number | null;
+  /** The leaf a jump found and marked here, if any. */
+  found?: FoundChip | null;
+  onClearFound?: () => void;
+}) {
+  const slice = state.slice;
+  return (
+    <div className="side-summary">
+      <p className="side-name">
+        {label}: <strong title={state.treeId}>{name || state.treeId}</strong>
+        {selected !== null ? (
+          <span className="selected-node"> · node {selected} selected</span>
+        ) : null}
+        {found ? (
+          <span className="found-chip">
+            {found.exact || found.offView ? "Found: " : "Found inside: "}
+            <strong>{found.label}</strong>
+            {found.offView ? (
+              <em
+                className="found-approx"
+                title={
+                  "The view on screen does not contain this leaf. Go back to see " +
+                  "where it is; the mark stays until you clear it."
+                }
+              >
+                {" "}
+                (outside this view)
+              </em>
+            ) : found.exact ? null : (
+              <em
+                className="found-approx"
+                title={
+                  "This clade is too large to draw at the current detail, so " +
+                  "the mark is on the clade holding the leaf rather than on " +
+                  "the leaf. Expand it, or raise the detail, to reach the leaf."
+                }
+              >
+                {" "}
+                (in this clade)
+              </em>
+            )}
+            <button
+              type="button"
+              className="found-clear"
+              onClick={onClearFound}
+              aria-label={`Clear the mark on ${found}`}
+              title="Clear the mark (Esc)"
+            >
+              ×
+            </button>
+          </span>
+        ) : null}
+      </p>
+      {slice ? (
+        <p className="side-counts">
+          {/* The claim, on screen: what is drawn against what it stands for. */}
+          showing <strong>{slice.displayed_leaves.toLocaleString()}</strong> of{" "}
+          {slice.total_leaves.toLocaleString()} leaves
+          {slice.hidden_leaves > 0
+            ? ` · ${slice.hidden_leaves.toLocaleString()} behind wedges`
+            : null}
+          {state.canGoBack ? ` · ${state.path.length} level(s) in` : null}
+        </p>
+      ) : null}
+    </div>
+  );
+}

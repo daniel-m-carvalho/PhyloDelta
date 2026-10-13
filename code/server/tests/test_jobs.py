@@ -1,0 +1,554 @@
+"""The queue, and the worker that drains it.
+
+Uploads write a `pending` row (§23); these cover the other half. The parts
+worth testing are not "does it compute" — the pipeline is covered elsewhere and
+the worker calls exactly that code — but the states around it: two workers must
+not take the same job, a dead worker's job must come back, and a job that
+cannot succeed must fail with a reason rather than cycle.
+"""
+
+from __future__ import annotations
+
+import io
+from datetime import UTC, datetime, timedelta
+
+import pytest
+from fastapi.testclient import TestClient
+
+from phylodelta import config, db
+from phylodelta.api.app import create_app
+from phylodelta.api.identity import AUTH_HEADER
+from phylodelta.db import jobs as queue
+from phylodelta.db.models import Comparison, ComparisonStatus
+
+# Two small trees that disagree, over the same four leaves.
+LEFT = b"(((A:0.1,B:0.1):0.1,C:0.2):0.1,D:0.3);"
+RIGHT = b"(((A:0.1,C:0.1):0.1,B:0.2):0.1,D:0.3);"
+TABLE = b"ST\tcountry\nA\tPT\nB\tES\nC\tPT\nD\tFR\n"
+
+
+@pytest.fixture
+def store(tmp_path, monkeypatch):
+    monkeypatch.setenv("PHYLODELTA_STORE", str(tmp_path))
+    # All four, not just STORE_DIR: the other three are derived from it at
+    # import time, so patching only STORE_DIR leaves the API reading the real
+    # store while the worker writes to the temporary one.
+    monkeypatch.setattr(config, "STORE_DIR", tmp_path)
+    monkeypatch.setattr(config, "TREES_DIR", tmp_path / "trees")
+    monkeypatch.setattr(config, "PAIRS_DIR", tmp_path / "pairs")
+    monkeypatch.setattr(config, "ISOLATES_DIR", tmp_path / "isolates")
+    monkeypatch.setattr(config, "SCRATCH_DIR", tmp_path / "scratch")
+    monkeypatch.setenv("PHYLODELTA_AUTH", "header")
+    db.reset()
+    with db.using_store(tmp_path):
+        db.create_schema()
+        yield tmp_path
+
+
+@pytest.fixture
+def client(store):
+    from phylodelta.metrics import registry_pairs
+    from phylodelta.trees import registry
+
+    registry.reset_cache()
+    registry_pairs.reset_cache()
+    return TestClient(create_app(), raise_server_exceptions=False)
+
+
+def upload(client, left=LEFT, right=RIGHT, owner="alice", **extra) -> str:
+    files = {
+        "left_tree": ("nj.nwk", io.BytesIO(left)),
+        "right_tree": ("upgma.nwk", io.BytesIO(right)),
+    }
+    files.update(extra)
+    response = client.post(
+        "/api/v1/comparisons", files=files, headers={AUTH_HEADER: owner}
+    )
+    assert response.status_code == 202, response.text
+    return response.json()["id"]
+
+
+def enqueue(n: int = 1, owner: str = "alice") -> list[str]:
+    ids = []
+    for i in range(n):
+        pair = f"L{i}__R{i}"
+        db.record_upload(pair, f"L{i}", f"R{i}", owner, f"job {i}", "l", "r", "p")
+        ids.append(pair)
+    return ids
+
+
+# --- claiming ---------------------------------------------------------------
+
+def test_an_empty_queue_yields_nothing(store):
+    assert queue.claim_next("w1") is None
+
+
+def test_a_claimed_job_cannot_be_claimed_again(store):
+    """The whole of the mutual exclusion, in one assertion.
+
+    Claiming is a conditional UPDATE rather than a read followed by a write:
+    between those two statements a second worker could read the same row, and
+    both would then compute the same comparison into the same directory.
+    """
+    enqueue(1)
+    assert queue.claim_next("w1") == "L0__R0"
+    assert queue.claim_next("w2") is None
+
+
+def test_every_job_goes_to_exactly_one_worker(store):
+    enqueue(25)
+    taken: list[str] = []
+    for _ in range(25):
+        for worker in ("w1", "w2", "w3"):
+            got = queue.claim_next(worker)
+            if got:
+                taken.append(got)
+    assert len(taken) == 25
+    assert len(set(taken)) == 25
+
+
+def test_claiming_counts_an_attempt(store):
+    enqueue(1)
+    queue.claim_next("w1")
+    with db.session() as active:
+        assert active.get(Comparison, "L0__R0").attempts == 1
+
+
+def test_the_oldest_job_goes_first(store):
+    enqueue(3)
+    assert queue.claim_next("w1") == "L0__R0"
+
+
+# --- leases and recovery ----------------------------------------------------
+
+def _age(comparison_id: str, seconds: int) -> None:
+    """Backdate a heartbeat, as a dead worker would leave it."""
+    with db.session() as active:
+        active.get(Comparison, comparison_id).heartbeat_at = datetime.now(UTC) - timedelta(
+            seconds=seconds
+        )
+
+
+def test_a_fresh_job_is_not_reclaimed(store):
+    enqueue(1)
+    queue.claim_next("w1")
+    assert queue.reclaim_stale(lease_seconds=300) == (0, 0)
+
+
+def test_an_abandoned_job_returns_to_the_queue(store):
+    """Without this, a worker killed mid-job leaves the comparison `running`
+    forever: no worker will claim it and the user polls a status that never
+    moves."""
+    enqueue(1)
+    queue.claim_next("w1")
+    _age("L0__R0", 600)
+
+    assert queue.reclaim_stale(lease_seconds=300) == (1, 0)
+    assert queue.claim_next("w2") == "L0__R0"
+
+
+def test_a_job_that_keeps_killing_its_worker_eventually_fails(store):
+    """Bounded retries, so one poison job cannot occupy the queue forever."""
+    enqueue(1)
+    for _ in range(queue.MAX_ATTEMPTS):
+        assert queue.claim_next("w1") == "L0__R0"
+        _age("L0__R0", 600)
+        queue.reclaim_stale(lease_seconds=300)
+
+    # The attempt that exhausts the budget fails it instead of requeuing.
+    assert queue.reclaim_stale(lease_seconds=300) == (0, 0)
+    record = db.comparison_for("alice", "L0__R0")
+    assert record.status is ComparisonStatus.FAILED
+    assert "Abandoned" in record.error
+    assert queue.claim_next("w2") is None
+
+
+def test_a_heartbeat_keeps_a_job_from_being_reclaimed(store):
+    enqueue(1)
+    queue.claim_next("w1")
+    _age("L0__R0", 600)
+    queue.heartbeat("L0__R0", "w1")
+    assert queue.reclaim_stale(lease_seconds=300) == (0, 0)
+
+
+def test_only_the_holder_can_heartbeat(store):
+    """A worker whose job was reclaimed must not be able to take it back from
+    whoever holds it now."""
+    enqueue(1)
+    queue.claim_next("w1")
+    _age("L0__R0", 600)
+    queue.reclaim_stale(lease_seconds=300)
+    queue.claim_next("w2")
+    before = db.comparison_for("alice", "L0__R0").heartbeat_at
+
+    queue.heartbeat("L0__R0", "w1")
+    assert db.comparison_for("alice", "L0__R0").heartbeat_at == before
+
+
+# --- finishing --------------------------------------------------------------
+
+def test_finishing_records_ready_or_the_reason(store):
+    enqueue(2)
+    queue.claim_next("w1")
+    queue.finish("L0__R0")
+    done = db.comparison_for("alice", "L0__R0")
+    assert done.status is ComparisonStatus.READY
+    assert done.error is None and done.finished_at is not None
+
+    queue.claim_next("w1")
+    queue.finish("L1__R1", error="trees share no labels")
+    failed = db.comparison_for("alice", "L1__R1")
+    assert failed.status is ComparisonStatus.FAILED
+    assert failed.error == "trees share no labels"
+
+
+def test_queue_depth_counts_each_status(store):
+    enqueue(3)
+    queue.claim_next("w1")
+    depth = queue.queue_depth()
+    assert depth["pending"] == 2 and depth["running"] == 1
+
+
+# --- the worker end to end --------------------------------------------------
+
+def test_an_upload_becomes_a_computed_comparison(client, store):
+    """The other half of the 202: upload, worker, readable result."""
+    from phylodelta.precompute.jobs import process_next
+
+    comparison_id = upload(client, left_isolates=("meta.tsv", io.BytesIO(TABLE)))
+    headers = {AUTH_HEADER: "alice"}
+
+    assert process_next("w1") is True
+    assert process_next("w1") is False, "the queue is empty afterwards"
+
+    status = client.get(
+        f"/api/v1/comparisons/{comparison_id}/status", headers=headers
+    ).json()
+    assert status["status"] == "ready" and status["ready"] is True
+    assert status["error"] is None
+
+    # And it is now actually servable, which is the point.
+    body = client.get(f"/api/v1/comparisons/{comparison_id}", headers=headers).json()
+    assert body["summary"]["rf"] == 2  # one exclusive clade each way
+    left_id = comparison_id.split("__")[0]
+    assert client.get(f"/api/v1/trees/{left_id}", headers=headers).status_code == 200
+    assert (
+        client.get(f"/api/v1/isolates/{left_id}/keys", headers=headers).status_code
+        == 200
+    )
+
+
+def test_the_trees_are_only_servable_once_the_job_has_run(client, store):
+    from phylodelta.precompute.jobs import process_next
+
+    comparison_id = upload(client)
+    left_id = comparison_id.split("__")[0]
+    headers = {AUTH_HEADER: "alice"}
+    assert client.get(f"/api/v1/trees/{left_id}", headers=headers).status_code == 404
+    process_next("w1")
+    assert client.get(f"/api/v1/trees/{left_id}", headers=headers).status_code == 200
+
+
+def test_trees_with_no_shared_labels_fail_with_the_reason(client, store):
+    """A definite answer, not a fault: retrying cannot help, so it fails."""
+    from phylodelta.precompute.jobs import process_next
+
+    comparison_id = upload(client, left=b"((A,B),C);", right=b"((X,Y),Z);")
+    assert process_next("w1") is True
+
+    record = db.comparison_for("alice", comparison_id)
+    assert record.status is ComparisonStatus.FAILED
+    assert "Nothing to compare" in record.error
+
+
+def test_an_unparseable_tree_fails_the_job_rather_than_the_worker(client, store):
+    """The door check is deliberately cheap (§23.3), so a file that looks like
+    Newick and is not gets here. It must become a recorded status."""
+    from phylodelta.precompute.jobs import process_next
+
+    # Passes the structural check -- starts '(', ends ';' -- but is not a
+    # rooted binary tree. Four at the root: three would be resolved (NJ's
+    # unrooted form, trees/normalise.py), four is a polytomy.
+    comparison_id = upload(client, left=b"(A,B,C,D);")
+    assert process_next("w1") is True
+
+    record = db.comparison_for("alice", comparison_id)
+    assert record.status is ComparisonStatus.FAILED
+    # Named the way the user knows it: which side, and no exception class or
+    # pre-order index. It used to read "ValueError: ... pre-order index 0".
+    assert record.error.startswith("The left tree (")
+    assert "root has 4 children" in record.error
+    assert "pre-order" not in record.error and "ValueError" not in record.error
+    # The worker is still alive and still working.
+    assert process_next("w1") is False
+
+
+def test_an_unrooted_nj_tree_is_resolved_rather_than_refused(client, store):
+    """The shape aureus-rapidnj-tree.nwk arrived in: three children at the root."""
+    from phylodelta.precompute.jobs import process_next
+    from phylodelta.trees.store import read_tree
+
+    comparison_id = upload(
+        client, left=b"((A:1,B:1):5,C:1,D:2);", right=b"(((A,B),C),D);"
+    )
+    assert process_next("w1") is True
+
+    record = db.comparison_for("alice", comparison_id)
+    assert record.status is ComparisonStatus.READY, record.error
+    left = read_tree(store / "trees" / record.left_id)
+    assert left.meta.resolved_root is True
+    assert left.meta.n_nodes == 2 * left.meta.n_leaves - 1
+
+
+def test_the_listing_carries_the_names_not_just_the_ids(client, store):
+    """The list and the panels showed `0603c72037c7 vs 1531dacf584f`: the name
+    typed at upload and the file names were stored and never sent."""
+    from phylodelta.precompute.jobs import process_next
+
+    response = client.post(
+        "/api/v1/comparisons",
+        files={
+            "left_tree": ("aureus-rapidnj.nwk", io.BytesIO(LEFT)),
+            "right_tree": ("staph-nj.nwk", io.BytesIO(RIGHT)),
+        },
+        data={"name": "Aureus against Staph"},
+        headers={AUTH_HEADER: "alice"},
+    )
+    assert response.status_code == 202, response.text
+    comparison_id = response.json()["id"]
+    assert process_next("w1") is True
+
+    body = client.get("/api/v1/datasets", headers={AUTH_HEADER: "alice"}).json()
+    pair = next(p for p in body["pairs"] if p["id"] == comparison_id)
+    assert pair["display_name"] == "Aureus against Staph"
+    names = {t["id"]: t["display_name"] for t in body["trees"]}
+    assert names[pair["left"]] == "aureus-rapidnj"
+    assert names[pair["right"]] == "staph-nj"
+
+
+def test_a_failed_job_does_not_leave_a_readable_comparison(client, store):
+    from phylodelta.precompute.jobs import process_next
+
+    comparison_id = upload(client, left=b"((A,B),C);", right=b"((X,Y),Z);")
+    process_next("w1")
+    assert (
+        client.get(
+            f"/api/v1/comparisons/{comparison_id}", headers={AUTH_HEADER: "alice"}
+        ).status_code
+        == 404
+    )
+
+
+def test_the_worker_computes_for_the_uploader_not_itself(client, store):
+    """The worker is not a requester: what it builds belongs to whoever
+    uploaded it, and must not become visible to anyone else."""
+    from phylodelta.precompute.jobs import process_next
+
+    comparison_id = upload(client, owner="alice")
+    process_next("w1")
+
+    assert db.comparison_for("alice", comparison_id).owner_id == "alice"
+    left_id = comparison_id.split("__")[0]
+    assert db.dataset_for("alice", left_id) is not None
+    assert db.dataset_for("bob", left_id) is None
+    assert (
+        client.get(
+            f"/api/v1/comparisons/{comparison_id}", headers={AUTH_HEADER: "bob"}
+        ).status_code
+        == 404
+    )
+
+
+def test_declared_species_reaches_the_result(client, store):
+    from phylodelta.precompute.jobs import process_next
+
+    comparison_id = upload(
+        client,
+        left_species=(None, "vibrio"),
+        right_species=(None, "clostridium"),
+    )
+    process_next("w1")
+    body = client.get(
+        f"/api/v1/comparisons/{comparison_id}", headers={AUTH_HEADER: "alice"}
+    ).json()
+    assert body["same_species"] is False
+    assert body["caution"] is None
+
+
+def test_undeclared_species_is_reported_as_unknown_not_as_matching(client, store):
+    """`None`, never `True`. "We did not check" must not read as "we checked"."""
+    from phylodelta.precompute.jobs import process_next
+
+    comparison_id = upload(client)
+    process_next("w1")
+    body = client.get(
+        f"/api/v1/comparisons/{comparison_id}", headers={AUTH_HEADER: "alice"}
+    ).json()
+    assert body["same_species"] is None
+    assert "not declared" in body["caution"]
+
+
+# --- a metric that fails is not a failed comparison, but it is not silent ----
+
+def _upload_asking_for(client, metrics: str, owner: str = "alice") -> str:
+    response = client.post(
+        "/api/v1/comparisons",
+        files={
+            "left_tree": ("nj.nwk", io.BytesIO(LEFT)),
+            "right_tree": ("upgma.nwk", io.BytesIO(RIGHT)),
+        },
+        data={"metrics": metrics},
+        headers={AUTH_HEADER: owner},
+    )
+    assert response.status_code == 202, response.text
+    return response.json()["id"]
+
+
+def _break_triplet(monkeypatch, reason: str) -> None:
+    """Make `triplet` refuse, leaving `rf` alone.
+
+    Patched on `jobs`, not on `pipeline`: `jobs` does `from .pipeline import
+    load_metrics`, so the name it calls is its own. Patching the pipeline's
+    attribute would have left the worker calling the real one and the test
+    passing for the wrong reason.
+    """
+    from phylodelta.metrics.runners import MetricFailed
+    from phylodelta.precompute import jobs as runner
+
+    real = runner.load_metrics
+
+    def with_a_broken_metric(wanted):
+        manifests, loaded = real(wanted)
+
+        def refuse(prepared):
+            raise MetricFailed(reason)
+
+        return manifests, {**loaded, "triplet": refuse}
+
+    monkeypatch.setattr(runner, "load_metrics", with_a_broken_metric)
+
+
+def test_a_failing_metric_leaves_the_comparison_ready(client, store, monkeypatch):
+    """One metric of two failing must not throw away the other, or the pair.
+
+    Correspondence is minutes on a large pair and is shared by every metric
+    (§9), so refusing the whole upload because one metric could not run would
+    discard work that is perfectly good.
+    """
+    from phylodelta.precompute.jobs import process_next
+
+    _break_triplet(monkeypatch, "metric 'triplet' produced no match for 'triplet'")
+    comparison_id = _upload_asking_for(client, "rf,triplet")
+    assert process_next("w1") is True
+
+    status = client.get(
+        f"/api/v1/comparisons/{comparison_id}/status", headers={AUTH_HEADER: "alice"}
+    ).json()
+    assert status["status"] == "ready" and status["ready"] is True
+    assert status["error"] is None, "the comparison did not fail; one metric did"
+
+    # And the metric that worked is genuinely servable.
+    body = client.get(
+        f"/api/v1/comparisons/{comparison_id}?metric=rf", headers={AUTH_HEADER: "alice"}
+    )
+    assert body.status_code == 200
+
+
+def test_a_failing_metric_is_named_with_its_reason(client, store, monkeypatch):
+    """The gap this closes.
+
+    Before, the pipeline logged the refusal to stderr and carried on: the row
+    went `ready`, `error` was null, and the metric was simply absent. Asking for
+    `triplet` and getting a comparison without it was indistinguishable, from
+    the API, from never having asked for it.
+    """
+    from phylodelta.precompute.jobs import process_next
+
+    _break_triplet(monkeypatch, "metric 'triplet' needs trip_sht, which is not built")
+    comparison_id = _upload_asking_for(client, "rf,triplet")
+    assert process_next("w1") is True
+
+    status = client.get(
+        f"/api/v1/comparisons/{comparison_id}/status", headers={AUTH_HEADER: "alice"}
+    ).json()
+
+    # What was asked for is still reported as asked for — that is the record of
+    # the request, and it must not be quietly rewritten to what succeeded.
+    assert status["metrics"] == ["rf", "triplet"]
+    assert status["metrics_ready"] == ["rf"]
+    assert "triplet" in status["metrics_failed"]
+    assert "not built" in status["metrics_failed"]["triplet"]
+
+
+def test_metrics_ready_reflects_the_store_not_the_request(client, store):
+    """`metrics_ready` is what can actually be asked for.
+
+    Read from the store, the same source the datasets listing and the slicing
+    routes answer from, so a client cannot be told a metric is ready here and
+    refused it there.
+    """
+    from phylodelta.precompute.jobs import process_next
+
+    comparison_id = _upload_asking_for(client, "rf")
+    assert process_next("w1") is True
+
+    status = client.get(
+        f"/api/v1/comparisons/{comparison_id}/status", headers={AUTH_HEADER: "alice"}
+    ).json()
+    assert status["metrics_ready"] == ["rf"]
+    assert status["metrics_failed"] == {}
+
+
+def test_a_retry_that_succeeds_clears_an_earlier_metric_failure(store):
+    """A stale failure must not stay attached to a comparison that now has it."""
+    enqueue(1)
+    queue.claim_next("w1")
+    queue.finish("L0__R0", metric_errors={"triplet": "it broke"})
+    assert db.comparison_for("alice", "L0__R0").metric_errors
+
+    queue.finish("L0__R0")
+    assert db.comparison_for("alice", "L0__R0").metric_errors is None
+
+
+def test_a_built_comparison_records_the_thread_count_that_built_it(client, store):
+    """Provenance on the artefact, not in the intent of whoever launched it.
+
+    A benchmark recorded a run as "2 threads" that had executed with one, and
+    nothing caught it for three days. `PHYLODELTA_THREADS` is read by the
+    *worker*, which the measuring tool neither starts nor interrogates, so the
+    thread count was only ever a filename. Writing the resolved count into the
+    pair and serving it is what lets a measurement be checked against what
+    actually happened rather than against what was meant.
+
+    The **resolved** count, not the setting: 0 means "one per hardware thread",
+    and a reader of the stored pair cannot expand that after the fact.
+    """
+    from phylodelta.precompute.jobs import process_next
+
+    comparison_id = upload(client)
+    assert process_next("w1") is True
+
+    body = client.get(
+        f"/api/v1/comparisons/{comparison_id}?metric=rf", headers={AUTH_HEADER: "alice"}
+    ).json()
+
+    assert "build" in body, "the summary must carry how the pair was produced"
+    threads = body["build"].get("threads")
+    assert isinstance(threads, int) and threads >= 1, (
+        f"expected a resolved thread count, got {threads!r} — 0 or None means "
+        "the setting was stored instead of what the search actually used"
+    )
+
+
+def test_the_recorded_thread_count_follows_the_setting(client, store, monkeypatch):
+    """Pin it to a value and the artefact must say that value."""
+    from phylodelta.precompute.jobs import process_next
+
+    monkeypatch.setenv("PHYLODELTA_THREADS", "3")
+    comparison_id = upload(client)
+    assert process_next("w1") is True
+
+    body = client.get(
+        f"/api/v1/comparisons/{comparison_id}?metric=rf", headers={AUTH_HEADER: "alice"}
+    ).json()
+    assert body["build"]["threads"] == 3

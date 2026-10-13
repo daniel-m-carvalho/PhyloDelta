@@ -1,0 +1,55 @@
+{
+  "threads": 1,
+  "rungs": [
+    {
+      "leaves": 1000,
+      "build_s": 0.5450272079906426,
+      "status": "ready"
+    },
+    {
+      "leaves": 2500,
+      "build_s": 2.053335500007961,
+      "status": "ready"
+    },
+    {
+      "leaves": 5000,
+      "build_s": 2.039499167003669,
+      "status": "ready"
+    },
+    {
+      "leaves": 10000,
+      "build_s": 2.5512405000044964,
+      "status": "ready"
+    },
+    {
+      "leaves": 17645,
+      "build_s": 2.5538016670034267,
+      "status": "ready"
+    },
+    {
+      "leaves": 35290,
+      "build_s": 4.075493332988117,
+      "status": "ready"
+    },
+    {
+      "leaves": 70580,
+      "build_s": 9.135080542007927,
+      "status": "ready"
+    },
+    {
+      "leaves": 141160,
+      "build_s": 30.879635374993086,
+      "status": "ready"
+    },
+    {
+      "leaves": 282320,
+      "build_s": 113.42834170802962,
+      "status": "ready"
+    },
+    {
+      "leaves": 564640,
+      "build_s": 496.2328960419982,
+      "status": "ready"
+    }
+  ]
+}
