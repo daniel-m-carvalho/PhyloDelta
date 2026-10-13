@@ -37,6 +37,10 @@ export interface ViewOptions {
    * drawn either way says different things.
    */
   layout: "cladogram" | "phylogram";
+  /** Write each branch's length beside it, where it fits (§44). */
+  lengths: boolean;
+  /** How a phylogram draws lengths: to scale, or as log(1 + length) (§44). */
+  lengthScale: "linear" | "log";
   /**
    * Colours the user chose for particular typing categories, by category key
    * (§43). In the URL so a refresh, a shared link and the exported report all
@@ -53,6 +57,8 @@ export const DEFAULT_OPTIONS: ViewOptions = {
   barScale: "log",
   cladeSizes: false,
   layout: "cladogram",
+  lengths: false,
+  lengthScale: "linear",
   colors: {},
 };
 
@@ -108,6 +114,8 @@ function parse(hash: string): ViewState {
       barScale: query.get("bs") === "linear" ? "linear" : "log",
       cladeSizes: query.get("cs") === "1",
       layout: query.get("lm") === "phylogram" ? "phylogram" : "cladogram",
+      lengths: query.get("bl") === "1",
+      lengthScale: query.get("ls") === "log" ? "log" : "linear",
       colors: parseColors(query.getAll("cc")),
     },
   };
@@ -126,6 +134,8 @@ function format(state: ViewState): string {
   if (options.barScale !== DEFAULT_OPTIONS.barScale) query.set("bs", options.barScale);
   if (options.cladeSizes) query.set("cs", "1");
   if (options.layout !== DEFAULT_OPTIONS.layout) query.set("lm", options.layout);
+  if (options.lengths) query.set("bl", "1");
+  if (options.lengthScale !== DEFAULT_OPTIONS.lengthScale) query.set("ls", options.lengthScale);
   // Sorted, so the same choices always write the same link.
   for (const [category, color] of Object.entries(options.colors ?? {}).sort(([a], [b]) => a.localeCompare(b))) {
     query.append("cc", `${color.replace(/^#/, "")}.${category}`);

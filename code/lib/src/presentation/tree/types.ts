@@ -55,6 +55,14 @@ export interface NewickNode {
 export type LayoutMode = "phylogram" | "cladogram";
 
 /**
+ * How a phylogram turns a branch length into horizontal distance (§44).
+ * "log" draws each branch as log(1 + length), so a few very long branches no
+ * longer flatten everything else; positions are still the sum along the path,
+ * so the topology is drawn as before. A cladogram ignores lengths either way.
+ */
+export type LengthScale = "linear" | "log";
+
+/**
  * Predicate deciding whether an internal node is currently collapsed. The
  * layout pipeline depends only on this predicate, not on *how* collapse state
  * is stored — so the Expandor/Collapsor operator can key collapse on stable

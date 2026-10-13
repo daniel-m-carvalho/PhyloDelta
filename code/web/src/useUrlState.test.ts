@@ -102,6 +102,20 @@ describe("view state in the URL", () => {
     expect(restored.result.current[0].options.colors).toEqual(colors);
   });
 
+  it("round-trips the branch-length options (§44)", () => {
+    const { result } = renderHook(() => useUrlState());
+    act(() =>
+      result.current[1]({
+        comparison: "a__b", left: [], right: [],
+        options: { ...DEFAULT_OPTIONS, layout: "phylogram", lengths: true, lengthScale: "log" },
+      }),
+    );
+    expect(window.location.hash).toContain("bl=1");
+    expect(window.location.hash).toContain("ls=log");
+    const restored = renderHook(() => useUrlState()).result.current[0].options;
+    expect([restored.lengths, restored.lengthScale]).toEqual([true, "log"]);
+  });
+
   it("drops a colour entry a browser could not paint", () => {
     window.history.replaceState(null, "", "#/c/a__b?cc=red.Human&cc=12b886.Food&cc=e03131");
     const { result } = renderHook(() => useUrlState());

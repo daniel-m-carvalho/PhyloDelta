@@ -5,7 +5,7 @@ import type {
   SigmaStageEventPayload,
 } from "sigma/types";
 import type Graph from "graphology";
-import type { ChildOrder, IsCollapsed, LayoutMode, NewickNode } from "../tree/types";
+import type { ChildOrder, IsCollapsed, LayoutMode, LengthScale, NewickNode } from "../tree/types";
 import { NEVER_COLLAPSED } from "../tree/types";
 import { orderByName } from "../tree/model";
 import { buildGraph, BRANCH_COLOR, type LayoutNode } from "../tree/layout";
@@ -147,6 +147,8 @@ export interface TreeViewerOptions {
    * which is what a phylogram claims.
    */
   clampBranches?: boolean;
+  /** Phylogram only: draw lengths linearly or as log(1 + length) (§44). Default "linear". */
+  lengthScale?: LengthScale;
   maxNodes?: number; // default 200
   hideInternalNodes?: boolean; // default true
   /**
@@ -227,6 +229,7 @@ export class TreeViewer {
 
   private layoutMode: LayoutMode;
   private clampBranches: boolean;
+  private lengthScale: LengthScale;
   private maxNodes: number;
   private hideInternalNodes: boolean;
   private rerootOn?: string;
@@ -291,6 +294,7 @@ export class TreeViewer {
     this.container = container;
     this.layoutMode = options.layoutMode ?? "cladogram";
     this.clampBranches = options.clampBranches ?? false;
+    this.lengthScale = options.lengthScale ?? "linear";
     this.maxNodes = options.maxNodes ?? 200;
     this.hideInternalNodes = options.hideInternalNodes ?? true;
     this.rerootOn = options.rerootOn;
@@ -375,6 +379,17 @@ export class TreeViewer {
 
   getLayoutMode(): LayoutMode {
     return this.layoutMode;
+  }
+
+  /** Draw a phylogram's branch lengths linearly or on a log scale (§44). */
+  setLengthScale(scale: LengthScale): void {
+    if (scale === this.lengthScale) return;
+    this.lengthScale = scale;
+    this.rerender();
+  }
+
+  getLengthScale(): LengthScale {
+    return this.lengthScale;
   }
 
   /** Reflect the tree horizontally (root right, tips left). */
@@ -567,7 +582,8 @@ export class TreeViewer {
       this.rerootOn,
       this.reflect,
       this.childOrder,
-      this.clampBranches
+      this.clampBranches,
+      this.lengthScale
     );
     this.graph = graph;
     this.nodeMap = nodeMap;

@@ -164,6 +164,12 @@ export function App() {
                 checked: options.cladeSizes,
                 note: "Label every collapsed clade with its leaf count",
               },
+              {
+                key: "lengths",
+                label: "Branch lengths",
+                checked: options.lengths,
+                note: "Each branch's length where it fits; zoom in for more",
+              },
               // How the trees are drawn: one of two, so a radio pair, like
               // where the divergence goes.
               {
@@ -181,6 +187,27 @@ export function App() {
                 note: "Branch lengths to scale: read the distance",
                 group: "layout",
               },
+              // Only a phylogram draws lengths, so the scale is offered only
+              // there; a cladogram ignores it either way.
+              ...(options.layout === "phylogram"
+                ? [
+                    {
+                      key: "scale:linear",
+                      label: "Linear",
+                      checked: options.lengthScale === "linear",
+                      note: "Lengths exactly to scale",
+                      group: "length-scale",
+                      heading: "Branch length scale",
+                    },
+                    {
+                      key: "scale:log",
+                      label: "Logarithmic",
+                      checked: options.lengthScale === "log",
+                      note: "log(1 + length): long branches no longer flatten the rest",
+                      group: "length-scale",
+                    },
+                  ]
+                : []),
               // Where the gradient lands, not whether it is on — so the choice
               // is offered only while there is one to place.
               ...(options.gradient
@@ -198,6 +225,10 @@ export function App() {
               if (key === "gradient") setOptions({ gradient: !options.gradient });
               if (key === "typing") setOptions({ typing: !options.typing });
               if (key === "clades") setOptions({ cladeSizes: !options.cladeSizes });
+              if (key === "lengths") setOptions({ lengths: !options.lengths });
+              if (key.startsWith("scale:")) {
+                setOptions({ lengthScale: key.slice("scale:".length) as ViewOptions["lengthScale"] });
+              }
               if (key.startsWith("layout:")) {
                 setOptions({ layout: key.slice("layout:".length) as ViewOptions["layout"] });
               }
