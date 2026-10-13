@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api/client";
 import type { ComparisonStatus, MetricSummary } from "../api/types";
+import { MetricReferences } from "./MetricReferences";
 import { clearDraft, loadFields, loadFiles, saveFields, saveFile, type Slot } from "./draft";
 
 const TREE_HINT = "Newick — .nwk, .newick, .tree";
@@ -242,6 +243,9 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
             <span className="field-help">
               {firstSentence(metrics.find((metric) => metric.name === chosen)?.description ?? "")}
             </span>
+            <MetricReferences
+              references={metrics.find((metric) => metric.name === chosen)?.references ?? []}
+            />
           </label>
         ) : null}
       </div>

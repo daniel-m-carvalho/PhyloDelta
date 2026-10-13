@@ -40,6 +40,7 @@ everyone's.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
@@ -216,6 +217,43 @@ class Metric(Protocol):
     ) -> MetricResult: ...
 
 
+#: What a reference is the reference *for*. A metric computed by someone
+#: else's program has two: the definition of the metric, and the algorithm or
+#: program that computes it — and a reader needs to know which paper is which.
+REFERENCE_ROLES = ("metric", "implementation")
+
+_DOI = re.compile(r"^10\.\d{4,9}/\S+$")
+
+
+@dataclass(frozen=True, slots=True)
+class Reference:
+    """A paper a metric rests on (§42)."""
+
+    citation: str
+    role: str
+    doi: str = ""
+
+    @property
+    def url(self) -> str:
+        return f"https://doi.org/{self.doi}" if self.doi else ""
+
+    @staticmethod
+    def from_json(raw: object, metric: str) -> "Reference":
+        # Refused by name: a malformed reference would reach the interface as a
+        # citation that does not say what it cites, or a link that goes nowhere.
+        if not isinstance(raw, dict) or not str(raw.get("citation", "")).strip():
+            raise ValueError(f"metric {metric!r}: each reference needs a 'citation'")
+        role = raw.get("role", "")
+        if role not in REFERENCE_ROLES:
+            raise ValueError(
+                f"metric {metric!r}: reference role must be one of {REFERENCE_ROLES}, got {role!r}"
+            )
+        doi = str(raw.get("doi", "")).strip()
+        if doi and not _DOI.match(doi):
+            raise ValueError(f"metric {metric!r}: {doi!r} is not a DOI (10.xxxx/...)")
+        return Reference(citation=str(raw["citation"]).strip(), role=role, doi=doi)
+
+
 @dataclass(frozen=True, slots=True)
 class MetricManifest:
     """A parsed ``metric.json``."""
@@ -235,6 +273,8 @@ class MetricManifest:
     #: has never seen, and so a metric that fails to produce what it promised
     #: fails at compute time rather than being discovered downstream.
     outputs: MetricOutputs = field(default_factory=MetricOutputs)
+    #: The papers it rests on, shown wherever the metric is offered (§42).
+    references: tuple[Reference, ...] = ()
     #: The plugin's own directory. Needed so a subprocess command can be
     #: resolved relative to where it lives rather than to the caller's cwd.
     directory: Path | None = None
@@ -271,6 +311,9 @@ class MetricManifest:
             version=str(raw.get("version", "1")),
             capabilities=raw.get("capabilities", {}),
             outputs=MetricOutputs.from_json(raw.get("outputs", {})),
+            references=tuple(
+                Reference.from_json(entry, raw["name"]) for entry in raw.get("references", [])
+            ),
             directory=directory,
             raw=dict(raw),
         )

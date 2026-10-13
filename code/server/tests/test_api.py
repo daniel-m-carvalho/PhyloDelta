@@ -130,6 +130,10 @@ def test_metrics_endpoint_lists_registered_plugins(client):
     assert "rf" in by_name
     assert by_name["rf"]["title"] == "Robinson-Foulds"
     assert by_name["rf"]["capabilities"]["per_clade"] is True
+    # Shown where the metric is offered (§42): the definition first, as a link.
+    first = by_name["rf"]["references"][0]
+    assert first["role"] == "metric" and "Robinson" in first["citation"]
+    assert first["url"] == "https://doi.org/10.1016/0025-5564(81)90043-2"
 
 
 def test_a_pair_appears_once_it_is_computed(client, real_store):

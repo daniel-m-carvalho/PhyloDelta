@@ -160,6 +160,17 @@ class MetricOutputsDescription(BaseModel):
     columns: list[ColumnDescription] = Field(default_factory=list)
 
 
+class MetricReference(BaseModel):
+    """A paper a metric rests on."""
+
+    citation: str = Field(examples=["Robinson, D.F.; Foulds, L.R. Comparison of phylogenetic trees. Math. Biosci. 1981, 53, 131–147."])
+    role: str = Field(
+        description="'metric' for the definition of the metric, 'implementation' for what computes it."
+    )
+    doi: str = ""
+    url: str = Field("", description="https://doi.org/<doi>, or empty when there is no DOI.")
+
+
 class MetricSummary(BaseModel):
     """A registered comparison metric and what it can do.
 
@@ -182,6 +193,9 @@ class MetricSummary(BaseModel):
     )
     version: str = "1"
     capabilities: dict[str, bool] = Field(default_factory=dict)
+    references: list[MetricReference] = Field(
+        default_factory=list, description="The papers it rests on, metric first (§42)."
+    )
     outputs: MetricOutputsDescription = Field(
         default_factory=MetricOutputsDescription,
         description="What this metric contributes, beyond the shared correspondence.",
