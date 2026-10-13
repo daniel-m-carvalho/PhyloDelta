@@ -4786,6 +4786,29 @@ To confirm with the supervisors: the built-in `rf` cites Branco, Vaz & Francisco
 implementation because this backend follows that paper's formulation (§1.10), and `triplet` cites it
 because the triplet distance is computed by TreeDiff, the program that paper describes.
 
+## 43. A typing category's colour can be chosen
+
+Asked for in review: let the user change the legend and bar-chart colours. Chosen **per category**
+(over a choice of whole palettes): click a legend swatch, pick a colour, and that category is drawn
+in it in both panels; "Reset colours" gives every category back its palette colour.
+
+* **In the library, a choice is an override, not a reassignment.** `CategoricalColorScale` gains
+  `setColor` / `clearColor` / `clearColors`. A chosen key still takes its palette slot, so the keys
+  after it keep their colours and clearing the choice gives it back exactly the colour it would
+  have had. That holds even when the choice arrives from a link before the key was ever drawn.
+* **In the URL**, like the other view options: `cc=<hex>.<category>`, colour first because a
+  category name is arbitrary text and may contain the separator. An entry that is not six hex digits
+  and a name is dropped. So a refresh, a shared link and the exported report (which reads the scale)
+  all show the chosen colours.
+* **Applied when committed, not while dragging.** A colour input's `input` event fires on every step
+  of a drag, and each would redraw both panels' bars and rewrite the URL, so the swatch listens for
+  the native `change` event. The view depends on a string key of the choices, not on the options
+  object, which is new on every navigation. Redrawing on identity is the bug `useTypingData` has
+  had three times.
+
+Checked in a browser: choosing black for a category turned its swatch and 16 bar segments black,
+wrote it to the link, survived a reload, and reset cleanly. The layout check still passes.
+
 ---
 
 ## References and provenance

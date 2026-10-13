@@ -113,3 +113,47 @@ describe("SequentialColorScale", () => {
     expect(scale.stopsHex().length).toBeGreaterThan(1);
   });
 });
+
+describe("CategoricalColorScale — a colour chosen for one category", () => {
+  it("wins over the palette for that key only", () => {
+    const scale = new CategoricalColorScale(["#111111", "#222222", "#333333"]);
+    scale.prime(["Animal", "Food", "Human"]);
+    scale.setColor("Human", "#e03131");
+    expect(scale.color("Human")).toBe("#e03131");
+    expect(scale.color("Animal")).toBe("#111111");
+    expect(scale.color("Food")).toBe("#222222");
+    expect(scale.assignments().get("Human")).toBe("#e03131");
+  });
+
+  it("gives the key back its own palette colour when cleared", () => {
+    const scale = new CategoricalColorScale(["#111111", "#222222", "#333333"]);
+    scale.prime(["Animal", "Food", "Human"]);
+    scale.setColor("Food", "#e03131");
+    scale.clearColor("Food");
+    expect(scale.color("Food")).toBe("#222222");
+  });
+
+  it("does not shift other keys' palette colours, even when chosen before it was seen", () => {
+    // A choice from a shared link arrives before any bar is drawn. The key
+    // still takes its palette slot, so the keys after it keep theirs and a
+    // reset gives it the colour it would always have had.
+    const plain = new CategoricalColorScale(["#111111", "#222222", "#333333"]);
+    plain.prime(["Animal", "Food", "Human"]);
+    const picked = new CategoricalColorScale(["#111111", "#222222", "#333333"]);
+    picked.setColor("Animal", "#e03131");
+    picked.prime(["Animal", "Food", "Human"]);
+
+    expect(picked.color("Food")).toBe(plain.color("Food"));
+    expect(picked.color("Human")).toBe(plain.color("Human"));
+    picked.clearColors();
+    expect(picked.color("Animal")).toBe(plain.color("Animal"));
+  });
+
+  it("lists what was chosen", () => {
+    const scale = new CategoricalColorScale();
+    scale.setColor("Human", "#e03131");
+    expect([...scale.chosenColors()]).toEqual([["Human", "#e03131"]]);
+    scale.clearColors();
+    expect(scale.chosenColors().size).toBe(0);
+  });
+});

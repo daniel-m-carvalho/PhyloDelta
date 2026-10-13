@@ -87,6 +87,33 @@ describe("view state in the URL", () => {
     expect(window.location.hash).not.toContain("bs=");
   });
 
+  it("round-trips colours chosen for categories, whatever the names contain (§43)", () => {
+    const { result } = renderHook(() => useUrlState());
+    const colors = { Human: "#e03131", "Source niche: Food. Raw": "#12b886" };
+    act(() =>
+      result.current[1]({
+        comparison: "a__b", left: [], right: [],
+        options: { ...DEFAULT_OPTIONS, colors },
+      }),
+    );
+    expect(window.location.hash).toContain("cc=e03131.Human");
+
+    const restored = renderHook(() => useUrlState());
+    expect(restored.result.current[0].options.colors).toEqual(colors);
+  });
+
+  it("drops a colour entry a browser could not paint", () => {
+    window.history.replaceState(null, "", "#/c/a__b?cc=red.Human&cc=12b886.Food&cc=e03131");
+    const { result } = renderHook(() => useUrlState());
+    expect(result.current[0].options.colors).toEqual({ Food: "#12b886" });
+  });
+
+  it("writes no colours when none were chosen", () => {
+    const { result } = renderHook(() => useUrlState());
+    act(() => result.current[1]({ comparison: "a__b", left: [], right: [] }));
+    expect(window.location.hash).not.toContain("cc=");
+  });
+
   it("keeps the options when a write states only the navigation", () => {
     // Focusing a subtree must not silently reset the colouring.
     const { result } = renderHook(() => useUrlState());

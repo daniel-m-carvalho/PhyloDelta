@@ -627,6 +627,38 @@ html, body { overflow: hidden; }
   flex: 0 0 auto;
   border: 1px solid rgb(0 0 0 / 12%);
 }
+/* A swatch you can click to choose its colour (§43). The colour input is
+   kept but invisible over the swatch, so the click opens the browser's own
+   picker and keyboard focus still reaches it. */
+.swatch-pick {
+  position: relative;
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+}
+.swatch-pick:hover, .swatch-pick:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+.swatch-pick.chosen { border-color: var(--ink); }
+.swatch-pick input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.legend-reset {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  padding: 1px 8px;
+  cursor: pointer;
+}
+.legend-reset:hover { color: var(--ink); }
 
 /* --- export --- */
 .export-backdrop {

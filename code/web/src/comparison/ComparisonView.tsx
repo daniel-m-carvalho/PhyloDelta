@@ -833,6 +833,10 @@ export function ComparisonView({
     });
   }, [options.gradient, options.colorTarget, bothLoaded]);
 
+  const colorsKey = JSON.stringify(
+    Object.entries(options.colors).sort(([a], [b]) => a.localeCompare(b)),
+  );
+
   // Feed the bar charts, and keep the legend in step with the scale that is
   // actually colouring them. The scale is primed with every category present
   // so the legend is complete before a bar for that category is drawn.
@@ -840,6 +844,12 @@ export function ComparisonView({
     const built = handle.current;
     if (!built) return;
     const categories = [...new Set([...leftTyping.categories, ...rightTyping.categories])];
+    // The user's colours first (§43), so the bars and the legend below are
+    // both drawn with them. Replaced wholesale, so a cleared choice goes.
+    built.colorScale.clearColors();
+    for (const [category, color] of Object.entries(options.colors)) {
+      built.colorScale.setColor(category, color);
+    }
     built.colorScale.prime(categories);
     built.panels.forEach((panel, index) => {
       const bars = panel.operators.barcharts;
@@ -871,7 +881,10 @@ export function ComparisonView({
         ? current
         : next,
     );
-  }, [options.typing, leftTyping, rightTyping, barScale]);
+    // `colorsKey`, not `options.colors`: the options are parsed afresh from the
+    // URL, so the object is new on every navigation while its content is not —
+    // depending on it would redraw every bar on every step.
+  }, [options.typing, leftTyping, rightTyping, barScale, colorsKey]);
 
   // Re-measure on resize, so the detail tracks the window rather than a
   // constant chosen for whatever window it was written on.
@@ -1056,6 +1069,11 @@ export function ComparisonView({
           onScale={setBarScale}
           loading={leftTyping.loading || rightTyping.loading}
           error={leftTyping.error ?? rightTyping.error}
+          chosen={options.colors}
+          onColor={(category, color) =>
+            onOptions({ colors: { ...options.colors, [category]: color } })
+          }
+          onResetColors={() => onOptions({ colors: {} })}
         />
       ) : null}
 
