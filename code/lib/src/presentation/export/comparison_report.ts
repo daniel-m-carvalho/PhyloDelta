@@ -211,7 +211,7 @@ function viewSetup(view: ComparisonView): Report["sections"][number] {
 
   if (view.typing?.columns.length) {
     body.push(
-      `Each leaf carries a bar of its isolates, coloured by ${view.typing.columns.join(", ")}, on a ${view.typing.scale} scale. A leaf with no bar has no typing data.`,
+      `Each leaf carries a bar of its isolates, coloured by ${view.typing.columns.join(", ")}, on a ${view.typing.scale} scale. A leaf with no bar has no isolate data.`,
     );
     if (view.typing.columns.length > 1) {
       // The one thing a reader of the picture could not work out, and would
@@ -222,7 +222,7 @@ function viewSetup(view: ComparisonView): Report["sections"][number] {
     }
     swatches.push(...(view.legend ?? []));
   } else {
-    body.push("Typing data was not shown, so the leaves carry no bars.");
+    body.push("Isolate data was not shown, so the leaves carry no bars.");
   }
 
   return { heading: "View setup", body, swatches };

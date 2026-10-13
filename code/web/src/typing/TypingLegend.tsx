@@ -100,7 +100,7 @@ export function TypingLegend({
         <p className="legend-note">
           {segmentKeys.length === 0
             ? "Choose a column to colour by."
-            : "No typing data for the leaves on screen."}
+            : "No isolate data for the leaves on screen."}
         </p>
       ) : null}
 
