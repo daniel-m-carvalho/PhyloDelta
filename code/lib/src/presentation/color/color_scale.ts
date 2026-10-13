@@ -12,6 +12,8 @@
  */
 export class CategoricalColorScale {
   private assigned = new Map<string, string>();
+  /** Colours a user chose for particular keys; see {@link setColor}. */
+  private chosen = new Map<string, string>();
   private palette: string[];
   private next = 0;
 
@@ -21,6 +23,17 @@ export class CategoricalColorScale {
 
   /** Color for `key`, assigning (and remembering) one on first request. */
   color(key: string): string {
+    const picked = this.chosen.get(key);
+    if (picked) {
+      // Still takes its palette slot, so clearing the choice later gives the
+      // key back the colour it would have had — not whatever slot is next.
+      if (!this.assigned.has(key)) this.assignFromPalette(key);
+      return picked;
+    }
+    return this.assigned.get(key) ?? this.assignFromPalette(key);
+  }
+
+  private assignFromPalette(key: string): string {
     let c = this.assigned.get(key);
     if (!c) {
       c = this.palette[this.next % this.palette.length];
@@ -48,7 +61,34 @@ export class CategoricalColorScale {
    * {@link prime} with the full key set up front for a stable, complete legend.
    */
   assignments(): ReadonlyMap<string, string> {
-    return new Map(this.assigned);
+    const out = new Map(this.assigned);
+    for (const [key, color] of this.chosen) if (out.has(key)) out.set(key, color);
+    return out;
+  }
+
+  /**
+   * Use `color` for `key` instead of its palette colour — a user's choice,
+   * which wins over the palette for as long as it is set. Every view sharing
+   * this scale picks it up on its next draw; a presenter has to be redrawn to
+   * show it (`BarChartPresenter.setData` does).
+   */
+  setColor(key: string, color: string): void {
+    this.chosen.set(key, color);
+  }
+
+  /** Give `key` back its palette colour. */
+  clearColor(key: string): void {
+    this.chosen.delete(key);
+  }
+
+  /** Give every key back its palette colour. */
+  clearColors(): void {
+    this.chosen.clear();
+  }
+
+  /** The keys a colour was chosen for, and the colours. */
+  chosenColors(): ReadonlyMap<string, string> {
+    return new Map(this.chosen);
   }
 }
 

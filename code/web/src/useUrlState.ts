@@ -37,6 +37,12 @@ export interface ViewOptions {
    * drawn either way says different things.
    */
   layout: "cladogram" | "phylogram";
+  /**
+   * Colours the user chose for particular typing categories, by category key
+   * (§43). In the URL so a refresh, a shared link and the exported report all
+   * show the colours that were chosen rather than the palette's.
+   */
+  colors: Record<string, string>;
 }
 
 export const DEFAULT_OPTIONS: ViewOptions = {
@@ -47,6 +53,7 @@ export const DEFAULT_OPTIONS: ViewOptions = {
   barScale: "log",
   cladeSizes: false,
   layout: "cladogram",
+  colors: {},
 };
 
 export interface ViewState {
@@ -59,6 +66,21 @@ export interface ViewState {
 }
 
 const EMPTY: ViewState = { comparison: null, left: [], right: [], options: DEFAULT_OPTIONS };
+
+/**
+ * `cc=e03131.Human`: the colour first, because it has a fixed shape and a
+ * category name is arbitrary text that may itself contain a dot. An entry that
+ * is not six hex digits and a name is dropped — a hand-edited link should not
+ * paint a category with a colour the browser cannot read.
+ */
+function parseColors(entries: string[]): Record<string, string> {
+  const colors: Record<string, string> = {};
+  for (const entry of entries) {
+    const match = /^([0-9a-f]{6})\.(.+)$/i.exec(entry);
+    if (match) colors[match[2]] = `#${match[1].toLowerCase()}`;
+  }
+  return colors;
+}
 
 function parse(hash: string): ViewState {
   // #/c/<id>?l=3,900&r=12
@@ -86,6 +108,7 @@ function parse(hash: string): ViewState {
       barScale: query.get("bs") === "linear" ? "linear" : "log",
       cladeSizes: query.get("cs") === "1",
       layout: query.get("lm") === "phylogram" ? "phylogram" : "cladogram",
+      colors: parseColors(query.getAll("cc")),
     },
   };
 }
@@ -103,6 +126,10 @@ function format(state: ViewState): string {
   if (options.barScale !== DEFAULT_OPTIONS.barScale) query.set("bs", options.barScale);
   if (options.cladeSizes) query.set("cs", "1");
   if (options.layout !== DEFAULT_OPTIONS.layout) query.set("lm", options.layout);
+  // Sorted, so the same choices always write the same link.
+  for (const [category, color] of Object.entries(options.colors ?? {}).sort(([a], [b]) => a.localeCompare(b))) {
+    query.append("cc", `${color.replace(/^#/, "")}.${category}`);
+  }
   const tail = query.toString();
   return `#/c/${encodeURIComponent(state.comparison)}${tail ? `?${tail}` : ""}`;
 }

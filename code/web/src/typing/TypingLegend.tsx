@@ -11,6 +11,7 @@
  * legend comes to disagree with the picture it explains.
  */
 
+import { useEffect, useRef } from "react";
 import type { BarScale } from "phylo-tree-viewer";
 import { CheckboxMenu } from "../ui/CheckboxMenu";
 
@@ -23,6 +24,9 @@ export function TypingLegend({
   onScale,
   loading,
   error,
+  chosen = {},
+  onColor,
+  onResetColors,
 }: {
   assignments: ReadonlyMap<string, string>;
   segmentKeys: string[];
@@ -32,6 +36,11 @@ export function TypingLegend({
   onScale: (scale: BarScale) => void;
   loading: boolean;
   error: string | null;
+  /** Categories given a colour by the user (§43), by key. */
+  chosen?: Record<string, string>;
+  /** A colour chosen for one category. Absent: the swatches are not clickable. */
+  onColor?: (category: string, color: string) => void;
+  onResetColors?: () => void;
 }) {
   const entries = [...assignments.entries()].sort(([a], [b]) =>
     String(a ?? "").localeCompare(String(b ?? "")),
@@ -77,6 +86,12 @@ export function TypingLegend({
           </select>
         </label>
 
+        {onResetColors && Object.keys(chosen).length > 0 ? (
+          <button type="button" className="legend-reset" onClick={onResetColors}>
+            Reset colours
+          </button>
+        ) : null}
+
         {loading ? <span className="legend-note">loading…</span> : null}
         {error ? <span className="legend-note error">{error}</span> : null}
       </div>
@@ -92,11 +107,67 @@ export function TypingLegend({
       <ul className="legend-swatches">
         {entries.map(([value, color]) => (
           <li key={value}>
-            <span className="swatch" style={{ background: color }} aria-hidden="true" />
+            {onColor ? (
+              <ColorSwatch category={value} color={color} chosen={value in chosen} onColor={onColor} />
+            ) : (
+              <span className="swatch" style={{ background: color }} aria-hidden="true" />
+            )}
             {value}
           </li>
         ))}
       </ul>
     </footer>
+  );
+}
+
+/**
+ * A legend swatch that opens the browser's colour picker for its category.
+ *
+ * Applied on the picker's native `change` — when a colour is committed — and
+ * not on `input`, which fires on every step of a drag: each one would redraw
+ * both panels' bars and rewrite the URL, dozens of times a second. React's
+ * `onChange` on a colour input is the `input` event, hence the listener.
+ */
+function ColorSwatch({
+  category,
+  color,
+  chosen,
+  onColor,
+}: {
+  category: string;
+  color: string;
+  chosen: boolean;
+  onColor: (category: string, color: string) => void;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const latest = useRef(onColor);
+  latest.current = onColor;
+
+  useEffect(() => {
+    const element = input.current;
+    if (!element) return;
+    const commit = () => latest.current(category, element.value);
+    element.addEventListener("change", commit);
+    return () => element.removeEventListener("change", commit);
+    // `color` too: a new colour remounts the input (its `key`), and the
+    // listener has to follow it to the new element.
+  }, [category, color]);
+
+  return (
+    <label
+      className={chosen ? "swatch swatch-pick chosen" : "swatch swatch-pick"}
+      style={{ background: color }}
+      title={`Choose a colour for ${category}`}
+    >
+      <input
+        ref={input}
+        type="color"
+        // Uncontrolled: the picker owns its value while open; a new colour
+        // from outside (a reset, a shared link) remounts it via `key`.
+        key={color}
+        defaultValue={color}
+        aria-label={`Colour for ${category}`}
+      />
+    </label>
   );
 }
