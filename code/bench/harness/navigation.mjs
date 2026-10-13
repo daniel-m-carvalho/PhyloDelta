@@ -412,11 +412,21 @@ async function runPhylodelta(pairId) {
       // which is not the same place. Stating both here rather than relying on
       // `reset` to do it is also what keeps this run independent of that
       // decision being revisited.
-      await page.evaluate(() => {
-        const actions = window.__phylodelta.actions()[1];
-        actions.clearMark();
-        actions.reset();
-      });
+      //
+      // Through `__step`, so the reset has *landed* before the next jump is
+      // timed. Called bare, it returned as soon as the actions were issued:
+      // the next jump's `__step` then read `before.tree` while the reset's
+      // slice was still on its way, and could stop its clock when *that*
+      // slice arrived — timing the reset, not the jump.
+      const back = await page.evaluate(() =>
+        window.__step(1, (actions) => {
+          actions.clearMark();
+          actions.reset();
+        }),
+      );
+      // A reset that never settles leaves the next sample starting somewhere
+      // else; said, rather than measured through.
+      if (!back.moved) skipped.push({ op: "reset", ...back });
     }
 
     const drawn = await page.evaluate(() => ({
