@@ -222,14 +222,22 @@ _DOI = re.compile(r"^10\.\d{4,9}/\S+$")
 
 @dataclass(frozen=True, slots=True)
 class Reference:
-    """Where a metric's implementation comes from (§42)."""
+    """Where a metric's implementation comes from (§42).
+
+    A paper, by DOI, or — for an implementation no paper describes — the
+    software itself, by link. TreeDiff's triplet program is the case: the
+    paper released with TreeDiff covers Robinson-Foulds only, and citing it
+    for triplets would attribute a computation to a publication that does not
+    contain it.
+    """
 
     citation: str
     doi: str = ""
+    link: str = ""
 
     @property
     def url(self) -> str:
-        return f"https://doi.org/{self.doi}" if self.doi else ""
+        return f"https://doi.org/{self.doi}" if self.doi else self.link
 
     @staticmethod
     def from_json(raw: object, metric: str) -> "Reference":
@@ -240,7 +248,14 @@ class Reference:
         doi = str(raw.get("doi", "")).strip()
         if doi and not _DOI.match(doi):
             raise ValueError(f"metric {metric!r}: {doi!r} is not a DOI (10.xxxx/...)")
-        return Reference(citation=str(raw["citation"]).strip(), doi=doi)
+        link = str(raw.get("url", "")).strip()
+        if link and not link.startswith("https://"):
+            raise ValueError(f"metric {metric!r}: reference url {link!r} must be an https:// link")
+        if doi and link:
+            raise ValueError(
+                f"metric {metric!r}: give the reference a 'doi' or a 'url', not both"
+            )
+        return Reference(citation=str(raw["citation"]).strip(), doi=doi, link=link)
 
 
 @dataclass(frozen=True, slots=True)

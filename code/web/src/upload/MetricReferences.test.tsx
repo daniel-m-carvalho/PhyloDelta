@@ -29,7 +29,18 @@ describe("MetricReferenceLine", () => {
     expect(links[0].getAttribute("target")).toBe("_blank");
   });
 
-  it("shows no link without a DOI", () => {
+  it("shows the software's address when it has a link and no DOI", () => {
+    const host = render(
+      <MetricReferenceLine
+        reference={{ citation: "TreeDiff (trip_sht).", doi: "", url: "https://github.com/x/TreeDiff" }}
+      />,
+    );
+    const link = host.querySelector("a")!;
+    expect(link.getAttribute("href")).toBe("https://github.com/x/TreeDiff");
+    expect(link.textContent).toBe("github.com/x/TreeDiff");
+  });
+
+  it("shows no link with neither", () => {
     const host = render(<MetricReferenceLine reference={{ citation: "A program.", doi: "", url: "" }} />);
     expect(host.querySelector("a")).toBeNull();
   });

@@ -186,6 +186,13 @@ def test_a_reference_without_a_doi_has_no_link():
     assert (ref.doi, ref.url) == ("", "")
 
 
+def test_software_no_paper_describes_is_cited_by_its_link():
+    ref = MetricManifest.from_json({
+        **BASE, "reference": {"citation": "A tool.", "url": "https://github.com/x/tool"},
+    }).reference
+    assert (ref.doi, ref.url) == ("", "https://github.com/x/tool")
+
+
 def test_a_metric_without_a_reference_has_none():
     assert MetricManifest.from_json(BASE).reference is None
 
@@ -196,6 +203,8 @@ def test_a_metric_without_a_reference_has_none():
         ({}, "needs a 'citation'"),
         ({"citation": "  "}, "needs a 'citation'"),
         ({"citation": "X", "doi": "https://doi.org/10.1/x"}, "is not a DOI"),
+        ({"citation": "X", "url": "http://insecure.example"}, "must be an https:// link"),
+        ({"citation": "X", "doi": "10.1000/x", "url": "https://a.b"}, "not both"),
     ],
 )
 def test_a_malformed_reference_is_refused_by_name(bad, says):
@@ -217,4 +226,27 @@ def test_every_shipped_metric_says_where_its_implementation_comes_from():
 
     for name, manifest in registry.discover().items():
         assert manifest.reference is not None, f"{name} has no reference"
-        assert manifest.reference.doi, f"{name}'s reference has no DOI"
+        assert manifest.reference.url, f"{name}'s reference has neither a DOI nor a link"
+
+
+def test_the_built_in_rf_says_it_is_this_projects_own_code():
+    # It follows Branco, Vaz & Francisco's method (§1.10) but is not their
+    # code — that is TreeDiff, the `rf-treediff` metric. Crediting the paper
+    # alone read as if their implementation computed it.
+    from phylodelta.metrics import registry
+
+    metrics = registry.discover()
+    assert metrics["rf"].reference.citation.startswith("PhyloDelta's own implementation")
+    assert metrics["rf"].reference.doi == "10.3390/a17010015"
+    assert not metrics["rf-treediff"].reference.citation.startswith("PhyloDelta")
+
+
+def test_the_triplet_distance_is_not_credited_to_the_rf_paper():
+    # The bug this guards: triplet cited Branco, Vaz & Francisco (2024), a
+    # paper about Robinson-Foulds only. Its program, TreeDiff's trip_sht, has
+    # no publication, so it is cited as software.
+    from phylodelta.metrics import registry
+
+    ref = registry.discover()["triplet"].reference
+    assert ref.doi != "10.3390/a17010015"
+    assert ref.url == "https://github.com/pedroparedesbranco/TreeDiff"
