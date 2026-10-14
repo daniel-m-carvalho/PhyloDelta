@@ -254,15 +254,13 @@ export interface MetricSummary {
   available: boolean;
   version: string;
   capabilities: Record<string, unknown>;
-  /** The papers it rests on, the definition first (§42). */
-  references?: MetricReference[];
+  /** Where its implementation comes from (§42); null when none is given. */
+  reference?: MetricReference | null;
 }
 
-/** A paper a metric rests on. */
+/** Where a metric's implementation comes from. */
 export interface MetricReference {
   citation: string;
-  /** "metric" for the definition, "implementation" for what computes it. */
-  role: "metric" | "implementation";
   doi: string;
   /** https://doi.org/<doi>, or "" without a DOI. */
   url: string;

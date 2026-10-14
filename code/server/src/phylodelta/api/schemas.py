@@ -161,12 +161,9 @@ class MetricOutputsDescription(BaseModel):
 
 
 class MetricReference(BaseModel):
-    """A paper a metric rests on."""
+    """Where a metric's implementation comes from."""
 
-    citation: str = Field(examples=["Robinson, D.F.; Foulds, L.R. Comparison of phylogenetic trees. Math. Biosci. 1981, 53, 131–147."])
-    role: str = Field(
-        description="'metric' for the definition of the metric, 'implementation' for what computes it."
-    )
+    citation: str = Field(examples=["Branco, A.P.; Vaz, C.; Francisco, A.P. Computing RF Tree Distance over Succinct Representations. Algorithms 2024, 17, 15."])
     doi: str = ""
     url: str = Field("", description="https://doi.org/<doi>, or empty when there is no DOI.")
 
@@ -193,8 +190,8 @@ class MetricSummary(BaseModel):
     )
     version: str = "1"
     capabilities: dict[str, bool] = Field(default_factory=dict)
-    references: list[MetricReference] = Field(
-        default_factory=list, description="The papers it rests on, metric first (§42)."
+    reference: MetricReference | None = Field(
+        None, description="Where its implementation comes from (§42); null when none is given."
     )
     outputs: MetricOutputsDescription = Field(
         default_factory=MetricOutputsDescription,

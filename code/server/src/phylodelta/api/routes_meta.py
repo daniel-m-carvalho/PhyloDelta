@@ -225,10 +225,15 @@ def metrics() -> list[MetricSummary]:
             available=is_available(manifest),
             version=manifest.version,
             capabilities=manifest.capabilities,
-            references=[
-                MetricReference(citation=r.citation, role=r.role, doi=r.doi, url=r.url)
-                for r in manifest.references
-            ],
+            reference=(
+                MetricReference(
+                    citation=manifest.reference.citation,
+                    doi=manifest.reference.doi,
+                    url=manifest.reference.url,
+                )
+                if manifest.reference
+                else None
+            ),
             outputs=MetricOutputsDescription(
                 summary=[
                     ScalarDescription(

@@ -20,10 +20,7 @@
     ]
   },
   "description": "Number of leaf triples resolved differently by the two trees. Finer-grained than Robinson-Foulds, which judges a whole clade present or absent; a triple disagreement is a smaller unit than a clade, so this does not saturate on large clades the way RF does. Computed by TreeDiff (Branco, Vaz & Francisco 2024), run as a separate process.",
-  "references": [
-    {"citation": "Critchlow, D.E.; Pearl, D.K.; Qian, C. The Triples Distance for Rooted Bifurcating Phylogenetic Trees. Systematic Biology 1996, 45, 323–334.", "role": "metric", "doi": "10.1093/sysbio/45.3.323"},
-    {"citation": "Branco, A.P.; Vaz, C.; Francisco, A.P. Computing RF Tree Distance over Succinct Representations. Algorithms 2024, 17, 15.", "role": "implementation", "doi": "10.3390/a17010015"}
-  ],
+  "reference": {"citation": "Branco, A.P.; Vaz, C.; Francisco, A.P. Computing RF Tree Distance over Succinct Representations. Algorithms 2024, 17, 15.", "doi": "10.3390/a17010015"},
   "capabilities": {
     "per_clade": false,
     "symmetric": true,

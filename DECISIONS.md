@@ -4764,27 +4764,32 @@ each one it skipped and why. Other trees are compared the way any user compares 
 them. Built from the real folder with a `staphylococcus-nj` tree in it, the store holds exactly
 `clostridium-upgma`, `vibrio-nj` and `vibrio-upgma`.
 
-## 42. A metric names the papers it rests on
+## 42. A metric says where its implementation comes from
 
-Asked for in review: where a metric is offered, cite the paper behind it. Each `metric.json` now carries
-`references`, a list of `{citation, role, doi}`. `role` says what the paper is the reference **for**:
-`metric` for the definition, `implementation` for what computes it. A metric computed by someone
-else's program rests on two papers, and an unlabelled list would leave the reader to guess which is
-which.
+Asked for in review: where a metric is offered, cite the paper behind it. Each `metric.json` carries
+one `reference`, `{citation, doi}`, for **where the implementation comes from**, and `/metrics`
+serves it with a resolved `https://doi.org/…` link. The upload panel shows it under the chosen
+metric as "Computed as in …", and nothing else. The first sentence of the metric's description used
+to sit above it, and mostly repeated it. The description stays in the manifest and in `/metrics`,
+where it records why the metric exists and what its numbers mean.
 
-* **Checked at load, refused by name.** A reference with no citation, an unknown role, or a DOI that
-  is not `10.xxxx/…` stops the metric loading with the metric's name in the error. A test also
-  requires every shipped metric to cite the paper that defines it, with a DOI.
-* **Served by `/metrics`** with a resolved `https://doi.org/…` link, and shown in the upload panel
-  under the chosen metric: "Defined in …" and "Computed as in …".
-* **Every DOI was checked against Crossref** before it was written down:
-  Robinson & Foulds 1981 (`10.1016/0025-5564(81)90043-2`), Critchlow, Pearl & Qian 1996
-  (`10.1093/sysbio/45.3.323`), and Branco, Vaz & Francisco 2024 (`10.3390/a17010015`; Crossref dates
-  it to its online publication in 2023, in volume 17, which is 2024).
+* **Only the implementation.** A first version listed two references per metric, the paper that
+  defines the metric and the one that computes it, each with a `role`. Review feedback was that this
+  was more than a user choosing a metric needs: what they want to know is whose computation they get.
+  The defining papers (Robinson & Foulds 1981 for RF, `10.1016/0025-5564(81)90043-2`; Critchlow,
+  Pearl & Qian 1996 for the triplet distance, `10.1093/sysbio/45.3.323`) are recorded here and in
+  *References and provenance*, not in the manifests.
+* **Checked at load, refused by name.** A reference with no citation, or a DOI that is not
+  `10.xxxx/…`, stops the metric loading with the metric's name in the error. A manifest still using
+  the earlier `references` list is refused, not ignored, since ignoring it would drop the citation
+  silently. A test requires every shipped metric to name its implementation, with a DOI.
+* **The DOI was checked against Crossref** before it was written down: Branco, Vaz & Francisco 2024
+  (`10.3390/a17010015`; Crossref dates it to its online publication in 2023, in volume 17, which is
+  2024).
 
-To confirm with the supervisors: the built-in `rf` cites Branco, Vaz & Francisco as its
-implementation because this backend follows that paper's formulation (§1.10), and `triplet` cites it
-because the triplet distance is computed by TreeDiff, the program that paper describes.
+To confirm with the supervisors: all three metrics cite Branco, Vaz & Francisco. The built-in `rf`
+does because this backend follows that paper's formulation (§1.10); `rf-treediff` and `triplet`
+because they are computed by TreeDiff, the program that paper describes.
 
 ## 43. A typing category's colour can be chosen
 
