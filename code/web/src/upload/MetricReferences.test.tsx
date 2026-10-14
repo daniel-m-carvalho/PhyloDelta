@@ -3,7 +3,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { MetricReferences } from "./MetricReferences";
+import { MetricReferenceLine } from "./MetricReferences";
 
 afterEach(() => {
   document.body.innerHTML = "";
@@ -16,26 +16,25 @@ function render(node: React.ReactElement) {
   return host;
 }
 
-describe("MetricReferences", () => {
-  it("says what each paper is the reference for, and links its DOI", () => {
+describe("MetricReferenceLine", () => {
+  it("says where the implementation comes from, with its DOI link", () => {
     const host = render(
-      <MetricReferences
-        references={[
-          { citation: "Robinson & Foulds 1981.", role: "metric", doi: "10.1016/x", url: "https://doi.org/10.1016/x" },
-          { citation: "Branco, Vaz & Francisco 2024.", role: "implementation", doi: "", url: "" },
-        ]}
+      <MetricReferenceLine
+        reference={{ citation: "Branco, Vaz & Francisco 2024.", doi: "10.3390/y", url: "https://doi.org/10.3390/y" }}
       />,
     );
-    const items = [...host.querySelectorAll("li")].map((li) => li.textContent);
-    expect(items[0]).toContain("Defined in Robinson & Foulds 1981.");
-    expect(items[1]).toContain("Computed as in Branco, Vaz & Francisco 2024.");
+    expect(host.textContent).toContain("Computed as in Branco, Vaz & Francisco 2024.");
     const links = [...host.querySelectorAll("a")];
-    expect(links).toHaveLength(1);
-    expect(links[0].getAttribute("href")).toBe("https://doi.org/10.1016/x");
+    expect(links.map((a) => a.getAttribute("href"))).toEqual(["https://doi.org/10.3390/y"]);
     expect(links[0].getAttribute("target")).toBe("_blank");
   });
 
-  it("draws nothing for a metric without references", () => {
-    expect(render(<MetricReferences references={[]} />).innerHTML).toBe("");
+  it("shows no link without a DOI", () => {
+    const host = render(<MetricReferenceLine reference={{ citation: "A program.", doi: "", url: "" }} />);
+    expect(host.querySelector("a")).toBeNull();
+  });
+
+  it("draws nothing for a metric without a reference", () => {
+    expect(render(<MetricReferenceLine reference={null} />).innerHTML).toBe("");
   });
 });

@@ -14,24 +14,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api/client";
 import type { ComparisonStatus, MetricSummary } from "../api/types";
-import { MetricReferences } from "./MetricReferences";
+import { MetricReferenceLine } from "./MetricReferences";
 import { clearDraft, loadFields, loadFiles, saveFields, saveFile, type Slot } from "./draft";
 
 const TREE_HINT = "Newick — .nwk, .newick, .tree";
 const TABLE_HINT = "Tab-separated isolate data — .tsv";
-
-/**
- * The opening claim of a metric's description.
- *
- * A manifest's description is written for someone deciding whether to
- * implement against the metric and runs to a paragraph; this list is a choice
- * being made in a form. The full text is in GET /metrics for anyone who wants
- * it, and truncating here beats asking plugin authors to write twice.
- */
-function firstSentence(text: string): string {
-  const end = text.search(/\.\s/);
-  return end === -1 ? text : text.slice(0, end + 1);
-}
 
 export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => void }) {
   // Read once, synchronously, so the form renders filled after a refresh
@@ -240,11 +227,12 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
                 </option>
               ))}
             </select>
-            <span className="field-help">
-              {firstSentence(metrics.find((metric) => metric.name === chosen)?.description ?? "")}
-            </span>
-            <MetricReferences
-              references={metrics.find((metric) => metric.name === chosen)?.references ?? []}
+            {/* The metric's name and where its computation comes from (§42). Its
+                description is not repeated here: it is written for whoever
+                maintains the metric, says much the same as the reference line,
+                and stays in the manifest and in GET /metrics. */}
+            <MetricReferenceLine
+              reference={metrics.find((metric) => metric.name === chosen)?.reference ?? null}
             />
           </label>
         ) : null}

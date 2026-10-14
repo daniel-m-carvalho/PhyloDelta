@@ -752,7 +752,6 @@ html, body { overflow: hidden; }
 
 /* The metric: one of several, so a select like the bar length in the typing
    footer. Its note is the chosen metric's first sentence, under the select. */
-.fields .upload-metric .field-help { margin: 0; }
 /* The papers under the chosen metric: small, and second to the description. */
 .metric-references {
   margin: 4px 0 0;
@@ -762,6 +761,5 @@ html, body { overflow: hidden; }
   line-height: 1.4;
   color: var(--muted);
 }
-.metric-references li + li { margin-top: 2px; }
 .metric-reference-role { color: var(--ink); }
 .metric-references a { color: var(--accent); white-space: nowrap; }
