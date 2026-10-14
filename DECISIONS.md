@@ -4787,9 +4787,18 @@ where it records why the metric exists and what its numbers mean.
   (`10.3390/a17010015`; Crossref dates it to its online publication in 2023, in volume 17, which is
   2024).
 
-To confirm with the supervisors: all three metrics cite Branco, Vaz & Francisco. The built-in `rf`
-does because this backend follows that paper's formulation (§1.10); `rf-treediff` and `triplet`
-because they are computed by TreeDiff, the program that paper describes.
+* **Software without a paper is cited as software.** `triplet` first cited Branco, Vaz & Francisco
+  too, because TreeDiff computes it. Spotted in review: that paper is about Robinson-Foulds only (its
+  abstract and references never mention triplets), TreeDiff's README names no paper for its triplet
+  programs, and Crossref lists none by those authors. So `triplet` cites TreeDiff's `trip_sht` by its
+  repository link, and a reference may give a `url` instead of a `doi` (never both; `https://` only).
+  Brodal et al. (2013) may well be the algorithm behind it, but that is a guess, and a citation that
+  cannot be backed is worse than none. A test asserts `triplet` is not credited to the RF paper.
+
+The two RF metrics cite Branco, Vaz & Francisco differently. `rf-treediff` because TreeDiff is that
+paper's program. The built-in `rf` reads "PhyloDelta's own implementation, following the method of …".
+It is this project's Python code, which follows the paper's way of preparing trees (§1.10) but not its
+code, and citing the paper alone read as if TreeDiff computed it (review feedback).
 
 ## 43. A typing category's colour can be chosen
 

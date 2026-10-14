@@ -19,8 +19,8 @@
       }
     ]
   },
-  "description": "Number of leaf triples resolved differently by the two trees. Finer-grained than Robinson-Foulds, which judges a whole clade present or absent; a triple disagreement is a smaller unit than a clade, so this does not saturate on large clades the way RF does. Computed by TreeDiff (Branco, Vaz & Francisco 2024), run as a separate process.",
-  "reference": {"citation": "Branco, A.P.; Vaz, C.; Francisco, A.P. Computing RF Tree Distance over Succinct Representations. Algorithms 2024, 17, 15.", "doi": "10.3390/a17010015"},
+  "description": "Number of leaf triples resolved differently by the two trees. Finer-grained than Robinson-Foulds, which judges a whole clade present or absent; a triple disagreement is a smaller unit than a clade, so this does not saturate on large clades the way RF does. Computed by TreeDiff's trip_sht program, run as a separate process. TreeDiff was released with Branco, Vaz & Francisco (2024), but that paper covers Robinson-Foulds only; no publication describes its triplet programs.",
+  "reference": {"citation": "TreeDiff (trip_sht). Open-source C++ tool; its triplet programs are not described in a publication.", "url": "https://github.com/pedroparedesbranco/TreeDiff"},
   "capabilities": {
     "per_clade": false,
     "symmetric": true,

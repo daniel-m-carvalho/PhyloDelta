@@ -15,7 +15,7 @@ export function MetricReferenceLine({ reference }: { reference: MetricReference 
         <>
           {" "}
           <a href={reference.url} target="_blank" rel="noreferrer">
-            doi:{reference.doi}
+            {reference.doi ? `doi:${reference.doi}` : reference.url.replace(/^https:\/\//, "")}
           </a>
         </>
       ) : null}
