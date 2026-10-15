@@ -296,3 +296,45 @@ describe("branch lengths (§44)", () => {
   });
 });
 
+
+describe("buildGraph's cost grows with the tree, not with its depth", () => {
+  /**
+   * A caterpillar: each internal node holds one leaf and the rest of the tree,
+   * so a tree of `depth` internal nodes is `depth` levels deep — the ladder
+   * shape UPGMA and NJ produce. Every read of an internal node's children is
+   * counted.
+   */
+  function caterpillar(depth: number, counter: { reads: number }): NewickNode {
+    let node: NewickNode = { name: `L${depth}` };
+    for (let i = depth - 1; i >= 0; i--) {
+      const children = [{ name: `L${i}` }, node];
+      const inner: NewickNode = { name: "" };
+      Object.defineProperty(inner, "branchset", {
+        get() {
+          counter.reads++;
+          return children;
+        },
+        enumerable: true,
+      });
+      node = inner;
+    }
+    return node;
+  }
+
+  it("reads each node a fixed number of times, however deep the tree", () => {
+    // The promise behind the timing test in layout.bench.test.ts, without the
+    // clock: a CI runner's load can make a timing ratio say anything. Sort keys
+    // that re-walked subtrees inside comparators made a build O(n·depth); with
+    // them folded bottom-up and memoised, each node is read a constant number
+    // of times. Measured with the memo switched off, reads per node grew with
+    // depth: 600 at 200 deep, 4,800 at 1,600 deep. With it, 6 at every depth.
+    const perNode = [200, 1600].map((depth) => {
+      const counter = { reads: 0 };
+      buildGraph(caterpillar(depth, counter), () => false, 100_000, "cladogram");
+      return counter.reads / depth;
+    });
+    // 8x deeper, the same reads per node (within 10%; it is 5.98 vs 6.00).
+    expect(perNode[1]).toBeLessThan(perNode[0] * 1.1);
+    expect(perNode[1]).toBeLessThan(20);
+  });
+});
