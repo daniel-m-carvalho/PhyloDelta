@@ -14,7 +14,6 @@ WORKDIR /app
 # them; only the web app's dependencies are actually installed.
 COPY package.json package-lock.json ./
 COPY lib/package.json ./lib/
-COPY lib_demo/package.json ./lib_demo/
 COPY web/package.json ./web/
 COPY bench/package.json ./bench/
 RUN npm ci --workspace web --include-workspace-root

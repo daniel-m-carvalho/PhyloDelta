@@ -13,8 +13,6 @@ docker compose up --build
 Four services: `phylodelta-seed` (builds the example catalogue once, then
 exits), `phylodelta-service` (the API), `phylodelta-worker` (computes uploads)
 and `phylodelta-web` (the frontend, which proxies `/api/v1/` to the API).
-`lib_demo` is not deployed: it is the frozen static-file proof that the library
-works without a server.
 
 ## The example catalogue builds itself, once
 

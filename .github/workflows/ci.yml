@@ -63,7 +63,7 @@ jobs:
         run: uv run pytest -q
 
   frontend:
-    name: Library, demo and web (typecheck + vitest)
+    name: Library and web (typecheck + vitest)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -77,7 +77,7 @@ jobs:
           cache: npm
           cache-dependency-path: code/package-lock.json
 
-      # code/ is an npm workspace: one install covers lib, lib_demo, web and
+      # code/ is an npm workspace: one install covers lib, web and
       # bench. Playwright's browsers are not downloaded by this.
       - name: Install dependencies
         run: npm ci

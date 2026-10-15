@@ -6,8 +6,13 @@ metadata for the leaves currently on screen.
 The design goal is client-side: keep browser time and memory bounded while navigating trees of
 500k+ nodes. Everything expensive is computed **once, offline**; a request is a memory-mapped read.
 Backend computation time is explicitly not what this project measures — see
-**[DECISIONS.md](../../DECISIONS.md)** for that argument and every other design decision, with the
+**[DECISIONS.md](../../docs/DECISIONS.md)** for that argument and every other design decision, with the
 evidence behind it.
+
+> **Integrating with this API** (e.g. from PHYLOViZ)? Start with the
+> **[API integration guide](../../docs/api-integration.md)**: authentication, the upload → poll →
+> view flow, and every endpoint with real responses. This README is for running and developing the
+> server.
 
 What that buys, measured on the real data:
 
@@ -29,6 +34,8 @@ uv run phylodelta build-all      # datasets/ -> store/  (a few minutes, once)
 uv run uvicorn phylodelta.api.app:app --reload
 uv run phylodelta worker         # in a second terminal, to process uploads
 ```
+
+Then <http://127.0.0.1:8000/docs> for the generated OpenAPI contract.
 
 The worker is only needed for **uploaded** comparisons. `build-all` precomputes the catalogue and
 the API serves it without one; an upload, though, is accepted and left `pending` until a worker
@@ -82,8 +89,6 @@ not change, because none of them can see which interceptor is running.
 has a Python counterpart, checked against it column for column, and those are the reference
 implementations. **Without a compiler the whole backend still runs from `uv sync` alone** — the
 suite passes either way, skipping only the native-specific tests.
-
-Then <http://127.0.0.1:8000/docs> for the generated OpenAPI contract.
 
 `build-all` runs the three offline stages; they can also be run separately:
 
@@ -196,7 +201,7 @@ like is entirely yours.
 
 **`exact` saturates and should not drive a colour scale.** 98.3% of clades above 1,000 leaves come
 back "different", because one misplaced leaf invalidates every ancestor. Use `similarity` for the
-gradient and `exact` as an overlay or filter. §2.7 of the root DECISIONS.md has the measurements.
+gradient and `exact` as an overlay or filter. §2.7 of DECISIONS.md has the measurements.
 
 ### 5. Navigating toward the differences
 
@@ -221,7 +226,7 @@ curl -s localhost:8000/api/v1/comparisons/vibrio-nj__vibrio-upgma | jq '{summary
 
 ```json
 {
-  "summary": {"rf": 6825.0, "rf_normalised": 0.193, "shared_clusters": 10819, ...},
+  "summary": {"rf": 13650, "rf_normalised": 0.3868, "shared_clusters": 10819, ...},
   "shared_leaves": 17645,
   "dropped_from_right": ["211"]
 }
@@ -296,10 +301,12 @@ shape with `code: "invalid_request"` and an `errors` array naming each bad field
 | path | what |
 |---|---|
 | `src/phylodelta/trees/` | Newick parsing, canonicalisation, the columnar store, slicing |
-| `src/phylodelta/metrics/` | Metric contract and registry; `plugins/rf_python/` is Robinson-Foulds |
+| `src/phylodelta/metrics/` | Metric contract and registry; one directory per metric under `plugins/` |
 | `src/phylodelta/isolates/` | Isolate ingest and filtered composition queries |
-| `src/phylodelta/api/v1/` | FastAPI routes; `schemas.py` is the wire contract |
-| `src/phylodelta/precompute/` | The offline CLI |
+| `src/phylodelta/api/` | FastAPI app and `routes_*.py`; `schemas.py` is the wire contract, `auth/` the interceptors |
+| `src/phylodelta/db/` | Database models and queries: owners, comparisons, the job queue |
+| `src/phylodelta/uploads.py`, `retention.py` | Accepting an upload, and removing a comparison |
+| `src/phylodelta/precompute/` | The offline CLI and the worker |
 | `native/` | The optional C++ extension (`build.sh`), and `build_treediff.sh` for the conformance oracle |
 | `tests/fixtures/` | A 6 KB dataset so the suite runs without the real 20 MB |
 

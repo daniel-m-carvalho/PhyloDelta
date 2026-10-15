@@ -2,7 +2,7 @@
   "name": "bench",
   "version": "0.1.0",
   "private": true,
-  "description": "Client-performance benchmark harness: drives phylo.io and lib_demo in a real browser and records load + navigation metrics.",
+  "description": "Client-performance benchmark harness: drives phylo.io and the PhyloDelta web app in a real browser and records load + navigation metrics.",
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },

@@ -31,7 +31,7 @@ the library project-agnostic and is the key boundary that makes it reusable.
 
 ## 2. Design principles
 
-Moved to **[DECISIONS.md §28](../../DECISIONS.md)** at the repository root, with the rest of the
+Moved to **[DECISIONS.md §28](../../docs/DECISIONS.md)** in the repository's `docs/`, with the rest of the
 project's design record. Two copies of an argument drift; this file keeps the module map and the
 API surface, which belong beside the code they describe.
 
@@ -47,6 +47,7 @@ phylo-tree-viewer/src/
       types.ts              Core types: NewickNode, LayoutMode, IsCollapsed, ChildOrder.
       model.ts              Pure tree ops: metrics, traversal, re-rooting, pruning, ordering.
       newick.ts             parseNewick — forest-aware Newick string → NewickNode.
+      navigation.ts         leafNamesOf / mrcaId — selection → tree structure.
       layout.ts             buildGraph + LayoutEngine registry (cladogram/phylogram).
     viewer/
       tree_viewer.ts        TreeViewer — the Sigma-backed renderer host.
@@ -64,6 +65,12 @@ phylo-tree-viewer/src/
       selection.ts          SelectionOperator — click + drag-box selection.
       barchart_presenter.ts BarChartPresenter — per-leaf stacked composition bars.
       comparison.ts         ComparisonOperator — branch/node difference coloring + navigation.
+      branch_lengths.ts     BranchLengthPresenter — each branch's length written beside it.
+    export/
+      snapshot.ts           snapshotViewer — a PNG of a panel, canvases plus DOM overlays.
+      report.ts             Report model + renderReport (a self-contained HTML document).
+      comparison_report.ts  buildComparisonReport / downloadComparisonReport (HTML, PNG, PDF).
+      raster.ts             HTML → canvas → PNG/PDF, so the three formats share one layout.
   performance/              Keeping large trees affordable. No tree/Sigma/API knowledge.
     cache_entry.ts          CacheEntry<T> — intrusive LRU entry + tier ("warm" | "rendered").
     double_linked_list.ts   DoubleLinkedList<T> — intrusive DLL (O(1) move-to-front / evict-tail).
@@ -77,12 +84,10 @@ The two top-level layers are the architectural split: `presentation/` decides
 what a tree *looks like* and how it responds; `performance/` decides what stays
 in memory. `index.ts` and `config/` sit above both because they span them.
 
-**Status:** the `performance/` layer is exported but **not yet consumed** — the
-viewer still holds whole trees, bounded by `maxNodes` (§5). The domain layer that
-would bind the cache to trees + an app-supplied fetch (`TreeComparisonCache` in
-`cache_strategy/tree-cache-manager-architecture.md`) is deliberately not written
-yet. Note that doc specifies it calling `fetch()` directly; that must become an
-injected callback to keep the "never fetch" boundary (§2).
+**Status:** the `performance/` layer is exported separately, as
+`phylo-tree-viewer/performance`. The web app (`code/web/src/api/sliceCache.ts`) uses
+`CacheManager` to keep recently fetched slices; the fetching itself stays in the
+app, which keeps the library's "never fetch" boundary (§2).
 
 ### 3.1 Layering & dependencies
 
@@ -91,13 +96,13 @@ operators/viewer depend on the tree/color/data layers, never the reverse.
 
 ```mermaid
 flowchart TD
-  APP["Application — lib_demo/src/main.ts<br/>fetch · panels · toolbar · backend data"]
+  APP["Application — e.g. code/web<br/>fetch · panels · toolbar · backend data"]
   IDX["index.ts — public API barrel"]
 
   subgraph LIB["Library — phylo-tree-viewer"]
     direction TB
     TV["viewer/ TreeViewer + Emitter"]
-    OPS["operators/<br/>ExpandCollapse (+SubtreeNavigator) ·<br/>CladeShape · Selection · BarChart · Comparison"]
+    OPS["operators/<br/>ExpandCollapse (+SubtreeNavigator) ·<br/>CladeShape · Selection · BarChart · Comparison · BranchLength"]
     subgraph TREE["tree/"]
       MOD["model<br/>prune · reroot · order"]
       LAY["layout<br/>buildGraph · engines"]
@@ -344,6 +349,8 @@ new TreeViewer(container: HTMLElement, options?: TreeViewerOptions)
 
 interface TreeViewerOptions {
   layoutMode?: LayoutMode;     // default "cladogram"
+  lengthScale?: LengthScale;   // phylogram only: "linear" (default) or "log" = log(1 + length)
+  clampBranches?: boolean;     // phylogram only: cap branches at ~8x the median, default false
   maxNodes?: number;           // leaf budget, default 200
   hideInternalNodes?: boolean; // default true
   rerootOn?: string;           // outgroup leaf/clade name
@@ -351,12 +358,15 @@ interface TreeViewerOptions {
   reflect?: boolean;           // horizontal mirror, default false
   childOrder?: ChildOrder;     // sibling order, default orderByName
   suppressContextMenu?: boolean; // swallow the native menu in-container, default true
+  labelDensity?: number;       // Sigma's label density; defaults leave Sigma's own
+  labelGridCellSize?: number;  //   a dendrogram wants a much smaller cell
 }
 ```
 
 **Data / config methods**
 - `setTree(tree)` / `getTree()`
 - `setLayoutMode(mode)` / `getLayoutMode()`
+- `setLengthScale(scale)` / `getLengthScale()`
 - `setReflect(reflect)` / `isReflected()`
 - `setChildOrder(order)`
 - `reroot(name | undefined)`
@@ -605,7 +615,7 @@ changes.
 - Not adopted from Cytoscape's expand-collapse plugin: **edge/meta-edge
   collapsing** (for parallel edges in general graphs — trees have none) and the
   **compound-node** model (our subtree-hiding model is simpler and correct for
-  trees). Its **visible `±` cue** was adopted for a time and then removed (§19):
+  trees). Its **visible `±` cue** was adopted for a time and then removed:
   the affordance belongs to the application's own UI (context menu, toolbar), and
   the library keeps only the mechanism — `actionFor` tells the app what a clade
   offers, so the affordance can be drawn without duplicating the rule.
@@ -732,7 +742,7 @@ interface BarChartOptions {
 }
 ```
 - Data resolution order: `data` → `dataOf` → `counts` → `countOf` → deterministic
-  synthetic fallback (so the demo renders without a backend).
+  synthetic fallback (so a panel renders without a backend).
 - API: `setEnabled(on)`, `isEnabled()`, `setScale(s)`, `getScale()`,
   `setData(map)`, `setCounts(map)`.
 
@@ -765,7 +775,7 @@ different metrics report differences differently:
 
 > **Attribution.** The gradient branch-coloring model and the blue→yellow scale
 > are adapted from **phylo.io** (© Clement Train & the Dessimoz Lab, MIT license
-> — see §19). This is an independent reimplementation on Sigma/graphology; no
+> — see §20). This is an independent reimplementation on Sigma/graphology; no
 > phylo.io code is used.
 
 - **Gradient coloring.** Registers an edge reducer and a node reducer, mapping
@@ -842,6 +852,26 @@ attached: the triangle takes the highlight colour, blink included, and the marke
 stays hidden. A leaf, which has no wedge, is still marked on its marker.
 
 ---
+### 9.6 BranchLengthPresenter (`operators/branch_lengths.ts`)
+
+Writes each branch's length beside it, in either layout. Off by default
+(`enabled: false`), like every overlay.
+
+```ts
+new BranchLengthPresenter({ enabled: true }).attach(viewer);
+```
+
+- **Only where it fits.** A label is drawn only when its branch is wider on
+  screen than the text, and never over another label, so zooming in reveals
+  more. Decided per frame from screen positions (`afterRender`), not through the
+  reducers, which do not run when the camera moves.
+- **The real length.** It reads the `branchLength` the layout puts on each edge,
+  so a log-scaled phylogram still shows the true value.
+- `formatBranchLength` (the default `format`): up to three decimals, trailing
+  zeros dropped; a length that would round to zero is written `<0.001`, not `0`.
+- Options: `enabled`, `format`, `font`, `color`.
+
+---
 
 ## 10. Color scale (`color/color_scale.ts`)
 
@@ -908,7 +938,7 @@ type LeafDataProvider = (identifier: string, leaf: NewickNode) => LeafDatum | un
 - Helpers: `datumTotal(datum)`, `datumSegments(datum, identifier)` (normalizes a
   single value to one identifier-keyed segment).
 - **Join key.** A leaf binds to its datum by identifier = `category ?? name`
-  (the ST id in the demo). *(Not yet configurable — planned: a selectable key
+  (the ST id in the demo trees). *(Not yet configurable — planned: a selectable key
   function once the backend shape is fixed.)*
 
 ### 11.1 Comparison data (`data/comparison.ts`)
@@ -1062,13 +1092,50 @@ Everything a consumer needs is re-exported from `./lib`:
   `ComparisonValueProvider`, `DifferenceSet`, `DifferencePredicate`,
   `CorrespondenceMap`, `keyByClade`, `keyByName`.
 - **Operators:** `TreeOperator`, `ExpandCollapseOperator`, `ExpandCollapseOptions`,
-  `SelectionOperator`, `SelectionOptions`, `BarChartPresenter`, `BarChartOptions`,
-  `BarScale`, `ComparisonOperator`, `ComparisonOptions`, `ComparisonMode`.
+  `ExpandMode`, `SubtreeNavigator`, `SubtreeStep`, `CladeShapePresenter`,
+  `CladeShapeOptions`, `SelectionOperator`, `SelectionOptions`, `BarChartPresenter`,
+  `BarChartOptions`, `BarScale`, `ComparisonOperator`, `ComparisonOptions`,
+  `ComparisonMode`, `Linkable`, `BranchLengthPresenter`, `BranchLengthOptions`,
+  `formatBranchLength`.
+- **Branch lengths:** `LengthScale`, `BRANCH_COLOR`.
+- **Export:** `snapshotViewer`, `SnapshotOptions`, `buildComparisonReport`,
+  `downloadComparisonReport`, `ComparisonReportInput`, `ComparisonPanel`,
+  `ComparisonMetric`, `ComparisonReconciliation`, `ComparisonView`, `ReportFormat`,
+  `renderReport`, `Report`, `ReportSection`, `ReportField`, `ReportImage`,
+  `ReportSwatch`, `renderHtmlToCanvas`, `canvasToPng`, `canvasToPdf`,
+  `RasterOptions` (see §13.1).
 - **Config bootstrap:** `createViewer`, `createComparison`, `createFromConfig`,
   `Config`, `ViewerConfig`, `OperatorsConfig`, `PanelConfig`, `ExpandCollapseConfig`,
-  `SelectionConfig`, `BarChartConfig`, `ComparisonConfig`, `DataProviders`,
+  `SelectionConfig`, `BarChartConfig`, `CladeShapeConfig`, `ComparisonConfig`, `DataProviders`,
   `ViewerProviders`, `ComparisonProviders`, `ViewerHandle`, `ComparisonHandle`,
   `PanelOperators`.
+
+From **`phylo-tree-viewer/performance`**: `CacheManager`, `CacheManagerOptions`,
+`CacheEntry`, `CacheTier`, `CacheCallback`, `DoubleLinkedList`.
+
+### 13.1 Exporting a comparison report (`export/`)
+
+A report describes a side-by-side comparison in a document: the scores, which
+leaves were reconciled, what the colours mean, and pictures of both panels. It
+takes its input in domain terms (shared and dropped leaves, metric scalars), not
+any server's response shape, so any backend can use it.
+
+```ts
+const leftImage = await snapshotViewer(leftViewer);  // PNG data URL, wedges and bars included
+const rightImage = await snapshotViewer(rightViewer);
+await downloadComparisonReport(
+  {
+    title: "NJ vs UPGMA",
+    panels: [{ label: "vibrio-nj", image: leftImage }, { label: "vibrio-upgma", image: rightImage }],
+    metric: { name: "rf", scalars: { rf: 13650, rf_normalised: 0.387 } },
+  },
+  "comparison", "pdf",                               // "html" (default), "png" or "pdf"
+);
+```
+
+`snapshotViewer` composites Sigma's canvases and then the DOM overlays (clade
+wedges, bar charts), which a canvas grab alone would miss. PNG and PDF are
+rasterised from the same HTML, so the three formats cannot drift apart.
 
 ---
 
@@ -1078,7 +1145,7 @@ Everything a consumer needs is re-exported from `./lib`:
 import {
   TreeViewer, ExpandCollapseOperator, SelectionOperator,
   BarChartPresenter, CategoricalColorScale, parseNewick,
-} from "./lib";
+} from "phylo-tree-viewer";
 
 const colors = new CategoricalColorScale();           // share across panels
 
@@ -1097,9 +1164,9 @@ left.setTree(parseNewick(await fetch("/tree-a.nwk").then(r => r.text())));
 right.setTree(parseNewick(await fetch("/tree-b.nwk").then(r => r.text())));
 ```
 
-The demo (`src/main.ts`) shows two independent panels (vibrio UPGMA + NJ),
-a toolbar (layout, expand-all, select-box, bar charts, scale), a shared color
-scale, the right panel reflected, and a stand-in backend composition provider.
+The PhyloDelta web app (`code/web/src/comparison/ComparisonView.tsx`) is the full
+example: two panels fed by the server's slices, the right one reflected, a shared
+color scale, the comparison gradient, bar charts and report export.
 
 ---
 
@@ -1160,7 +1227,7 @@ scale, the right panel reflected, and a stand-in backend composition provider.
 - **Join key** for leaf data is fixed to `category ?? name` (configurable key
   planned).
 - **Published to npm? Not yet — but it is now a real package.** `phylo-tree-viewer`
-  is its own workspace package with its own manifest, and the demo consumes it by
+  is its own workspace package with its own manifest, and the web app consumes it by
   name rather than by relative path. What remains before `npm publish` is a build
   step: `main`/`types`/`exports` currently point at **TypeScript source**, which
   works because Vite compiles linked workspace sources directly, but a published
@@ -1170,36 +1237,26 @@ scale, the right panel reflected, and a stand-in backend composition provider.
 
 ## 17. Build & run
 
-`<repo>/code/` is an **npm workspace root** holding two packages: `lib/`
-(`phylo-tree-viewer`, this library) and `lib_demo/` (the demo that consumes it).
-Install once from `<repo>/code/` — a single `node_modules` and lockfile serve
-both, and npm symlinks `phylo-tree-viewer` into place, so edits to the library
-are picked up by the demo immediately with no build or publish step.
-(See `lib_demo/RUNNING.md` for the end-user guide.)
+`<repo>/code/` is an **npm workspace root** holding `lib/` (`phylo-tree-viewer`, this
+library), `web/` (the PhyloDelta web app that consumes it) and `bench/` (the
+benchmark harness). Install once from `<repo>/code/`: one `node_modules` and one
+lockfile serve every package, and npm symlinks `phylo-tree-viewer` into place, so
+edits to the library are picked up by the web app immediately, with no build or
+publish step.
 
-Run commands from `<repo>/code/` to hit both packages (`npm run check` runs the
-gate in each), or from either package directory to hit just that one. The
-datasets are shared repository data at `<repo>/datasets/`, reached by the demo's
-Vite `publicDir: "../../datasets"`.
-- `npm start` — Vite dev server.
-- `npm run build` — production build (esbuild via Vite). Note this does **not**
-  type-check: esbuild strips types without verifying them, so always gate on
-  `npm run check`.
-- `npm run typecheck` — `tsc --noEmit`. Runs clean. (It previously could not run
-  at all: the unused webpack toolchain left over from before the Vite migration
-  pinned `webpack-dev-server@1.16.5`, whose webpack 2.x peer blocked installing
-  TypeScript. Those four packages were removed; nothing imported them.)
+From `code/lib/`:
+
 - `npm test` / `npm run test:watch` — Vitest. Tests live beside their subject as
   `*.test.ts`.
+- `npm run typecheck` — `tsc --noEmit`.
 - `npm run check` — typecheck + tests. **The gate to run before committing.**
-- `npm run preview` — serve a built `dist/` over HTTP (needed: `file://` breaks
-  ES modules and `fetch`).
-- The datasets live outside the app in `<repo>/datasets/` and are served at the site
-  root via Vite `publicDir`: trees under `/gen_trees/*.nwk` (fetched + parsed with
-  `parseNewick`) and isolate metadata under `/isolated_data/*.tsv` (tab-separated
-  EnteroBase exports, parsed by the app). The example config's `app.sources`
-  splits these into `trees` (keyed by panel id) and `isolated_data` (a list, so
-  multiple species can be supplied).
+
+From `code/`, the same scripts run in every package (`npm run check`), and
+`npm start` runs the web app.
+
+The library has no build of its own: `main`/`types`/`exports` point at TypeScript
+source, which the consumer's bundler (Vite, in the web app) compiles. The
+dataset tests (§18) read the trees in `<repo>/datasets/gen_trees/`.
 
 ---
 
@@ -1231,6 +1288,8 @@ to be *this README, verified*, so each section's claims are falsifiable:
 | §9.3 selection | `operators/selection.test.ts` |
 | §9.4 bar charts, incl. filter interaction | `operators/barchart_presenter.test.ts` |
 | §9.5 comparison: gradient, membership, linking | `operators/comparison.test.ts` |
+| §9.6 branch lengths | `operators/branch_lengths.test.ts` |
+| §13.1 report, comparison report, rasterising | `export/*.test.ts` |
 | Subtree drill-in stack | `operators/subtree_navigator.test.ts` |
 | §10 color scales | `color/color_scale.test.ts` |
 | §11 leaf data, §11.1 node keyers | `data/data.test.ts` |
@@ -1327,516 +1386,11 @@ the canvas.
 
 ---
 
-## 19. Change log (implementation history)
+## 19. History
 
-Keep brief, newest first. Record behavioural/API changes for thesis reference.
-
-- **Split into a real npm package** (§2, §16, §17; no behavioural change). The library
-  moved from `lib_demo/src/lib/` to its own workspace package `code/lib/`, published
-  under the name **`phylo-tree-viewer`**, and the demo now imports it by package name
-  instead of a relative path. `code/` became an npm workspace root, so one install and
-  one lockfile serve both packages and npm symlinks the library into place — edits are
-  still picked up instantly, with no build or publish step, because `main`/`types`/
-  `exports` point at TypeScript source and Vite compiles linked sources directly.
-  Decisions worth recording: (a) **`sigma` and `graphology` are `peerDependencies`**,
-  not dependencies — the public API hands back the Sigma renderer and graphology Graph
-  (`getRenderer`/`getGraph`), so two copies in one bundle would yield objects that are
-  not interchangeable; the consumer supplies one shared instance. `newick` stays a
-  normal dependency (internal, never exposed). (b) `iwanthue` turned out to be
-  **app-only** and left the library's manifest entirely. (c) `config.example.jsonc`
-  moved to the demo: it carries the demo's own dataset paths and `app` block, and a
-  library should not ship its consumer's configuration — a library-only example is a
-  publish-time task. (d) The test suite split with the code: 306 library tests, 41
-  demo tests, 347 total — unchanged. The `<dialog>` shim went to the demo (the legend
-  needs it); the WebGL and `ResizeObserver` shims stayed with the viewer.
-
-- **`code/lib_demo/` is now a self-contained package** (§17; no library code
-  changed). Its `package.json` carries the real dependencies, its own lockfile and
-  `node_modules`; the repo-root `package.json`/`package-lock.json` are gone, as is
-  the stale `code/lib_demo/package-lock.json` left over from the folder move — it
-  listed 179 packages while its own manifest declared none, so anyone installing
-  from the wrong directory got a contradictory tree. Five dependencies inherited
-  from the original `clusters-dynamic` project were dropped after checking that
-  nothing imports them (`ol`, `@sigma/utils`, `graphology-communities-louvain`,
-  `monotone-chain-convex-hull`, `newick-js`): **124 packages → 76**, ~125 MB → ~100 MB,
-  with the suite still at 347 passing. What the package deliberately does *not*
-  own is the datasets: they stay shared repository data at `<repo>/datasets/`,
-  reached through `publicDir: "../../datasets"`, so the directory must remain
-  inside its repository. Adds `engines` (Vite 8 excludes Node 21.x and 22.0–22.11)
-  and an `npm run preview` script. `RUNNING.md` + `run.sh` live in the package;
-  the root keeps only a `README.md`, since hosts render only the root one.
-
-- **The viewer now watches its container's size** (§8). Sigma measures the
-  container once at construction and binds only `window.resize` (v3.0.2 has no
-  `ResizeObserver`), so any size change that isn't a window resize left it
-  rendering against stale dimensions and the tree drifted off-centre — which is
-  exactly what adding the app's footer did: the legend is painted after the
-  viewers exist, the panels shrink, and Sigma never hears about it. The viewer
-  installs a `ResizeObserver` on its container and calls `renderer.resize()` (plus
-  re-arming the right-reserve pan, which is measured in pixels and so depends on
-  the viewport scale). Re-measuring is *sufficient* for centring — the camera sits
-  at x=y=0.5 and Sigma normalises the node bounding box around that point, so the
-  tree is centred by construction at any size. It deliberately does **not** reset
-  the camera, which would throw away the user's pan/zoom on every window move.
-  Disconnected in `destroy()`; feature-detected, so a non-DOM environment is fine.
-  5 tests, plus a `ResizeObserver` stub in `vitest.setup.ts` and `resize()` on the
-  Sigma test double.
-
-- **Footer legend with "see all"** (app-side; `src/legend.ts` + 14 tests). One
-  legend below both panels rather than one per panel, because the categorical
-  scale is shared — the same value is the same colour in every tree. Colours are
-  read back from `ComparisonHandle.colorScale`, not recomputed, so the mapping
-  exists in one place. The top 5 values sit inline and the rest open in a searchable
-  `<dialog>` (144 countries would otherwise swamp the page); counts follow the
-  active filter, since a legend claiming isolates the filter has hidden would
-  describe data the user cannot see; and the uncoloured "not recorded" total is
-  stated explicitly, which is what explains why bars look short. `vitest.setup.ts`
-  gained a `<dialog>` shim — jsdom parses the element but implements none of its
-  modal behaviour.
-
-  The **comparison ramp moved into that same footer row** (`legend: false` in the
-  comparison block, app draws it right-aligned). The operator's built-in legend is
-  positioned absolutely *inside each panel*, which meant two identical ramps for
-  one comparison, sitting on top of the trees — in the reflected panel it visibly
-  overlapped a leaf label. The app rebuilds it from the same config block the
-  library builds its scale from (`stops ?? DIFF_PALETTE`, `legendLabels`,
-  `equalColor` — all already exported), so it matches the branches by construction
-  and needed no library change; it is mode-aware (ramp vs single "equal" swatch)
-  and hidden entirely while Differences is off.
-
-- **Metadata filtering in the demo** (app-side only; no library change — §8.2 was
-  already sufficient). New `src/isolates.ts` owns the model: **one key segments**
-  (its values are the bar's coloured slices, switchable at runtime), **any number
-  of keys filter** (OR within a key, AND across keys). Multi-key *colouring* was
-  considered and rejected: each key partitions the same isolates, so stacking two
-  keys in one bar counts every isolate twice and the widths stop meaning "share of
-  this ST" — the alternative is one bar per key, which the single-composition
-  `LeafDatum` contract does not express. Consequence for parsing: per-key counts
-  **cannot** answer an AND query, so each isolate is kept as a joint tuple over the
-  configured keys (values interned per key: vibrio = 26,629 rows in ~8 MB, 113 ms).
-  The two library seams are used for what each is for — `dataOf` decides what a bar
-  is *made of*, `setFilter` decides which leaves stay lit; a leaf whose isolates are
-  all filtered out is dimmed, not silently emptied. The palette is sized to the
-  *union* of values across all keys, since the shared scale assigns colours
-  cumulatively and switching the segment key would otherwise wrap and reuse them.
-  19 tests on the pure model, plus an offline check that a two-key AND matches a
-  naive scan of the real files exactly (2,665 / 1,533 isolates).
-
-- **Comparison config hoisted out of the panels** (§9.5, §12). `comparison` moved
-  from `panels[].operators` to a single **top-level `Config.comparison`**, applied
-  identically to every panel; `OperatorsConfig` no longer carries it. A comparison
-  describes the panels *jointly*, so per-panel settings could express states that
-  cannot both be true. Two concrete defects this removes: (1) the panels could
-  disagree on `enabled`/`mode`, i.e. one side colouring differences while the other
-  didn't; (2) the example config itself set `keyBy: "clade"` on one panel and
-  `"name"` on the other — `highlightByKey` resolves a key with the *receiving*
-  panel's keyer, so leaf-set keys were compared against node names and cross-tree
-  highlighting silently never matched. Both are now unexpressible. The operator
-  *instance* stays per viewer (it folds reducers into that viewer's pipeline); only
-  the settings are shared, alongside the two colour scales in the same internal
-  `Shared` bundle (`SharedScales` renamed, since it is no longer only scales).
-  2 tests added, asserting every panel receives the one block and that omitting it
-  attaches no operator.
-
-- **`±` cue overlay removed** (§9.1). The clickable `+`/`−` badge layer is gone,
-  along with `showCues`, its DOM layer, per-frame `positionCues` repositioning, and
-  the operator's `render`/`afterRender` subscription (which existed only to place
-  cues — the operator no longer holds a `Sigma` reference at all). The affordance
-  belongs to the application's UI; the library keeps the mechanism. Consequences:
-  (a) the invisible **hit-area reducer is now always installed**, not just when
-  cues were off — previously the only trigger without cues, now the only trigger
-  full stop (and what lets right-click land on a clade, since it hit-tests by size
-  too); (b) the per-mode rule that decided which cue a node got survives as the
-  **public `actionFor(layoutNode)`** → `"expand" | "collapse" | null`, so an
-  app-drawn menu offers exactly what the gesture would do instead of re-deriving
-  it; (c) `cueMinLeaves` → **`collapseMinLeaves`** (same default 3, same meaning:
-  tiny forks aren't collapse targets). Config keys `showCues`/`cueMinLeaves` are
-  gone. Behaviourally a no-op for this demo, whose config already set
-  `showCues: false` on both panels — so the removed path was one the app never ran.
-  The cue overlay had no tests of its own; nothing was lost from the suite.
-
-- **Right-click events + native-menu suppression, so an app can draw a context
-  menu** (§8). The viewer forwards Sigma's `rightClickNode` / `rightClickStage` as
-  `ViewerEvents`, carrying the node, viewport coords, and the `original` DOM event.
-  It also swallows the browser's own menu inside the container
-  (`suppressContextMenu`, default true; also a `ViewerConfig` key) — Sigma never
-  does this itself: its right-click handler, unlike its double-click one, never
-  calls `preventDefault()`. The listener is bound to the **container**, not to
-  Sigma's event, because Sigma listens on its own mouse layer, a *sibling* of the
-  operator overlays: anything opting into pointer events swallows the event before
-  Sigma sees it and would still pop the native menu (at the time, the `±` cues did
-  exactly that — they have since been removed, see the entry above).
-  `destroy()` unbinds it, since the element can outlive the viewer. Scoped
-  per panel, so surrounding chrome keeps its menu and a panel can opt out. No other
-  new API: a menu composes what exists (selection set, `collapseNodes`/`expandNodes`,
-  `mrcaOf`, `leavesOf`, `getMode`). The test double gained a handler registry +
-  `emit`, which makes the Sigma→viewer wiring testable at all for the first time
-  (it was a no-op `on()` before, so that layer had no coverage). 9 tests.
-
-- **Demo switched to real isolate data** (app-side only; no library change). The
-  synthetic per-leaf composition (`isolateComposition` + its mulberry32 PRNG) is
-  gone. `main.ts` now fetches and parses the EnteroBase TSV exports
-  (`datasets/isolated_data/*.tsv`, renamed from `.txt` — they are tab-separated and
-  carry unquoted commas, so CSV would need quoting the source lacks), indexes them
-  by the `ST` column, and builds each `LeafDatum` from real `Country` counts
-  (vibrio: 26,629 rows → 18,831 STs, 144 countries, ~90 ms). Decisions worth
-  recording: (a) isolates whose category is blank/`NaN` are **kept and reported in
-  the tooltip but form no segment** — a segment's width is its share of the bar, so
-  counting them would inflate the countries that are known; (b) a leaf with no
-  isolate row, or none with a recorded country, returns `undefined` → **no bar**,
-  never a fabricated one; (c) with 144 categories vs `DEFAULT_PALETTE`'s 16, the app
-  generates the palette at runtime with `iwanthue(n)` (seeded, so colours are stable
-  across reloads) and `prime()`s the shared scale; (d) which species a leaf belongs
-  to is resolved by **node identity** (a `WeakMap` over each tree, unwrapping
-  `origin`), since the library takes one shared `dataOf` and two species can reuse
-  the same ST numbers. The comparison values (`valueFor`/`isDifferent`) remain
-  **deliberately synthetic** — the export's own `Differences` column is entirely
-  `NaN`, and a tree-vs-tree metric belongs to the `/compare/{a}/{b}` backend route.
-
-- **App nested under `code/lib_demo/`, root scripts repaired** (§17). Everything
-  that was directly in `code/` (`index.html`, `src/`, the tsconfig/vite/vitest
-  configs) now sits in `code/lib_demo/`, leaving `code/` free for other artefacts
-  alongside the demo. Vite's `publicDir` became `../../datasets` and the two
-  dataset-reading tests gained one more `../`. The repo-root `package.json` scripts
-  — which were silently broken (no `tsconfig.json`/`vite.config.ts` at the root, so
-  `npm run typecheck` only printed tsc's help) — now pass the app's configs
-  explicitly, so `npm run check` works from anywhere in the repo. No library or app
-  code changed; paths only.
-
-- **Demo relocated to the repo, datasets shared, config restructured** (§17). The
-  app moved to `<repo>/code/` and its bundled `dataset/` copy was dropped in favour
-  of the repo-level `<repo>/datasets/` folder — `gen_trees/` (Newick trees) and
-  `isolated_data/` (EnteroBase-style isolate TSVs, one per species) — served at the
-  site root via Vite `publicDir: ../datasets`. `config.example.json` became
-  `config.example.jsonc`: every field is now annotated with its allowed values in
-  `//` comments, and the app strips them before `JSON.parse` (a small
-  string-aware stripper in `main.ts`, so `http://` URLs survive). The app's
-  `sources` split into `trees` (keyed by panel id) and `isolated_data` (a **list**,
-  so panels of different species each get their own isolate file). Library code
-  unchanged; only the app glue, paths, and the two dataset test roots moved.
-
-- **Selection → structure helpers, so apps can act on a multi-selection** (§8, §9.1,
-  §9.3). `SelectionOperator` still only *tracks* a set of graph-node ids; deciding
-  what a right-click menu or toolbar does with it is app policy. The library now
-  supplies the id→structure bridge so the app never reaches through
-  `getNodeMap().get(id).source` and its `origin`/clone internals: the viewer's
-  `leavesOf(ids)` returns the concrete isolate names a selection represents —
-  *unfolding collapsed clades to their hidden leaves* (the input for a backend
-  fetch or a composition aggregate) — and `mrcaOf(ids)` returns the common
-  ancestor. The expand/collapse operator gains `collapseNodes(ids)` /
-  `expandNodes(ids)`, which batch a selection into a **single rerender** — so
-  "collapse only the selected clades" instead of `collapseAll()`. Pure core in
-  `tree/navigation.ts` (`leafNamesOf`, `mrcaId`), 20 new tests. Design line drawn:
-  *keys cross the app/library boundary, structure does not.*
-
-- **goeBURST documented as an explicit non-goal** (§16). It is a minimum spanning
-  tree over allelic profiles — no root, no nested clades — so rendering it as a
-  cladogram/phylogram asserts a hierarchy the data does not claim, regardless of
-  whether it renders cleanly. Also recorded: `parseNewick` keeps only the largest
-  forest component, discarding the singleton STs that are much of goeBURST's
-  point. The dataset tests now separate `DENDROGRAM_FILES` (supported) from
-  `NETWORK_FILES` (out of scope, checked only for safe degradation), so a passing
-  suite is no longer mistakable for support. Adding it later is a new
-  `LayoutEngine` via `LAYOUT_ENGINES` (§7), plus generalising the bar presenter
-  and the collapse model.
-
-- **Dataset integration tests + correspondence measured** (§18.2). All six real
-  `.nwk` files now run end-to-end (41 tests): parsing, both layout modes, budget,
-  finite coordinates, tip alignment, unique ids under repeated labels, deep
-  (443-level) trees without stack overflow, and the goeBURST forest format —
-  previously only one file was touched, by the benchmark. Also measured the
-  clade correspondence the comparison operator depends on: **100% of leaves but
-  ~0% of large clades** match between UPGMA and NJ, with 84% of cherries and a
-  clean falloff by size. Consequence for the UI: a clade-keyed comparison shows
-  almost nothing at the default opening depth and only becomes meaningful as you
-  drill in; `keyByName` is the robust keyer at tip level.
-
-- **Test coverage extended to the whole public surface** (229 tests, §18) — every
-  README section now has tests, plus a shared operator harness and a Sigma
-  double. Three real defects surfaced in the process. (1) *`prepareTree` dropped
-  `metadata` when cloning*, so the metadata filter (§8.2) matched nothing on any
-  rendered tree — the feature was inert in practice while unit tests that called
-  `passesFilter` on un-pruned nodes passed. `metadata` now rides along at every
-  clone site, `rerootTree` included. (2) *`parseNewick` returned `{}`* for empty,
-  blank, or unparseable input instead of throwing: truthy, cast to `NewickNode`
-  despite having no `name`, and rendered as a lone blank tip — so a failed
-  backend response looked like a real one-node tree. It now validates and throws.
-  (3) Documented two undocumented behaviours the tests pinned down: click
-  selection is *single*-select (multi-select is the drag box), and `cladeShape`'s
-  `hideMarker` makes the marker transparent rather than size 0, because Sigma
-  hit-tests by size and zeroing it would destroy the expand target. Also noted:
-  `barcharts` attaches only when its config key is present, unlike the three
-  operators that default to on.
-
-- **Toolchain, tests, and a 10x layout speedup.** (1) *Type-checking now runs* —
-  removed the unused webpack packages whose peer conflict blocked installing
-  TypeScript; `tsc --noEmit` passes clean after fixing the 5 real errors it
-  immediately found (a bad `CSSStyleDeclaration` cast from a computed key, and 4
-  implicitly-`any` Sigma event handlers, now typed via `sigma/types`).
-  (2) *Vitest added* with 68 tests covering the tree model, collapse operator,
-  metadata filter and cache — including explicit regression guards for the
-  `origin`/clone collapse bug. (3) *Cache bug found by those tests*:
-  `registerPending` used `.finally()`, which derives a new promise that re-throws
-  — a rejected fetch became an unhandled rejection (console noise in a browser, a
-  crash under `--unhandled-rejections=throw`). Now uses `then(cleanup, cleanup)`.
-  (4) *Layout was O(n·depth)* because sort comparators re-walked subtrees; leaf
-  key derivation is now a single memoized bottom-up `foldLeaves`. `buildGraph` at
-  a 5,000-leaf budget: **1,164ms → 120ms**, scaling restored to ~linear. See §18.
-
-- **Metadata filtering on visible leaves (§8.2).** Added `NewickNode.metadata`
-  (`Record<string, string | number | null>`) as an arbitrary per-leaf carrier the
-  backend fills, plus `TreeViewer.setFilter(predicate)` / `clearFilter()` /
-  `getFilter()` / `passesFilter(leaf)` and a `LeafFilter` type + `filterChanged`
-  event. The filter is presentation-only: it re-applies the node-reducer pipeline
-  (dimming failing leaves via the new `FILTER_DIM_COLOR`, folded in after all
-  operator reducers) and refreshes overlays — **no graph rebuild/relayout**, so it
-  only ever narrows the leaves already on screen. `BarChartPresenter` now respects
-  it (no bar for a filtered-out leaf; excluded from `maxTotal`). No aggregate
-  "composition popover" exists in the library, so there was nothing of that kind
-  to filter — composition is strictly per-leaf.
-- **Membership mode now marks shared leaves only** — it encodes *agreement*, not
-  a two-sided verdict. Previously it painted **every** node (leaves and internals)
-  either `differentColor` or `equalColor`. Now: leaves the backend does *not* list
-  as differing get `equalColor` + a marker; differing leaves keep their normal
-  color, and internal nodes are untouched (the mode describes tips, not clades).
-  The legend drops to a single swatch, and **`differentColor` is removed** from
-  options/config/example rather than left as a knob that paints nothing.
-  `membershipLabels` stays: the hover tooltip still reports *which* state a leaf
-  is in, even though only agreement is painted. Trade-off to be aware of: a
-  differing leaf is now visually identical to one with no data.
-
-- **Gradient mode now colors branches only** — `colorNodes` defaults to **false**
-  (was true). A gradient value describes a *branch*, so coloring the node too
-  double-encoded one number. It also had a cross-operator side effect: reducers
-  fold in registration order and this operator attaches **last**, so its node
-  styling overrode CladeShapePresenter's — repainting the marker that presenter
-  deliberately makes transparent, resurrecting a colored circle underneath the
-  black wedge. Membership mode is unaffected (it colors nodes by definition).
-  `leafColor` is now only consulted when `colorNodes` is explicitly enabled.
-
-- **Removed fabricated data and domain vocabulary from the library** (two
-  boundary violations found in an audit of §2).
-  (1) `BarChartPresenter` had a `syntheticCount()` hash-based **fake isolate
-  count** as the last resort of `resolveDatum()`, added so the demo rendered
-  without a backend — i.e. the library knew about the dataset and invented data to
-  compensate. A fabricated bar is indistinguishable from a real one, so a broken
-  provider would render a plausible chart of nothing. Deleted: `resolveDatum`
-  now returns `null` and the leaf simply gets **no bar**. The demo's stand-in
-  lives in `main.ts`, where it always belonged.
-  (2) Tooltips read `"12 isolates"` — epidemiology vocabulary baked into a
-  domain-agnostic library, and wrong for any other field. The default tooltip now
-  states bare magnitudes (`"ST12: 34 (PT: 20, ES: 14)"`); new `tooltipOf`
-  (BarChartOptions + `DataProviders`) hands the unit noun back to the app, as
-  `membershipLabels` already did for comparison. Contract docs in `leaf_data.ts` /
-  `color_scale.ts` reworded to stop asserting isolates as *the* domain.
-  Not changed: the comparison legend stays in the library (fixed, self-contained,
-  describes a scale only the library knows, and `legend: false` disables it).
-  Still outstanding: node colors/sizes and label styling remain hardcoded in
-  `layout.ts` / `tree_viewer.ts` with no config knob (§16).
-
-- **Dropped the hardcoded `palette` from `config.example.json`.** Its 5 colors
-  were a demo artifact matching `main.ts`'s 5 stand-in categories, and were worse
-  than omitting the key: `DEFAULT_PALETTE` has 16, so they *lowered* the ceiling
-  before colors wrap and collide. The `palette` key itself stays — it is how an
-  app hands in a palette generated to fit a dynamic category count. Documented in
-  §10, with a note in the example's app-owned block.
-
-- **The key → color mapping is now reachable by the app** (for legends/captions
-  over the leaf data). The library assigns categorical colors, so it was the only
-  holder of that mapping, but nothing exposed it: `createFromConfig` built the
-  scale internally, `ComparisonHandle` was `{ panels, destroy }`, and
-  BarChartPresenter kept it private — an app had to duplicate the palette-walking
-  to draw a legend. Now `ViewerHandle.colorScale` / `ComparisonHandle.colorScale`
-  (the shared instance) and `BarChartPresenter.getColorScale()`.
-  `CategoricalColorScale.entries(): Array<[string,string]>` becomes
-  `assignments(): ReadonlyMap<string,string>` — a defensive, **non-mutating** read.
-  This matters: `color()` assigns on miss, so a legend querying an undrawn key
-  would consume the next palette slot and recolor the chart it describes.
-  Assignment stays lazy, so `prime()` the full key set for a complete legend.
-  Legend *UI* (captions, "see more", modals) stays app-side — the library has no
-  concept of a filter (§2).
-
-- **Branches are black by default** (were `#666` grey), matching the
-  phylogenetics convention that tree structure reads as ink, not as background.
-  The two hardcoded literals in `layout.ts` are now one exported `BRANCH_COLOR`
-  constant. Operators that style branches (comparison gradient mode) override it
-  per-edge via the edge-reducer pipeline and are unaffected. Clade wedges are set
-  to black in `config.example.json` via the existing `cladeShape.color` option.
-
-- **Fix: double-clicking a node also zoomed.** Sigma's mouse captor zooms after
-  emitting `doubleClick` unless `preventSigmaDefault()` is called, and nothing
-  called it — so every expand/collapse/drill-in lurched the camera too. The viewer
-  now claims the gesture when a node is hovered (tracked via `enterNode` /
-  `leaveNode`, since the captor's event carries no node). Stage double-click still
-  zooms. Documented in new §8.1, along with why node double-clicks are synthesised
-  at all (Sigma has no `doubleClickNode` event).
-
-- **Fix: `showCues: false` left no way to expand/collapse at all.** Two causes.
-  (1) `hideInternalNodes` draws internal nodes at size 0 and Sigma hit-tests by
-  size, so double-click — the only remaining trigger — had no target; the operator
-  now installs a hit-area reducer (invisible, `HIT_SIZE`) when cues are off.
-  (2) CladeShapePresenter's `hideMarker` zeroed collapsed clades' size, which had
-  been their click target before wedges existed; it now makes them transparent
-  instead, preserving the hit area. Cues remain the discoverable affordance, but
-  disabling them no longer disables the feature.
-
-- **Clade wedge scale now calibrates to the tree.** `saturateAt` defaults to the
-  leaf count of the tree in view instead of a fixed 512. The old default was below
-  the scale of real data — on the 17.6k-leaf demo trees every depth-3 clade
-  (~2,200 leaves) saturated, so all wedges drew at max height and the size
-  encoding conveyed nothing. Memoized on tree identity; re-calibrates per subtree
-  in subtree mode. Explicit values still win (for a shared scale across trees).
-
-- **Two expand *modes* on one operator, replacing FocusOperator.** Navigation is
-  now a single operator with `mode: "incremental" | "subtree"` — the previous
-  design (ExpandCollapse + a separate FocusOperator) had two operators competing for the
-  double-click, needing gesture arbitration in the config layer, and forced an
-  either/or choice on the user. `"incremental"` grows the tree in place;
-  `"subtree"` opens a clade as a new tree and **collapsing that root goes back**.
-  Cues are mode-aware (`+` = open in place / open as new tree; `−` = fold back /
-  go back). **FocusOperator is gone**; its stack logic lives on as
-  `SubtreeNavigator` (`operators/subtree_navigator.ts`), a plain helper owned by
-  the operator rather than a TreeOperator. Config `focus` block removed —
-  `expandCollapse.mode` + `minLeaves` replace it; gesture arbitration deleted.
-  New API: `getMode/setMode/back/resetSubtree/goTo/getPath/canGoBack/
-  setOnPathChange`.
-- **Library split into `presentation/` and `performance/` layers.** All rendering
-  modules (`tree/`, `viewer/`, `color/`, `data/`, `operators/`) moved under
-  `presentation/`; the new `performance/` layer holds the generic LRU cache
-  (`cache_manager.ts`, `cache_entry.ts`, `double_linked_list.ts`), converted from
-  the JS prototype in `cache_strategy/` to TypeScript with real generics
-  (`CacheManager<T>`, `DoubleLinkedList<T extends Linkable<T>>`). `index.ts` and
-  `config/` stay at the top level since they span both layers. The cache is
-  exported but not yet consumed; the domain layer (`TreeComparisonCache`) is
-  deliberately not written yet.
-
-- **Collapsed clades render as triangular wedges** (the phylogenetics convention)
-  instead of circular markers, with size ∝ log2(leaves hidden) so a summary tip
-  conveys how much tree it stands for. New **CladeShapePresenter**
-  (`operators/clade_shape.ts`, §9.2), on by default, configurable via
-  `cladeShape`. Deliberately decoupled: it reads `isCollapsed` from the viewer's
-  node map, so it shares no reference with ExpandCollapseOperator. DOM overlay
-  (CSS-border triangle) rather than a custom WebGL node program.
-
-- **Unified the depth knob.** `initialDepth` (absolute, from the root) and
-  `expandDepth` (relative, per expand) being separate numbers made the model
-  incoherent — the opening view and an expanded clade could show different
-  amounts of structure. New `depth` config sets both, so every clade you look at
-  (opened, expanded, or focused into) shows the same depth; the two old keys
-  remain as individual overrides. Demo toolbar's depth stepper now drives both,
-  and the separate "Open: N lvl" button is gone.
-
-- **Two expand models, both configurable.** The previous hardcoded one-level
-  expand was too stingy on binary trees (one level = one bifurcation).
-  (1) *In place*: new `expandDepth` option (default 1) — an expand now opens N
-  levels with the surrounding tree still on screen; new `openSubtree(node,
-  levels)` / `getExpandDepth()` / `setExpandDepth(n)`. (2) *Focus*: new
-  **FocusOperator** (`operators/focus.ts`, §9.2) — drill into a clade as if it
-  were a newly loaded tree (rest hidden, clade becomes the root, opens at
-  `initialDepth`), with a stack: `focus/back/reset/goTo/getPath/canGoBack/
-  setOnChange`. Implemented purely via `viewer.setTree()`, so other operators
-  need no knowledge of it. Off unless a `focus` config block is present. Both
-  operators default to the double-click, so the config layer yields the gesture
-  to focus via the new `toggleOnDoubleClick` option on ExpandCollapse.
-
-- Expand/collapse **depth API**: `collapseToDepth` renamed to `setDepth` (kept as
-  a deprecated alias) to reflect that it expands as well as collapses — it is the
-  single primitive for *"show the tree down to depth d"*, in both directions. New
-  `getDepth()` (null once clades are toggled by hand, so a UI can mark its control
-  stale), `getInitialDepth()`, and `resetDepth()` (return to the configured
-  opening view; `collapseAll()` remains depth 1). Documented the `maxNodes` leaf
-  budget as a separate summarizer that truncates deep depth cuts.
-- Expand/collapse UX: expanding now reveals **one level at a time** (re-folds
-  internal children) instead of exploding the whole subtree; added a "Collapse
-  all" toolbar action (`collapseAll()`) so re-summarizing after "Expand all" is
-  one press.
-- **Expand/collapse reworked** (§9.1) so it's actually usable for the
-  difference-driven drill-down. (1) **Correctness fix:** the toggle looked up the
-  pruned *clone* in the original-keyed WeakMap and silently failed for cloned /
-  unnamed nodes — collapse never worked. `prepareTree` now stamps each node with
-  an `origin` back-reference, and the operator resolves clicks through it, so the
-  collapse predicate and the toggle share the same ID. (2) **Discoverable cue
-  trigger:** a clickable `+`/`−` badge on each clade (DOM overlay), working even
-  while internal markers are hidden — the reason the feature looked absent
-  before. (3) **Summarize API:** `collapseToDepth(depth)` / `collapseAll()`, and
-  config `initialDepth` to open summarized. New `ExpandCollapseOptions` /
-  `ExpandCollapseConfig` (`showCues`, `cueMinLeaves`, `initialDepth`); new
-  `NewickNode.origin` field. The cue idea is borrowed from Cytoscape's
-  expand-collapse plugin; its edge-collapse and compound-node model were not (not
-  applicable to trees).
-- Added a **config-driven bootstrap** layer (`config/config.ts`, §12): `Config`
-  type + `createViewer` / `createComparison` / `createFromConfig`, with a
-  `providers` seam for the non-serializable parts (parsed trees + data
-  callbacks) and `ComparisonHandle`/`ViewerHandle` runtime control surfaces. The
-  config's shape chooses single vs comparison view; the comparison factory is
-  N-capable (build + link every panel, share the color scales). Ships
-  `config.example.json` as schema-by-example. The library still never fetches,
-  never reads the config file, and never owns page layout — the app does. `main.ts`
-  now bootstraps via `createFromConfig`.
-- `ComparisonOperator` gained a **membership** presentation mode alongside the
-  existing gradient one (`mode: "gradient" | "membership"`, `ComparisonMode`).
-  Membership marks shared leaves with `equalColor`
-  `equalColor` by whether its key is in a differing set (`differing` /
-  `isDifferent`), for metrics that report *which* nodes differ rather than a
-  magnitude; internal markers are bumped to `markerSize` so the color shows, and
-  edge coloring is suppressed. The legend and tooltip adapt to the mode. New data
-  types `DifferenceSet`, `DifferencePredicate`; new API `setMode`, `getMode`,
-  `setDiffering`. Gradient mode (and its leaf-neutral behavior) is unchanged.
-- Fixed `orderByName` ignoring the leaf-based key for trees whose internal nodes
-  carry the `_` placeholder name (our NJ/UPGMA exports): `"_"` was treated as a
-  real name, so every internal node keyed on `"_"` and the ladderize collapsed.
-  Now a name counts only if it is *informative* (has an alphanumeric); `_` falls
-  through to the smallest leaf name, restoring correct lexicographic order.
-- Fixed stacked composition bars showing only one color: `positionBars` reset
-  the bar container to `display: block` each frame, overriding the `display:
-  flex` needed for the segment children to lay out side-by-side (they collapsed,
-  and `overflow: hidden` clipped all but the first segment). Now restored to
-  `display: flex`, so multi-category bars render each segment with its own color
-  sized by value.
-- Default sibling ordering changed from `orderByNumeric` to `orderByName`
-  (lexicographic). New `orderByName` comparator orders siblings by a
-  representative string key (own name, else lexicographically smallest leaf
-  name), using `localeCompare` with `numeric: true` so it handles any labels —
-  numeric ids, strain names, or mixed — without collapsing non-numeric names.
-  `orderByNumeric` retained and still exported. Default updated in `prepareTree`,
-  `buildGraph`, and `TreeViewer` (`childOrder`).
-- Comparison default spectrum switched to a vivid blue→yellow ramp (phylo.io
-  hue path; default legend labels back to ["different", "similar"]). Added
-  explicit phylo.io attribution (§9.5, §19, and the operator source) — MIT,
-  independent reimplementation, no code reused.
-- Comparison coloring refined: leaf *markers* kept neutral (`leafColor`, default
-  near-black) while branch coloring continues to the tips (terminal leaf
-  branches colored too); vertical fork lines colored by their clade. Layout tags
-  each connector edge with a `nodeId` attribute so operators can style the
-  vertical/horizontal branches.
-- Comparison default ramp changed to a vivid green→yellow→red spectrum
-  (`DIFF_PALETTE`); colored branches thickened (`edgeWidth`, default 3) for
-  visibility; default legend labels now ["similar", "different"]. Spectrum
-  remains user-definable via `stops`.
-- Tree-difference comparison (phylo.io-style): `ComparisonOperator` colors
-  branches/nodes by backend-computed per-node values via a shared
-  `SequentialColorScale`, with a legend, hover tooltip, and cross-tree
-  navigation (`link` + click-to-highlight-correspondent). Added the viewer
-  **edge-reducer pipeline** (`addEdgeReducer`/`applyEdgeReducers`), the
-  `SequentialColorScale`/`DIFF_PALETTE`, and the comparison data contract
-  (`NodeKeyOf`, `ComparisonValues`, `CorrespondenceMap`, `keyByClade`,
-  `keyByName`). The metric itself is computed by the backend, not the library.
-- Added architecture diagrams (§3.1–3.3, Mermaid): layering/dependencies, build
-  & render pipeline, operator↔viewer channels. (Docs only.)
-- Backend-driven bar charts: `LeafDatum`/`LeafSegment`/`LeafDataProvider` data
-  contract; presenter renders stacked composition bars with semantic colors via
-  the shared scale; `data`/`dataOf` options + `setData`.
-- Modular sibling ordering: `ChildOrder`, `orderByNumeric` (default),
-  `orderBySizeDesc`; `childOrder` option + `setChildOrder`. Selection still by
-  size; ordering is a structure-preserving rotation.
-- Renamed the horizontal-flip flag `mirror` → `reflect`
-  (`reflect`/`setReflect`/`isReflected`).
-- Reflection support + shared `CategoricalColorScale` for cross-tree color
-  consistency; per-leaf labels moved into the overlay (no culling).
-- Library restructure: `tree/`, `viewer/`, `operators/`, `color/`, `data/` under
-  `src/lib/` with a single `index.ts` barrel; loader made pure (`parseNewick`),
-  fetching moved to the app.
-- Forest-aware Newick parsing (largest cluster) for goeBURST inputs.
+The implementation history is in the git log, and the reasoning behind each
+change, with the alternatives and measurements, is in
+[DECISIONS.md](../../docs/DECISIONS.md).
 
 ---
 
