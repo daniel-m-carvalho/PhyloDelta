@@ -81,12 +81,14 @@ describe("layout pipeline characterisation", () => {
   });
 
   it("scales roughly linearly, not quadratically", { timeout: 60_000 }, () => {
-    // Regression guard for the ordering/pruning complexity. `prepareTree` used
-    // to call subtree-walking functions from inside sort comparators, making a
-    // build O(n·depth): 5x the budget cost 12x the time (95ms -> 1164ms). With
-    // the leaf-derived keys folded bottom-up and memoized it is ~linear. The
-    // 8x ceiling on a 5x workload is deliberately loose so a noisy machine
-    // doesn't fail the suite, while still catching a return to quadratic.
+    // The ordering/pruning complexity, timed. `prepareTree` used to call
+    // subtree-walking functions from inside sort comparators, making a build
+    // O(n·depth): 5x the budget cost 12x the time (95ms -> 1164ms). The promise
+    // itself is held by a deterministic test in layout.test.ts, which counts
+    // node reads and cannot be moved by a busy machine. This one keeps the
+    // printed number and only catches an order-of-magnitude return: on a
+    // two-CPU CI runner, with the other test files running alongside, the same
+    // linear build has measured anywhere from 3.5x to 8.1x.
     const tree = loadTree("vibrio-upgma-tree.nwk");
     const small = median(3, () => buildGraph(tree, () => false, 1000, "cladogram"));
     const large = median(3, () => buildGraph(tree, () => false, 5000, "cladogram"));
@@ -96,7 +98,7 @@ describe("layout pipeline characterisation", () => {
       `\n  5x workload cost ${ratio.toFixed(1)}x the time ` +
         `(${small.toFixed(1)}ms -> ${large.toFixed(1)}ms)\n`
     );
-    expect(ratio).toBeLessThan(8);
+    expect(ratio).toBeLessThan(20);
   });
 
   it("compares cladogram vs phylogram cost at the same budget", () => {
