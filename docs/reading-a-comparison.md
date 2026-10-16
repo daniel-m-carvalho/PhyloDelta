@@ -5,6 +5,15 @@ screen, see [Using the web app](web-app-guide.md).
 
 ![The comparison screen, annotated](images/comparison-annotated.png)
 
+1. **The score** of the comparison ([The score](#the-score-top-bar)).
+2. **How much is drawn**: leaves shown, of how many, and how many are folded into triangles ([The layout](#the-layout)).
+3. **The found leaf**, named above the panel that marks it ([Marks](#marks)).
+4. **The found leaf, marked** in magenta ([Marks](#marks)).
+5. **A collapsed clade**: a triangle standing for a group of leaves ([Shapes](#shapes)).
+6. **A leaf**, with its name ([Shapes](#shapes)).
+7. **The colour legend**: blue identical, yellow most diverged, red not in the other tree ([Colours](#colours)).
+8. **Isolate data**: what the bars beside the leaves are coloured by ([Isolate data bars](#isolate-data-bars)).
+
 ## The layout
 
 - **Two panels.** The left tree is drawn root on the left, leaves on the right. The right tree is
