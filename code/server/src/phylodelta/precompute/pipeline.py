@@ -464,6 +464,12 @@ def store_is_populated(store_dir: Path | None = None) -> bool:
     )
 
 
+#: What the demo catalogue is built with. Moved leaves are part of it so the
+#: demo shows the view (§46). A store built before gets it with
+#: `phylodelta compute-pairs --metric mast`, which leaves RF as it is.
+DEMO_METRICS = ["rf", "mast"]
+
+
 def build_all(if_empty: bool = False) -> int:
     """Everything, in dependency order. Comparisons need the trees ingested.
 
@@ -477,7 +483,7 @@ def build_all(if_empty: bool = False) -> int:
 
     for step, run in (
         ("trees", ingest_trees),
-        ("comparisons", compute_pairs),
+        ("comparisons", lambda: compute_pairs(metrics=DEMO_METRICS)),
         ("isolates", ingest_isolates_all),
     ):
         print(f"--- {step}")

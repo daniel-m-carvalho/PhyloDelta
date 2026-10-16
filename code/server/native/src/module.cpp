@@ -6,6 +6,7 @@
 
 #include "bp_tree.hpp"
 #include "correspondence.hpp"
+#include "mast.hpp"
 #include "newick.hpp"
 
 namespace py = pybind11;
@@ -78,6 +79,25 @@ py::tuple best_matches_py(
     return py::make_tuple(to_array(result.similarity), to_array(result.corresponds));
 }
 
+using I64 = py::array_t<int64_t, py::array::c_style | py::array::forcecast>;
+
+py::array_t<uint8_t> mast_py(I64 left_end, I64 right_end, I64 left_in_right,
+                             I64 right_in_left, I64 left_lo, I64 left_hi,
+                             I64 right_lo, I64 right_hi, I64 left_position) {
+    // Pointers taken with the GIL held; the arguments keep the arrays alive.
+    MastInput in{left_end.data(), right_end.data(), left_in_right.data(),
+                 right_in_left.data(), left_lo.data(), left_hi.data(),
+                 right_lo.data(), right_hi.data(), left_position.data(),
+                 static_cast<int64_t>(left_end.size()),
+                 static_cast<int64_t>(right_end.size())};
+    std::vector<uint8_t> kept;
+    {
+        py::gil_scoped_release unlocked;
+        kept = mast(in);
+    }
+    return to_array(kept);
+}
+
 }  // namespace
 
 PYBIND11_MODULE(phylodelta_native, m) {
@@ -100,6 +120,15 @@ PYBIND11_MODULE(phylodelta_native, m) {
           "win, so the result matches an exhaustive scan. Parallel across "
           "source clades; threads=0 uses one per hardware thread. The result "
           "does not depend on the thread count.");
+
+    m.def("mast", &mast_py,
+          py::arg("left_end"), py::arg("right_end"), py::arg("left_in_right"),
+          py::arg("right_in_left"), py::arg("left_lo"), py::arg("left_hi"),
+          py::arg("right_lo"), py::arg("right_hi"), py::arg("left_position"),
+          "Maximum agreement subtree of two rooted binary trees: which left "
+          "leaves (by left leaf order) it keeps, as 0/1. The same recurrence "
+          "and tie order as agreement_python, checked against it. A table of "
+          "one integer per pair of internal clades: quadratic memory.");
 
     py::class_<BpTree>(m, "BpTree")
         .def(py::init<const std::string&>())

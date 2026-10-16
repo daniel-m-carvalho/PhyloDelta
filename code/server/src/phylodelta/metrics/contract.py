@@ -59,6 +59,7 @@ __all__ = [
     "MetricResult",
     "MetricSide",
     "ScalarSpec",
+    "Limits",
     "validate_result",
 ]
 
@@ -259,6 +260,43 @@ class Reference:
 
 
 @dataclass(frozen=True, slots=True)
+class Limits:
+    """The largest input a metric will take on (§46).
+
+    A metric whose cost grows faster than the tree — MAST keeps a table over
+    every pair of clades — must decline a pair it cannot finish within the
+    machine's memory, by name, rather than run until the worker is killed.
+    Declared in the manifest so a deployment with more or less memory changes
+    a number, not code.
+    """
+
+    max_leaves: int | None = None
+
+    KNOWN = ("max_leaves",)
+
+    @staticmethod
+    def from_json(raw: object, metric: str) -> "Limits":
+        # Refused by name: a misspelt limit read as "no limit" would let a
+        # metric run on exactly the pair it was meant to decline.
+        if not isinstance(raw, dict):
+            raise ValueError(f"metric {metric!r}: 'limits' must be an object")
+        unknown = sorted(set(raw) - set(Limits.KNOWN))
+        if unknown:
+            raise ValueError(
+                f"metric {metric!r}: unknown limit(s) {unknown}; known: {list(Limits.KNOWN)}"
+            )
+        max_leaves = raw.get("max_leaves")
+        if max_leaves is not None and (
+            isinstance(max_leaves, bool) or not isinstance(max_leaves, int) or max_leaves < 1
+        ):
+            raise ValueError(
+                f"metric {metric!r}: limits.max_leaves must be a positive integer, "
+                f"not {max_leaves!r}"
+            )
+        return Limits(max_leaves=max_leaves)
+
+
+@dataclass(frozen=True, slots=True)
 class MetricManifest:
     """A parsed ``metric.json``."""
 
@@ -279,6 +317,8 @@ class MetricManifest:
     outputs: MetricOutputs = field(default_factory=MetricOutputs)
     #: Where its implementation comes from, shown where the metric is offered (§42).
     reference: Reference | None = None
+    #: The largest pair it will take on; above it the pair is declined by name.
+    limits: Limits = field(default_factory=Limits)
     #: The plugin's own directory. Needed so a subprocess command can be
     #: resolved relative to where it lives rather than to the caller's cwd.
     directory: Path | None = None
@@ -325,6 +365,7 @@ class MetricManifest:
             reference=(
                 Reference.from_json(raw["reference"], raw["name"]) if "reference" in raw else None
             ),
+            limits=Limits.from_json(raw.get("limits", {}), raw["name"]),
             directory=directory,
             raw=dict(raw),
         )
