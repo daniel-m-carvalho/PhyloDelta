@@ -4874,6 +4874,75 @@ listed under Corrections. Earlier sections that name `lib_demo` describe the pro
 
 ---
 
+## 46. Moved leaves: the maximum agreement subtree, computed here
+
+**Decision.** A metric `mast` reports the **maximum agreement subtree**: the largest set of leaves
+both trees arrange identically. Every other shared leaf has *moved*. It is PhyloDelta's own
+implementation, in C++ with a Python reference (`metrics/plugins/mast`, `native/src/mast.hpp`),
+following Steel & Warnow (1993). Per node it stores **how many of its leaves moved** (`moved`,
+float32; a leaf 1 or 0, NaN outside the compared pair), which is what the web view colours and
+what lets a collapsed clade say how many of its leaves moved. It declines pairs above
+`limits.max_leaves` (40,000) by name, and the demo catalogue is built with it.
+
+**Why it exists.** The supervisor's R script (`examples/04_trees_spr_metrics_and_trace.R`) computes
+a "trace" of differing leaves with `phangorn::mast`. Every other metric here answers *how
+different*; this one answers *which leaves*, which is the list a biologist acts on.
+
+**Alternatives considered.**
+
+* **Run phangorn in R, as the script does.** Measured on the ladder subsamples of the real pair,
+  `mast` alone: 0.8 s / 323 MB at 1,000 leaves, 5.1 s / 565 MB at 2,500, 25 s / 1.4 GB at 5,000,
+  188 s / 4.9 GB at 10,000 — and at the demo pair's 17,645 it **crashed after 47 minutes** at 8 GB
+  with `subscript out of bounds` in `mast.fit`. It keeps a vector of labels for every pair of
+  nodes. Rejected as the implementation; kept as the test oracle (`tools/mast_phangorn.R`).
+* **Also an SPR distance** (`phangorn::SPR.dist`, which the script computes beside it). Not needed
+  for MAST — `mast` and `mast.fit` never call it; in the script its result only fills a column —
+  and as a distance it adds a fourth number beside RF, triplet and RF-TreeDiff. Exact SPR is
+  NP-hard; phangorn's estimate took 150 s / 2.4 GB at 2,500 leaves, and rspr's fast estimate is a
+  3-approximation. MAST gives an exact bound for free instead: **SPR ≤ moved leaves**, since each
+  moved leaf can be put back with one prune-and-regraft move. Left out until the supervisor asks
+  for the number itself; nothing in MAST would change.
+
+**The recurrence.** For internal `u` (children `u1, u2`) and internal `v` (`v1, v2`):
+`M[u,v] = max(M[u1,v1]+M[u2,v2], M[u1,v2]+M[u2,v1], M[u,v1], M[u,v2], M[u1,v], M[u2,v])`. A pair
+involving a leaf needs no cell — a leaf agrees with a clade iff the clade contains it, an O(1)
+interval test in leaf order — so the table is internal × internal: `(n−1)²` cells of two bytes.
+The kept set comes from one walk back from the roots taking the first term that reaches each
+cell's value. Trees must be rooted binary, which reconciliation already guarantees
+(`trees/normalise.py`); the metric checks again and refuses a polytomy by name.
+
+**Evidence.**
+
+| leaves | MAST (ours = phangorn) | time | table |
+|---|---|---|---|
+| 1,000 | 208 | 0.02 s | 2 MB |
+| 2,500 | 467 | 0.12 s | 12 MB |
+| 5,000 | 904 | 0.48 s | 48 MB |
+| 10,000 | 1,721 | 2.1 s | 191 MB |
+| 17,645 (demo) | 2,909 (phangorn crashed) | 7.0 s | 594 MB |
+| 35,290 | 5,818 | 28 s | 2.4 GB |
+
+Sizes equal phangorn's on every ladder rung it can finish and on random pairs in the suite; the
+native and Python implementations keep exactly the same leaves on 150 random pairs; removing one
+term of the recurrence fails the tests. The limit is set where the table is ~3 GB; a machine with
+more or less memory changes `limits.max_leaves` in `metric.json`, which every metric now may
+declare and the runner enforces before the metric starts.
+
+**What the number means on the demo pair.** Only 2,909 of 17,645 leaves (16%) are in the agreement
+subtree: MAST asks for one subtree both trees agree on *entirely*, and NJ and UPGMA disagree
+widely. It is strict by design; the per-clade gradient (§9.1) remains the graded view.
+
+**Not unique.** Where several agreement sets are equally large, the first term wins, so the moved
+set is deterministic — and can differ from phangorn's choice, never in size. On
+`((((A,B),C),D),(E,F))` against `((((A,B),D),C),(E,F))`, removing C or D are equally good; both
+tools say C.
+
+**A bug in the supervisor's script.** `mast()` defaults to `tree = TRUE` and returns a tree, so
+`setdiff(t1$tip.label, mast(t1, t2))` reports **every** leaf as moved (6 of 6 on the example above;
+kept as a test). The oracle calls `mast(..., tree = FALSE, rooted = TRUE)`.
+
+---
+
 ## References and provenance
 
 Where every algorithm and every implementation came from. Bibliographic details are taken from the

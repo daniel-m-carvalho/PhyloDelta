@@ -1,0 +1,32 @@
+{
+  "name": "mast",
+  "title": "Moved leaves (maximum agreement subtree)",
+  "version": "1",
+  "kind": "python",
+  "entrypoint": "phylodelta.metrics.plugins.mast.mast:compute",
+  "description": "The maximum agreement subtree (MAST) is the largest set of leaves that both trees arrange identically; every other leaf has moved. Where several sets are equally large, one is chosen by a fixed rule, so which leaves are called moved can differ from another tool's choice while their number cannot. The number of moved leaves is also an upper bound on the SPR distance: each moved leaf can be put back with one prune-and-regraft move. Computed for rooted binary trees by a table over every pair of clades, so its memory grows with the square of the tree and pairs above limits.max_leaves are declined.",
+  "reference": {"citation": "PhyloDelta's own implementation, following the method of Steel, M.; Warnow, T. Kaikoura tree theorems: Computing the maximum agreement subtree. Information Processing Letters 1993, 48, 77-82.", "doi": "10.1016/0020-0190(93)90181-8"},
+  "limits": {"max_leaves": 40000},
+  "capabilities": {
+    "per_clade": true,
+    "symmetric": true,
+    "weighted": false,
+    "requires_shared_leaf_set": true
+  },
+  "outputs": {
+    "summary": [
+      {"key": "mast_size", "label": "Leaves in the agreement subtree",
+       "description": "Leaves both trees arrange identically: the size of the maximum agreement subtree."},
+      {"key": "moved", "label": "Moved leaves",
+       "description": "Shared leaves outside the agreement subtree. Also an upper bound on the SPR distance."},
+      {"key": "moved_fraction", "label": "Fraction of leaves moved",
+       "description": "Moved leaves divided by the leaves compared."},
+      {"key": "n_leaves", "label": "Leaves compared"}
+    ],
+    "columns": [
+      {"name": "moved", "dtype": "float32", "semantics": "count",
+       "label": "Moved leaves in this clade", "render": "overlay",
+       "description": "How many of this clade's leaves are outside the agreement subtree: 1 or 0 at a leaf. Empty (NaN) where the node is not part of the compared pair, such as a leaf only one tree has."}
+    ]
+  }
+}

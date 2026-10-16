@@ -50,6 +50,13 @@ docker compose run --rm phylodelta-service phylodelta compute-pairs --metric rf 
 docker compose run --rm phylodelta-service phylodelta ingest-isolates
 ```
 
+**A store built before moved leaves existed** (§46) has RF but not `mast`. Add it once — it leaves
+everything else as it is, and takes seconds per pair:
+
+```sh
+docker compose run --rm phylodelta-service phylodelta compute-pairs --metric mast
+```
+
 ## Ports
 
 `3001` (the app) and `8001` (the API) on the host; `80` and `8000` inside.

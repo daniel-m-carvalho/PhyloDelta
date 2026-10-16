@@ -183,11 +183,34 @@ def _subprocess_runner(manifest: MetricManifest) -> Runner:
     return run
 
 
+def _within_limits(manifest: MetricManifest, run: Runner) -> Runner:
+    """Decline a pair larger than the metric declares it can take (§46).
+
+    Checked here, before the metric starts, rather than inside each metric: a
+    limit exists because running is what exhausts the machine, so the check
+    must not depend on the metric remembering to make it.
+    """
+    limit = manifest.limits.max_leaves
+    if limit is None:
+        return run
+
+    def checked(prepared: PreparedPair) -> MetricResult:
+        leaves = prepared.left.n_leaves
+        if leaves > limit:
+            raise MetricFailed(
+                f"declined: {leaves:,} shared leaves, above this metric's limit of "
+                f"{limit:,} (limits.max_leaves in its metric.json)"
+            )
+        return run(prepared)
+
+    return checked
+
+
 def make_runner(manifest: MetricManifest) -> Runner:
     if manifest.kind == "python":
-        return _python_runner(manifest)
+        return _within_limits(manifest, _python_runner(manifest))
     if manifest.kind == "subprocess":
-        return _subprocess_runner(manifest)
+        return _within_limits(manifest, _subprocess_runner(manifest))
     raise MetricFailed(f"metric {manifest.name!r} has unknown kind {manifest.kind!r}")
 
 
