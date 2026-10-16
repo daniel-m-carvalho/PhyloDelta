@@ -4858,6 +4858,22 @@ Checked in a browser in both layouts and both scales. The layout and mark checks
 
 ---
 
+## 45. The static-file demo is retired, and the guides move to `docs/`
+
+**Decision.** `code/lib_demo`, the original demo that loaded whole trees from static files, is
+removed (2026-10-15). The design record moves to `docs/DECISIONS.md`, beside the user and
+integration guides written for handing the project over to PHYLOViZ.
+
+**Rationale.** `lib_demo` existed to prove the library works without a server (§28). The web app
+now proves the same boundary every day, consuming the library by package name with data from an API
+it fetches itself, so the library still never fetches. Keeping a second, frozen consumer cost a
+workspace member, a Docker build line, a CI step and a set of probes that could no longer run
+(`bench/harness/real_tree_probe.mjs`, `probe2.mjs`, `smoke_demo.mjs` drove it; they are removed with
+it). Its measurements stay recorded where they were made, including the comparison against phylo.io
+listed under Corrections. Earlier sections that name `lib_demo` describe the project as it was then.
+
+---
+
 ## References and provenance
 
 Where every algorithm and every implementation came from. Bibliographic details are taken from the

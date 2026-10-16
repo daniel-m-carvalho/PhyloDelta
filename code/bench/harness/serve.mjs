@@ -43,9 +43,8 @@ const ROOTS = {
 // index.html references /assets/... absolutely, so a subpath would 404 it.
 // The benchmark measures the shipping build, not the dev server.
 //
-// (This was `lib_demo/dist` while that was the only frontend. lib_demo is
-// frozen and loads whole trees from static files — comparing *it* against
-// phylo.io is the mistake recorded under Corrections.)
+// (This was the static-file demo's build while that was the only frontend.
+// Comparing *it* against phylo.io is the mistake recorded under Corrections.)
 const WEB = join(BENCH, "..", "web", "dist");
 
 //: Where /api/v1/... goes. The frontend fetches it relatively, so the

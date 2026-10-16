@@ -1,44 +1,72 @@
-# Phylogenetic tree visualisation
+# PhyloDelta
 
 [![CI](https://github.com/daniel-m-carvalho/PhyloDelta/actions/workflows/ci.yml/badge.svg)](https://github.com/daniel-m-carvalho/PhyloDelta/actions/workflows/ci.yml)
 
-A browser library for exploring large phylogenetic trees side by side, with a
-demo application that uses it. Built on [Sigma.js](https://www.sigmajs.org/) and
-[graphology](https://graphology.github.io/); part of a master's thesis.
+**Compare two large phylogenetic trees side by side in the browser.** That includes trees with
+hundreds of thousands of leaves, which tools that load whole trees (such as phylo.io) cannot open.
 
-The demo shows two trees of the same *Vibrio* isolates — UPGMA and
-Neighbour-Joining — with expand/collapse navigation, per-leaf isolate bar charts,
-metadata filtering, and tree-difference colouring.
+PhyloDelta never sends a whole tree to the browser. The server stores each tree and its comparison
+once, and for every view sends only a summary sized to the screen: the largest groups of leaves
+folded into triangles, each part coloured by how much the two trees agree. Opening a group asks for
+the next level of detail. Part of a master's thesis; to be integrated into PHYLOViZ.
 
-## Try it
+## Documentation
+
+| | |
+|---|---|
+| **[Using the web app](docs/web-app-guide.md)** | Upload trees, open a comparison, navigate, search, isolate data, export. With a video for each task. |
+| **[Reading a comparison](docs/reading-a-comparison.md)** | What every colour, shape and mark on the comparison screen means. |
+| **[Integrating the API](docs/api-integration.md)** | For developers: authentication, upload → poll → view, every endpoint with real examples. |
+| **[Design record](docs/DECISIONS.md)** | Why it is built this way: each decision with the alternatives weighed and the measurements that settled it. |
+
+Component references: the [server](code/server/README.md), the
+[rendering library](code/lib/README.md) and the [deployment](deploy/README.md).
+
+## Run it
+
+**With Docker** (the simplest), from the repository root:
 
 ```bash
-cd code
-npm install
-npm start
+docker compose up -d --build
 ```
 
-Then open <http://localhost:5173/>. Needs Node 20.19+ / 22.12+ / 23+.
+Then open <http://localhost:3001>. The API is on <http://localhost:8001> (reference at
+[`/docs`](http://localhost:8001/docs)). On first start the demo comparisons (*Vibrio* and
+*Clostridium*) are built automatically, which takes a few minutes.
 
-**→ [code/lib_demo/RUNNING.md](code/lib_demo/RUNNING.md) has the full guide**:
-requirements, what to look at once it opens, how to run the tests, and
-troubleshooting.
+**For development**, in three terminals (needs Python 3.12 with [uv](https://docs.astral.sh/uv/),
+and Node 20.19+ or 22.12+):
 
-## The design record
+```bash
+cd code/server && uv sync && uv run phylodelta build-all             # once: builds the demo data
+cd code/server && uv run uvicorn phylodelta.api.app:app --reload     # API on :8000
+cd code/server && uv run phylodelta worker                           # computes uploaded comparisons
+cd code && npm install && npm start                                  # web app on :5173
+```
 
-**[DECISIONS.md](DECISIONS.md)** holds the reasoning for the whole project — library, backend and
-frontend — with the alternatives weighed against each decision and the measurement that settled it,
-including the ones that were tried and withdrawn.
-
-## Where things are
+## Repository
 
 | Path | |
 |---|---|
-| `code/` | npm workspace root — **install from here** |
-| `code/lib/` | the library, published as `phylo-tree-viewer` |
-| `code/lib/README.md` | its reference documentation |
-| `code/lib_demo/` | the demo application that consumes it |
-| `datasets/` | Newick trees and EnteroBase isolate exports, shared by the repository and served by the demo |
+| `code/server/` | The API and the worker: FastAPI, Python 3.12. Trees in a columnar store, comparison metrics as plugins, an optional C++ extension for speed. |
+| `code/web/` | The web app: React + Vite. |
+| `code/lib/` | `phylo-tree-viewer`, the rendering library the web app is built on (Sigma.js, WebGL). Backend-agnostic: it never fetches. |
+| `code/bench/` | The benchmark harness and its results (`results/TABLES.md`). |
+| `datasets/` | The demo trees (Newick) and isolate data (EnteroBase exports). |
+| `deploy/` | Notes for running it on a server. |
+| `docs/` | The guides above and the design record. |
 
-`npm run check` — from `code/` — type-checks and runs the test suite in both
-packages (347 tests: 306 library, 41 demo).
+`code/` is an npm workspace: install once there for the library, the web app and the benchmarks.
+
+## Tests
+
+```bash
+cd code/server && uv run pytest -q    # server
+cd code && npm test                   # library and web app
+```
+
+CI runs both, plus the Docker build, on every pull request.
+
+## License
+
+[MIT](LICENSE).

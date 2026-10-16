@@ -122,8 +122,7 @@ services:
         condition: service_healthy
 
   # The thesis frontend. Its nginx proxies /api/v1/ to phylodelta-service, so
-  # this one port is all a browser needs. lib_demo is deliberately not
-  # deployed: it is the frozen static-file proof, not the application.
+  # this one port is all a browser needs.
   phylodelta-web:
     build:
       # The workspace root, not code/web: the app consumes the library as a

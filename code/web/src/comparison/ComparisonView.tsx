@@ -288,6 +288,16 @@ function toViewport(container: HTMLElement, x: number, y: number) {
  * writes it: a global whose declaration is somewhere else is a global nobody
  * knows the owner of.
  */
+/** A node as drawn: what it is, and where it is in the page, in CSS pixels. */
+interface DrawnProbe {
+  storedId: number | null;
+  label: string;
+  leaf: boolean;
+  collapsed: boolean;
+  x: number;
+  y: number;
+}
+
 /** What a panel's highlight is on: the library's graph id, and the stored node behind it. */
 interface MarkProbe {
   graphId: string | null;
@@ -300,6 +310,7 @@ declare global {
       state: () => [SideState, SideState];
       actions: () => [SideActions, SideActions];
       marks: () => [MarkProbe, MarkProbe];
+      drawn: (side: 0 | 1) => DrawnProbe[];
     };
   }
 }
@@ -494,6 +505,30 @@ export function ComparisonView({
           const storedId = drawn?.source.metadata?.storedId;
           return { graphId, storedId: typeof storedId === "number" ? storedId : null };
         }) as [MarkProbe, MarkProbe],
+      // Every node on screen with its page position, so a script can point at
+      // one the way a user would — what record_docs_videos.mjs right-clicks.
+      drawn: (side) => {
+        const panel = handle.current?.panels[side];
+        if (!panel) return [];
+        const { viewer } = panel;
+        const graph = viewer.getGraph();
+        const renderer = viewer.getRenderer();
+        if (!graph || !renderer) return [];
+        const box = viewer.getContainer().getBoundingClientRect();
+        return [...viewer.getNodeMap()].flatMap(([id, node]) => {
+          if (!graph.hasNode(id)) return [];
+          const at = renderer.graphToViewport(graph.getNodeAttributes(id) as { x: number; y: number });
+          const storedId = node.source.metadata?.storedId;
+          return [{
+            storedId: typeof storedId === "number" ? storedId : null,
+            label: node.label,
+            leaf: node.isLeaf,
+            collapsed: node.isCollapsed,
+            x: box.left + at.x,
+            y: box.top + at.y,
+          }];
+        });
+      },
     };
     return () => {
       delete window.__phylodelta;
