@@ -268,7 +268,7 @@ export function App() {
 
       {removing ? (
         <Notice
-          title={`Remove ${removing.left} vs ${removing.right}?`}
+          title={`Remove ${pairName(removing, datasets)}?`}
           detail={
             "This deletes the comparison, both trees, and any isolate data only it " +
             "was using. Trees another comparison still needs are kept. It cannot be undone."
@@ -341,8 +341,8 @@ export function App() {
                     <button
                       type="button"
                       className="pair-remove"
-                      title={`Remove ${pair.left} vs ${pair.right}`}
-                      aria-label={`Remove ${pair.left} vs ${pair.right}`}
+                      title={`Remove ${pairName(pair, datasets)}`}
+                      aria-label={`Remove ${pairName(pair, datasets)}`}
                       onClick={() => setRemoving(pair)}
                     >
                       ×
