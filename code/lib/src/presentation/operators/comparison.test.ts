@@ -221,6 +221,26 @@ describe("ComparisonOperator — membership mode", () => {
   });
 });
 
+describe("ComparisonOperator — legend placement", () => {
+  const legendOf = (container: HTMLElement) =>
+    [...container.querySelectorAll("div")].find((el) => /Identical/.test(el.textContent ?? "")) as HTMLDivElement;
+
+  it("sits on the outer side: left normally, right in a mirrored panel", () => {
+    const plain = makeHarness(namedTree());
+    new ComparisonOperator({ enabled: true, legendLabels: ["Identical", "Diverged"] }).attach(plain.viewer);
+    plain.render();
+    expect(legendOf(plain.viewer.getContainer()).style.left).toBe("10px");
+
+    const mirrored = makeHarness(namedTree());
+    vi.spyOn(mirrored.viewer, "isReflected").mockReturnValue(true);
+    new ComparisonOperator({ enabled: true, legendLabels: ["Identical", "Diverged"] }).attach(mirrored.viewer);
+    mirrored.render();
+    const legend = legendOf(mirrored.viewer.getContainer());
+    expect(legend.style.right).toBe("10px");
+    expect(legend.style.left).toBe("auto");
+  });
+});
+
 describe("ComparisonOperator — categories mode", () => {
   const KEPT = { color: "#0000ff", label: "Kept" };
   const MOVED = { color: "#ffff00", label: "Moved" };
