@@ -9,6 +9,10 @@
  * trees are the same organism and share a table; two when they are not. That
  * choice is the user's, so it is a visible switch rather than something
  * inferred from how many files they happened to drop.
+ *
+ * Each table names the column whose values are the tree's leaf labels (§47),
+ * chosen from its header, which is read here; the join itself is the
+ * server's. `ST` is pre-selected when the header has it.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -16,9 +20,12 @@ import { api, ApiError } from "../api/client";
 import type { ComparisonStatus, MetricSummary } from "../api/types";
 import { MetricReferenceLine } from "./MetricReferences";
 import { clearDraft, loadFields, loadFiles, saveFields, saveFile, type Slot } from "./draft";
+import { describeJoins } from "./isolateReport";
+import { initialKey, readTableHeader, type TableHeader } from "./tableHeader";
 
 const TREE_HINT = "Newick — .nwk, .newick, .tree";
-const TABLE_HINT = "Tab-separated isolate data — .tsv";
+const TABLE_HINT = "Isolate data, tab- or comma-separated — .tsv, .csv";
+const TABLE_ACCEPT = ".tsv,.tab,.csv,.txt";
 
 /** The moved-leaves metric, offered as a checkbox beside the chosen distance (§46). */
 const MOVED_METRIC = "mast";
@@ -32,6 +39,8 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
   const [name, setName] = useState(draft.name);
   const [leftSpecies, setLeftSpecies] = useState(draft.leftSpecies);
   const [rightSpecies, setRightSpecies] = useState(draft.rightSpecies);
+  const [leftKey, setLeftKey] = useState(draft.leftKey);
+  const [rightKey, setRightKey] = useState(draft.rightKey);
 
   // Files are asynchronous to read back. A slot the user has filled in the
   // meantime keeps what they chose; the stored one only fills empty slots.
@@ -96,15 +105,30 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    saveFields({ name, leftSpecies, rightSpecies, sharedTyping, metric: chosen });
-  }, [name, leftSpecies, rightSpecies, sharedTyping, chosen]);
+    saveFields({ name, leftSpecies, rightSpecies, sharedTyping, metric: chosen, leftKey, rightKey });
+  }, [name, leftSpecies, rightSpecies, sharedTyping, chosen, leftKey, rightKey]);
 
   const put = useCallback((slot: Slot, file: File | undefined) => {
     setFiles((current) => ({ ...current, [slot]: file }));
     void saveFile(slot, file);
   }, []);
 
-  const ready = Boolean(files.left_tree && files.right_tree);
+  const leftHeader = useTableHeader(files.left_isolates);
+  const rightHeader = useTableHeader(sharedTyping ? undefined : files.right_isolates);
+  // When a header arrives, keep the remembered column if it has it, else ST,
+  // else nothing — and then a choice is required. Keyed on the header object,
+  // which changes only when a file is read, so this cannot feed itself.
+  useEffect(() => {
+    if (leftHeader.header) setLeftKey((key) => initialKey(leftHeader.header!.columns, key));
+  }, [leftHeader.header]);
+  useEffect(() => {
+    if (rightHeader.header) setRightKey((key) => initialKey(rightHeader.header!.columns, key));
+  }, [rightHeader.header]);
+
+  const tablesReady =
+    tableReady(files.left_isolates, leftHeader, leftKey) &&
+    (sharedTyping || tableReady(files.right_isolates, rightHeader, rightKey));
+  const ready = Boolean(files.left_tree && files.right_tree) && tablesReady;
 
   async function submit() {
     if (!ready || busy) return;
@@ -115,9 +139,15 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
     const form = new FormData();
     form.append("left_tree", files.left_tree!);
     form.append("right_tree", files.right_tree!);
-    if (files.left_isolates) form.append("left_isolates", files.left_isolates);
+    if (files.left_isolates) {
+      form.append("left_isolates", files.left_isolates);
+      form.append("left_isolates_key", leftKey);
+      // Said, not inferred: a left table alone is the left tree's only (§47).
+      if (sharedTyping) form.append("isolates_shared", "true");
+    }
     if (!sharedTyping && files.right_isolates) {
       form.append("right_isolates", files.right_isolates);
+      form.append("right_isolates_key", rightKey);
     }
     if (name.trim()) form.append("name", name.trim());
     if (leftSpecies.trim()) form.append("left_species", leftSpecies.trim());
@@ -184,21 +214,27 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
         </label>
 
         <div className="drop-row">
-          <DropZone
-            label={sharedTyping ? "Isolate data" : "Left isolate data"}
-            hint={TABLE_HINT}
-            accept=".tsv,.tab,.txt"
-            file={files.left_isolates}
-            onFile={(f) => put("left_isolates", f)}
-          />
-          {sharedTyping ? null : (
+          <div className="table-slot">
             <DropZone
-              label="Right isolate data"
+              label={sharedTyping ? "Isolate data" : "Left isolate data"}
               hint={TABLE_HINT}
-              accept=".tsv,.tab,.txt"
-              file={files.right_isolates}
-              onFile={(f) => put("right_isolates", f)}
+              accept={TABLE_ACCEPT}
+              file={files.left_isolates}
+              onFile={(f) => put("left_isolates", f)}
             />
+            <KeyColumn read={leftHeader} value={leftKey} onChange={setLeftKey} />
+          </div>
+          {sharedTyping ? null : (
+            <div className="table-slot">
+              <DropZone
+                label="Right isolate data"
+                hint={TABLE_HINT}
+                accept={TABLE_ACCEPT}
+                file={files.right_isolates}
+                onFile={(f) => put("right_isolates", f)}
+              />
+              <KeyColumn read={rightHeader} value={rightKey} onChange={setRightKey} />
+            </div>
           )}
         </div>
       </fieldset>
@@ -309,8 +345,108 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
               failedMetrics.map(([name, why]) => `${name} (${why})`).join("; ")}
         </p>
       ) : null}
+      {/* How each table met its tree (§47): what matched no leaf, and a
+          table not used at all because nothing did. */}
+      {status?.status === "ready"
+        ? describeJoins(status.isolates).map((line) => (
+            <p key={line} className={`upload-status ${line.includes("not used") ? "partial" : ""}`}>
+              {line}
+            </p>
+          ))
+        : null}
       {error ? <p className="upload-status failed">{error}</p> : null}
     </section>
+  );
+}
+
+/** A table's header as read in the browser: nothing yet, read, or refused. */
+interface HeaderRead {
+  file: File | undefined;
+  header?: TableHeader;
+  error?: string;
+}
+
+/**
+ * Read a table's header whenever its file changes.
+ *
+ * Depends on the `File` alone — an object that changes only when a file is
+ * dropped or restored — so a re-render cannot start another read (the shape
+ * of bug `useTypingData` has had three times).
+ */
+function useTableHeader(file: File | undefined): HeaderRead {
+  const [read, setRead] = useState<HeaderRead>({ file: undefined });
+  useEffect(() => {
+    if (!file) {
+      setRead({ file: undefined });
+      return;
+    }
+    let live = true;
+    setRead({ file });
+    readTableHeader(file)
+      .then((header) => live && setRead({ file, header }))
+      .catch((failed: unknown) =>
+        live && setRead({ file, error: failed instanceof Error ? failed.message : String(failed) }),
+      );
+    return () => {
+      live = false;
+    };
+  }, [file]);
+  // A read still in flight for the previous file is not this file's answer.
+  return read.file === file ? read : { file };
+}
+
+/** No table, or a table whose header was read and whose key it has. */
+export function tableReady(file: File | undefined, read: HeaderRead, key: string): boolean {
+  if (!file) return true;
+  return Boolean(read.header && key && read.header.columns.includes(key));
+}
+
+/**
+ * The key-column choice under a table's drop zone.
+ *
+ * Disabled until a file has been read. With no `ST` in the header nothing is
+ * pre-selected: taking the first column on the user's behalf would join on a
+ * guess, and a wrong guess looks like data rather than like a mistake.
+ */
+export function KeyColumn({
+  read,
+  value,
+  onChange,
+}: {
+  read: HeaderRead;
+  value: string;
+  onChange: (key: string) => void;
+}) {
+  const columns = read.header?.columns ?? [];
+  return (
+    <label className="key-column">
+      Column with the leaf names
+      <select
+        value={columns.includes(value) ? value : ""}
+        disabled={!read.header}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        <option value="" disabled>
+          {read.file ? (read.header ? "Choose a column…" : read.error ? "—" : "Reading…") : "Choose a file first"}
+        </option>
+        {columns.map((column) => (
+          <option key={column} value={column}>
+            {column}
+          </option>
+        ))}
+      </select>
+      {read.error ? (
+        <span className="key-column-note failed">{read.error}</span>
+      ) : read.header && !columns.includes(value) ? (
+        <span className="key-column-note">
+          Choose the column whose values are the tree's leaf labels.
+        </span>
+      ) : read.header ? (
+        <span className="key-column-note">
+          {read.header.format.toUpperCase()}, {columns.length} columns.
+        </span>
+      ) : null}
+    </label>
   );
 }
 

@@ -192,6 +192,12 @@ def test_identifiers_and_the_join_key_are_not_facets(vibrio):
         assert included in names
 
 
+def test_the_demo_tables_are_still_keyed_by_st(isolate_store):
+    """The key became a choice at upload (§47); the catalogue's stays ST."""
+    for species in ("vibrio", "clostridium"):
+        assert read_isolates(isolate_store / species).meta.key_column == "ST"
+
+
 def test_constant_and_identifier_like_columns_are_dropped(vibrio):
     names = {f.name for f in vibrio.meta.facets}
     assert "Differences" not in names, "one distinct value: cannot divide anything"

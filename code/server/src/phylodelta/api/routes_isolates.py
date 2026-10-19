@@ -43,6 +43,7 @@ def isolate_keys(
         species=reader.meta.species,
         n_isolates=reader.meta.n_rows,
         n_sequence_types=reader.meta.n_sequence_types,
+        key_column=reader.meta.key_column,
         source=reader.meta.source,
         facets=[
             FacetSummary(

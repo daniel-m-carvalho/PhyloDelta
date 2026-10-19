@@ -153,6 +153,13 @@ class Comparison(Base):
     #: argument that kept the job state on this row.
     metric_errors: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    #: How each uploaded isolate table met its tree, as JSON
+    #: ``{"left": {...}, "right": {...}}`` -- ``JoinReport.as_json`` (§47).
+    #: Null with no table. Beside ``metric_errors`` for the same reason: a
+    #: table that matched nothing does not fail the comparison, so this is
+    #: where saying so goes.
+    isolate_report: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     store_path: Mapped[str] = mapped_column(String(512), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     finished_at: Mapped[datetime | None] = mapped_column(

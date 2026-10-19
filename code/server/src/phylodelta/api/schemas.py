@@ -519,7 +519,13 @@ class IsolateKeys(BaseModel):
     species: str
     n_isolates: int
     n_sequence_types: int = Field(
-        description="Distinct STs with at least one isolate. The join key to tree leaves."
+        description=(
+            "Distinct values of the key column with at least one isolate. "
+            "The join to tree leaves."
+        )
+    )
+    key_column: str = Field(
+        "ST", description="The column whose values name tree leaves (§47)."
     )
     source: str
     facets: list[FacetSummary]
@@ -602,6 +608,24 @@ class UploadAccepted(BaseModel):
     )
 
 
+class IsolateJoinReport(BaseModel):
+    """How one uploaded isolate table met its tree (§47). Exact matching after
+    trimming, so a near miss is reported here rather than joined on a guess."""
+
+    key_column: str = Field(description="The column whose values name leaves.")
+    rows: int = 0
+    rows_unmatched: int = Field(0, description="Rows whose key names no leaf.")
+    rows_without_key: int = Field(0, description="Rows whose key cell is blank.")
+    unmatched_examples: list[str] = Field(
+        default_factory=list, description="Up to ten unmatched keys, sorted."
+    )
+    leaves: int = 0
+    leaves_without_rows: int = Field(0, description="Leaves no row names.")
+    error: str | None = Field(
+        None, description="Why the table was not used. Null when it was."
+    )
+
+
 class ComparisonStatusResponse(BaseModel):
     """Where an uploaded comparison has got to.
 
@@ -638,6 +662,15 @@ class ComparisonStatusResponse(BaseModel):
             "asked for it."
         ),
         examples=[{"triplet": "metric 'triplet' produced no match for 'triplet'"}],
+    )
+    isolates: dict[str, IsolateJoinReport] = Field(
+        default_factory=dict,
+        description=(
+            "How each uploaded isolate table met its tree, keyed `left` and "
+            "`right`; a side without a table is absent. Empty until ready. A "
+            "table whose key named no leaf is reported with `error` and not "
+            "used, and the comparison is still ready (§47)."
+        ),
     )
     created_at: str = Field(description="ISO 8601, UTC.")
     finished_at: str | None = Field(

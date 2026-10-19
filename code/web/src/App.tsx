@@ -14,6 +14,7 @@ import { Notice } from "./ui/Notice";
 import { useUrlState, type ViewOptions } from "./useUrlState";
 import { COLOR_TARGETS } from "./comparison/colorTarget";
 import type {
+  ComparisonStatus,
   ComparisonSummary,
   DatasetsResponse,
   PairSummary,
@@ -21,6 +22,7 @@ import type {
 } from "./api/types";
 import { hasMovedLeaves, headline, presentation, viewMetric } from "./comparison/metric";
 import { pairName, treeName } from "./names";
+import { describeJoins, unusedTables } from "./upload/isolateReport";
 
 export function App() {
   const [me, setMe] = useState<WhoAmI | null>(null);
@@ -55,6 +57,8 @@ export function App() {
   const [movedSummary, setMovedSummary] = useState<ComparisonSummary | null>(null);
   /** Why moved leaves cannot be shown for this comparison, when they cannot. */
   const [movedMissing, setMovedMissing] = useState<string | null>(null);
+  /** How each uploaded isolate table met its tree, from /status (§47). */
+  const [isolateJoins, setIsolateJoins] = useState<ComparisonStatus["isolates"]>(undefined);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -120,24 +124,38 @@ export function App() {
   // Moved leaves: their totals if computed, or why not. The reason is the
   // server's own, from /status, so "declined: above the limit" reaches the
   // person looking rather than one fewer option appearing with no word.
+  //
+  // The same /status says how each uploaded isolate table met its tree
+  // (§47), so it is asked on every opening now, not only when moved leaves
+  // are missing: an upload switches straight to the comparison, and this is
+  // where a table joined on the wrong column can say so.
   useEffect(() => {
     setMovedSummary(null);
     setMovedMissing(null);
+    setIsolateJoins(undefined);
     if (!chosen || chosen.status !== "ready") return;
-    if (hasMovedLeaves(chosen)) {
-      api.comparison(chosen.id, "mast").then(setMovedSummary).catch(() => setMovedSummary(null));
-      return;
-    }
+    const moved = hasMovedLeaves(chosen);
     const notComputed = "Not computed for this comparison";
-    setMovedMissing(notComputed);
+    if (moved) {
+      api.comparison(chosen.id, "mast").then(setMovedSummary).catch(() => setMovedSummary(null));
+    } else {
+      setMovedMissing(notComputed);
+    }
+    let live = true;
     api
       .status(chosen.id)
       .then((status) => {
+        if (!live) return;
+        setIsolateJoins(status.isolates);
+        if (moved) return;
         const reason = status.metrics_failed?.mast;
         setMovedMissing(reason ? `Not available: ${reason}` : notComputed);
       })
       // The catalogue's pairs have no upload record to ask; the plain reason stands.
       .catch(() => undefined);
+    return () => {
+      live = false;
+    };
   }, [chosen]);
 
   const top = summary ? headline(summary) : null;
@@ -216,7 +234,7 @@ export function App() {
                 label: "Isolate data",
                 checked: options.typing,
                 heading: "Show",
-                note: "A bar of isolates on each leaf",
+                note: describeJoins(isolateJoins).join("\n") || "A bar of isolates on each leaf",
               },
               {
                 key: "clades",
@@ -344,6 +362,14 @@ export function App() {
       {chosen ? (
         <>
           {chosen.caution ? <p className="caution">{chosen.caution}</p> : null}
+          {/* A table that matched no leaf was not used (§47). Said above the
+              trees, not only in a menu: otherwise its side simply has no bars,
+              which looks like a tree without isolate data, not a mistake. */}
+          {unusedTables(isolateJoins).map((line) => (
+            <p key={line} className="caution">
+              {line}
+            </p>
+          ))}
           <ComparisonView
             key={chosen.id}
             pair={chosen}
@@ -442,6 +468,13 @@ export function App() {
  * id for an upload (§24.5), so the answer comes from the listing rather than
  * being assembled here. Null where a tree has none, which is the common case
  * before anyone uploads a table.
+ *
+ * The species is tried only for a catalogue tree, which is the one with a
+ * method: the catalogue reads it from the filename and an upload has none
+ * (§24.6). An uploaded tree's table is stored under its own id, so falling
+ * back to its *declared* species joined an upload declared "vibrio" to the
+ * demo vibrio table — data nobody uploaded with it, drawn as though they had
+ * (§47).
  */
 function isolateSetsFor(
   pair: PairSummary,
@@ -451,7 +484,8 @@ function isolateSetsFor(
   const have = new Set(datasets.isolates.map((isolate) => isolate.species));
   const forTree = (treeId: string): string | null => {
     const tree = datasets.trees.find((candidate) => candidate.id === treeId);
-    for (const candidate of [treeId, tree?.species]) {
+    const catalogue = Boolean(tree?.method);
+    for (const candidate of [treeId, catalogue ? tree?.species : undefined]) {
       if (candidate && have.has(candidate)) return candidate;
     }
     return null;

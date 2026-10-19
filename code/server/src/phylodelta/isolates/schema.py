@@ -14,8 +14,10 @@ with different columns still works:
   ``MAX_FACET_CARDINALITY`` is identifier-like in practice, whatever it is
   called. This is what removes the finest HierCC levels: vibrio ``HC0`` has
   17,935 distinct values across 26,629 rows.
-* **``ST`` is excluded** because it is the join key, not a facet. Filtering
-  isolates by ST is what selecting a leaf already does.
+* **The key column is excluded** because it is the join, not a facet.
+  Filtering isolates by the value that names their leaf is what selecting a
+  leaf already does. The key is chosen at upload (§47) and is ``ST`` for the
+  demo tables.
 
 Everything surviving is kept and reported with its cardinality, and
 ``segmentable`` marks those small enough to colour and put in a legend. The
@@ -48,8 +50,10 @@ IDENTIFIER_COLUMNS = frozenset(
 )
 IDENTIFIER_PREFIXES = ("data source",)
 
-#: The join key between an isolate and a tree leaf.
-JOIN_COLUMN = "ST"
+#: The join key between an isolate and a tree leaf when none is chosen: the
+#: demo tables, and an API client that sends a table without naming its key
+#: column -- the documented contract before the key could be chosen (§47).
+DEFAULT_KEY_COLUMN = "ST"
 
 
 def slug(name: str) -> str:
@@ -63,9 +67,9 @@ def is_identifier(name: str) -> bool:
     return lowered in IDENTIFIER_COLUMNS or lowered.startswith(IDENTIFIER_PREFIXES)
 
 
-def is_facet(name: str, n_distinct: int) -> bool:
+def is_facet(name: str, n_distinct: int, key_column: str = DEFAULT_KEY_COLUMN) -> bool:
     """Whether a column becomes a queryable facet."""
-    if name == JOIN_COLUMN or is_identifier(name):
+    if name == key_column or is_identifier(name):
         return False
     return 2 <= n_distinct <= MAX_FACET_CARDINALITY
 

@@ -28,6 +28,12 @@ export interface DraftFields {
   sharedTyping: boolean;
   /** Empty until chosen; restored only if the server still offers it. */
   metric: string;
+  /**
+   * Each table's key column (§47). Restored only if the table's header still
+   * has it — the file may have been replaced since.
+   */
+  leftKey: string;
+  rightKey: string;
 }
 
 export const EMPTY_FIELDS: DraftFields = {
@@ -36,6 +42,8 @@ export const EMPTY_FIELDS: DraftFields = {
   rightSpecies: "",
   sharedTyping: true,
   metric: "",
+  leftKey: "",
+  rightKey: "",
 };
 
 const FIELDS_KEY = "phylodelta.uploadDraft.v1";
@@ -53,6 +61,8 @@ export function loadFields(): DraftFields {
       rightSpecies: typeof parsed.rightSpecies === "string" ? parsed.rightSpecies : "",
       sharedTyping: typeof parsed.sharedTyping === "boolean" ? parsed.sharedTyping : true,
       metric: typeof parsed.metric === "string" ? parsed.metric : "",
+      leftKey: typeof parsed.leftKey === "string" ? parsed.leftKey : "",
+      rightKey: typeof parsed.rightKey === "string" ? parsed.rightKey : "",
     };
   } catch {
     return EMPTY_FIELDS;

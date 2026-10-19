@@ -85,13 +85,34 @@ def upload_comparison(
     left_isolates: UploadFile | None = File(
         default=None,
         description=(
-            "Isolate data for the left tree, tab-separated. Optional: omit it "
-            "when there is none, or send it only once when both trees are the "
-            "same species."
+            "Isolate data for the left tree, tab- or comma-separated (a tab in "
+            "the first line means TSV). Optional: omit it when there is none. "
+            "When both trees share one table, send it here once and set "
+            "`isolates_shared`."
         ),
     ),
     right_isolates: UploadFile | None = File(
-        default=None, description="Isolate data for the right tree, tab-separated."
+        default=None,
+        description="Isolate data for the right tree, as left_isolates.",
+    ),
+    left_isolates_key: str | None = Form(
+        default=None,
+        description=(
+            "The column of left_isolates whose values are the tree's leaf "
+            "labels. Defaults to `ST`. A column the header does not have is "
+            "refused at upload, with the columns it does have."
+        ),
+        examples=["ST"],
+    ),
+    right_isolates_key: str | None = Form(
+        default=None, description="As left_isolates_key, for right_isolates."
+    ),
+    isolates_shared: bool = Form(
+        default=False,
+        description=(
+            "left_isolates is the table for both trees. Without it, a "
+            "left_isolates sent alone belongs to the left tree only."
+        ),
     ),
     name: str | None = Form(
         default=None,
@@ -151,6 +172,15 @@ def upload_comparison(
             display_name=(name or "").strip(),
             left_species=(left_species or "").strip(),
             right_species=(right_species or "").strip(),
+            isolate_keys={
+                role: key
+                for role, key in (
+                    ("left_isolates", left_isolates_key),
+                    ("right_isolates", right_isolates_key),
+                )
+                if key is not None
+            },
+            shared_isolates=isolates_shared,
         )
     except uploads.UploadRejected as rejected:
         raise errors.bad_request(
@@ -210,6 +240,20 @@ def _metric_errors(record) -> dict[str, str]:
     return {str(k): str(v) for k, v in parsed.items()}
 
 
+def _isolate_report(record) -> dict[str, dict]:
+    """The row's per-side isolate join report (§47), guarded as above."""
+    raw = getattr(record, "isolate_report", None)
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+    except (TypeError, ValueError):
+        return {}
+    if not isinstance(parsed, dict):
+        return {}
+    return {str(k): v for k, v in parsed.items() if isinstance(v, dict)}
+
+
 @router.get(
     "/{comparison_id}/status",
     response_model=ComparisonStatusResponse,
@@ -251,6 +295,7 @@ def comparison_status(
         metrics=requested,
         metrics_ready=ready_metrics,
         metrics_failed=_metric_errors(record),
+        isolates=_isolate_report(record),
         created_at=_isoformat(record.created_at) or "",
         finished_at=_isoformat(record.finished_at),
         error=record.error,

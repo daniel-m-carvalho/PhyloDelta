@@ -587,6 +587,15 @@ html, body { overflow: hidden; }
 .picker-menu label.disabled:hover { background: none; }
 .picker-menu input { margin: 2px 0 0; }
 .menu-note { display: block; font-size: 12px; color: var(--muted); }
+/*
+ * A note wraps, and is what may wrap: the label it sits in is nowrap, so an
+ * unwrapped note set the width of the whole menu. The isolate join report
+ * (§47) is two long lines, and widened a right-aligned menu past the left
+ * edge of the window. Capped here rather than on the menu, so long facet
+ * names in the other menus keep their own width. Each line of a note (one
+ * per side) starts on its own line.
+ */
+.picker-menu .menu-note { white-space: pre-line; width: max-content; max-width: 380px; }
 
 /* A labelled rule inside a CheckboxMenu, separating a group of radios from
    the toggles above it. */
@@ -772,3 +781,21 @@ html, body { overflow: hidden; }
 }
 .metric-reference-role { color: var(--ink); }
 .metric-references a { color: var(--accent); white-space: nowrap; }
+
+/*
+ * The key-column choice under each isolate drop zone (§47). Stacked under its
+ * own zone, so with two tables each choice sits under the file it belongs to.
+ */
+.table-slot { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.key-column { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.key-column select {
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  min-width: 0;
+}
+.key-column-note { font-size: 12px; color: var(--muted); }
+.key-column-note.failed { color: var(--danger); }
