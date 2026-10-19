@@ -38,7 +38,7 @@ from ..trees.normalise import (
     resolve_trifurcating_root,
     suppress_unary,
 )
-from ..trees.reconcile import reconcile
+from ..trees.reconcile import leaf_labels, reconcile
 from ..trees.store import TreeMeta, read_tree, store_bytes, write_tree
 
 
@@ -71,6 +71,9 @@ class IngestedTree:
     suppressed: int
     parsed_ms: float
     size_bytes: int
+    #: As stored, after canonicalisation: what an uploaded isolate table is
+    #: matched against (§47).
+    leaf_labels: tuple[str, ...] = ()
 
 
 def ingest_tree_file(
@@ -129,7 +132,9 @@ def ingest_tree_file(
         store_path=f"trees/{meta.id}",
         source_name=meta.source,
     )
-    return IngestedTree(meta, suppressed, parsed_ms, store_bytes(directory))
+    return IngestedTree(
+        meta, suppressed, parsed_ms, store_bytes(directory), tuple(leaf_labels(arrays))
+    )
 
 
 def _ingest_into(sources, trees_dir: Path) -> int:

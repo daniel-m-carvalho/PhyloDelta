@@ -29,10 +29,12 @@ import json
 import os
 import shutil
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import config
+from .isolates import table as tables
+from .isolates.schema import DEFAULT_KEY_COLUMN
 
 #: Per file. A 500k-leaf Newick is ~25 MB and an isolate table ~12 MB, so this
 #: is generous rather than tight — its job is to stop a mistake or an attack
@@ -107,6 +109,11 @@ class Bundle:
     #: the two match.
     left_species: str = ""
     right_species: str = ""
+    #: Per table role, the column whose values name the tree's leaves (§47).
+    isolate_keys: dict[str, str] = field(default_factory=dict)
+    #: One table for both trees, sent as ``left_isolates``. Explicit because
+    #: "only the left tree has a table" is a different and legitimate upload.
+    shared_isolates: bool = False
 
 
 def uploads_dir() -> Path:
@@ -161,22 +168,38 @@ def _looks_like_newick(path: Path) -> bool:
     return head.startswith(b"(") and tail.endswith(b";")
 
 
-def _looks_like_table(path: Path) -> bool:
-    """Non-empty, with a header naming more than one tab-separated column."""
-    if path.stat().st_size == 0:
-        return False
-    with path.open("rb") as handle:
-        first = handle.readline()
-    return first.count(b"\t") >= 1
+def _check_table(path: Path, original_name: str, role: str, key: str) -> Path:
+    """Read the header, refuse it by name, and name the file for what it is.
+
+    The whole of the key check happens here, at the door (§47): the header is
+    a line, and a key missing from it is an answer available now. Found in the
+    worker it would be a comparison that ran for minutes before saying so.
+    Returns the path with ``.csv`` or ``.tsv``, so the bundle on disk says
+    which it is.
+    """
+    try:
+        header, delimiter = tables.read_header(path)
+    except tables.TableRejected as rejected:
+        raise UploadRejected(f"{original_name!r}: {rejected}", role_hint=role) from None
+    if key not in header:
+        raise UploadRejected(
+            f"{original_name!r} {tables.missing_key(key, header)}",
+            role_hint=f"{role}_key",
+        )
+    named = path.with_suffix(f".{tables.kind_of(delimiter)}")
+    path.replace(named)
+    return named
 
 
-#: role -> (required, checker, suffix)
+#: role -> (required, suffix). Trees are checked by ``_looks_like_newick``,
+#: tables by ``_check_table``, which also needs the chosen key.
 ROLES = {
-    "left_tree": (True, _looks_like_newick, ".nwk"),
-    "right_tree": (True, _looks_like_newick, ".nwk"),
-    "left_isolates": (False, _looks_like_table, ".tsv"),
-    "right_isolates": (False, _looks_like_table, ".tsv"),
+    "left_tree": (True, ".nwk"),
+    "right_tree": (True, ".nwk"),
+    "left_isolates": (False, ".table"),
+    "right_isolates": (False, ".table"),
 }
+TABLE_ROLES = ("left_isolates", "right_isolates")
 
 
 def accept(
@@ -185,6 +208,8 @@ def accept(
     left_species: str = "",
     right_species: str = "",
     root: Path | None = None,
+    isolate_keys: dict[str, str] | None = None,
+    shared_isolates: bool = False,
 ) -> Bundle:
     """Receive a bundle, streaming each file to disk as it arrives.
 
@@ -193,16 +218,50 @@ def accept(
     one species carry their typing data in one table and a pair needing none at
     all is legitimate.
 
+    ``isolate_keys`` maps a table role to its key column; a table sent without
+    one is keyed by ``ST``, which is what the API meant before the key could be
+    chosen. ``shared_isolates`` says the left table is both trees'.
+
     Whole or not at all: any refusal removes everything already written, so a
     rejected upload leaves nothing for a later job to find and mistake for
     work.
     """
-    missing = [r for r, (required, _, _) in ROLES.items() if required and r not in sources]
+    missing = [r for r, (required, _) in ROLES.items() if required and r not in sources]
     if missing:
         raise UploadRejected(f"missing required file(s): {', '.join(sorted(missing))}")
     unknown = set(sources) - set(ROLES)
     if unknown:
         raise UploadRejected(f"unexpected file(s): {', '.join(sorted(unknown))}")
+
+    # Every inconsistency between the fields is refused before a byte is
+    # written: each is a client mistake, and guessing which half was meant
+    # would join a table to a tree nobody chose.
+    keys = {role: key.strip() for role, key in (isolate_keys or {}).items()}
+    for role, key in keys.items():
+        if role not in TABLE_ROLES:
+            raise UploadRejected(f"unexpected key field: {role}_key")
+        if role not in sources:
+            raise UploadRejected(
+                f"{role}_key names a column but no {role} file was sent",
+                role_hint=f"{role}_key",
+            )
+        if not key:
+            raise UploadRejected(f"{role}_key is empty", role_hint=f"{role}_key")
+    if shared_isolates:
+        if "left_isolates" not in sources:
+            raise UploadRejected(
+                "isolates_shared is set but no left_isolates table was sent",
+                role_hint="left_isolates",
+            )
+        if "right_isolates" in sources:
+            raise UploadRejected(
+                "isolates_shared is set and right_isolates was sent too; a shared "
+                "table is sent once, as left_isolates",
+                role_hint="right_isolates",
+            )
+    keys = {
+        role: keys.get(role, DEFAULT_KEY_COLUMN) for role in TABLE_ROLES if role in sources
+    }
 
     left_id, right_id = new_id(), new_id()
     comparison_id = f"{left_id}__{right_id}"
@@ -212,17 +271,15 @@ def accept(
     stored: dict[str, StoredFile] = {}
     try:
         for role, (original_name, handle) in sources.items():
-            _, check, suffix = ROLES[role]
+            _, suffix = ROLES[role]
             path = directory / f"{role}{suffix}"
             size = _stream_to(handle, path, limit)
-            if not check(path):
+            if role in TABLE_ROLES:
+                path = _check_table(path, original_name, role, keys[role])
+            elif not _looks_like_newick(path):
                 raise UploadRejected(
                     f"{original_name!r} does not look like "
-                    + (
-                        "a Newick tree (expected '(' \u2026 ';')"
-                        if suffix == ".nwk"
-                        else "a tab-separated table"
-                    ),
+                    "a Newick tree (expected '(' \u2026 ';')",
                     role_hint=role,
                 )
             stored[role] = StoredFile(role, path, original_name, size)
@@ -239,6 +296,8 @@ def accept(
         display_name=display_name or _default_name(stored),
         left_species=left_species.strip(),
         right_species=right_species.strip(),
+        isolate_keys=keys,
+        shared_isolates=shared_isolates,
     )
     _write_manifest(bundle)
     return bundle
@@ -265,6 +324,8 @@ def _write_manifest(bundle: Bundle) -> None:
         "display_name": bundle.display_name,
         "left_species": bundle.left_species,
         "right_species": bundle.right_species,
+        "isolate_keys": bundle.isolate_keys,
+        "shared_isolates": bundle.shared_isolates,
         "files": {
             role: {
                 "path": stored.path.name,

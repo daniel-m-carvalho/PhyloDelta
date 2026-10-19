@@ -29,7 +29,9 @@ from pathlib import Path
 
 from .. import config, db, retention, uploads
 from ..db import jobs as queue
-from ..isolates.ingest import ingest_species
+from ..isolates.ingest import JoinReport, ingest_table
+from ..isolates.schema import DEFAULT_KEY_COLUMN
+from ..isolates.table import TableRejected
 from ..trees.normalise import NotRootedBinary
 from .pipeline import NotComparable, compute_pair, ingest_tree_file, load_metrics
 
@@ -52,6 +54,8 @@ class ComparisonBuilt:
     datasets: tuple[str, str]
     #: Requested metrics that produced nothing, as ``{name: reason}``.
     metrics_failed: dict[str, str] = field(default_factory=dict)
+    #: Per side, how its isolate table met its tree (§47).
+    isolate_report: dict[str, dict] = field(default_factory=dict)
 
 
 class TreeRejected(Exception):
@@ -118,13 +122,14 @@ def run_comparison(
     owner = record.owner_id
 
     # --- trees ---------------------------------------------------------
+    leaves: dict[str, tuple[str, ...]] = {}
     for role, dataset_id, species in (
         ("left_tree", record.left_id, manifest.get("left_species", "")),
         ("right_tree", record.right_id, manifest.get("right_species", "")),
     ):
         db.set_dataset_status(dataset_id, db.DatasetStatus.INGESTING)
         try:
-            ingest_tree_file(
+            ingested = ingest_tree_file(
                 path=directory / files[role]["path"],
                 trees_dir=store / "trees",
                 dataset_id=dataset_id,
@@ -139,21 +144,48 @@ def run_comparison(
             raise TreeRejected(
                 f"The {side} tree ({files[role]['original_name']}) was not accepted: {exc}"
             ) from exc
+        leaves[role.split("_")[0]] = ingested.leaf_labels
 
     # --- typing data ---------------------------------------------------
     # Keyed by the tree's dataset id, not by species. A species is a global
     # name and there is only one of each; an uploaded table belongs to one
     # uploaded tree, and two users may both upload "salmonella". The id is
     # already unique and already owned.
-    for role, dataset_id in (
-        ("left_isolates", record.left_id),
-        ("right_isolates", record.right_id),
+    #
+    # A shared table is joined to each tree and stored once per tree (§47):
+    # the two trees' leaves differ, so the two joins report different
+    # unmatched rows, and a store per tree is what the lookup by dataset id
+    # already expects. The cost is one more copy of a few megabytes.
+    #
+    # A table that matches no leaf, or cannot be read, is reported on its side
+    # and not stored; the comparison carries on. The trees are good, and the
+    # minutes of correspondence ahead should not be thrown away for a wrong
+    # column choice the user can fix by uploading again.
+    keys = manifest.get("isolate_keys", {})
+    shared = manifest.get("shared_isolates", False)
+    report: dict[str, dict] = {}
+    for side, role, dataset_id in (
+        ("left", "left_isolates", record.left_id),
+        ("right", "left_isolates" if shared else "right_isolates", record.right_id),
     ):
         if role not in files:
             continue
-        meta = ingest_species(
-            dataset_id, directory / files[role]["path"], store / "isolates" / dataset_id
-        )
+        key_column = keys.get(role, DEFAULT_KEY_COLUMN)
+        try:
+            meta, joined = ingest_table(
+                dataset_id,
+                directory / files[role]["path"],
+                store / "isolates" / dataset_id,
+                key_column,
+                leaves=leaves[side],
+                # What the user called it, not the bundle's role name.
+                source_name=files[role]["original_name"],
+            )
+        except TableRejected as exc:
+            report[side] = JoinReport(key_column=key_column, error=str(exc)).as_json()
+            print(f"    {side} isolate data not used: {exc}", flush=True)
+            continue
+        report[side] = joined.as_json()
         db.register_dataset(
             dataset_id=f"isolates-{dataset_id}",
             owner_id=owner,
@@ -177,6 +209,7 @@ def run_comparison(
     return ComparisonBuilt(
         datasets=(record.left_id, record.right_id),
         metrics_failed=dict(computed.metrics_failed),
+        isolate_report=report,
     )
 
 
@@ -222,7 +255,11 @@ def process_next(worker: str | None = None, metrics: list[str] | None = None) ->
         print(f"--- {comparison_id} was deleted while running; discarded", flush=True)
         return True
 
-    queue.finish(comparison_id, metric_errors=built.metrics_failed)
+    queue.finish(
+        comparison_id,
+        metric_errors=built.metrics_failed,
+        isolate_report=built.isolate_report,
+    )
     for name, why in built.metrics_failed.items():
         # Said again at the end of the job, next to the "ready" line: the
         # per-metric failure was printed pages earlier, and a reader scanning for

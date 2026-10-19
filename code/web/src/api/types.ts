@@ -159,6 +159,28 @@ export interface ComparisonStatus {
    * default this project refuses.
    */
   metrics_failed?: Record<string, string>;
+  /**
+   * How each uploaded isolate table met its tree (§47); a side without a
+   * table is absent. A table whose key named no leaf carries `error` and was
+   * not used — the comparison is still ready.
+   */
+  isolates?: Partial<Record<"left" | "right", IsolateJoinReport>>;
+}
+
+export interface IsolateJoinReport {
+  /** The column whose values name the tree's leaves. */
+  key_column: string;
+  rows: number;
+  /** Rows whose key names no leaf. */
+  rows_unmatched: number;
+  /** Rows whose key cell is blank. */
+  rows_without_key: number;
+  /** Up to ten unmatched keys, sorted. */
+  unmatched_examples: string[];
+  leaves: number;
+  leaves_without_rows: number;
+  /** Why the table was not used; null when it was. */
+  error: string | null;
 }
 
 /** Every failure from the API carries this shape. */
@@ -180,6 +202,8 @@ export interface IsolateKeys {
   species: string;
   n_isolates: number;
   n_sequence_types: number;
+  /** The column whose values name tree leaves (§47); `ST` for the demo tables. */
+  key_column?: string;
   source: string;
   facets: FacetSummary[];
 }

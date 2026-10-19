@@ -29,6 +29,8 @@ describe("upload draft", () => {
       rightSpecies: "Staphylococcus-NJ",
       sharedTyping: false,
       metric: "triplet",
+      leftKey: "isolate",
+      rightKey: "ST",
     };
     saveFields(typed);
     expect(loadFields()).toEqual(typed);

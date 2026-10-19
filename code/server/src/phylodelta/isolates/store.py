@@ -7,7 +7,10 @@ data.
 **Rows are sorted by ST and indexed by range.** An ST maps to a contiguous run
 of rows, so fetching every isolate for a leaf is a slice -- the same trick the
 interval encoding plays for subtrees. Up to 312 isolates share one ST, and the
-join is one-to-many in general.
+join is one-to-many in general. "ST" throughout this module means the key
+column, whatever it is called: an uploaded table names its own (§47), and the
+store records which in ``key_column``. The file names keep ``st_`` so a format
+1 store and a format 2 one lay out identically.
 
 **Values are stored jointly, never as per-key counts.** Marginal counts cannot
 answer an AND query: knowing 254 isolates are from Bangladesh and 30 are of
@@ -29,7 +32,13 @@ from pathlib import Path
 
 import numpy as np
 
-FORMAT_VERSION = 1
+from .schema import DEFAULT_KEY_COLUMN
+
+#: 2 added ``key_column``. A format 1 store is still read: its key was always
+#: ``ST``, so saying so is a fact rather than a default, and a deployed store
+#: does not have to be rebuilt for a field that could only have one value.
+FORMAT_VERSION = 2
+_READABLE_VERSIONS = (1, 2)
 _META = "meta.json"
 _ST_LABELS = "st_labels.txt"
 _ST_OFFSETS = "st_offsets.u32"
@@ -72,6 +81,8 @@ class IsolateMeta:
     facets: list[FacetMeta]
     format_version: int = FORMAT_VERSION
     created: str = ""
+    #: The column whose values name tree leaves (§47).
+    key_column: str = DEFAULT_KEY_COLUMN
 
     @property
     def facet_by_name(self) -> dict[str, FacetMeta]:
@@ -84,16 +95,18 @@ class IsolateReader:
     def __init__(self, directory: Path) -> None:
         self.directory = Path(directory)
         raw = json.loads((self.directory / _META).read_text())
-        if raw.get("format_version") != FORMAT_VERSION:
+        if raw.get("format_version") not in _READABLE_VERSIONS:
             raise ValueError(
                 f"{self.directory} is format {raw.get('format_version')}, "
-                f"this build reads {FORMAT_VERSION}; re-run ingestion"
+                f"this build reads {', '.join(map(str, _READABLE_VERSIONS))}; "
+                "re-run ingestion"
             )
         self.meta = IsolateMeta(
             species=raw["species"], source=raw["source"], n_rows=raw["n_rows"],
             n_sequence_types=raw["n_sequence_types"],
             facets=[FacetMeta(**f) for f in raw["facets"]],
             format_version=raw["format_version"], created=raw.get("created", ""),
+            key_column=raw.get("key_column", DEFAULT_KEY_COLUMN),
         )
         self._columns: dict[str, np.ndarray] = {}
         self._ranges: dict[str, tuple[int, int]] | None = None
@@ -171,6 +184,7 @@ def write_isolates(directory: Path, meta: IsolateMeta, columns: dict[str, np.nda
                     for f in meta.facets
                 ],
                 "format_version": FORMAT_VERSION, "created": meta.created,
+                "key_column": meta.key_column,
             },
             indent=1,
         )

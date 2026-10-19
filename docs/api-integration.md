@@ -79,7 +79,7 @@ upload returns at once with an id to poll.
 curl -X POST $BASE/comparisons \
   -F left_tree=@left.nwk \
   -F right_tree=@right.nwk \
-  -F left_isolates=@isolates.tsv \
+  -F left_isolates=@isolates.tsv -F left_isolates_key=ST -F isolates_shared=true \
   -F name="NJ vs UPGMA" \
   -F left_species=vibrio -F right_species=vibrio \
   -F metrics=rf
@@ -88,7 +88,9 @@ curl -X POST $BASE/comparisons \
 | Field | |
 |---|---|
 | `left_tree`, `right_tree` | Newick files. **Required.** They must share leaf names. |
-| `left_isolates`, `right_isolates` | Optional tab-separated isolate tables. Send one only when both trees are the same species. |
+| `left_isolates`, `right_isolates` | Optional isolate tables, tab- or comma-separated: a tab in the first line means TSV, otherwise CSV (quoted fields allowed). A header with an empty or repeated column name is refused. |
+| `left_isolates_key`, `right_isolates_key` | The column of that table whose values are the tree's leaf names (default `ST`). A column the header does not have is refused at once, with the columns it does have. |
+| `isolates_shared` | `true` when `left_isolates` is the table for both trees; send it once. Without it, `left_isolates` alone belongs to the left tree only. |
 | `name` | Optional display name. |
 | `left_species`, `right_species` | Optional. Declaring them lets the result say whether matching leaf names are the same organisms. |
 | `metrics` | Optional, comma-separated metric names (default `rf`). See [Metrics](#9-metrics). |
@@ -113,6 +115,7 @@ curl $BASE/comparisons/$ID/status
 | `metrics` | The metrics that were asked for. |
 | `metrics_ready` | Those that can be read. |
 | `metrics_failed` | Metrics asked for that produced nothing, each with its reason. A comparison can be `ready` with entries here: one failing metric does not fail the comparison. |
+| `isolates` | Per side (`left`, `right`), how its isolate table met its tree: `key_column`, `rows`, `rows_unmatched` (with up to ten `unmatched_examples`), `rows_without_key`, `leaves`, `leaves_without_rows`. Matching is exact after trimming spaces. A table whose key names no leaf is not used and has `error` saying so; the comparison is still `ready`. |
 
 ## 4. List what you have
 

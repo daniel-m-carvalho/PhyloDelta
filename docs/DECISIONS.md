@@ -4966,6 +4966,79 @@ made none. A slice carries one more column: +10% in the cache's estimate (7.9 �
 comparison arrays it named, missing `id` and RF's `exact` — 16 bytes a node, in the unsafe
 direction for a byte bound. It now charges every array the block carries.
 
+## 47. The isolate table names its own key column, TSV or CSV
+
+**Decision.** An uploaded isolate table says which of its columns holds the tree's leaf labels:
+`left_isolates_key` / `right_isolates_key` on the upload, chosen in the web app from a dropdown
+filled from the file's header and pre-selecting `ST`. The table may be tab- or comma-separated —
+a tab anywhere in the first line is TSV, otherwise CSV, with quotes, `""` escapes and a BOM handled.
+The chosen column becomes the store's index and is recorded in its meta (`key_column`, isolate store
+format 2; a format 1 store is read as `ST`, which is what every one of them was). The key column is
+not a facet, as `ST` was not. The demo tables are still keyed by `ST`, and an API client that sends
+a table without a key gets `ST`, the documented contract before this.
+
+**Why.** Asked for by Daniel after his colleague's phylo-lens (`phyloviz/phylo-lens`, read at
+`da642eb`), where the user chooses the column that identifies the nodes. A fixed `ST` refused every
+table whose leaves are named by isolate, strain or sample id.
+
+**What was taken from phylo-lens, and what was not.**
+
+* **Taken:** the header read in the browser to fill the choice, the choice being required (with no
+  `ST` nothing is pre-selected — taking the first column would join on a guess), and refusing empty
+  or duplicated column names and an unclosed quote. Its delimiter rule is the one used here.
+* **Adapted:** phylo-lens checks the column per row on the server; here a column the header lacks is
+  refused **at upload**, by name, with the columns the header has. The header is one line, and the
+  answer to "is this column there" should not wait for a worker minutes later.
+* **Skipped, for now:** phylo-lens's slug matching (a near-miss label joined after normalisation).
+  Matching here is exact after trimming, and the near misses are *reported* instead (below), so a
+  wrong join cannot happen quietly. Also skipped: joining internal nodes, and replacing a table after
+  upload.
+
+**The header is read in the web app, not in the library.** The library never sees a table: the
+join is the server's, and what reaches a leaf is data already keyed by its name. A table parser in
+the library would be the first step towards joining in the browser, which is the phylo.io model
+this project argues against. Server and client apply the same rules (`isolates/table.py`,
+`web/src/upload/tableHeader.ts`), so a header accepted in the browser is accepted at upload.
+
+**What did not match is reported, in `/status`.** Per side, `isolates.{left,right}`: rows, rows
+whose key names no leaf (with up to ten examples), rows with a blank key, leaves with no rows. Kept
+on the comparison row as JSON beside `metric_errors`, for the same reason (§36): the information
+exists only in the worker, minutes after the request. On the demo pair keyed by `ST` it reports
+686 of 17,645 leaves without rows — the 3.9% already recorded for vibrio, an independent check
+that the join is the one the catalogue makes.
+
+**A table that names no leaf does not fail the comparison.** It is almost certainly the wrong column
+(measured: vibrio's table keyed by `Country` matches none of 17,645 leaves). The trees are good and
+their correspondence is the expensive part, so the comparison completes, that side's table is not
+stored, and the reason — with examples of the column's values and of the leaves' — is in `/status`
+and is shown above the trees. Before this a table without `ST` raised in the worker and failed the
+whole comparison.
+
+**One table for both trees is now said, not inferred.** The web app sent a shared table as
+`left_isolates` alone and the worker stored it for the left tree only. The right tree then found its
+typing data by its *declared species* (`isolateSetsFor`), so an upload declared `vibrio` was drawn
+with the **demo** vibrio table and any other got no bars. Now the upload sends `isolates_shared`,
+the worker joins the table to each tree and stores it per tree (each join has its own unmatched
+rows; one more copy is a few MB, removed with the comparison), and the species fallback applies only
+to catalogue trees — the ones with a method, which uploads never have (§24.6). `left_isolates`
+alone, without the flag, is the left tree's only.
+
+**Checked.** CSV and TSV of vibrio's 26,629 rows build byte-identical stores. With vibrio's `ST`
+column renamed `sequence_type` — so no `ST` to fall back on — and that column chosen in the upload
+panel, the join report matched the `ST` upload exactly (686 leaves without rows each side; 2,546
+and 2,512 unmatched rows) and the compositions of all 35,289 labelled nodes, under three columns,
+were identical between the two stores; the bars drew. The upload panel pre-selects `ST`, requires a
+choice without it, and gives each of two tables its own; the layout check passes with the "not
+used" line above the panels.
+
+That run found a layout bug the short test tables hid: the report is long, menu labels are
+`nowrap`, and the note widened the right-aligned View options menu past the window's left edge. A
+note in a menu now wraps at 380 px (`width: max-content`, so short notes stay on one line), with one
+line per side.
+
+**Cost.** The comparison view now asks `/status` on every opening, not only when moved leaves are
+missing — one request, answered from the row; for the catalogue's pairs it is a 404, caught.
+
 ---
 
 ## References and provenance

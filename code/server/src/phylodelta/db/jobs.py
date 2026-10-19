@@ -131,6 +131,7 @@ def finish(
     comparison_id: str,
     error: str | None = None,
     metric_errors: dict[str, str] | None = None,
+    isolate_report: dict[str, dict] | None = None,
 ) -> None:
     """Record a job as ready, or as failed with a reason.
 
@@ -140,6 +141,9 @@ def finish(
     of three metrics could not run would throw away minutes of correspondence.
     They are recorded so the API can say which are missing and why, instead of
     the absence being the only evidence.
+
+    ``isolate_report`` is the same idea for typing data (§47): per side, how
+    the table met its tree, or why it was not used.
     """
     with session() as active:
         active.execute(
@@ -152,6 +156,7 @@ def finish(
                 # the previous attempt recorded rather than leaving a stale
                 # failure attached to a comparison that now has the metric.
                 metric_errors=json.dumps(metric_errors) if metric_errors else None,
+                isolate_report=json.dumps(isolate_report) if isolate_report else None,
                 finished_at=_now(),
             )
         )
