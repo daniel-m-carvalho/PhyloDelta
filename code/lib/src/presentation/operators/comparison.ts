@@ -767,6 +767,12 @@ export class ComparisonOperator implements TreeOperator {
     if (this.legendEl.parentElement !== container) container.appendChild(this.legendEl);
     if (this.tooltipEl.parentElement !== container) container.appendChild(this.tooltipEl);
     this.legendEl.style.display = this.enabled && this.showLegend ? "block" : "none";
+    // On the outer side of a mirrored panel, so two panels facing each other
+    // keep their keys at the outside edges rather than both at the left. Set
+    // on every render, since reflection can be switched after attaching.
+    const reflected = !!this.viewer?.isReflected();
+    this.legendEl.style.left = reflected ? "auto" : "10px";
+    this.legendEl.style.right = reflected ? "10px" : "auto";
   }
 
   private onEnterNode(node: string): void {
