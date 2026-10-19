@@ -7,7 +7,8 @@
 # is the intended basis for the succinct-representation store.
 #
 # Neither project builds unmodified on macOS 27 / arm64 with CMake 4.x and
-# Apple clang 21. Four fixes are needed, each documented at its site below.
+# Apple clang 21. Four fixes are needed, each documented at its site below
+# (a fifth, the double-precision build, is a correction rather than a build fix).
 # None is optional and none is discoverable from the projects' own READMEs.
 #
 # It also runs in the Docker builder (Debian, g++), which is how the triplet and
@@ -25,8 +26,27 @@ if [ -d "$DEST" ]; then
   exit 0
 fi
 
-git clone --depth 1 https://github.com/pedroparedesbranco/TreeDiff.git "$DEST"
+# **Pinned to one commit**, as native/build.sh pins sdsl-lite. This cloned
+# whatever was newest, so a change upstream could break the build or change
+# what the programs compute with nothing changed here — and rf-treediff is the
+# oracle our own RF is checked against, so its output must not move under it.
+# This is the newest commit, the one every measurement in this project was made
+# with. TreeDiff's own sdsl-lite is a submodule, so this pins that too. To move
+# it, change the hash, delete native/TreeDiff, rebuild and re-run the suite.
+TREEDIFF_COMMIT=1fa132a440655446f7288a2ebc9a022543f96ed7  # 2024-01-14
+
+# A shallow clone cannot check out a named commit, so fetch exactly that one.
+git init -q "$DEST"
 cd "$DEST"
+git remote add origin https://github.com/pedroparedesbranco/TreeDiff.git
+git fetch -q --depth 1 origin "$TREEDIFF_COMMIT"
+git checkout -q FETCH_HEAD
+HAVE=$(git rev-parse HEAD)
+if [ "$HAVE" != "$TREEDIFF_COMMIT" ]; then
+  # Refused, not built against: a different TreeDiff may compute differently.
+  echo "fetched TreeDiff ${HAVE:0:7}, not the pinned ${TREEDIFF_COMMIT:0:7}" >&2
+  exit 1
+fi
 git submodule update --init
 
 # --- Fix 1: sdsl-lite predates CMake 3.5 -----------------------------------
