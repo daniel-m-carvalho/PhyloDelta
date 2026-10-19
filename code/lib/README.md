@@ -750,7 +750,7 @@ interface BarChartOptions {
 
 Presents backend-computed tree differences, phylo.io-style. The library does
 **not** compute the metric (RF, BCN/Jaccard, weighted RF, …) — the backend
-does. The operator supports **two presentation modes** (`mode`), because
+does. The operator supports **three presentation modes** (`mode`), because
 different metrics report differences differently:
 
 > **Configured once, for all panels.** `comparison` is a **top-level** `Config`
@@ -772,6 +772,15 @@ different metrics report differences differently:
   depending on whether its key is in the differing set. Leaf coloring is
   meaningful here (unlike gradient mode) precisely because the backend names the
   differing nodes rather than assigning a single leaf a bipartition magnitude.
+
+- **`"categories"`** — each leaf is **one of a few states**, painted in that
+  state's colour and keyed in the legend: moved leaves (DECISIONS §46) are
+  *kept*, *moved* or *not in the other tree*. `categoryOf(node)` returns
+  `{ color, label }`; only uncollapsed leaves are painted (a collapsed clade is
+  drawn by its wedge, which the consumer colours through `CladeShapePresenter`),
+  and any node's `label` is its hover text. Branches are left as drawn, so one
+  presentation is on screen at a time. `setCategories(categoryOf, legend, title)`
+  replaces it in place.
 
 > **Attribution.** The gradient branch-coloring model and the blue→yellow scale
 > are adapted from **phylo.io** (© Clement Train & the Dessimoz Lab, MIT license
@@ -811,7 +820,10 @@ interface ComparisonOptions {
   edgeWidth?: number;                // px width of colored branches, default 3
   colorNodes?: boolean;              // default true (gradient; leaves stay neutral)
   leafColor?: string;                // neutral leaf color, default "#212529"
-  mode?: ComparisonMode;             // "gradient" (default) | "membership"
+  mode?: ComparisonMode;             // "gradient" (default) | "membership" | "categories"
+  categoryOf?: (node) => LeafCategory | undefined; // categories: { color, label } per node
+  categoryLegend?: LeafCategory[];   // categories: legend rows, in order
+  categoryTitle?: string;            // categories: legend heading
   differing?: Iterable<string>;      // membership: set of differing node keys
   isDifferent?: DifferencePredicate; // membership: function form of `differing`
   equalColor?: string;               // membership, default "#0077bb"
@@ -823,7 +835,7 @@ interface ComparisonOptions {
   enabled?: boolean;                 // default true
 }
 ```
-- API: `setValues(map)`, `setCorrespondence(map)`, `setMode(mode)`, `getMode()`,
+- API: `setValues(map)`, `setCorrespondence(map)`, `setMode(mode)`, `getMode()`, `setCategories(categoryOf, legend, title)`,
   `setDiffering(keys)`, `setEnabled(on)`, `isEnabled()`, `link(peer)`,
   `highlightByKey(key)`, `highlightByNode(id, { flash? })`, `clearHighlight()`,
   `getHighlightedKey()`.
@@ -1095,7 +1107,7 @@ Everything a consumer needs is re-exported from `./lib`:
   `ExpandMode`, `SubtreeNavigator`, `SubtreeStep`, `CladeShapePresenter`,
   `CladeShapeOptions`, `SelectionOperator`, `SelectionOptions`, `BarChartPresenter`,
   `BarChartOptions`, `BarScale`, `ComparisonOperator`, `ComparisonOptions`,
-  `ComparisonMode`, `Linkable`, `BranchLengthPresenter`, `BranchLengthOptions`,
+  `ComparisonMode`, `LeafCategory`, `Linkable`, `BranchLengthPresenter`, `BranchLengthOptions`,
   `formatBranchLength`.
 - **Branch lengths:** `LengthScale`, `BRANCH_COLOR`.
 - **Export:** `snapshotViewer`, `SnapshotOptions`, `buildComparisonReport`,

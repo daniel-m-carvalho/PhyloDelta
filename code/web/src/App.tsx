@@ -19,7 +19,7 @@ import type {
   PairSummary,
   WhoAmI,
 } from "./api/types";
-import { headline, viewMetric } from "./comparison/metric";
+import { hasMovedLeaves, headline, presentation, viewMetric } from "./comparison/metric";
 import { pairName, treeName } from "./names";
 
 export function App() {
@@ -51,6 +51,10 @@ export function App() {
   );
   const [chosen, setChosen] = useState<PairSummary | null>(null);
   const [summary, setSummary] = useState<ComparisonSummary | null>(null);
+  /** The moved-leaves scalars, for the header while that view is on (§46). */
+  const [movedSummary, setMovedSummary] = useState<ComparisonSummary | null>(null);
+  /** Why moved leaves cannot be shown for this comparison, when they cannot. */
+  const [movedMissing, setMovedMissing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -113,7 +117,32 @@ export function App() {
       .catch(() => setSummary(null));
   }, [chosen]);
 
+  // Moved leaves: their totals if computed, or why not. The reason is the
+  // server's own, from /status, so "declined: above the limit" reaches the
+  // person looking rather than one fewer option appearing with no word.
+  useEffect(() => {
+    setMovedSummary(null);
+    setMovedMissing(null);
+    if (!chosen || chosen.status !== "ready") return;
+    if (hasMovedLeaves(chosen)) {
+      api.comparison(chosen.id, "mast").then(setMovedSummary).catch(() => setMovedSummary(null));
+      return;
+    }
+    const notComputed = "Not computed for this comparison";
+    setMovedMissing(notComputed);
+    api
+      .status(chosen.id)
+      .then((status) => {
+        const reason = status.metrics_failed?.mast;
+        setMovedMissing(reason ? `Not available: ${reason}` : notComputed);
+      })
+      // The catalogue's pairs have no upload record to ask; the plain reason stands.
+      .catch(() => undefined);
+  }, [chosen]);
+
   const top = summary ? headline(summary) : null;
+  const colourBy = chosen ? presentation(options, chosen) : options.gradient ? "divergence" : "none";
+  const movedOn = colourBy === "moved";
 
   return (
     <div className="app">
@@ -127,6 +156,15 @@ export function App() {
             {top.normalised !== undefined ? (
               <em> ({top.normalised.toFixed(3)} normalised)</em>
             ) : null}
+          </span>
+        ) : null}
+        {movedOn && movedSummary ? (
+          <span
+            className="headline"
+            title="Leaves outside the maximum agreement subtree: the largest set both trees arrange identically. Also an upper bound on the SPR distance."
+          >
+            Moved <strong>{Number(movedSummary.summary.moved).toLocaleString()}</strong>
+            <em> of {Number(movedSummary.summary.n_leaves).toLocaleString()} leaves</em>
           </span>
         ) : null}
         {me?.mock ? (
@@ -146,16 +184,38 @@ export function App() {
             summary="View options"
             align="right"
             items={[
+              // What colours the trees: one presentation at a time, each with
+              // its own legend (§46), so a radio group rather than switches.
               {
-                key: "gradient",
+                key: "colour-by:divergence",
                 label: "Divergence",
-                checked: options.gradient,
-                note: "Colour by how much the trees disagree",
+                checked: colourBy === "divergence",
+                note: "How much each clade disagrees, on the branches",
+                group: "colour-by",
+                heading: "Colour the trees by",
+              },
+              {
+                key: "colour-by:moved",
+                label: "Moved leaves (MAST)",
+                checked: colourBy === "moved",
+                note:
+                  movedMissing ??
+                  "Each leaf: in the agreement subtree, moved, or not in the other tree",
+                group: "colour-by",
+                disabled: movedMissing !== null,
+              },
+              {
+                key: "colour-by:none",
+                label: "Nothing",
+                checked: colourBy === "none",
+                note: "The trees in black",
+                group: "colour-by",
               },
               {
                 key: "typing",
                 label: "Isolate data",
                 checked: options.typing,
+                heading: "Show",
                 note: "A bar of isolates on each leaf",
               },
               {
@@ -210,7 +270,7 @@ export function App() {
                 : []),
               // Where the gradient lands, not whether it is on — so the choice
               // is offered only while there is one to place.
-              ...(options.gradient
+              ...(colourBy === "divergence"
                 ? COLOR_TARGETS.map((target, index) => ({
                     key: `colour:${target.key}`,
                     label: target.label,
@@ -222,7 +282,9 @@ export function App() {
                 : []),
             ]}
             onToggle={(key) => {
-              if (key === "gradient") setOptions({ gradient: !options.gradient });
+              if (key === "colour-by:divergence") setOptions({ gradient: true, moved: false });
+              if (key === "colour-by:moved") setOptions({ gradient: false, moved: true });
+              if (key === "colour-by:none") setOptions({ gradient: false, moved: false });
               if (key === "typing") setOptions({ typing: !options.typing });
               if (key === "clades") setOptions({ cladeSizes: !options.cladeSizes });
               if (key === "lengths") setOptions({ lengths: !options.lengths });
@@ -300,6 +362,7 @@ export function App() {
             options={options}
             onOptions={setOptions}
             summary={summary}
+            movedSummary={movedSummary}
             exporting={exporting}
             onExportClose={() => setExporting(false)}
           />

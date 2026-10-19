@@ -98,6 +98,9 @@ export function treeFromSlice(
   // similarity is read off at its own position — no join, and no lookup that
   // could reach the other tree.
   const similarity = slice.comparison?.similarity;
+  // Moved leaves under each node, when the slice was asked for under the
+  // `mast` metric (§46). Null where the node is outside the compared pair.
+  const moved = slice.comparison?.columns?.moved;
   const count = id.length;
   if (count === 0) throw new Error("slice contains no nodes");
 
@@ -133,6 +136,9 @@ export function treeFromSlice(
          * diverged.
          */
         similarity: similarity?.[k] ?? null,
+        // Absent column and absent value both read as null: "not measured",
+        // never 0, which would claim nothing moved.
+        moved: moved?.[k] ?? null,
         // The label exactly as sent, for the menu title.
         label: label[k],
       },

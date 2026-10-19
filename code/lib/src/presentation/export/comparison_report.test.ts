@@ -134,6 +134,22 @@ describe("view setup", () => {
     expect(built.body!.join(" ")).toMatch(/not the same as a score of zero/);
   });
 
+  it("describes leaf categories instead of the gradient when those were shown (§46)", () => {
+    const key = [
+      { label: "In the agreement subtree", color: "#1d4ed8" },
+      { label: "Moved", color: "#ffd400" },
+      { label: "Not in the other tree", color: "#e03131" },
+    ];
+    const built = section(
+      base({ view: { gradient: false, leafCategories: { description: "Leaves are coloured by the MAST.", swatches: key } } }),
+      "View setup",
+    );
+    expect(built.body!.join(" ")).toContain("Leaves are coloured by the MAST.");
+    // Not "colouring was off": the pictures do carry colour, just not the gradient's.
+    expect(built.body!.join(" ")).not.toMatch(/Divergence colouring was off/);
+    expect(built.swatches!.map((s) => s.label)).toEqual(key.map((s) => s.label));
+  });
+
   it("says when colour carries no meaning", () => {
     const built = section(base({ view: { gradient: false } }), "View setup");
     expect(built.body!.join(" ")).toMatch(/carries no meaning/);

@@ -38,7 +38,7 @@ import {
   type SideActions,
   type SideState,
 } from "./useSide";
-import { viewMetric } from "./metric";
+import { presentation, sliceMetric } from "./metric";
 import { SearchBox } from "./SearchBox";
 import { markAction, type Placed } from "./markPlacement";
 import { PanelNotice } from "./PanelNotice";
@@ -112,6 +112,74 @@ function wedgeColorFrom(scale: SequentialColorScale) {
   return (node: { metadata?: Record<string, unknown> }): string | undefined => {
     const similarity = node.metadata?.similarity;
     return typeof similarity === "number" ? scale.color(1 - similarity) : undefined;
+  };
+}
+
+/** The legend's heading while moved leaves are shown (§46). */
+const MOVED_TITLE = "Moved leaves (MAST)";
+
+/**
+ * Moved leaves as colours: what each leaf is, and how a wedge says it holds one.
+ *
+ * The colours are the gradient's own ends and its "absent" red, read from the
+ * same scale, so a reader who knows one key can read the other: blue is what
+ * the two trees agree on, yellow is where they part, red has no counterpart.
+ * They mean different things here — a leaf's place in the agreement subtree,
+ * not a clade's overlap — which is why only one of the two legends is ever on
+ * screen.
+ *
+ * A node with no `moved` value is outside the compared pair: a leaf only one
+ * tree has. It is drawn as that, never as "kept", which would claim the trees
+ * agree about a leaf one of them does not contain.
+ */
+function movedLeavesFrom(scale: SequentialColorScale) {
+  const kept = { color: scale.color(0), label: "In the agreement subtree" };
+  const moved = { color: scale.color(1), label: "Moved" };
+  const absent = { color: ABSENT_COLOR, label: ABSENT_LABEL };
+  const countOf = (node: { metadata?: Record<string, unknown> }) => {
+    const value = node.metadata?.moved;
+    return typeof value === "number" ? value : null;
+  };
+  return {
+    legend: [kept, moved, absent],
+    categoryOf: (node: { metadata?: Record<string, unknown> }) => {
+      const count = countOf(node);
+      const leaves = Number(node.metadata?.trueLeafCount ?? 1);
+      if (leaves > 1 || node.metadata?.truncated === 1) {
+        // A clade: never painted, but its hover says what it holds.
+        if (count === null) return undefined;
+        return {
+          color: count > 0 ? moved.color : kept.color,
+          label: `${count.toLocaleString()} of ${leaves.toLocaleString()} leaves moved`,
+        };
+      }
+      if (count === null) return absent;
+      return count > 0 ? moved : kept;
+    },
+    wedgeColor: (node: { metadata?: Record<string, unknown> }): string => {
+      const count = countOf(node);
+      if (count === null) return ABSENT_COLOR;
+      return count > 0 ? moved.color : kept.color;
+    },
+  };
+}
+
+/** What the report says about moved leaves, with the same colours as the view. */
+function movedReportKey(scale: SequentialColorScale | undefined, totals: ComparisonSummary | null) {
+  if (!scale) return null;
+  const moved = totals ? Number(totals.summary.moved) : null;
+  const leaves = totals ? Number(totals.summary.n_leaves) : null;
+  const count =
+    moved !== null && leaves !== null
+      ? ` ${moved.toLocaleString()} of ${leaves.toLocaleString()} shared leaves moved.`
+      : "";
+  return {
+    description:
+      "Leaves are coloured by the maximum agreement subtree: the largest set of leaves both " +
+      "trees arrange identically. A leaf outside it has moved; a collapsed clade is coloured as " +
+      "moved if it holds any moved leaf. Branch colour carries no meaning here." +
+      count,
+    swatches: movedLeavesFrom(scale).legend,
   };
 }
 
@@ -296,6 +364,10 @@ interface DrawnProbe {
   collapsed: boolean;
   x: number;
   y: number;
+  /** The colour the node's marker is drawn in, after every operator. */
+  color: string | null;
+  /** The slice's `moved` value for it (§46), null where there is none. */
+  moved: number | null;
 }
 
 /** What a panel's highlight is on: the library's graph id, and the stored node behind it. */
@@ -324,6 +396,7 @@ export function ComparisonView({
   options,
   onOptions,
   summary = null,
+  movedSummary = null,
   exporting = false,
   onExportClose,
 }: {
@@ -340,6 +413,8 @@ export function ComparisonView({
   onOptions: (change: Partial<ViewOptions>) => void;
   /** The computed scalars, for the report. */
   summary?: ComparisonSummary | null;
+  /** The moved-leaves scalars, for the report while that view is on (§46). */
+  movedSummary?: ComparisonSummary | null;
   /** Opened from the header; the panel lives here because the viewers do. */
   exporting?: boolean;
   onExportClose?: () => void;
@@ -350,7 +425,12 @@ export function ComparisonView({
   const [panelHeight, setPanelHeight] = useState(0);
   const autoBudget = readableBudget(panelHeight);
 
-  const metric = viewMetric(pair);
+  const metric = sliceMetric(pair);
+  // One presentation at a time, decided in one place with App's menu: a link
+  // asking for moved leaves on a comparison without them opens with the gradient.
+  const shown = presentation(options, pair);
+  const movedOn = shown === "moved";
+  const gradientOn = shown === "divergence";
   const [left, leftActions] = useSide(
     pair.left, pair.id, metric, initial?.left, autoBudget, options.cladeSizes,
   );
@@ -519,6 +599,8 @@ export function ComparisonView({
           if (!graph.hasNode(id)) return [];
           const at = renderer.graphToViewport(graph.getNodeAttributes(id) as { x: number; y: number });
           const storedId = node.source.metadata?.storedId;
+          const moved = node.source.metadata?.moved;
+          const shown = renderer.getNodeDisplayData(id)?.color;
           return [{
             storedId: typeof storedId === "number" ? storedId : null,
             label: node.label,
@@ -526,6 +608,8 @@ export function ComparisonView({
             collapsed: node.isCollapsed,
             x: box.left + at.x,
             y: box.top + at.y,
+            color: typeof shown === "string" ? shown : null,
+            moved: typeof moved === "number" ? moved : null,
           }];
         });
       },
@@ -834,12 +918,12 @@ export function ComparisonView({
   // the operator handles.
   useEffect(() => {
     handle.current?.panels.forEach((panel) => {
-      panel.operators.comparison?.setEnabled(options.gradient);
+      panel.operators.comparison?.setEnabled(gradientOn || movedOn);
     });
     // `bothLoaded`: the panels are built only once both trees arrive, so a
     // link with the gradient off (`g=0`) was applied to no panel and opened
     // coloured. Same for the colour target below and the layout above.
-  }, [options.gradient, bothLoaded]);
+  }, [gradientOn, movedOn, bothLoaded]);
 
   // Cladogram or phylogram. The viewer re-lays itself out from the tree it
   // already holds, so switching costs a render and no request. `bothLoaded`
@@ -868,16 +952,29 @@ export function ComparisonView({
   useEffect(() => {
     const built = handle.current;
     if (!built) return;
+    if (movedOn) {
+      // Moved leaves instead of the gradient (§46): leaves painted by what
+      // happened to them, wedges by whether they hold a moved leaf, branches
+      // left black. One presentation at a time, so one legend.
+      const moved = movedLeavesFrom(built.diffScale);
+      built.panels.forEach((panel) => {
+        panel.operators.comparison?.setCategories(moved.categoryOf, moved.legend, MOVED_TITLE);
+        panel.operators.comparison?.setMode("categories");
+        panel.operators.cladeShape?.setColor(moved.wedgeColor);
+      });
+      return;
+    }
     const wedgeColor = wedgeColorFrom(built.diffScale);
     built.panels.forEach((panel) => {
+      panel.operators.comparison?.setMode("gradient");
       panel.operators.comparison?.setColorTargets({
-        edges: options.gradient && options.colorTarget === "branches",
+        edges: gradientOn && options.colorTarget === "branches",
       });
       panel.operators.cladeShape?.setColor(
-        options.gradient && options.colorTarget === "clades" ? wedgeColor : CLADE_SHAPE.color,
+        gradientOn && options.colorTarget === "clades" ? wedgeColor : CLADE_SHAPE.color,
       );
     });
-  }, [options.gradient, options.colorTarget, bothLoaded]);
+  }, [gradientOn, options.colorTarget, movedOn, bothLoaded]);
 
   const colorsKey = JSON.stringify(
     Object.entries(options.colors).sort(([a], [b]) => a.localeCompare(b)),
@@ -976,7 +1073,7 @@ export function ComparisonView({
             images,
             showing: { left: showing(left), right: showing(right) },
             typing: options.typing ? { columns: segmentKeys, scale: barScale } : null,
-            gradient: options.gradient,
+            gradient: gradientOn,
             gradientOn: options.colorTarget,
             swatches: options.typing ? swatches : undefined,
             // The ends of the scale the operator actually draws with, rather
@@ -988,9 +1085,10 @@ export function ComparisonView({
             // Unconditional, as on screen: a colour key that lists only what
             // this particular view happened to contain cannot be learnt, and
             // the reader of a report cannot navigate to find out.
-            absent: options.gradient
+            absent: gradientOn
               ? { label: ABSENT_LABEL, color: ABSENT_COLOR }
               : undefined,
+            leafCategories: movedOn ? movedReportKey(handle.current?.diffScale, movedSummary) : null,
           },
           `${choices.title.replace(/[^\w.-]+/g, "-").toLowerCase()}`,
           choices.format,
@@ -1011,8 +1109,10 @@ export function ComparisonView({
       options.typing,
       segmentKeys,
       barScale,
-      options.gradient,
+      gradientOn,
       options.colorTarget,
+      movedOn,
+      movedSummary,
       swatches,
       onExportClose,
     ],

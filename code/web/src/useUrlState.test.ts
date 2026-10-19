@@ -155,4 +155,30 @@ describe("view state in the URL", () => {
     act(() => result.current[1]({ comparison: "a__b", left: [1, 2, 3], right: [] }));
     expect(window.history.length).toBe(before);
   });
+
+  it("round-trips moved leaves as one presentation, not beside the gradient (§46)", () => {
+    const { result } = renderHook(() => useUrlState());
+    act(() =>
+      result.current[1]({
+        comparison: "a__b",
+        left: [],
+        right: [],
+        options: { ...DEFAULT_OPTIONS, gradient: false, moved: true },
+      }),
+    );
+    expect(window.location.hash).toContain("mv=1");
+    // Written once: mv implies the gradient is off, so g=0 would be noise.
+    expect(window.location.hash).not.toContain("g=0");
+
+    const restored = renderHook(() => useUrlState()).result.current[0].options;
+    expect(restored.moved).toBe(true);
+    expect(restored.gradient).toBe(false);
+  });
+
+  it("opens an old link, without mv, exactly as before", () => {
+    window.history.replaceState(null, "", "/#/c/a__b?g=0");
+    const options = renderHook(() => useUrlState()).result.current[0].options;
+    expect(options.moved).toBe(false);
+    expect(options.gradient).toBe(false);
+  });
 });

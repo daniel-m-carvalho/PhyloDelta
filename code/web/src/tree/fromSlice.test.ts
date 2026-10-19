@@ -179,4 +179,15 @@ describe("a malformed slice", () => {
     expect(built.root.length).toBeUndefined();
     expect(built.root.branchset?.[0].length).toBe(1);
   });
+
+  it("carries each node's moved-leaf count, and none where none was sent (§46)", () => {
+    const sent = { ...minimal({}), comparison: { id: [0, 1, 2], similarity: [1, 1, null], corresponds: [0, 1, null], exact: [true, true, false], columns: { moved: [1, 0, null] } } } as unknown as TreeSlice;
+    const built = treeFromSlice(sent);
+    const [a, b] = built.root.branchset ?? [];
+    expect(built.root.metadata?.moved).toBe(1);
+    expect(a.metadata?.moved).toBe(0);
+    // Null, never 0: "not measured" must not read as "did not move".
+    expect(b.metadata?.moved).toBeNull();
+    expect(treeFromSlice(minimal({})).root.metadata?.moved).toBeNull();
+  });
 });

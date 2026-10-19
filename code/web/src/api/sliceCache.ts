@@ -92,10 +92,15 @@ export function estimateSliceBytes(slice: TreeSlice): number {
   let bytes = n * (8 * 4 + 4);
   for (const text of label) bytes += 24 + text.length * 2;
 
+  // Every array the comparison carries, not a list of the ones known here: the
+  // list missed `id` and RF's `exact` — 16 bytes a node, ~10% of a slice,
+  // counted in the unsafe direction — because it was written before they were
+  // sent. A field the server adds later is charged without anyone remembering.
   const comparison = slice.comparison;
   if (comparison) {
-    bytes += comparison.similarity.length * 8;
-    bytes += comparison.corresponds.length * 8;
+    for (const value of Object.values(comparison)) {
+      if (Array.isArray(value)) bytes += value.length * 8;
+    }
     for (const column of Object.values(comparison.columns ?? {})) bytes += column.length * 8;
   }
 

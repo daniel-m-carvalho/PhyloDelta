@@ -93,6 +93,25 @@ describe("size estimation", () => {
     );
   });
 
+  it("charges for every array the comparison carries, named here or not", () => {
+    // The promise is the bound, so the test is the bound: at least a slot for
+    // every value received. Listing fields by name missed `id` and `exact`.
+    const n = 100;
+    const bare = slice(n);
+    const full = {
+      ...bare,
+      comparison: {
+        id: bare.nodes.id,
+        similarity: bare.nodes.id.map(() => 0.5),
+        corresponds: bare.nodes.id,
+        exact: bare.nodes.id.map(() => true),
+        columns: { moved: bare.nodes.id.map(() => 1), future: bare.nodes.id.map(() => 2) },
+      },
+    } as TreeSlice;
+    const arrays = 6; // id, similarity, corresponds, exact, and two columns
+    expect(estimateSliceBytes(full) - estimateSliceBytes(bare)).toBeGreaterThanOrEqual(arrays * n * 8);
+  });
+
   it("charges for long labels", () => {
     expect(estimateSliceBytes(slice(100, { labels: 60 }))).toBeGreaterThan(
       estimateSliceBytes(slice(100, { labels: 8 })),

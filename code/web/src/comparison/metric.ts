@@ -16,6 +16,44 @@ export function viewMetric(pair: Pick<PairSummary, "metrics">): string {
   return pair.metrics[0] ?? "rf";
 }
 
+/** Whether the comparison carries moved leaves, so the view can be offered (§46). */
+export function hasMovedLeaves(pair: Pick<PairSummary, "metrics">): boolean {
+  return pair.metrics.includes("mast");
+}
+
+/** What colours the trees: one presentation at a time (§46). */
+export type Presentation = "divergence" | "moved" | "none";
+
+/**
+ * The presentation actually shown, from what was asked for and what exists.
+ *
+ * Moved leaves asked for on a comparison without them — an old link, a shared
+ * one, a comparison that declined the metric — falls back to the divergence
+ * gradient rather than to nothing: the person asked for colour, and "no
+ * colour" would read as "nothing differs".
+ */
+export function presentation(
+  options: { gradient: boolean; moved: boolean },
+  pair: Pick<PairSummary, "metrics">,
+): Presentation {
+  if (options.moved) return hasMovedLeaves(pair) ? "moved" : "divergence";
+  return options.gradient ? "divergence" : "none";
+}
+
+/**
+ * Which metric to ask slices under.
+ *
+ * A slice carries the per-node columns of the metric it was asked for, and
+ * only those. The gradient does not depend on it — similarity comes from the
+ * pair's correspondence, served with every metric — so asking under `mast`
+ * where it exists brings the moved-leaf counts along with the same gradient,
+ * and switching between the two presentations costs no request. Nothing here
+ * reads RF's own column (`exact`).
+ */
+export function sliceMetric(pair: Pick<PairSummary, "metrics">): string {
+  return hasMovedLeaves(pair) ? "mast" : viewMetric(pair);
+}
+
 /** The header's number: RF where the metric reports it, else the metric's own. */
 export function headline(
   summary: ComparisonSummary,
