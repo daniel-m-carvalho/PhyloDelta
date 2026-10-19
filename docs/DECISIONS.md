@@ -4993,7 +4993,7 @@ otherwise — none is quoted from memory.
 
 | software | role here | origin | licence |
 |---|---|---|---|
-| **TreeDiff** | **conformance oracle**, run as an external process. Source study in §Next; **not linked** | `github.com/pedroparedesbranco/TreeDiff` — the reference implementation of Branco et al. (2024) | **GPL-3.0** |
+| **TreeDiff** | **conformance oracle**, run as an external process. Source study in §Next; **not linked**. **Pinned** to commit `1fa132a` (2024-01-14) in `native/build_treediff.sh`, the version every measurement used; its vendored sdsl-lite is a submodule, pinned with it | `github.com/pedroparedesbranco/TreeDiff` — the reference implementation of Branco et al. (2024) | **GPL-3.0** |
 | `rf_postorder`, `rf_nextsibling` | the two oracle binaries actually used | TreeDiff | GPL-3.0 |
 | `rf_day` | **rejected** as an oracle — returns 11,831 comparing a tree with itself (§2.5) | TreeDiff | GPL-3.0 |
 | `trip_treediff`, `trip_sht` | triplet distance; planned second metric (§9.4) | TreeDiff | GPL-3.0 |
