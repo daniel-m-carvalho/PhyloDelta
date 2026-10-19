@@ -4941,6 +4941,31 @@ tools say C.
 `setdiff(t1$tip.label, mast(t1, t2))` reports **every** leaf as moved (6 of 6 on the example above;
 kept as a test). The oracle calls `mast(..., tree = FALSE, rooted = TRUE)`.
 
+**The view (web).** "Colour the trees by: Divergence / Moved leaves (MAST) / Nothing" in View
+options — **one presentation at a time, each with its own legend**. Both read blue and yellow, and
+their meanings differ (a clade's overlap against a leaf's place in the agreement subtree), so they
+are never on screen together. With moved leaves on, leaves are blue (kept), yellow (moved) or red
+(not in the other tree, as in the gradient's key); a triangle is yellow if it holds any moved leaf
+and says "N of M leaves moved" on hover; branches are black; the header adds "Moved N of M leaves".
+The library gained a `"categories"` mode for this rather than reusing `"membership"`, which paints
+one colour for agreement only. Slices are asked under `metric=mast` wherever the comparison has it:
+the gradient comes from correspondence under any metric, so switching costs no request, and nothing
+read RF's own `exact` column. Where MAST was not computed the option is shown greyed with the
+reason (`/status`'s `metrics_failed` for an upload), not hidden, and a link asking for it falls
+back to the gradient rather than to no colour. The upload panel asks for it beside the chosen
+distance, ticked by default; the API's own default stays `rf`.
+
+Checked in the browser against the server's data: every drawn leaf's colour matched its `moved`
+value across 342 leaves in both panels (136 kept, 205 moved, the one leaf only one tree has); the
+mark and layout checks still pass.
+
+**The cache (§40) is unaffected.** The 200-step request walk on the demo pair made the same 176
+requests, step kind for step kind, with and without MAST in the store; five switches of colouring
+made none. A slice carries one more column: +10% in the cache's estimate (7.9 → 8.7 KiB for a
+50-tip view), +2–4% gzipped on the wire. Measuring it found the estimate had been charging only the
+comparison arrays it named, missing `id` and RF's `exact` — 16 bytes a node, in the unsafe
+direction for a byte bound. It now charges every array the block carries.
+
 ---
 
 ## References and provenance

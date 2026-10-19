@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { ComparisonSummary } from "../api/types";
-import { headline, viewMetric } from "./metric";
+import { hasMovedLeaves, headline, presentation, sliceMetric, viewMetric } from "./metric";
 
 describe("viewMetric", () => {
   it("reads a comparison under the metric it was computed with", () => {
@@ -35,5 +35,35 @@ describe("headline", () => {
 
   it("shows nothing rather than an invented number", () => {
     expect(headline(summary({}))).toBeNull();
+  });
+});
+
+describe("moved leaves (§46)", () => {
+  const withMast = { metrics: ["mast", "rf"] };
+  const without = { metrics: ["rf"] };
+
+  it("are offered only where the comparison computed them", () => {
+    expect(hasMovedLeaves(withMast)).toBe(true);
+    expect(hasMovedLeaves(without)).toBe(false);
+  });
+
+  it("ride along in the slices, without changing the metric the header reads", () => {
+    // The gradient comes from correspondence under any metric, so asking
+    // slices under mast costs it nothing and brings the moved counts.
+    expect(sliceMetric(withMast)).toBe("mast");
+    expect(viewMetric(withMast)).toBe("rf");
+    expect(sliceMetric(without)).toBe("rf");
+  });
+
+  it("show one presentation at a time", () => {
+    expect(presentation({ gradient: true, moved: false }, withMast)).toBe("divergence");
+    expect(presentation({ gradient: false, moved: true }, withMast)).toBe("moved");
+    expect(presentation({ gradient: false, moved: false }, withMast)).toBe("none");
+  });
+
+  it("fall back to the gradient, not to nothing, where they were not computed", () => {
+    // The bug: a link with mv=1 to a comparison without them opened uncoloured,
+    // which reads as "nothing differs".
+    expect(presentation({ gradient: false, moved: true }, without)).toBe("divergence");
   });
 });

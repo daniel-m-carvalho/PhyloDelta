@@ -37,7 +37,11 @@ On the home page, under **New comparison**:
    number is a coincidence.
 4. Choose what to **Compare with** (the metric). Under the choice, "Computed as in…" says where the
    metric's computation comes from.
-5. Click **Upload and compare**.
+5. Keep **Also find moved leaves (MAST)** ticked to be able to show, later, which leaves the two
+   trees place differently ([Moved leaves](#moved-leaves)). It adds seconds on trees of tens of
+   thousands of leaves; above 40,000 leaves it is skipped, with the reason, and the rest of the
+   comparison is still computed.
+6. Click **Upload and compare**.
 
 The comparison is computed on the server in the background. The panel shows **Queued — waiting for a
 worker**, then **Computing the comparison…**, then opens the comparison when it is ready. Large trees can take minutes. You can leave
@@ -119,13 +123,30 @@ The mark stays until you clear it with **×** on the chip, or **Esc**.
 
 | Option | What it does |
 |---|---|
-| **Divergence** | Colour the trees by how much they disagree (see [Reading a comparison](reading-a-comparison.md)). |
-| **Colour the divergence on: Branches / Clades** | Put the colour on the branches, or on the collapsed triangles. |
+| **Colour the trees by: Divergence / Moved leaves (MAST) / Nothing** | One colouring at a time. **Divergence**: how much each clade disagrees, on the branches. **Moved leaves**: which leaves the two trees place differently ([below](#moved-leaves)). **Nothing**: the trees in black. See [Reading a comparison](reading-a-comparison.md). |
+| **Colour the divergence on: Branches / Clades** | With Divergence: put the colour on the branches, or on the collapsed triangles. |
 | **Isolate data** | A bar on each leaf counting its isolates ([section 7](#7-isolate-data)). |
 | **Clade sizes** | Label every triangle with its number of leaves. |
 | **Branch lengths** | Write each branch's length beside it, where there is room. Zoom in to see more. |
 | **Draw the trees as: Cladogram / Phylogram** | Cladogram: positions by depth, to read the shape. Phylogram: positions by branch length, to read distance. |
 | **Branch length scale: Linear / Logarithmic** | Phylogram only. Logarithmic draws each branch as log(1 + length), so a few very long branches no longer squash the rest. Labels still show the real length. |
+
+### Moved leaves
+
+**View options → Colour the trees by: Moved leaves (MAST)** paints each **leaf** by whether it is in
+the *maximum agreement subtree*, the largest set of leaves both trees arrange in exactly the same
+way:
+
+- **blue**: in the agreement subtree, placed the same in both trees;
+- **yellow**: moved, placed differently;
+- **red**: not in the other tree.
+
+A triangle is yellow if it holds any moved leaf; hover over it for "N of M leaves moved". The top
+bar adds **Moved N of M leaves**. The branches are black while this is on, and the panel legend
+changes to match.
+
+It is offered only for comparisons computed with it (the upload's **Also find moved leaves**
+checkbox; the demo comparisons have it). Otherwise it is greyed out, with the reason.
 
 ## 7. Isolate data
 

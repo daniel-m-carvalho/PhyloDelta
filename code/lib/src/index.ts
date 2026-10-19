@@ -87,7 +87,7 @@ export type { SelectionOptions } from "./presentation/operators/selection";
 export { BarChartPresenter } from "./presentation/operators/barchart_presenter";
 export type { BarChartOptions, BarScale } from "./presentation/operators/barchart_presenter";
 export { ComparisonOperator } from "./presentation/operators/comparison";
-export type { ComparisonOptions, ComparisonMode } from "./presentation/operators/comparison";
+export type { ComparisonOptions, ComparisonMode, LeafCategory } from "./presentation/operators/comparison";
 
 // --- Export (generic: the app decides what goes in a report) ---
 export { renderReport } from "./presentation/export/report";

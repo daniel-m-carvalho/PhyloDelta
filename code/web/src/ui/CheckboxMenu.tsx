@@ -29,6 +29,12 @@ export interface CheckboxItem {
   group?: string;
   /** A labelled rule above this item, separating it from what precedes it. */
   heading?: string;
+  /**
+   * Shown but not choosable, with `note` saying why. Greyed rather than left
+   * out: an option that silently disappears reads as "this app cannot", when
+   * the truth is "not for this comparison, because…".
+   */
+  disabled?: boolean;
 }
 
 export function CheckboxMenu({
@@ -92,12 +98,15 @@ export function CheckboxMenu({
           {items.map((item) => (
             <Fragment key={item.key}>
               {item.heading ? <span className="menu-heading">{item.heading}</span> : null}
-              <label>
+              <label className={item.disabled ? "disabled" : undefined}>
                 <input
                   type={item.group ? "radio" : "checkbox"}
                   name={item.group}
                   checked={item.checked}
-                  onChange={() => onToggle(item.key)}
+                  disabled={item.disabled}
+                  onChange={() => {
+                    if (!item.disabled) onToggle(item.key);
+                  }}
                 />
                 <span>
                   {item.label}

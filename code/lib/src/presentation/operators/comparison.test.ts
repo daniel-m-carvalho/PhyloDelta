@@ -221,6 +221,83 @@ describe("ComparisonOperator — membership mode", () => {
   });
 });
 
+describe("ComparisonOperator — categories mode", () => {
+  const KEPT = { color: "#0000ff", label: "Kept" };
+  const MOVED = { color: "#ffff00", label: "Moved" };
+  const byName = (node: { name: string }) =>
+    node.name === "a" ? MOVED : node.name === "c" || node.name === "d" ? KEPT : undefined;
+
+  it("paints each leaf the colour of its category", () => {
+    const h = makeHarness(namedTree());
+    new ComparisonOperator({ enabled: true, mode: "categories", categoryOf: byName }).attach(h.viewer);
+    h.render();
+
+    expect(h.styleOf("named_a").color).toBe(MOVED.color);
+    expect(h.styleOf("named_c").color).toBe(KEPT.color);
+  });
+
+  it("leaves internal nodes and branches as the tree drew them", () => {
+    const h = makeHarness(namedTree());
+    const node = h.styleOf("named_b").color;
+    const edge = h.edgeStyleOf("named_a")!.color;
+
+    new ComparisonOperator({
+      enabled: true,
+      mode: "categories",
+      categoryOf: () => MOVED,
+      values: new Map([["a", 1]]),
+    }).attach(h.viewer);
+    h.render();
+
+    expect(h.styleOf("named_b").color).toBe(node);
+    expect(h.edgeStyleOf("named_a")!.color).toBe(edge);
+  });
+
+  it("leaves a leaf with no category unpainted rather than inventing one", () => {
+    const h = makeHarness(namedTree());
+    const before = h.styleOf("named_a").color;
+    new ComparisonOperator({ enabled: true, mode: "categories", categoryOf: () => undefined }).attach(h.viewer);
+    h.render();
+    expect(h.styleOf("named_a").color).toBe(before);
+  });
+
+  it("keys its colours in the legend, under a heading, and only its own", () => {
+    const h = makeHarness(namedTree());
+    const cmp = new ComparisonOperator({
+      enabled: true,
+      mode: "categories",
+      categoryOf: byName,
+      categoryLegend: [KEPT, MOVED],
+      categoryTitle: "Moved leaves (MAST)",
+      legendLabels: ["Identical", "Diverged"],
+    });
+    cmp.attach(h.viewer);
+    h.render();
+
+    const legend = h.viewer.getContainer().textContent ?? "";
+    expect(legend).toContain("Moved leaves (MAST)");
+    expect(legend).toContain("Kept");
+    expect(legend).toContain("Moved");
+    expect(legend).not.toContain("Diverged");
+  });
+
+  it("switches presentation in place, without rebuilding", () => {
+    const h = makeHarness(namedTree());
+    const cmp = new ComparisonOperator({ enabled: true, mode: "gradient", legendLabels: ["Identical", "Diverged"] });
+    cmp.attach(h.viewer);
+    h.render();
+
+    cmp.setCategories(byName, [KEPT, MOVED], "Moved leaves");
+    cmp.setMode("categories");
+    expect(h.styleOf("named_a").color).toBe(MOVED.color);
+    expect(h.viewer.getContainer().textContent).not.toContain("Diverged");
+
+    cmp.setMode("gradient");
+    expect(h.styleOf("named_a").color).not.toBe(MOVED.color);
+    expect(h.viewer.getContainer().textContent).toContain("Diverged");
+  });
+});
+
 describe("ComparisonOperator — linking", () => {
   it("links two operators without throwing", () => {
     const left = makeHarness(namedTree());

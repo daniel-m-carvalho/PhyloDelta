@@ -26,8 +26,24 @@ import type { TreeOperator } from "./operator";
  *    are untouched: the mode describes tips, and encodes *agreement only*, so the
  *    view answers "what do these two trees have in common?". For metrics that
  *    report *which* leaves differ, rather than how much.
+ *  - `"categories"` — paint **every leaf** the colour of the category
+ *    `categoryOf` gives it, and key those colours in the legend. For a metric
+ *    whose answer per leaf is one of a few states rather than a magnitude —
+ *    moved leaves (§46): kept, moved, or not in the other tree. Branches are
+ *    left as the tree drew them, so one presentation is on screen at a time.
+ *    Internal nodes are not painted; their category's `label` is still the
+ *    hover text, which is how a collapsed clade can say what it holds.
  */
-export type ComparisonMode = "gradient" | "membership";
+export type ComparisonMode = "gradient" | "membership" | "categories";
+
+/**
+ * One class of leaf in `"categories"` mode: the colour it is painted and what
+ * that colour means, for the legend and the hover.
+ */
+export interface LeafCategory {
+  color: string;
+  label: string;
+}
 
 export interface ComparisonOptions {
   /** Per-key comparison values (backend-provided). */
@@ -107,6 +123,15 @@ export interface ComparisonOptions {
    * "different" color — differing leaves are simply left unmarked.
    */
   equalColor?: string;
+  /**
+   * Categories mode: what a node is. Leaves are painted its `color`; any node
+   * hovered shows its `label`. Undefined leaves a leaf as the tree drew it.
+   */
+  categoryOf?: (node: NewickNode) => LeafCategory | undefined;
+  /** Categories mode: the legend's rows, in order. */
+  categoryLegend?: LeafCategory[];
+  /** Categories mode: a heading above those rows. */
+  categoryTitle?: string;
   /** Membership marker size (px) so the leaf color reads clearly. Default 6. */
   markerSize?: number;
   /**
@@ -226,6 +251,9 @@ export class ComparisonOperator implements TreeOperator {
   private equalColor: string;
   private markerSize: number;
   private membershipLabels: [string, string];
+  private categoryOf?: (node: NewickNode) => LeafCategory | undefined;
+  private categoryLegend: LeafCategory[];
+  private categoryTitle?: string;
   private showLegend: boolean;
   private legendLabels: [string, string];
   private correspondence?: CorrespondenceMap;
@@ -288,6 +316,9 @@ export class ComparisonOperator implements TreeOperator {
     this.flashInterval = Math.max(50, options.flashInterval ?? 300);
     this.persistHighlight = options.persistHighlight ?? false;
     this.membershipLabels = options.membershipLabels ?? ["Different", "Equal"];
+    this.categoryOf = options.categoryOf;
+    this.categoryLegend = options.categoryLegend ?? [];
+    this.categoryTitle = options.categoryTitle;
     this.showLegend = options.legend ?? true;
     this.legendLabels = options.legendLabels ?? ["Different", "Similar"];
     this.correspondence = options.correspondence;
@@ -379,6 +410,22 @@ export class ComparisonOperator implements TreeOperator {
     return this.mode;
   }
 
+  /**
+   * Replace what categories mode paints and how its legend reads. Re-colours
+   * at once, so a consumer can switch presentation without rebuilding panels.
+   */
+  setCategories(
+    categoryOf: ((node: NewickNode) => LeafCategory | undefined) | undefined,
+    legend: LeafCategory[] = [],
+    title?: string,
+  ): void {
+    this.categoryOf = categoryOf;
+    this.categoryLegend = legend;
+    this.categoryTitle = title;
+    this.renderLegend();
+    this.refresh();
+  }
+
   /** Replace the membership-mode set of differing node keys and re-color. */
   setDiffering(differing: Iterable<string> | undefined): void {
     this.differing = differing ? new Set(differing) : undefined;
@@ -437,7 +484,17 @@ export class ComparisonOperator implements TreeOperator {
 
     if (this.enabled) {
       const layoutNode = this.viewer?.getNodeMap().get(node);
-      if (layoutNode && this.mode === "membership") {
+      if (layoutNode && this.mode === "categories") {
+        // Leaves only: a category describes a tip. A collapsed clade is drawn
+        // by its wedge, which the consumer colours through the clade
+        // presenter; painting its marker here would put a ball beside it.
+        const tip = layoutNode.isLeaf && !layoutNode.isCollapsed;
+        const category = tip ? this.categoryOf?.(layoutNode.source) : undefined;
+        if (category) {
+          const size = Math.max((result.size as number) || 0, this.markerSize);
+          result = { ...result, color: category.color, size };
+        }
+      } else if (layoutNode && this.mode === "membership") {
         // Mark agreement, on leaves only: a leaf the backend does NOT list as
         // differing is shared by both trees, and gets `equalColor` plus a visible
         // marker. Everything else is left exactly as other operators styled it —
@@ -717,7 +774,11 @@ export class ComparisonOperator implements TreeOperator {
     const layoutNode = this.viewer.getNodeMap().get(node);
     if (!layoutNode) return;
     let detail: string;
-    if (this.mode === "membership") {
+    if (this.mode === "categories") {
+      const category = this.categoryOf?.(layoutNode.source);
+      if (!category) return;
+      detail = category.label;
+    } else if (this.mode === "membership") {
       detail = this.isNodeDifferent(layoutNode.source)
         ? this.membershipLabels[0]
         : this.membershipLabels[1];
@@ -731,7 +792,9 @@ export class ComparisonOperator implements TreeOperator {
     if (!renderer || !graph) return;
     const attrs = graph.getNodeAttributes(node) as { x: number; y: number };
     const pos = renderer.graphToViewport({ x: attrs.x, y: attrs.y });
-    this.tooltipEl.textContent = `${this.keyOf(layoutNode.source)} · ${detail}`;
+    // An unnamed clade has no key to show; its detail is the whole message.
+    const key = this.keyOf(layoutNode.source);
+    this.tooltipEl.textContent = key ? `${key} · ${detail}` : detail;
     this.tooltipEl.style.display = "block";
     const at = placeInside(
       { x: pos.x, y: pos.y },
@@ -771,6 +834,19 @@ export class ComparisonOperator implements TreeOperator {
    */
   private renderLegend(): void {
     this.legendEl.innerHTML = "";
+
+    if (this.mode === "categories") {
+      if (this.categoryTitle) {
+        const heading = document.createElement("div");
+        heading.textContent = this.categoryTitle;
+        Object.assign(heading.style, { fontWeight: "600", marginBottom: "2px" } as CSSStyleDeclaration);
+        this.legendEl.appendChild(heading);
+      }
+      for (const row of this.categoryLegend) {
+        this.legendEl.appendChild(this.swatchRow(row.color, row.label));
+      }
+      return;
+    }
 
     if (this.mode === "membership") {
       // One swatch: the mode paints agreement only, so a "different" swatch

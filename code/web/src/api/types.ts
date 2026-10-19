@@ -37,8 +37,12 @@ export interface SliceNodes {
 }
 
 export interface ComparisonValues {
+  /** The node ids again, aligned with `nodes.id`. */
+  id?: number[];
   similarity: (number | null)[];
   corresponds: (number | null)[];
+  /** RF's per-clade verdict; empty when the slice was asked under another metric. */
+  exact?: boolean[];
   columns?: Record<string, (number | null)[]>;
 }
 

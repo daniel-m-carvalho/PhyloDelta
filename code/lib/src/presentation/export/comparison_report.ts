@@ -72,6 +72,12 @@ export interface ComparisonView {
    * picture with three appearances and a key for two.
    */
   absent?: { label: string; color: string };
+  /**
+   * Leaves painted by category instead of the gradient — moved leaves, say
+   * (§46). What the colours mean and their key; when set it is what the
+   * pictures show, and the gradient is not described.
+   */
+  leafCategories?: { description: string; swatches: ReportSwatch[] } | null;
 }
 
 export interface ComparisonReportInput {
@@ -181,7 +187,10 @@ function viewSetup(view: ComparisonView): Report["sections"][number] {
   const body: string[] = [];
   const swatches: ReportSwatch[] = [];
 
-  if (view.gradient) {
+  if (view.leafCategories) {
+    body.push(view.leafCategories.description);
+    swatches.push(...view.leafCategories.swatches);
+  } else if (view.gradient) {
     body.push(
       view.gradientOn === "clades"
         ? "Each collapsed clade's wedge is coloured by how much the two trees disagree at that clade. Branch colour carries no meaning here."

@@ -50,11 +50,35 @@ The colour legend sits at the bottom left of each panel.
 | **Blue** branch or triangle | **Identical**: this clade also exists in the other tree, with exactly the same leaves. |
 | **Blue → cyan → green → yellow** | **Increasingly diverged**: the most similar clade in the other tree shares a smaller part of the leaves. Yellow is the least similar. |
 | **Red** branch | **Not in the other tree**: a leaf present in only this tree, so it has no counterpart to compare with. |
-| **Black** | No comparison colour: either divergence colouring is off (**View options → Divergence**), or the colour has been moved to the triangles (**Colour the divergence on: Clades**). |
+| **Black** | No comparison colour on the branches: the trees are coloured by **Nothing** or by **Moved leaves** (**View options → Colour the trees by**), or the colour has been moved to the triangles (**Colour the divergence on: Clades**). |
 
 How the colour is computed: for each clade, PhyloDelta finds the clade in the other tree that shares
 the most leaves with it, measured as *shared leaves ÷ leaves in either*. Identical clades score 1 and
 are drawn blue; the lower the score, the further towards yellow.
+
+## Moved leaves (MAST)
+
+With **View options → Colour the trees by: Moved leaves (MAST)**, the colours describe **leaves**,
+not clades, and the legend changes to say so:
+
+| You see | It means |
+|---|---|
+| **Blue** leaf | **In the agreement subtree**: one of the largest set of leaves both trees arrange in exactly the same way. |
+| **Yellow** leaf | **Moved**: outside that set; the two trees place it differently. |
+| **Red** leaf | **Not in the other tree**, as in the divergence colouring. |
+| **Yellow** triangle | The collapsed clade holds at least one moved leaf. Hover for how many: "12 of 340 leaves moved". |
+| **Blue** triangle | None of its leaves moved. |
+
+The top bar adds **Moved N of M leaves**. Three things to know when reading it:
+
+- **It is strict.** The agreement subtree must agree *completely* in both trees, so trees built by
+  different methods can share only a small one: on the demo's NJ and UPGMA trees, 2,909 of 17,645
+  leaves (16%). Look at clades in detail, where most leaves can agree and one or two stand out.
+- **It is not always unique.** When removing either of two leaves would make the trees agree equally
+  well, one of them is chosen by a fixed rule. The *number* of moved leaves is exact; which of two
+  interchangeable leaves is called moved is a choice.
+- **It bounds the SPR distance.** Each moved leaf can be put back with one prune-and-regraft move, so
+  the trees are at most that many such moves apart.
 
 ## Shapes
 

@@ -23,6 +23,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
  */
 export interface ViewOptions {
   gradient: boolean;
+  /**
+   * Paint leaves by the moved-leaves metric instead of the gradient (§46).
+   * One presentation at a time: setting it clears `gradient`, and the reverse.
+   */
+  moved: boolean;
   /** Where the gradient is drawn. */
   colorTarget: "branches" | "clades";
   typing: boolean;
@@ -51,6 +56,7 @@ export interface ViewOptions {
 
 export const DEFAULT_OPTIONS: ViewOptions = {
   gradient: true,
+  moved: false,
   colorTarget: "branches",
   typing: false,
   columns: [],
@@ -105,7 +111,8 @@ function parse(hash: string): ViewState {
     options: {
       // Absent means the default, so only what differs is ever written and an
       // old link without these keys still opens the view it always did.
-      gradient: query.get("g") !== "0",
+      gradient: query.get("g") !== "0" && query.get("mv") !== "1",
+      moved: query.get("mv") === "1",
       colorTarget: query.get("gc") === "clades" ? "clades" : "branches",
       typing: query.get("t") === "1",
       // Repeated keys rather than a joined string: a column name is arbitrary
@@ -127,7 +134,8 @@ function format(state: ViewState): string {
   if (state.left.length) query.set("l", state.left.join(","));
   if (state.right.length) query.set("r", state.right.join(","));
   const options = state.options ?? DEFAULT_OPTIONS;
-  if (!options.gradient) query.set("g", "0");
+  if (options.moved) query.set("mv", "1");
+  else if (!options.gradient) query.set("g", "0");
   if (options.colorTarget !== DEFAULT_OPTIONS.colorTarget) query.set("gc", options.colorTarget);
   if (options.typing) query.set("t", "1");
   for (const column of options.columns) query.append("col", column);

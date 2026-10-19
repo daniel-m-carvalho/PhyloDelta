@@ -419,6 +419,13 @@ html, body { overflow: hidden; }
   color: var(--ink);
   font: inherit;
 }
+/* Beside "Compare with", not under it: moved leaves are asked for alongside the
+   chosen distance (§46). Two columns, so the note reads as a line, not a stack. */
+.fields { align-items: start; }
+.fields label.upload-moved { display: block; grid-column: span 2; color: var(--ink); font-size: 13px; padding-top: 18px; }
+.fields .upload-moved input { padding: 0; margin: 0 6px 0 0; vertical-align: -2px; }
+.fields .upload-moved .switch-note { margin-left: 22px; }
+.fields .upload-moved .metric-references { margin-left: 22px; }
 .field-help { margin: 0 0 14px; font-size: 12px; color: var(--muted); }
 
 .primary {
@@ -576,6 +583,8 @@ html, body { overflow: hidden; }
   white-space: nowrap;
 }
 .picker-menu label:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.picker-menu label.disabled { color: var(--muted); cursor: default; }
+.picker-menu label.disabled:hover { background: none; }
 .picker-menu input { margin: 2px 0 0; }
 .menu-note { display: block; font-size: 12px; color: var(--muted); }
 

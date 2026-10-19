@@ -118,7 +118,7 @@ for (const width of WIDTHS) {
   await check("typing data on", async () => {
     await page.click("text=View options");
     await page.waitForTimeout(200);
-    await page.click("text=Typing data");
+    await page.click("text=Isolate data");
     await page.keyboard.press("Escape");
     await page.waitForTimeout(2000);
   });
