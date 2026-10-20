@@ -5,7 +5,6 @@ from __future__ import annotations
 import math
 import re
 
-import numpy as np
 import pytest
 
 from phylodelta.trees.newick import NO_PARENT, parse_newick

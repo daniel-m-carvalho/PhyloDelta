@@ -17,27 +17,30 @@
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },
-  "//": "Entry points resolve to TypeScript source. That is deliberate while this is consumed only through a workspace: Vite compiles linked sources directly, so there is no build step to keep in sync. Publishing to npm requires switching these to built ESM + .d.ts — see the publishing task in the plan.",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "//": "Published entry points are the build in dist/ (npm run build). The `source` condition, listed first, sends the workspace to the TypeScript source instead: the web app enables it in its Vite, Vitest and TypeScript configs, so development needs no build and hot-reloads the library. A consumer outside the repo never sets it and gets dist/. DECISIONS §48.",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "source": "./src/index.ts",
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./performance": {
-      "types": "./src/performance/index.ts",
-      "default": "./src/performance/index.ts"
+      "source": "./src/performance/index.ts",
+      "types": "./dist/types/performance/index.d.ts",
+      "import": "./dist/performance.js"
     }
   },
   "files": [
-    "src",
-    "!src/**/*.test.ts",
-    "!src/test_support",
-    "!src/presentation/operators/harness.ts",
+    "dist",
     "README.md"
   ],
   "scripts": {
+    "build": "vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json",
+    "prepack": "npm run build",
+    "check:package": "node scripts/check-package.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -57,6 +60,7 @@
     "jsdom": "^29.1.1",
     "sigma": "^3.0.3",
     "typescript": "^7.0.2",
+    "vite": "^8.1.5",
     "vitest": "^4.1.10"
   }
 }

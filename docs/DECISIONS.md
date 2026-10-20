@@ -5048,6 +5048,110 @@ bad column can still be changed: in the upload panel once the comparison is read
 **Cost.** The comparison view now asks `/status` on every opening, not only when moved leaves are
 missing — one request, answered from the row; for the catalogue's pairs it is a 404, caught.
 
+## 48. One release version, and a library ready to publish
+
+**Decision.** The repository has one release version, in `VERSION` at its root (`0.1.0`), and every
+manifest and lockfile that carries a version says the same: `code/{lib,web,bench}/package.json`,
+their entries in `code/package-lock.json`, `code/server/pyproject.toml` and the server's entry in
+`uv.lock`. `scripts/version.py` checks them (CI, and a commit hook — §49) and `set X.Y.Z` writes them all.
+`/health` reports the release as `version`, read from the installed package's metadata, beside
+`api_version`, the API contract's version (`1.0.0`), which a release leaves alone unless the
+contract changes. The library builds to `dist/` (ESM and `.d.ts`), and CI packs it and uses it
+from an app outside the workspace. Nothing is published yet.
+
+**Why.** Preparing the first GitHub release, modelled on phylo-lens (`phyloviz/phylo-lens`), whose
+`VERSION` drives its npm package, service, image and Compose file. Before this the packages said
+`0.1.0` and `/health` said `1.0.0` — two numbers, neither a release. The library, the web app and
+the server are developed and tested together, so a version per package would only let them drift;
+a bug report naming a version should name one state of all of them. Where the library is published
+(`@phyloviz/…` or not) is still to be decided, so the name is not changed here.
+
+**`/health`'s `version` changed meaning.** It was `API_VERSION`; it is now the release. Nothing read
+it — no client, test or document — and a health endpoint's version is conventionally the running
+software's. The contract's version moved to `api_version` rather than disappearing: `/v1` in the
+path is what clients actually depend on, and it should not move every time a release does.
+
+**Two ways into the library, by export condition.** Each entry in its `exports` lists `source`
+(the TypeScript) first, then `types` and `import` (the build). The web app enables `source` in its
+Vite, Vitest and TypeScript configs (`customConditions`). So the workspace keeps what it had —
+no build in the development loop, library edits hot-reloading, the Docker image building the app
+from source — while an app outside the repository, which never sets the condition, gets `dist/`.
+Rejected: pointing the workspace at `dist/` (a build to run before every test and a stale one to
+debug), and rewriting `package.json` at pack time (a published manifest nobody reviewed).
+
+**The check is an app outside the workspace.** Inside it, the web app reads the source and would
+pass with `dist/` missing. `npm run check:package` packs the library as `npm publish` would, unpacks
+it into an empty app whose only links are the library's dependencies, and there: checks the tarball
+holds the build, types, README and LICENSE and no source or tests; typechecks an app against it
+with `skipLibCheck: false`; bundles that app with Vite under default conditions; and imports
+`/performance` in Node and runs it. Measured to fail: a manifest shipping `src` was caught (source
+and test files named), and an `import` pointing at a missing file failed the bundle and the Node
+import.
+
+**Known limit: `nodenext` loses the types.** The declarations keep the source's extensionless
+relative imports. Measured: an app with `moduleResolution: "nodenext"` and `skipLibCheck: true`
+typechecks with every import silently `any` (a deliberate type error went unreported); with
+`skipLibCheck: false` it reports 49 errors. Bundler resolution — what Vite, webpack and Next apps
+use — is unaffected, and is what the check tests. The fix is a declaration bundler or explicit
+`.js` extensions throughout the library; left until someone needs `nodenext`.
+
+
+## 49. Linters, commit hooks, and a smoke test of the deployment
+
+**Decision.** Four additions, after reading what phylo-lens runs:
+
+* **Lint for bugs, not style.** Ruff with pyflakes and bugbear (`F`, `B`) over every Python file
+  (`ruff.toml` at the root, so `scripts/` and the bench are covered), and oxlint's correctness rules
+  plus React's rules of hooks over the library, the web app and the bench (`code/.oxlintrc.json`).
+  Both are pinned in the lockfiles and fail on any finding. No formatter: `ruff format` alone would
+  rewrite 52 of 90 server files and change no behaviour.
+* **Commit hooks** (`.pre-commit-config.yaml`): the two linters, the typecheck, the release version
+  and its script's tests, actionlint, zizmor and shellcheck for the CI workflow and shell scripts,
+  and the usual hygiene (merge markers, malformed YAML/TOML/JSON, private keys, files over 1 MB,
+  whitespace). ~4 s, so never worth skipping. The test suites and the package check run before a
+  push instead (~75 s). CI runs every hook too, so the hooks are a convenience, not the gate.
+* **A smoke test of the deployment** (`scripts/container-smoke.sh`), replacing CI's build-only
+  Docker job. It starts the Compose stack under its own project, ports and volume, and checks: each
+  of the API and the worker loads the native extension; `/health` reports `VERSION`; every listed
+  metric is available; nginx serves the app with the intended caching, falls back to it for a client
+  route, answers an unknown API path with JSON and proxies `/api/v1/`; and a comparison uploaded
+  through that proxy — two six-leaf trees and an isolate table keyed by a non-default column — is
+  computed by the worker for every metric, joins its table, slices, and deletes.
+* **CI hygiene.** Actions pinned to commit SHAs, with Dependabot proposing updates weekly but only
+  for releases two weeks old; checkouts drop their token; every job has a timeout.
+
+**Why the smoke test, and not just the build.** The service image is built to *succeed* without
+its fast paths: the native extension and TreeDiff each `|| echo` past a failed build, and the code
+then falls back to Python without saying so. A build-only job passes an image that is 17× slower to
+parse and missing two metrics. Measured to fail: a worker started without the extension
+(`PHYLODELTA_NATIVE=/nowhere`) was refused by name. Written against the real stack, the test found
+two mistakes in itself and none in the deployment.
+
+**The rules turned off, and why.** `B008` (FastAPI's `Depends()` in a signature is the idiom, not a
+bug). React's `exhaustive-deps`: it asks for each object an effect reads in its dependency list,
+compared by identity — the shape of the three re-render loops in `useTypingData`. Two React
+Compiler rules, `refs` and `set-state-in-effect`: 22 findings, all a known-safe pattern (fetching
+on mount, clearing a result as a query empties), in an app that does not use the compiler. Two
+unicorn style rules that flagged deliberate snapshots and preallocation.
+
+**What it found.** 62 ruff findings, none a live bug: nine `B008` (the idiom above), 28 unused or
+redefined imports and variables, four closures over a loop variable (each called inside its own
+iteration, now bound explicitly), and 21 `zip()` calls without `strict=`. Those now say `strict=True`: in each the inputs are aligned by
+construction (two columns of one slice, `np.unique`'s values and counts, a tree's labels and its
+leaf mask), and if that ever stops being true the zip should fail rather than silently drop the
+tail — which in a test would let a defect pass. All 558 tests pass with them. Oxlint found unused
+imports and one variable in the bench. The commit hooks found one trailing space, two scripts with
+a shebang and no executable bit, and that `__pycache__` was not ignored outside `code/server`.
+
+**Why oxlint and not ESLint.** typescript-eslint supports TypeScript up to 6.0; this repository is
+on TypeScript 7, whose compiler API it cannot load. Oxlint parses TypeScript itself.
+
+**Not adopted from phylo-lens.** Path filters and a required-checks aggregator (CI here takes a few
+minutes; skipping jobs saves little and adds a way to skip one wrongly); release workflows,
+multi-architecture images and `npm audit` (nothing is published yet, §48); a GitLab pipeline (no
+mirror). The browser checks in `code/bench/harness` stay local: they need a built store, the API, a
+worker and Chrome.
+
 ---
 
 ## References and provenance

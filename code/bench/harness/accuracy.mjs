@@ -1,5 +1,5 @@
 /** Drive phylo.io's compare and dump its per-clade scores for comparison. */
-import { readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { launch } from "./browser.mjs";

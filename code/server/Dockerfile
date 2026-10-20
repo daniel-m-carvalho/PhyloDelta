@@ -17,7 +17,9 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends g++ git ca-certificates cmake make \
  && rm -rf /var/lib/apt/lists/*
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+# A fixed uv, not :latest — which moved four times in the week this was pinned,
+# and is what reads uv.lock. Keep it near the uv the lockfile is written with.
+COPY --from=ghcr.io/astral-sh/uv:0.12.17 /uv /usr/local/bin/uv
 
 WORKDIR /app
 

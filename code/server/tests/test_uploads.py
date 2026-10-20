@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import io
 import json
-import os
 from pathlib import Path
 
 import pytest
@@ -266,8 +265,6 @@ def test_upload_refuses_an_unknown_metric_and_says_what_exists(client):
 def test_upload_refuses_before_storing_anything(client, tmp_path):
     # The names are in the request, so refusing after streaming the bundle to
     # disk would be work spent to reach an answer that was available at once.
-    from phylodelta import uploads
-
     def stored() -> list[str]:
         # Not created until something is actually stored, which is the state
         # this test wants to still be in afterwards.

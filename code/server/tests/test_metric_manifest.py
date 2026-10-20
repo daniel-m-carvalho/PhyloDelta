@@ -7,18 +7,14 @@ a metric actually returned.
 
 from __future__ import annotations
 
-import json
 
 import numpy as np
 import pytest
 
 from phylodelta.metrics.contract import (
-    ColumnSpec,
     MetricManifest,
-    MetricOutputs,
     MetricResult,
     MetricSide,
-    ScalarSpec,
     validate_result,
 )
 

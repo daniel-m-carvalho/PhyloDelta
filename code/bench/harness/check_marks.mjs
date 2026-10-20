@@ -89,7 +89,7 @@ const check = (side) =>
     if (state.arrivedAt === null) ok = lit.storedId === null && chip === null;
     else if (state.markOffView) ok = lit.storedId === null && /outside this view/.test(chip ?? "");
     else if (wanted !== null)
-      ok = lit.storedId === wanted && (state.markAt.exact ? /^Found: /.test(chip) : /Found inside/.test(chip));
+      ok = lit.storedId === wanted && (state.markAt.exact ? (chip ?? "").startsWith("Found: ") : /Found inside/.test(chip));
     else ok = true; // its slice has not arrived; nothing to hold it to yet
     return { ok, keep: state.arrivedAt, wanted, off: state.markOffView, lit: lit.storedId, chip };
   }, side);

@@ -63,9 +63,16 @@ cd code && npm install && npm start                                  # web app o
 ```bash
 cd code/server && uv run pytest -q    # server
 cd code && npm test                   # library and web app
+scripts/container-smoke.sh            # the Docker deployment, started and used
 ```
 
-CI runs both, plus the Docker build, on every pull request.
+CI runs all of these on every pull request, with the linters (ruff, oxlint) and the checks in
+`.pre-commit-config.yaml`. To have git run the same checks before each commit, and the suites
+before each push, install the hooks once per clone:
+
+```bash
+uvx pre-commit install
+```
 
 ## License
 

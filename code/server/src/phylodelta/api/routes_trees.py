@@ -310,7 +310,7 @@ def tree_slice(
         )
 
     hidden = sum(
-        count for count, cut in zip(flat["true_leaf_count"], flat["truncated"]) if cut
+        count for count, cut in zip(flat["true_leaf_count"], flat["truncated"], strict=True) if cut
     )
     return TreeSlice(
         tree=tree_id,

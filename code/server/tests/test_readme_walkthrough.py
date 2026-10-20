@@ -36,7 +36,7 @@ def documented_paths() -> list[str]:
 
 
 @pytest.fixture(scope="module")
-def client(): 
+def client():
     from phylodelta import config
     from phylodelta.api.app import create_app
 

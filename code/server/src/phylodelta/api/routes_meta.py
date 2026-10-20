@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import itertools
+import importlib.metadata
 import json
 
 from fastapi import APIRouter, Depends
@@ -29,8 +29,15 @@ from .schemas import (
     WhoAmI,
 )
 
-#: The API's own version, independent of any store's FORMAT_VERSION.
+#: The API's own version, independent of any store's FORMAT_VERSION and of
+#: the release: it changes when the contract does (the /v1 in the path), and a
+#: release that only fixes a bug or adds a field leaves it alone.
 API_VERSION = "1.0.0"
+
+#: The release this server is, from the installed package — whose version
+#: `scripts/version.py` keeps equal to the repository's VERSION (§48). Read
+#: from the metadata rather than from VERSION, which is not in the image.
+RELEASE = importlib.metadata.version("phylodelta")
 
 #: Every route lives under this. The version is in the path rather than a
 #: header because an integrator will be reading logs and running curl, and a
@@ -58,7 +65,8 @@ def health() -> HealthResponse:
         depth = {}
     return HealthResponse(
         status="ok",
-        version=API_VERSION,
+        version=RELEASE,
+        api_version=API_VERSION,
         store_ready=bool(tree_ids),
         queue=depth,
     )

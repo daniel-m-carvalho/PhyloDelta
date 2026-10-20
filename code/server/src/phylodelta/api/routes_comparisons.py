@@ -13,7 +13,6 @@ import math
 import numpy as np
 from fastapi import APIRouter, Depends, Path, Query
 
-from ..metrics import registry_pairs
 from ..metrics.contract import NO_CORRESPONDENCE
 from ..metrics.store import PairReader
 from ..trees import registry as tree_registry
@@ -24,7 +23,6 @@ from .schemas import ComparisonSlice, ComparisonSummary, ComparisonValues
 from .access import (
     correspondence_or_404,
     pair_or_404,
-    tree_or_404,
 )
 from .identity import current_owner
 from .slicing import ORDER_DESCRIPTION, Order, side_of, summariser_for

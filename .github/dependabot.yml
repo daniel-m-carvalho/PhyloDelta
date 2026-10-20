@@ -1,0 +1,24 @@
+# Keeps the CI actions current (DECISIONS §49). They are pinned to commit SHAs,
+# which never move on their own, so without this they would only ever age.
+# One grouped pull request a week at most, with the new SHA and the release
+# notes; CI on that pull request is the test of the update.
+#
+# Only the actions. npm and uv dependencies stay where the lockfiles hold them
+# until someone chooses to move them: the measurements in the thesis were made
+# against those versions. Base images likewise (the Python one is held to 3.12
+# by pyproject.toml).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # Only releases at least two weeks old: a hijacked release is usually
+    # found and pulled within days, and this keeps it from being proposed.
+    cooldown:
+      default-days: 14
+    groups:
+      github-actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci

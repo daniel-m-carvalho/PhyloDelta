@@ -1,0 +1,33 @@
+// Lint for bugs, not style (DECISIONS §49): oxlint's correctness rules, plus
+// React's rules of hooks. Oxlint rather than ESLint because typescript-eslint
+// does not support TypeScript 7. `npm run lint` denies warnings, so anything
+// this reports fails CI and the commit hook.
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "react"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    // Off on purpose. It asks for every object an effect reads to be in its
+    // dependency list, which compares them by identity: the shape of the three
+    // re-render loops in useTypingData. Those hooks depend on joined string
+    // keys instead, and this rule would push them back.
+    "react/exhaustive-deps": "off",
+    // Two rules written for the React Compiler, which this app does not use.
+    // Measured: 22 findings, all a known-safe pattern — fetching on mount,
+    // clearing a result when the query empties, reading a ref while building a
+    // menu. Rewriting working panels to satisfy a compiler that is not there
+    // is risk with nothing bought.
+    "react/refs": "off",
+    "react/set-state-in-effect": "off",
+    // `for (const id of [...this.selected]) this.selected.delete(id)` walks a
+    // snapshot of the set it deletes from. Legal without the copy as well, but
+    // the copy says what is meant.
+    "unicorn/no-useless-spread": "off",
+    // `new Array(count)` sizes an array that is then filled by index.
+    "unicorn/no-new-array": "off"
+  },
+  "ignorePatterns": ["**/dist/**", "bench/vendor/**", "bench/results/**", "bench/trees/**"]
+}

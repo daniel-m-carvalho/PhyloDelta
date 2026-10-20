@@ -222,7 +222,6 @@ def parse_newick_fast(text: str) -> TreeArrays:
     implementation stays the reference: it is what produced the numbers this
     project reports, and it is what runs where no compiler exists.
     """
-    import numpy as np
 
     from . import native
 

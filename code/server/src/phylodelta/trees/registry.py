@@ -69,7 +69,7 @@ def leaf_label_set(tree_id: str) -> frozenset[str]:
     end = np.asarray(reader.subtree_end)
     labels = reader.labels()
     is_leaf = end == np.arange(reader.meta.n_nodes) + 1
-    result = frozenset(label for label, leaf in zip(labels, is_leaf) if leaf)
+    result = frozenset(label for label, leaf in zip(labels, is_leaf, strict=True) if leaf)
     with _lock:
         return _leaf_labels.setdefault(tree_id, result)
 

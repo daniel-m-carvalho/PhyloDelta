@@ -112,7 +112,7 @@ def main() -> None:
         widest = max(row["builds"], key=lambda b: len(b["metrics"]))
         per = widest["per_metric"]
 
-        def cell(name):
+        def cell(name, per=per):
             got = per.get(name)
             if got is None:
                 return "—"

@@ -1,0 +1,137 @@
+# Checks run by git before a commit, and the test suites before a push
+# (DECISIONS §49). Once per clone:
+#
+#   uvx pre-commit install        # installs both hooks (default_install_hook_types)
+#
+# Then `git commit` runs the commit stage on the staged files and `git push`
+# runs the push stage. Run either by hand with
+# `uvx pre-commit run --all-files [--hook-stage pre-push]`.
+#
+# CI runs every check here as well, so a commit made without the hooks is
+# still caught; the hooks only find it sooner. The commit stage is kept to
+# seconds — the linters and the typecheck — so it is never worth skipping.
+# Anything slower waits for the push.
+#
+# The local hooks run the tools this repository already pins (ruff in
+# code/server/uv.lock, oxlint and tsc in code/package-lock.json), so a hook
+# and CI cannot disagree about a version. They need `uv sync` in code/server
+# and `npm ci` in code/ first, as development does anyway.
+
+default_install_hook_types: [pre-commit, pre-push]
+default_stages: [pre-commit]
+
+repos:
+  # Pinned to a commit, like the CI actions: a tag can be moved.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+        # JSON with comments, which oxlint reads and a JSON parser does not.
+        exclude: ^code/\.oxlintrc\.json$
+      - id: check-added-large-files
+        # The trees and typing tables are data and are large on purpose; a
+        # large file anywhere else is most likely a build output or a store.
+        args: [--maxkb=1024]
+        exclude: ^datasets/
+      - id: detect-private-key
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      # The three that rewrite files never touch data: the trees and typing
+      # tables, the test fixtures read byte for byte, and the measurements and
+      # tables the benchmark harness writes (a fixer and a generator that
+      # disagree would rewrite each other's output forever).
+      - id: end-of-file-fixer
+        exclude: &data ^(datasets/|code/bench/results/|code/bench/trees/|code/server/tests/fixtures/|code/web/src/.*/__fixtures__/)
+      - id: trailing-whitespace
+        exclude: *data
+        # Two trailing spaces are a line break in Markdown.
+        args: [--markdown-linebreak-ext=md]
+      - id: mixed-line-ending
+        exclude: *data
+        args: [--fix=lf]
+
+  # The CI workflow: actionlint for mistakes (a misspelt key, a bad
+  # expression, shellcheck over every `run:`), zizmor for security (a
+  # credential left in the checkout, an action pinned by tag).
+  - repo: https://github.com/Mateusz-Grzelinski/actionlint-py
+    rev: 805f85e558841bf4d852335e036b33d2b26be1cc # frozen: v1.7.12.25
+    hooks:
+      - id: actionlint
+        additional_dependencies: [shellcheck-py==0.11.0.1]
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: fa412071e4f5d44d44f9e365f4676f9df92456a2 # frozen: v1.30.1
+    hooks:
+      - id: zizmor
+        args: [--offline]
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: 745eface02aef23e168a8afb6b5737818efbea95 # frozen: v0.11.0.1
+    hooks:
+      - id: shellcheck
+
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff (Python lint)
+        entry: uv run --project code/server --frozen ruff check --force-exclude
+        language: system
+        types: [python]
+
+      - id: oxlint
+        name: oxlint (TypeScript and JavaScript lint)
+        entry: npm run lint --prefix code --silent
+        language: system
+        files: ^code/(\.oxlintrc\.json$|(lib|web|bench)/.*\.(ts|tsx|js|mjs)$)
+        pass_filenames: false
+
+      - id: typecheck
+        name: tsc (library, web app and bench)
+        entry: npm run typecheck --prefix code --silent
+        language: system
+        files: ^code/(lib|web|bench)/.*(\.(ts|tsx)$|tsconfig.*\.json$)
+        pass_filenames: false
+
+      - id: versions
+        name: one release version (scripts/version.py)
+        entry: python3 scripts/version.py
+        language: system
+        files: ^(VERSION|scripts/version\.py|code/(package-lock\.json|(lib|web|bench)/package\.json|server/(pyproject\.toml|uv\.lock)))$
+        pass_filenames: false
+
+      - id: version-script-tests
+        name: scripts/version.py tests
+        # -B: bytecode written mid-commit is a modified file, and fails the hook.
+        entry: python3 -B -m unittest discover -s scripts/tests
+        language: system
+        files: ^scripts/(version\.py|tests/)
+        pass_filenames: false
+
+      # --- before a push: the suites, each only when its code changed ---------
+
+      - id: server-tests
+        name: server tests (pytest, ~1 min)
+        entry: sh -c 'cd code/server && uv run --frozen pytest -q'
+        language: system
+        files: ^code/server/
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: frontend-tests
+        name: library and web tests (vitest)
+        entry: npm test --prefix code --silent
+        language: system
+        files: ^code/(lib|web|bench)/
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: library-package
+        name: the library packs and works from outside the workspace
+        entry: npm run check:package --prefix code/lib --silent
+        language: system
+        files: ^code/lib/
+        pass_filenames: false
+        stages: [pre-push]
