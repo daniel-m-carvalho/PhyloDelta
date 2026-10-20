@@ -133,7 +133,7 @@ def test_similarity_agrees_with_the_exact_verdict(client):
     body = client.get(
         "/api/v1/trees/vibrio-nj/slice", params={"budget": 400, "compare": PAIR}
     ).json()["comparison"]
-    for sim, exact in zip(body["similarity"], body["exact"]):
+    for sim, exact in zip(body["similarity"], body["exact"], strict=True):
         if sim is None:
             continue
         assert (sim == 1.0) == exact
@@ -200,7 +200,7 @@ def test_slice_at_a_subtree_carries_its_own_values(client):
     top = client.get(
         "/api/v1/trees/vibrio-nj/slice", params={"budget": 20, "compare": PAIR}
     ).json()
-    wedge = next(i for i, c in zip(top["nodes"]["id"], top["nodes"]["truncated"]) if c)
+    wedge = next(i for i, c in zip(top["nodes"]["id"], top["nodes"]["truncated"], strict=True) if c)
     sub = client.get(
         "/api/v1/trees/vibrio-nj/slice",
         params={"root": wedge, "budget": 40, "compare": PAIR},

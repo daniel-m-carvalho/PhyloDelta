@@ -1,5 +1,14 @@
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defaultClientConditions, defineConfig } from "vite";
+
+/**
+ * The library is read from its TypeScript source, not from its published
+ * build (§48): its package.json lists a `source` condition first, which only
+ * this app (and its tests and typecheck) enables. So the library needs no
+ * build in development, its edits hot-reload, and the Docker image builds the
+ * app from the same source.
+ */
+export const LIBRARY_SOURCE = "source";
 
 /**
  * The dev server proxies /api to the backend.
@@ -11,6 +20,7 @@ import { defineConfig } from "vite";
  */
 export default defineConfig({
   plugins: [react()],
+  resolve: { conditions: [LIBRARY_SOURCE, ...defaultClientConditions] },
   server: {
     port: 5173,
     proxy: {

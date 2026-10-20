@@ -70,7 +70,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from .store import TreeReader
 
 
 @dataclass(slots=True)

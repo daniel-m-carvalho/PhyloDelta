@@ -11,7 +11,7 @@
  * rather than the tool. If the cap is reached that is itself the answer, and
  * it is recorded as such.
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";

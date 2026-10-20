@@ -118,7 +118,7 @@ def compositions(
 
     buckets: dict[int, list[Segment]] = {}
     totals = np.zeros(len(leaves), dtype=np.int64)
-    for pair, count in zip(pairs.tolist(), counts.tolist()):
+    for pair, count in zip(pairs.tolist(), counts.tolist(), strict=True):
         position, code = divmod(pair, stride)
         totals[position] += count
         buckets.setdefault(position, []).append(

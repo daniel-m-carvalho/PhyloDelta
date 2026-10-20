@@ -213,7 +213,7 @@ class JwtInterceptor:
                 401, "token_expired", "That token has expired.",
                 "Obtain a new one and retry.",
             ) from None
-        except jwt.InvalidTokenError as invalid:
+        except jwt.InvalidTokenError:
             # One message for every way a token can be unacceptable. Saying
             # which check failed tells an attacker which to fix next.
             raise errors.ApiError(

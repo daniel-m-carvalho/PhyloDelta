@@ -27,7 +27,6 @@ def compared_client(compared_store, monkeypatch):
 @pytest.fixture()
 def client(real_store, monkeypatch):
     from phylodelta import config, db
-    from phylodelta.api import routes_meta
     from phylodelta.api.app import create_app
     from phylodelta.trees import registry
 
@@ -45,6 +44,16 @@ def test_health(client):
     body = client.get("/api/v1/health").json()
     assert body["status"] == "ok"
     assert body["store_ready"] is True
+
+
+def test_health_reports_the_release_and_the_api_contract_apart(client):
+    from pathlib import Path
+
+    body = client.get("/api/v1/health").json()
+    # The repository's VERSION, through the installed package's metadata.
+    root = Path(__file__).resolve().parents[3]
+    assert body["version"] == (root / "VERSION").read_text().strip()
+    assert body["api_version"] == "1.0.0"
 
 
 def test_datasets_lists_the_ingested_trees(client):
@@ -189,7 +198,7 @@ def test_slice_arrays_are_all_the_same_length(client):
 def test_slice_of_a_subtree_is_rooted_there(client):
     top = client.get("/api/v1/trees/vibrio-upgma/slice", params={"budget": 20}).json()
     wedge = next(
-        i for i, cut in zip(top["nodes"]["id"], top["nodes"]["truncated"]) if cut
+        i for i, cut in zip(top["nodes"]["id"], top["nodes"]["truncated"], strict=True) if cut
     )
     sub = client.get(
         "/api/v1/trees/vibrio-upgma/slice", params={"root": wedge, "budget": 30}
@@ -242,7 +251,7 @@ def test_ancestor_climbs_a_tip_to_something_worth_drawing(client):
     tip = next(
         i
         for i, (n, cut) in enumerate(
-            zip(leaf["nodes"]["true_leaf_count"], leaf["nodes"]["truncated"])
+            zip(leaf["nodes"]["true_leaf_count"], leaf["nodes"]["truncated"], strict=True)
         )
         if n == 1 and not cut
     )
@@ -274,7 +283,7 @@ def test_ancestor_never_stops_short_of_the_floor(client):
     tips = [
         i
         for i, (n, cut) in enumerate(
-            zip(slice_["nodes"]["true_leaf_count"], slice_["nodes"]["truncated"])
+            zip(slice_["nodes"]["true_leaf_count"], slice_["nodes"]["truncated"], strict=True)
         )
         if n == 1 and not cut
     ]
@@ -307,7 +316,7 @@ def test_around_is_the_two_request_jump_in_one(client):
     slice_ = client.get("/api/v1/trees/vibrio-upgma/slice", params={"budget": 50}).json()
     tips = [
         slice_["nodes"]["id"][i]
-        for i, (n, cut) in enumerate(zip(slice_["nodes"]["true_leaf_count"], slice_["nodes"]["truncated"]))
+        for i, (n, cut) in enumerate(zip(slice_["nodes"]["true_leaf_count"], slice_["nodes"]["truncated"], strict=True))
         if n == 1 and not cut
     ][:8]
     assert tips
@@ -452,7 +461,7 @@ def test_keeping_a_very_deep_node_degrades_without_losing_leaves(client):
         "/api/v1/trees/vibrio-upgma/slice", params={"root": 0, "budget": 60}
     ).json()
     wedge = next(
-        i for i, cut in zip(whole["nodes"]["id"], whole["nodes"]["truncated"]) if cut
+        i for i, cut in zip(whole["nodes"]["id"], whole["nodes"]["truncated"], strict=True) if cut
     )
     deep = wedge + 1  # first child of something already too deep to draw
 
@@ -475,7 +484,7 @@ def test_a_honoured_keep_says_so(client):
     target = next(
         i
         for i, (cut, count) in enumerate(
-            zip(leaf["nodes"]["truncated"], leaf["nodes"]["true_leaf_count"])
+            zip(leaf["nodes"]["truncated"], leaf["nodes"]["true_leaf_count"], strict=True)
         )
         if not cut and count == 1
     )
@@ -506,7 +515,7 @@ def test_a_keep_that_could_not_be_drawn_names_the_wedge_standing_in_for_it(clien
         "/api/v1/trees/vibrio-upgma/slice", params={"root": 0, "budget": 60}
     ).json()
     wedge = next(
-        i for i, cut in zip(whole["nodes"]["id"], whole["nodes"]["truncated"]) if cut
+        i for i, cut in zip(whole["nodes"]["id"], whole["nodes"]["truncated"], strict=True) if cut
     )
     deep = wedge + 1  # inside something already too deep to draw
 
@@ -569,7 +578,7 @@ def test_a_keep_the_tree_does_not_have_is_refused_by_name(client):
 def test_slice_ignores_a_keep_outside_the_subtree(client):
     top = client.get("/api/v1/trees/vibrio-upgma/slice", params={"budget": 20}).json()
     wedge = next(
-        i for i, cut in zip(top["nodes"]["id"], top["nodes"]["truncated"]) if cut
+        i for i, cut in zip(top["nodes"]["id"], top["nodes"]["truncated"], strict=True) if cut
     )
     plain = client.get(
         "/api/v1/trees/vibrio-upgma/slice", params={"root": wedge, "budget": 20}

@@ -906,7 +906,7 @@ if phase_rows:
         widest = max(row["builds"], key=lambda b: len(b["metrics"]))
         per = widest.get("per_metric", {})
 
-        def one(name):
+        def one(name, per=per):
             got = per.get(name)
             if got is None:
                 return "—"

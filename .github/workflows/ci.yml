@@ -1,13 +1,25 @@
 # Runs the project's own checks on every push and pull request, so nothing
 # reaches main — or the VM, which rebuilds from main — broken.
 #
-# Three independent jobs, run in parallel:
-#   server    the Python suite, with the C++ extension and TreeDiff built, so
-#             it tests the code path production runs and the RF conformance
-#             check against an independent implementation
-#   frontend  typecheck and tests for the library, the demo and the web app
-#   docker    builds the deployment images without pushing them, so a broken
-#             Dockerfile is found here rather than on the VM
+# Four independent jobs, run in parallel:
+#   server      ruff over every Python file, then the Python suite with the C++
+#               extension and TreeDiff built, so it tests the code path
+#               production runs and the RF conformance check against an
+#               independent implementation
+#   frontend    oxlint, typecheck and tests for the library, the web app and
+#               the bench, and the library packed and used from an app outside
+#               the workspace, as it would be once published (§48)
+#   repository  the repository-wide hooks of .pre-commit-config.yaml: one
+#               release version (§48) and that script's tests, this workflow
+#               (actionlint, zizmor), shell scripts (shellcheck), merge
+#               markers, malformed YAML/TOML/JSON, keys, stray large files,
+#               whitespace
+#   docker      builds the deployment images, starts them, and uploads a
+#               comparison through the web container's proxy (§49)
+#
+# Every action is pinned to a commit, not a tag, which its owner can move;
+# Dependabot proposes updates weekly (.github/dependabot.yml). Each checkout
+# drops its token once done: nothing here pushes.
 #
 # Not here: the browser checks in code/bench/harness (check_marks,
 # check_layout_stability, measure_requests). They need the API, the web app
@@ -32,15 +44,20 @@ permissions:
 
 jobs:
   server:
-    name: Server (pytest)
+    name: Server (ruff + pytest)
     runs-on: ubuntu-latest
+    # Normally ~3 min. The limit is for a hang — the native build, or a test
+    # waiting on a worker — which would otherwise hold the run for 6 hours.
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: code/server
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
           cache-dependency-glob: code/server/uv.lock
@@ -48,6 +65,12 @@ jobs:
       # Python 3.12 is pinned by pyproject.toml; uv provisions it.
       - name: Install dependencies
         run: uv sync --frozen
+
+      # From the root, so scripts/ and the bench's Python are covered too
+      # (ruff.toml). Before the native build: it needs none of it.
+      - name: Lint (ruff)
+        working-directory: .
+        run: uv run --project code/server --frozen ruff check --output-format github .
 
       - name: Build the native extension
         run: ./native/build.sh
@@ -63,15 +86,18 @@ jobs:
         run: uv run pytest -q
 
   frontend:
-    name: Library and web (typecheck + vitest)
+    name: Library and web (oxlint + typecheck + vitest)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: code
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
@@ -82,19 +108,51 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint (oxlint)
+        run: npm run lint
+
       - name: Typecheck
         run: npm run typecheck
 
       - name: Run the tests
         run: npm test
 
-  docker:
-    name: Docker images build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      - name: Check the published package
+        run: npm run check:package --workspace lib
 
-      # The same build the VM runs with `docker compose up -d --build`, minus
-      # starting anything.
-      - name: Build the images
-        run: docker compose build
+  repository:
+    name: Repository checks (pre-commit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+
+      # The commit-stage hooks over every file, so CI holds a commit made
+      # without them installed to the same rules. The three hooks that need
+      # the project's dependencies run in the jobs above that install them;
+      # versions and its tests need only the system Python, and run here.
+      - name: Run the commit hooks on every file
+        env:
+          SKIP: ruff,oxlint,typecheck
+        run: uvx pre-commit@4.7.0 run --all-files --show-diff-on-failure --color always
+
+  docker:
+    name: Docker images (build + smoke test)
+    runs-on: ubuntu-latest
+    # Normally ~6 min, nearly all of it the service image's C++ builds.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The images the VM runs with `docker compose up -d --build`, started
+      # and used: the API and worker report this VERSION and load the native
+      # extension, every metric can run, nginx serves the app and proxies the
+      # API, and an upload through it is computed, sliced and deleted.
+      - name: Build, start and check the deployment
+        run: scripts/container-smoke.sh

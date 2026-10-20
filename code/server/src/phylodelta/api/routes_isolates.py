@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Body, Depends, Path, Query
 
-from ..isolates import registry as isolate_registry
 from ..isolates.query import UnknownFacet, UnknownValue, compositions, value_counts
 from . import errors
 from .access import isolates_or_404

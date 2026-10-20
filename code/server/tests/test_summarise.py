@@ -7,7 +7,6 @@ inside exactly one wedge.
 
 from __future__ import annotations
 
-import numpy as np
 import pytest
 
 from phylodelta.trees.newick import parse_newick
@@ -29,7 +28,7 @@ def accounted(node) -> int:
     """Displayed real leaves plus leaves standing behind wedges."""
     flat = flatten(node)
     wedges = sum(
-        c for c, cut in zip(flat["true_leaf_count"], flat["truncated"]) if cut
+        c for c, cut in zip(flat["true_leaf_count"], flat["truncated"], strict=True) if cut
     )
     return wedges + (count_leaves(node) - sum(flat["truncated"]))
 
@@ -74,7 +73,7 @@ def test_a_sufficient_budget_returns_the_whole_subtree(tmp_path):
 def test_a_leaf_is_never_marked_truncated(tmp_path):
     s = make(tmp_path, "((A,B),(C,D));")
     flat = flatten(s.summarise(0, 99))
-    for label, cut in zip(flat["label"], flat["truncated"]):
+    for label, cut in zip(flat["label"], flat["truncated"], strict=True):
         if label:
             assert not cut
 
@@ -85,7 +84,7 @@ def test_detail_goes_to_the_largest_clade_first(tmp_path):
     """One big clade and one small: a tight budget expands the big one."""
     s = make(tmp_path, "(((A,B),(C,D)),(E,F));")   # left has 4 leaves, right 2
     flat = flatten(s.summarise(0, 3))
-    kept = {i: c for i, c in zip(flat["true_leaf_count"], flat["truncated"])}
+    kept = {i: c for i, c in zip(flat["true_leaf_count"], flat["truncated"], strict=True)}
     # The 4-leaf clade got the detail; the 2-leaf one is a wedge.
     assert 2 in kept and kept[2] is True
 
@@ -119,7 +118,7 @@ def test_ids_are_stored_tree_ids(real_store):
     """The join key: a slice id must address the same node in the store."""
     reader = read_tree(real_store / "trees" / "vibrio-upgma")
     flat = flatten(Summariser(reader).summarise(0, 100))
-    for node_id, true_count in zip(flat["id"], flat["true_leaf_count"]):
+    for node_id, true_count in zip(flat["id"], flat["true_leaf_count"], strict=True):
         assert int(reader.leaf_count[node_id]) == true_count
 
 
@@ -129,7 +128,7 @@ def test_a_wedge_can_be_expanded_by_slicing_at_its_id(real_store):
     s = Summariser(reader)
     flat = flatten(s.summarise(0, 20))
     wedge = next(
-        i for i, cut in zip(flat["id"], flat["truncated"]) if cut
+        i for i, cut in zip(flat["id"], flat["truncated"], strict=True) if cut
     )
     expanded = s.summarise(wedge, 50)
     assert accounted(expanded) == int(reader.leaf_count[wedge])

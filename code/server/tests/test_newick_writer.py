@@ -6,14 +6,13 @@ handed must be the tree we think we handed it.
 
 from __future__ import annotations
 
-import math
 
 import numpy as np
 import pytest
 
 from phylodelta.trees.materialise import MaterialisedPair
 from phylodelta.trees.newick import parse_newick
-from phylodelta.trees.newick_writer import to_newick, write_newick
+from phylodelta.trees.newick_writer import to_newick
 
 
 def assert_round_trips(text: str) -> None:

@@ -506,7 +506,6 @@ await record(browser, "04-search", async (h) => {
 });
 
 await record(browser, "05-find-in-other-tree", async (h) => {
-  const { page } = h;
   await h.openComparison();
   h.begin();
   await h.caption("Right-click a leaf → Find this leaf in the other tree", 400);

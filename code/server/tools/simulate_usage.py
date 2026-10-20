@@ -105,7 +105,7 @@ check(
     "comparison values align with the nodes",
     len(top["comparison"]["similarity"]) == len(arrays["id"]),
 )
-wedge = next(i for i, cut in zip(arrays["id"], arrays["truncated"]) if cut)
+wedge = next(i for i, cut in zip(arrays["id"], arrays["truncated"], strict=True) if cut)
 status, inner = call(f"/trees/{pair['left']}/slice?root={wedge}&budget=50")
 check("drilling into a wedge is rooted there", status == 200 and inner["root"] == wedge)
 

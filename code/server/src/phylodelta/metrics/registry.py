@@ -7,7 +7,6 @@ registry is how that stays open.
 
 from __future__ import annotations
 
-import importlib
 import json
 from pathlib import Path
 

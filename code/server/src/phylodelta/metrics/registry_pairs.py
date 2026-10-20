@@ -12,7 +12,6 @@ metric — including one that contributes no per-node columns at all.
 from __future__ import annotations
 
 import threading
-from pathlib import Path
 
 import numpy as np
 

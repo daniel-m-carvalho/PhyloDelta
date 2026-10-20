@@ -1076,8 +1076,9 @@ handle.panels[1].operators.barcharts?.setScale("log");
   (keyed by panel id, each naming its `species`) and `isolated_data` (a list, one
   entry per species), plus `keys` / `segmentBy` / `joinColumn` naming which TSV
   columns are loaded, which one colours the bars, and which joins to a leaf.
-- **npm:** the layer is structured to publish cleanly later, but packaging is not
-  wired yet (see §16).
+- **npm:** packaging is wired — `npm run build` makes the published `dist/`, and
+  `npm run check:package` installs the packed tarball into an app outside the
+  workspace — but nothing is published yet (see §16, §17).
 
 ---
 
@@ -1238,12 +1239,13 @@ color scale, the comparison gradient, bar charts and report export.
   layout would need a generalized presenter.
 - **Join key** for leaf data is fixed to `category ?? name` (configurable key
   planned).
-- **Published to npm? Not yet — but it is now a real package.** `phylo-tree-viewer`
-  is its own workspace package with its own manifest, and the web app consumes it by
-  name rather than by relative path. What remains before `npm publish` is a build
-  step: `main`/`types`/`exports` currently point at **TypeScript source**, which
-  works because Vite compiles linked workspace sources directly, but a published
-  tarball must ship built ESM plus `.d.ts`. See §17.
+- **Published to npm? Not yet — but it is ready to be.** `phylo-tree-viewer` is its
+  own workspace package, the web app consumes it by name, and `npm pack` produces a
+  tarball of built ESM plus `.d.ts` that an app outside the repository can install
+  and build with (`npm run check:package`, in CI). What remains is the name and the
+  right to publish it. **Known limit:** the declarations use extensionless relative
+  imports, so an app typechecking with `moduleResolution: "nodenext"` loses the
+  types (bundler resolution — Vite, webpack, Next — is fine). See §17.
 
 ---
 
@@ -1262,13 +1264,20 @@ From `code/lib/`:
   `*.test.ts`.
 - `npm run typecheck` — `tsc --noEmit`.
 - `npm run check` — typecheck + tests. **The gate to run before committing.**
+- `npm run build` — the published build: ESM in `dist/` (`vite.lib.config.ts`) and
+  declarations in `dist/types/` (`tsconfig.lib.json`). `npm pack` runs it.
+- `npm run check:package` — packs the library, installs the tarball into an empty
+  app linked to nothing in the workspace, and typechecks, bundles and runs it there.
 
 From `code/`, the same scripts run in every package (`npm run check`), and
 `npm start` runs the web app.
 
-The library has no build of its own: `main`/`types`/`exports` point at TypeScript
-source, which the consumer's bundler (Vite, in the web app) compiles. The
-dataset tests (§18) read the trees in `<repo>/datasets/gen_trees/`.
+Two ways in, chosen by export condition. Each entry in `exports` lists `source`
+first (the TypeScript source), then `types` and `import` (the build). The web app
+enables `source` in its Vite, Vitest and TypeScript configs, so in the workspace
+there is no build to run or keep current, and library edits hot-reload. An app
+outside the repository never sets it and gets `dist/`. The dataset tests (§18)
+read the trees in `<repo>/datasets/gen_trees/`.
 
 ---
 

@@ -33,7 +33,6 @@ from pathlib import Path
 import numpy as np
 
 from phylodelta import config
-from phylodelta.metrics.contract import NO_CORRESPONDENCE
 from phylodelta.metrics.store import CorrespondenceReader
 from phylodelta.trees.store import read_tree
 

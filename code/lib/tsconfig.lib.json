@@ -1,0 +1,14 @@
+{
+  "//": "Type declarations for the published package (§48): only the two entry points and what they reach, so tests and test support are never emitted.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist/types",
+    "rootDir": "src",
+    "types": []
+  },
+  "include": [],
+  "files": ["src/index.ts", "src/performance/index.ts"]
+}

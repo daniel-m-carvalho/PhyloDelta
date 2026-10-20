@@ -29,10 +29,10 @@ from pathlib import Path
 
 import numpy as np
 
-from ..trees.correspondence import Correspondence, CorrespondenceSide
+from ..trees.correspondence import Correspondence
 from ..trees.newick import TreeArrays
 from .columns import ColumnReader, read_header, write_side
-from .contract import MetricResult, MetricSide
+from .contract import MetricResult
 
 #: Bumped when either on-disk layout changes in a way a reader must notice.
 FORMAT_VERSION = 2

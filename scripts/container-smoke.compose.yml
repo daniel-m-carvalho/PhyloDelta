@@ -1,0 +1,10 @@
+# Layered over docker-compose.yml by scripts/container-smoke.sh, and only by it.
+#
+# The one change: the seed does not build the example catalogue. That build is
+# minutes of real work on datasets/, and what the smoke test needs to know — that
+# the stack starts, the worker computes and the proxy reaches the API — it
+# learns from a six-leaf upload in seconds. Everything else is the deployment
+# file as the VM runs it.
+services:
+  phylodelta-seed:
+    command: ["true"]

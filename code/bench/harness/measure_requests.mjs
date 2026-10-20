@@ -122,6 +122,9 @@ async function poll(fn, arg) {
   for (let attempt = 0; ; attempt++) {
     try {
       const [alive, value] = await page.evaluate(
+        // The probe's own source, rebuilt in the page: a function cannot be
+        // passed to evaluate() along with an argument any other way.
+        // oxlint-disable-next-line no-eval
         ([source, a]) => [window.__walk === true, (0, eval)(`(${source})`)(a)],
         [fn.toString(), arg],
       );

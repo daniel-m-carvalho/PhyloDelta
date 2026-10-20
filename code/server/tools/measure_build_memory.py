@@ -82,7 +82,7 @@ def main() -> None:
         peak = baseline
         stop = threading.Event()
 
-        def watch():
+        def watch(stop=stop):
             nonlocal peak
             while not stop.is_set():
                 peak = max(peak, rss_mb(WORKER_PID))

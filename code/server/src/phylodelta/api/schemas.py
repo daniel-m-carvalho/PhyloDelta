@@ -22,7 +22,14 @@ from pydantic import BaseModel, Field
 
 class HealthResponse(BaseModel):
     status: str = Field(examples=["ok"])
-    version: str
+    version: str = Field(
+        description="The PhyloDelta release this server runs: the repository's VERSION.",
+        examples=["0.1.0"],
+    )
+    api_version: str = Field(
+        description="The version of this API's contract, which a release leaves alone unless the contract changes.",
+        examples=["1.0.0"],
+    )
     store_ready: bool = Field(description="False until the precompute CLI has been run.")
     queue: dict[str, int] = Field(
         default_factory=dict,

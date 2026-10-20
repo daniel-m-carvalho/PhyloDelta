@@ -189,7 +189,6 @@ def ingest_table(
 
 def ingest_all(datasets_dir: Path | None = None, store_dir: Path | None = None) -> int:
     from .. import catalogue, config, db
-    from ..api.identity import SINGLE_OWNER
 
     sources = catalogue.discover_isolate_sources(datasets_dir)
     if not sources:

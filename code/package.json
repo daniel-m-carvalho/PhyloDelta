@@ -16,6 +16,10 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm test --workspaces --if-present",
     "check": "npm run check --workspaces --if-present",
+    "lint": "oxlint --deny-warnings lib web bench",
     "preview": "npm run preview --workspace web"
+  },
+  "devDependencies": {
+    "oxlint": "1.87.0"
   }
 }

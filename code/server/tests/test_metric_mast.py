@@ -147,7 +147,7 @@ def _random_pairs(count: int, sizes, seed: int):
             for _ in range(max(1, n // 8)):
                 i, j = rng.sample(labels, 2)
                 swap[i], swap[j] = swap[j], swap[i]
-            other = _render(shape, lambda x: swap[x])
+            other = _render(shape, lambda x, swap=swap: swap[x])
         else:
             other = _render(_random_shape(labels, rng))
         yield _render(shape) + ";", other + ";"
@@ -336,7 +336,7 @@ def test_an_upload_gets_moved_leaves_and_a_leaf_only_one_tree_has_is_not_measure
         f"/api/v1/trees/{left_id}/slice?budget=50&compare={pair}&metric=mast",
         headers={AUTH_HEADER: "alice"},
     ).json()
-    by_label = dict(zip(sliced["nodes"]["label"], sliced["comparison"]["columns"]["moved"]))
+    by_label = dict(zip(sliced["nodes"]["label"], sliced["comparison"]["columns"]["moved"], strict=True))
     assert by_label["E"] is None, "a leaf only one tree has must read as not measured"
     assert by_label["C"] == 1 and by_label["A"] == 0
 

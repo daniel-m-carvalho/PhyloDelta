@@ -120,7 +120,7 @@ def test_slicing_into_a_wedge_is_identical(real_store, tmp_path):
     succinct = read_succinct_tree(tmp_path / "s")
 
     top = flatten(Summariser(columnar).summarise(0, 20))
-    wedge = next(i for i, cut in zip(top["id"], top["truncated"]) if cut)
+    wedge = next(i for i, cut in zip(top["id"], top["truncated"], strict=True) if cut)
     assert flatten(Summariser(columnar).summarise(wedge, 50)) == flatten(
         Summariser(succinct).summarise(wedge, 50)
     )

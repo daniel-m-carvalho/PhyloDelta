@@ -1,0 +1,24 @@
+# Ruff, for every Python file in the repository: the server, its tools and
+# tests, and scripts/ (DECISIONS §49). One file at the root rather than a
+# [tool.ruff] in code/server/pyproject.toml, which scripts/ would not see.
+#
+# Lint for bugs, not style. Pyflakes (F) finds names that do not exist, imports
+# and variables nothing uses, redefinitions; bugbear (B) finds the traps — a
+# mutable default, a closure that reads a loop variable late, a zip() that
+# silently drops the tail of the longer input. No formatter and no import
+# sorting: either would rewrite most files and change no behaviour.
+#
+#   cd code/server && uv run ruff check            # the server
+#   uv run --project code/server ruff check .      # everything, from the root
+
+target-version = "py312"
+# Vendored C++ projects (sdsl-lite, TreeDiff), with Python of their own.
+extend-exclude = ["code/server/native"]
+
+[lint]
+select = ["F", "B"]
+ignore = [
+    # `Depends(...)`, `Query(...)` and `File(...)` in a signature are how
+    # FastAPI declares parameters, not a call evaluated once by mistake.
+    "B008",
+]
