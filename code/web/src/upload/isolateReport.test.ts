@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { IsolateJoinReport } from "../api/types";
-import { describeJoin, describeJoins, unusedTables } from "./isolateReport";
+import { describeJoin, describeJoins, describeKey, unusedTables } from "./isolateReport";
 
 const clean: IsolateJoinReport = {
   key_column: "ST",
@@ -45,5 +45,27 @@ describe("describeJoins and unusedTables", () => {
     expect(describeJoins({ right, left: clean })[0]).toMatch(/^Left/);
     expect(unusedTables({ right, left: clean })).toEqual(["Right isolate data not used: nothing matched"]);
     expect(describeJoins(undefined)).toEqual([]);
+  });
+});
+
+describe("describeKey", () => {
+  it("names the key once when both sides share it", () => {
+    const name = { ...clean, key_column: "Name", rows_unmatched: 26239 };
+    expect(describeKey({ left: name, right: name })).toBe('Matched to the leaves by the column "Name"');
+    expect(describeKey({ left: name })).toBe('Matched to the leaves by the column "Name"');
+  });
+
+  it("names both when an API client keyed each table on its own column", () => {
+    expect(describeKey({ left: { ...clean, key_column: "Name" }, right: clean })).toBe(
+      'Matched to the leaves by "Name" on the left and "ST" on the right',
+    );
+  });
+
+  it("leaves out a table that was not used, and is null with none", () => {
+    expect(describeKey({ left: clean, right: { ...clean, key_column: "x", error: "nothing matched" } })).toBe(
+      'Matched to the leaves by the column "ST"',
+    );
+    expect(describeKey({ left: { ...clean, error: "nothing matched" } })).toBeNull();
+    expect(describeKey(undefined)).toBeNull();
   });
 });

@@ -10,9 +10,10 @@
  * choice is the user's, so it is a visible switch rather than something
  * inferred from how many files they happened to drop.
  *
- * Each table names the column whose values are the tree's leaf labels (§47),
- * chosen from its header, which is read here; the join itself is the
- * server's. `ST` is pre-selected when the header has it.
+ * One column, chosen once, holds the trees' leaf labels (§47) — for one
+ * table or two, so two tables must both have it. It is chosen from the
+ * headers, which are read here; the join itself is the server's. `ST` is
+ * pre-selected when the headers have it.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -39,8 +40,7 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
   const [name, setName] = useState(draft.name);
   const [leftSpecies, setLeftSpecies] = useState(draft.leftSpecies);
   const [rightSpecies, setRightSpecies] = useState(draft.rightSpecies);
-  const [leftKey, setLeftKey] = useState(draft.leftKey);
-  const [rightKey, setRightKey] = useState(draft.rightKey);
+  const [key, setKey] = useState(draft.key);
 
   // Files are asynchronous to read back. A slot the user has filled in the
   // meantime keeps what they chose; the stored one only fills empty slots.
@@ -105,8 +105,8 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    saveFields({ name, leftSpecies, rightSpecies, sharedTyping, metric: chosen, leftKey, rightKey });
-  }, [name, leftSpecies, rightSpecies, sharedTyping, chosen, leftKey, rightKey]);
+    saveFields({ name, leftSpecies, rightSpecies, sharedTyping, metric: chosen, key });
+  }, [name, leftSpecies, rightSpecies, sharedTyping, chosen, key]);
 
   const put = useCallback((slot: Slot, file: File | undefined) => {
     setFiles((current) => ({ ...current, [slot]: file }));
@@ -115,20 +115,17 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
 
   const leftHeader = useTableHeader(files.left_isolates);
   const rightHeader = useTableHeader(sharedTyping ? undefined : files.right_isolates);
-  // When a header arrives, keep the remembered column if it has it, else ST,
-  // else nothing — and then a choice is required. Keyed on the header object,
-  // which changes only when a file is read, so this cannot feed itself.
+  // The tables the key is chosen for: those with a file in a visible slot.
+  const tables = [leftHeader, rightHeader].filter((read) => read.file);
+  // When the headers arrive, keep the remembered column if they all have it,
+  // else ST, else nothing — and then a choice is required. Keyed on the header
+  // objects, which change only when a file is read, so this cannot feed itself.
   useEffect(() => {
-    if (leftHeader.header) setLeftKey((key) => initialKey(leftHeader.header!.columns, key));
-  }, [leftHeader.header]);
-  useEffect(() => {
-    if (rightHeader.header) setRightKey((key) => initialKey(rightHeader.header!.columns, key));
-  }, [rightHeader.header]);
+    const columns = sharedColumns([leftHeader, rightHeader].filter((read) => read.file));
+    if (columns) setKey((current) => initialKey(columns, current));
+  }, [leftHeader.header, rightHeader.header]);
 
-  const tablesReady =
-    tableReady(files.left_isolates, leftHeader, leftKey) &&
-    (sharedTyping || tableReady(files.right_isolates, rightHeader, rightKey));
-  const ready = Boolean(files.left_tree && files.right_tree) && tablesReady;
+  const ready = Boolean(files.left_tree && files.right_tree) && keyReady(tables, key);
 
   async function submit() {
     if (!ready || busy) return;
@@ -141,13 +138,13 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
     form.append("right_tree", files.right_tree!);
     if (files.left_isolates) {
       form.append("left_isolates", files.left_isolates);
-      form.append("left_isolates_key", leftKey);
+      form.append("left_isolates_key", key);
       // Said, not inferred: a left table alone is the left tree's only (§47).
       if (sharedTyping) form.append("isolates_shared", "true");
     }
     if (!sharedTyping && files.right_isolates) {
       form.append("right_isolates", files.right_isolates);
-      form.append("right_isolates_key", rightKey);
+      form.append("right_isolates_key", key);
     }
     if (name.trim()) form.append("name", name.trim());
     if (leftSpecies.trim()) form.append("left_species", leftSpecies.trim());
@@ -214,29 +211,24 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
         </label>
 
         <div className="drop-row">
-          <div className="table-slot">
+          <DropZone
+            label={sharedTyping ? "Isolate data" : "Left isolate data"}
+            hint={TABLE_HINT}
+            accept={TABLE_ACCEPT}
+            file={files.left_isolates}
+            onFile={(f) => put("left_isolates", f)}
+          />
+          {sharedTyping ? null : (
             <DropZone
-              label={sharedTyping ? "Isolate data" : "Left isolate data"}
+              label="Right isolate data"
               hint={TABLE_HINT}
               accept={TABLE_ACCEPT}
-              file={files.left_isolates}
-              onFile={(f) => put("left_isolates", f)}
+              file={files.right_isolates}
+              onFile={(f) => put("right_isolates", f)}
             />
-            <KeyColumn read={leftHeader} value={leftKey} onChange={setLeftKey} />
-          </div>
-          {sharedTyping ? null : (
-            <div className="table-slot">
-              <DropZone
-                label="Right isolate data"
-                hint={TABLE_HINT}
-                accept={TABLE_ACCEPT}
-                file={files.right_isolates}
-                onFile={(f) => put("right_isolates", f)}
-              />
-              <KeyColumn read={rightHeader} value={rightKey} onChange={setRightKey} />
-            </div>
           )}
         </div>
+        <KeyColumn tables={tables} value={key} onChange={setKey} />
       </fieldset>
 
       <div className="fields">
@@ -395,39 +387,56 @@ function useTableHeader(file: File | undefined): HeaderRead {
   return read.file === file ? read : { file };
 }
 
-/** No table, or a table whose header was read and whose key it has. */
-export function tableReady(file: File | undefined, read: HeaderRead, key: string): boolean {
-  if (!file) return true;
-  return Boolean(read.header && key && read.header.columns.includes(key));
+/**
+ * The columns every table's header has, in the first table's order; `null`
+ * while there is no table, or one is still being read or was refused.
+ */
+export function sharedColumns(tables: HeaderRead[]): string[] | null {
+  if (!tables.length || tables.some((read) => !read.header)) return null;
+  const [first, ...rest] = tables.map((read) => read.header!.columns);
+  return first.filter((column) => rest.every((columns) => columns.includes(column)));
+}
+
+/** No table, or every table read and having the key. */
+export function keyReady(tables: HeaderRead[], key: string): boolean {
+  if (!tables.length) return true;
+  return Boolean(key && sharedColumns(tables)?.includes(key));
 }
 
 /**
- * The key-column choice under a table's drop zone.
+ * The one key-column choice, under the isolate drop zones.
  *
- * Disabled until a file has been read. With no `ST` in the header nothing is
+ * Disabled until every table has been read. With two tables it offers only
+ * the columns both have: the server would refuse a key missing from either,
+ * so offering it would only defer the refusal. With no `ST` nothing is
  * pre-selected: taking the first column on the user's behalf would join on a
  * guess, and a wrong guess looks like data rather than like a mistake.
  */
 export function KeyColumn({
-  read,
+  tables,
   value,
   onChange,
 }: {
-  read: HeaderRead;
+  tables: HeaderRead[];
   value: string;
   onChange: (key: string) => void;
 }) {
-  const columns = read.header?.columns ?? [];
+  const columns = sharedColumns(tables) ?? [];
+  const errors = tables.flatMap((read, i) =>
+    read.error ? [tables.length > 1 ? `${i ? "Right" : "Left"} table: ${read.error}` : read.error] : [],
+  );
+  const reading = tables.some((read) => !read.header && !read.error);
+  const formats = [...new Set(tables.map((read) => read.header?.format.toUpperCase()))].join(" and ");
   return (
     <label className="key-column">
       Column with the leaf names
       <select
         value={columns.includes(value) ? value : ""}
-        disabled={!read.header}
+        disabled={!columns.length}
         onChange={(event) => onChange(event.target.value)}
       >
         <option value="" disabled>
-          {read.file ? (read.header ? "Choose a column…" : read.error ? "—" : "Reading…") : "Choose a file first"}
+          {!tables.length ? "Choose a file first" : errors.length ? "—" : reading ? "Reading…" : "Choose a column…"}
         </option>
         {columns.map((column) => (
           <option key={column} value={column}>
@@ -435,17 +444,25 @@ export function KeyColumn({
           </option>
         ))}
       </select>
-      {read.error ? (
-        <span className="key-column-note failed">{read.error}</span>
-      ) : read.header && !columns.includes(value) ? (
-        <span className="key-column-note">
-          Choose the column whose values are the tree's leaf labels.
+      {errors.length ? (
+        errors.map((error) => (
+          <span key={error} className="key-column-note failed">
+            {error}
+          </span>
+        ))
+      ) : reading || !tables.length ? null : !columns.length ? (
+        <span className="key-column-note failed">
+          The two tables have no column in common; the leaf names must be in the same column of both.
         </span>
-      ) : read.header ? (
+      ) : !columns.includes(value) ? (
         <span className="key-column-note">
-          {read.header.format.toUpperCase()}, {columns.length} columns.
+          Choose the column whose values are the trees' leaf labels.
         </span>
-      ) : null}
+      ) : (
+        <span className="key-column-note">
+          {formats}, {columns.length} columns{tables.length > 1 ? " in both" : ""}.
+        </span>
+      )}
     </label>
   );
 }

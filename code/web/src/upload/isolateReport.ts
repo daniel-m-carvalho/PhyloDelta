@@ -41,6 +41,27 @@ export function describeJoin(side: Side, report: IsolateJoinReport): string {
   return parts.join("; ");
 }
 
+/**
+ * The key, in one short sentence, for the "Isolate data" note in the view
+ * menu; `null` when no uploaded table is in use. Only the key: the counts
+ * belong to the upload, where a bad column can still be changed, and in the
+ * menu they read as a success however few leaves matched. Two keys only from
+ * an API client, which may still key each table on its own column.
+ */
+export function describeKey(
+  isolates: Partial<Record<Side, IsolateJoinReport>> | undefined,
+): string | null {
+  const used = (["left", "right"] as Side[]).flatMap((side) => {
+    const report = isolates?.[side];
+    return report && !report.error ? [[side, report.key_column] as const] : [];
+  });
+  if (!used.length) return null;
+  if (used.every(([, key]) => key === used[0][1])) {
+    return `Matched to the leaves by the column "${used[0][1]}"`;
+  }
+  return `Matched to the leaves by "${used[0][1]}" on the left and "${used[1][1]}" on the right`;
+}
+
 /** Both sides, in order; empty when no table was uploaded. */
 export function describeJoins(
   isolates: Partial<Record<Side, IsolateJoinReport>> | undefined,

@@ -5028,13 +5028,22 @@ column renamed `sequence_type` — so no `ST` to fall back on — and that colum
 panel, the join report matched the `ST` upload exactly (686 leaves without rows each side; 2,546
 and 2,512 unmatched rows) and the compositions of all 35,289 labelled nodes, under three columns,
 were identical between the two stores; the bars drew. The upload panel pre-selects `ST`, requires a
-choice without it, and gives each of two tables its own; the layout check passes with the "not
-used" line above the panels.
+choice without it; the layout check passes with the "not used" line above the panels.
 
 That run found a layout bug the short test tables hid: the report is long, menu labels are
 `nowrap`, and the note widened the right-aligned View options menu past the window's left edge. A
-note in a menu now wraps at 380 px (`width: max-content`, so short notes stay on one line), with one
-line per side.
+note in a menu now wraps at 380 px (`width: max-content`, so short notes stay on one line).
+
+**One key choice, for one table or two; the menu names only the key.** The panel first had a key
+select under each table. Daniel, trying it: one point of key selection, whether one table is
+uploaded or two. Two tables for one comparison are two exports of the same kind of data, so they are
+keyed the same way; one select under both lists only the columns both headers have, says so when
+they have none in common, and sends that key as both `left_isolates_key` and `right_isolates_key`.
+The API keeps a key per side — a client may key each table on its own column — and only then does
+the menu name two. The **Isolate data** note in View options had carried the join report; keyed on
+`Name` it read "26,629 rows joined…" while 17,348 of 17,645 leaves had no rows, a success in
+appearance. It now says only *Matched to the leaves by the column "Name"*. The counts stay where a
+bad column can still be changed: in the upload panel once the comparison is ready, and in `/status`.
 
 **Cost.** The comparison view now asks `/status` on every opening, not only when moved leaves are
 missing — one request, answered from the row; for the catalogue's pairs it is a 404, caught.

@@ -30,9 +30,10 @@ On the home page, under **New comparison**:
    or click them to choose a file.
 2. *Optional:* **Isolate data**, a table (`.tsv` or `.csv`) describing the isolates behind each
    leaf (source, country, year…). Keep **One table for both trees** ticked when both trees are the
-   same organism; untick it to give each tree its own table. Under each table, **Column with the
-   leaf names** lists the table's columns: choose the one whose values are the tree's leaf names.
-   `ST` is chosen for you when the table has it; otherwise you must choose before uploading.
+   same organism; untick it to give each tree its own table. Below the tables, **Column with the
+   leaf names** lists their columns (with two tables, the columns both have): choose the one whose
+   values are the trees' leaf names. `ST` is chosen for you when the tables have it; otherwise you
+   must choose before uploading.
 3. *Optional:* a **Name** for the comparison (by default, the two file names), and the **Left
    species** / **Right species**. Naming the species lets the result say whether matching leaf names
    really are the same organisms. Sequence types are numbered per species, so across species the same
@@ -166,8 +167,9 @@ length is its number of isolates, split into colours by a column of the table:
 A leaf with no bar has no isolate data. "(not recorded)" counts isolates with an empty value in that
 column.
 
-The **Isolate data** entry in View options says how each uploaded table matched its tree: how many
-rows were joined, how many name no leaf (with examples) and how many leaves have no rows. If no
+The **Isolate data** entry in View options names the column the leaves were matched by. How each
+uploaded table matched its tree — how many rows were joined, how many name no leaf (with examples)
+and how many leaves have no rows — is shown in the upload panel when the comparison is ready. If no
 value in the chosen column names a leaf, usually because the wrong column was chosen, the table is
 not used and a line above the trees says so. Upload the comparison again with the right column.
 
