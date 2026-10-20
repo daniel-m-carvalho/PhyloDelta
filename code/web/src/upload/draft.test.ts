@@ -29,8 +29,7 @@ describe("upload draft", () => {
       rightSpecies: "Staphylococcus-NJ",
       sharedTyping: false,
       metric: "triplet",
-      leftKey: "isolate",
-      rightKey: "ST",
+      key: "isolate",
     };
     saveFields(typed);
     expect(loadFields()).toEqual(typed);
@@ -46,6 +45,14 @@ describe("upload draft", () => {
       JSON.stringify({ name: 42, sharedTyping: "yes", leftSpecies: "kept" }),
     );
     expect(loadFields()).toEqual({ ...EMPTY_FIELDS, leftSpecies: "kept" });
+  });
+
+  it("reads the left key of a draft saved with one key per table", () => {
+    window.localStorage.setItem(
+      "phylodelta.uploadDraft.v1",
+      JSON.stringify({ leftKey: "isolate", rightKey: "ST" }),
+    );
+    expect(loadFields().key).toBe("isolate");
   });
 
   it("survives storage that is not JSON", () => {

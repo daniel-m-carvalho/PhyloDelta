@@ -29,11 +29,10 @@ export interface DraftFields {
   /** Empty until chosen; restored only if the server still offers it. */
   metric: string;
   /**
-   * Each table's key column (§47). Restored only if the table's header still
-   * has it — the file may have been replaced since.
+   * The key column, one for both tables (§47). Restored only if the tables'
+   * headers still have it — a file may have been replaced since.
    */
-  leftKey: string;
-  rightKey: string;
+  key: string;
 }
 
 export const EMPTY_FIELDS: DraftFields = {
@@ -42,8 +41,7 @@ export const EMPTY_FIELDS: DraftFields = {
   rightSpecies: "",
   sharedTyping: true,
   metric: "",
-  leftKey: "",
-  rightKey: "",
+  key: "",
 };
 
 const FIELDS_KEY = "phylodelta.uploadDraft.v1";
@@ -52,7 +50,8 @@ export function loadFields(): DraftFields {
   try {
     const raw = window.localStorage.getItem(FIELDS_KEY);
     if (!raw) return EMPTY_FIELDS;
-    const parsed = JSON.parse(raw) as Partial<DraftFields>;
+    // `leftKey` is what a draft saved before the single key choice holds.
+    const parsed = JSON.parse(raw) as Partial<DraftFields> & { leftKey?: unknown };
     // Field by field and typed, so a value written by an older version, or
     // edited by hand, cannot put a non-string into a controlled input.
     return {
@@ -61,8 +60,12 @@ export function loadFields(): DraftFields {
       rightSpecies: typeof parsed.rightSpecies === "string" ? parsed.rightSpecies : "",
       sharedTyping: typeof parsed.sharedTyping === "boolean" ? parsed.sharedTyping : true,
       metric: typeof parsed.metric === "string" ? parsed.metric : "",
-      leftKey: typeof parsed.leftKey === "string" ? parsed.leftKey : "",
-      rightKey: typeof parsed.rightKey === "string" ? parsed.rightKey : "",
+      key:
+        typeof parsed.key === "string"
+          ? parsed.key
+          : typeof parsed.leftKey === "string"
+            ? parsed.leftKey
+            : "",
     };
   } catch {
     return EMPTY_FIELDS;

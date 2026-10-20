@@ -22,7 +22,7 @@ import type {
 } from "./api/types";
 import { hasMovedLeaves, headline, presentation, viewMetric } from "./comparison/metric";
 import { pairName, treeName } from "./names";
-import { describeJoins, unusedTables } from "./upload/isolateReport";
+import { describeKey, unusedTables } from "./upload/isolateReport";
 
 export function App() {
   const [me, setMe] = useState<WhoAmI | null>(null);
@@ -234,7 +234,7 @@ export function App() {
                 label: "Isolate data",
                 checked: options.typing,
                 heading: "Show",
-                note: describeJoins(isolateJoins).join("\n") || "A bar of isolates on each leaf",
+                note: describeKey(isolateJoins) ?? "A bar of isolates on each leaf",
               },
               {
                 key: "clades",
