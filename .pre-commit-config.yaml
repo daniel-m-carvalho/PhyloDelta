@@ -45,7 +45,7 @@ repos:
       # tables the benchmark harness writes (a fixer and a generator that
       # disagree would rewrite each other's output forever).
       - id: end-of-file-fixer
-        exclude: &data ^(datasets/|code/bench/results/|code/server/tests/fixtures/|code/web/src/.*/__fixtures__/)
+        exclude: &data ^(datasets/|code/bench/results/|code/bench/trees/|code/server/tests/fixtures/|code/web/src/.*/__fixtures__/)
       - id: trailing-whitespace
         exclude: *data
         # Two trailing spaces are a line break in Markdown.
