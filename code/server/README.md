@@ -327,7 +327,7 @@ anywhere.
 | `rf` | python | Robinson-Foulds distance, plus a per-clade `exact` column |
 | `rf-treediff` | subprocess | The same distance from TreeDiff, as an independent check |
 | `triplet` | subprocess | Triplet distance — a finer-grained signal that does not saturate on large clades |
-| `mast` | python (+ native) | Moved leaves: the maximum agreement subtree, with a per-clade `moved` count. Declines pairs above 40,000 leaves (§46) |
+| `mast` | python (+ native) | Moved leaves: the maximum agreement subtree, with a per-clade `moved` count. Declines a pair whose table would exceed `PHYLODELTA_METRIC_MEMORY`, naming both numbers; no default, so unset it runs on any pair (§46, §50) |
 
 `rf` and `rf-treediff` should always agree; a disagreement means one of them is wrong. The
 subprocess metrics need `./native/build_treediff.sh`; `/api/v1/metrics` reports `available: false`

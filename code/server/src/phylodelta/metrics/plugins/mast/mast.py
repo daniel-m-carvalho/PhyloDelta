@@ -45,6 +45,28 @@ from ...runners import MetricFailed
 PYTHON_MAX_LEAVES = 2_000
 
 
+def internal_table_bytes(left_end, right_end, n_leaves: int) -> int:
+    """Bytes of the native agreement table, from the two trees' `subtree_end`.
+
+    The table is the one allocation that grows with the square of the tree
+    (native/src/mast.hpp): one cell per pair of internal nodes, two bytes while
+    every count fits in them (up to 65,535 leaves) and four above. Zero-filled
+    on allocation, so every page of it is resident while MAST runs. Measured
+    against the native call by tools/measure_mast_memory.py (§50).
+    """
+    left_end = np.asarray(left_end, dtype=np.int64)
+    right_end = np.asarray(right_end, dtype=np.int64)
+    left_internal = int((left_end != np.arange(1, len(left_end) + 1)).sum())
+    right_internal = int((right_end != np.arange(1, len(right_end) + 1)).sum())
+    cell = 2 if n_leaves <= 0xFFFF else 4
+    return left_internal * right_internal * cell
+
+
+def table_bytes(left: TreeArrays, right: TreeArrays) -> int:
+    """The memory estimate the runner checks against the budget (metric.json, §50)."""
+    return internal_table_bytes(left.subtree_end, right.subtree_end, left.n_leaves)
+
+
 def _check_binary(arrays: TreeArrays, side: str) -> None:
     """Refuse a node with other than two children, by name.
 

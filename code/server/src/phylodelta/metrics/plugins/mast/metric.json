@@ -4,9 +4,9 @@
   "version": "1",
   "kind": "python",
   "entrypoint": "phylodelta.metrics.plugins.mast.mast:compute",
-  "description": "The maximum agreement subtree (MAST) is the largest set of leaves that both trees arrange identically; every other leaf has moved. Where several sets are equally large, one is chosen by a fixed rule, so which leaves are called moved can differ from another tool's choice while their number cannot. The number of moved leaves is also an upper bound on the SPR distance: each moved leaf can be put back with one prune-and-regraft move. Computed for rooted binary trees by a table over every pair of clades, so its memory grows with the square of the tree and pairs above limits.max_leaves are declined.",
+  "description": "The maximum agreement subtree (MAST) is the largest set of leaves that both trees arrange identically; every other leaf has moved. Where several sets are equally large, one is chosen by a fixed rule, so which leaves are called moved can differ from another tool's choice while their number cannot. The number of moved leaves is also an upper bound on the SPR distance: each moved leaf can be put back with one prune-and-regraft move. Computed for rooted binary trees by a table over every pair of clades, so its memory grows with the square of the tree: about 2.4 GB at 35,000 leaves. Where the server sets a memory budget for one metric (PHYLODELTA_METRIC_MEMORY), a pair whose table would not fit it is declined, and the reason gives both numbers.",
   "reference": {"citation": "PhyloDelta's own implementation, following the method of Steel, M.; Warnow, T. Kaikoura tree theorems: Computing the maximum agreement subtree. Information Processing Letters 1993, 48, 77-82.", "doi": "10.1016/0020-0190(93)90181-8"},
-  "limits": {"max_leaves": 40000},
+  "limits": {"memory": "phylodelta.metrics.plugins.mast.mast:table_bytes"},
   "capabilities": {
     "per_clade": true,
     "symmetric": true,

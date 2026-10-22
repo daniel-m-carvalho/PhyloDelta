@@ -4881,8 +4881,9 @@ both trees arrange identically. Every other shared leaf has *moved*. It is Phylo
 implementation, in C++ with a Python reference (`metrics/plugins/mast`, `native/src/mast.hpp`),
 following Steel & Warnow (1993). Per node it stores **how many of its leaves moved** (`moved`,
 float32; a leaf 1 or 0, NaN outside the compared pair), which is what the web view colours and
-what lets a collapsed clade say how many of its leaves moved. It declines pairs above
-`limits.max_leaves` (40,000) by name, and the demo catalogue is built with it.
+what lets a collapsed clade say how many of its leaves moved. It declines, by name, a pair whose
+table would not fit the deployment's memory budget (§50; it was a fixed 40,000 leaves until then),
+and the demo catalogue is built with it.
 
 **Why it exists.** The supervisor's R script (`examples/04_trees_spr_metrics_and_trace.R`) computes
 a "trace" of differing leaves with `phangorn::mast`. Every other metric here answers *how
@@ -4924,9 +4925,9 @@ cell's value. Trees must be rooted binary, which reconciliation already guarante
 
 Sizes equal phangorn's on every ladder rung it can finish and on random pairs in the suite; the
 native and Python implementations keep exactly the same leaves on 150 random pairs; removing one
-term of the recurrence fails the tests. The limit is set where the table is ~3 GB; a machine with
-more or less memory changes `limits.max_leaves` in `metric.json`, which every metric now may
-declare and the runner enforces before the metric starts.
+term of the recurrence fails the tests. The limit was set where the table is ~3 GB, as `limits.max_leaves` in `metric.json`,
+which every metric now may declare and the runner enforces before the metric starts. §50 replaced
+it with a memory estimate checked against a per-deployment budget.
 
 **What the number means on the demo pair.** Only 2,909 of 17,645 leaves (16%) are in the agreement
 subtree: MAST asks for one subtree both trees agree on *entirely*, and NJ and UPGMA disagree
@@ -5151,6 +5152,77 @@ minutes; skipping jobs saves little and adds a way to skip one wrongly); release
 multi-architecture images and `npm audit` (nothing is published yet, §48); a GitLab pipeline (no
 mirror). The browser checks in `code/bench/harness` stay local: they need a built store, the API, a
 worker and Chrome.
+
+
+## 50. A metric's memory, checked against the deployment's budget
+
+**Decision.** MAST is declined when its agreement table would need more memory than the deployment
+allows one metric run: `PHYLODELTA_METRIC_MEMORY`, read by the worker and the seed
+(`docker-compose.yml`). **It has no default**: whoever deploys the app sets it, and unset there is
+no budget. The fixed `limits.max_leaves = 40000` is gone from its manifest.
+In its place, `limits.memory` names a function that estimates the bytes from the two reconciled
+trees (`mast.table_bytes`), and the runner compares it with the budget before the metric starts,
+as it did the leaf count (§46). The reason carries both numbers:
+
+> declined: 40,000 shared leaves need about 3.0 GiB of memory, above this server's budget of
+> 2.5 GiB for one metric (PHYLODELTA_METRIC_MEMORY)
+
+**Why.** A leaf count knows nothing about the machine. 40,000 leaves is 3 GiB of table, which a
+small VM cannot spare and a large one wastes. And on Linux, running out of memory does not raise:
+the kernel kills the worker, the job is reclaimed after its 300 s lease, and after three attempts
+the *whole comparison* fails, RF included. A budget sized to the machine turns that into one metric
+declined by name on a comparison that is otherwise ready.
+
+**The estimate is the table, and that is measured to be the cost.** One cell per pair of internal
+nodes, two bytes while every count fits (to 65,535 leaves) and four above, exactly as `mast.hpp`
+allocates it. The table is zero-filled on allocation, so all of it is resident.
+`tools/measure_mast_memory.py` runs the native call on the benchmark ladder, each in a process that
+only loads the prepared inputs (parsing peaks higher than MAST at small sizes and a high-water mark
+cannot be reset), and compares peak memory with the estimate (`results/mast_memory.json`):
+
+| shared leaves | estimate | measured | ratio | time |
+|---:|---:|---:|---:|---:|
+| 1,000 | 1.9 MiB | 2.0 MiB | 1.03 | 0.02 s |
+| 5,000 | 47.7 MiB | 47.8 MiB | 1.00 | 0.5 s |
+| 10,000 | 190.7 MiB | 190.9 MiB | 1.00 | 2.1 s |
+| 17,645 | 593.8 MiB | 594.4 MiB | 1.00 | 6.7 s |
+| 35,290 | 2,375.2 MiB | 2,377.2 MiB | 1.00 | 28 s |
+
+The rest of MAST — the leaf intervals, the walk back, the result — is linear in the tree and lost
+in the noise from 10,000 leaves up. The budget is for the metric's *own* memory: the worker already
+holds the two trees and the correspondence for every metric, whatever it runs.
+
+**Why no default.** The supervisor's decision: the limit is a configuration parameter, so it is
+whatever the person configuring the app defines. A number in the code would be right for one
+machine and wrong for the others. A first version defaulted to 2.5 GiB, chosen before the VM's RAM
+was known (Daniel knew only of a 32 GB partition, which is disk); it was withdrawn. For scale,
+2.5 GiB would admit pairs up to ~36,600 shared leaves and decline the 70,580 rung, whose four-byte
+table is 18.6 GiB.
+
+Unset is not silent: the worker prints its budget when it starts — `memory budget for one metric
+not set (PHYLODELTA_METRIC_MEMORY), so MAST runs on any pair`, or `… 4.0 GiB`. The cost of leaving
+it unset is the one the budget exists to prevent: a pair too large for the machine gets the worker
+killed rather than a message, and `deploy/README.md` says so. Units are binary (`4G` is 4 GiB) and
+a value that is not a size is refused by name, at worker start and when the metric would run —
+`not run: PHYLODELTA_METRIC_MEMORY: 'lots' is not a size…` — rather than read as no budget or as
+zero.
+
+**Seen through the app.** With a 100 MiB budget, a 17,645-leaf ladder pair uploaded through the API
+came back `ready` with RF, and `metrics_failed.mast` gave "need about 594 MiB … budget of 100 MiB".
+The view options already showed such a reason (since §46): "Moved leaves (MAST)" is disabled, its
+note "Not available: declined: …", for a user who returns to the comparison later as well as one
+who just uploaded it. Under a 2.5 GiB budget the same pair computed MAST (2,909 kept, 14,736 moved); with none set, the suite
+checks that every pair runs.
+
+**Not done.**
+* *A hard cap.* An estimate guards against a pair it can see coming. A process run with a memory
+  limit (`RLIMIT_AS`, or MAST in a subprocess) would also catch what it cannot, at the cost of
+  copying the inputs out. Not needed while the estimate is the measured cost.
+* *Telling a client before upload.* `GET /metrics` does not report a metric's memory need; the
+  decline arrives after upload, which is when Daniel wants the user told.
+* *A budget derived from the machine* (a fraction of `MemTotal` or the container's cgroup limit).
+  Rejected for now: the number would change with where the worker happens to run, and the same
+  comparison could be declined on one deployment of the "same" setting and not another.
 
 ---
 
