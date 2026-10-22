@@ -309,6 +309,7 @@ Every error has the same shape, with a stable `code` to branch on and a `hint` s
 | Slice budget | 1–50,000 tips | fixed |
 | Search results | up to 200 per request | fixed |
 | Upload size | 128 MB per file | `PHYLODELTA_MAX_UPLOAD_BYTES` |
+| Memory for one metric run | none: set by whoever deploys it. Where set, a pair needing more is declined, with both numbers in `metrics_failed` | `PHYLODELTA_METRIC_MEMORY`, e.g. `4G`, `2560M` (binary units) |
 | Allowed browser origins (CORS) | `*` | `PHYLODELTA_CORS_ORIGINS`, set to the frontend's origin in production |
 | Data location | `code/server/store` | `PHYLODELTA_STORE` |
 | Database | SQLite in the store | `PHYLODELTA_DATABASE_URL`, e.g. a PostgreSQL URL |

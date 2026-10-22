@@ -183,24 +183,64 @@ def _subprocess_runner(manifest: MetricManifest) -> Runner:
     return run
 
 
+def _estimator(manifest: MetricManifest):
+    """The metric's memory estimate, `limits.memory`, imported; None if it has none."""
+    import importlib
+
+    if manifest.limits.memory is None:
+        return None
+    module_name, _, attr = manifest.limits.memory.partition(":")
+    try:
+        return getattr(importlib.import_module(module_name), attr)
+    except (ImportError, AttributeError) as missing:
+        # A limit that cannot be evaluated is not a limit: refuse to run the
+        # metric rather than run it unchecked (§50).
+        raise MetricFailed(
+            f"metric {manifest.name!r}: its memory estimate "
+            f"{manifest.limits.memory!r} cannot be loaded ({missing})"
+        ) from None
+
+
 def _within_limits(manifest: MetricManifest, run: Runner) -> Runner:
-    """Decline a pair larger than the metric declares it can take (§46).
+    """Decline a pair larger than the metric declares it can take (§46, §50).
 
     Checked here, before the metric starts, rather than inside each metric: a
     limit exists because running is what exhausts the machine, so the check
     must not depend on the metric remembering to make it.
+
+    Both numbers go into the reason, which reaches the person who uploaded
+    (`/status` `metrics_failed`): what the pair needs and what this server
+    allows, so "use smaller trees" and "give the server more memory" are both
+    readable from it.
     """
     limit = manifest.limits.max_leaves
-    if limit is None:
+    if limit is None and manifest.limits.memory is None:
         return run
 
     def checked(prepared: PreparedPair) -> MetricResult:
         leaves = prepared.left.n_leaves
-        if leaves > limit:
+        if limit is not None and leaves > limit:
             raise MetricFailed(
                 f"declined: {leaves:,} shared leaves, above this metric's limit of "
                 f"{limit:,} (limits.max_leaves in its metric.json)"
             )
+        estimate = _estimator(manifest)
+        if estimate is not None:
+            try:
+                budget = config.metric_memory()
+            except ValueError as misconfigured:
+                raise MetricFailed(f"not run: {misconfigured}") from None
+            # None: nobody configured a budget, so there is nothing to decline
+            # against (config.metric_memory).
+            if budget is not None:
+                needed = int(estimate(prepared.left, prepared.right))
+                if needed > budget:
+                    raise MetricFailed(
+                        f"declined: {leaves:,} shared leaves need about "
+                        f"{config.format_size(needed)} of memory, above this server's "
+                        f"budget of {config.format_size(budget)} for one metric "
+                        "(PHYLODELTA_METRIC_MEMORY)"
+                    )
         return run(prepared)
 
     return checked

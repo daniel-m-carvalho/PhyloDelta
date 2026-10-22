@@ -77,6 +77,8 @@ not acceptable on the open internet. See `PHYLODELTA_AUTH=jwt` in
 
 `PHYLODELTA_THREADS` is set to **2** for all three services in `docker-compose.yml`. `0` would take every core, and the measured trade-off is that two threads give ~2x at 94% efficiency where ten give ~4.7x at 57% (DECISIONS §34.8). Two is also the setting every build time this project reports was measured at, so a deployment on the default would not behave like the documented one. Raise it if the machine is dedicated and single-comparison latency matters more than being a good neighbour.
 
+`PHYLODELTA_METRIC_MEMORY` is the memory one metric run may take, read by the worker and the seed. **It has no default**: the right value depends on the machine, so set it in `docker-compose.yml` or `.env` (e.g. `PHYLODELTA_METRIC_MEMORY=4G`); the worker prints the budget it is using when it starts. Only MAST declares a need today: its table is measured at 594 MiB for 17,645 shared leaves and 2,377 MiB for 35,290, growing with the square of the leaves (DECISIONS §50). A comparison whose MAST would need more is still computed, without MAST, and `/status` and the view options say why with both numbers. Set it from the machine's RAM: what is free with the stack running (`free -h`, `docker stats`), less a margin. Left unset, MAST runs on any pair, and one larger than the machine can hold ends with the worker killed by the kernel and the whole comparison failing after three attempts.
+
 Deploying a new version:
 
 ```sh

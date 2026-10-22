@@ -8,6 +8,7 @@ point at a fixture store without touching the real one.
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 
 # .../code/server/src/phylodelta/config.py -> .../repo/theses
@@ -75,3 +76,54 @@ def threads() -> int:
         return max(0, int(raw))
     except ValueError:
         return 0
+
+
+_SIZE_UNITS = {"": 1, "K": 2**10, "M": 2**20, "G": 2**30, "T": 2**40}
+_SIZE = re.compile(r"(?P<number>\d+(?:\.\d+)?)\s*(?:(?P<unit>[KMGT])(?:I?B)?)?")
+
+
+def parse_size(text: str) -> int:
+    """`2.5G`, `2560M`, `2684354560` → bytes. Units are binary (G = GiB).
+
+    Refused by name rather than defaulted: a budget misread as "none" would let
+    a metric run on exactly the pair it was meant to decline, and one misread
+    as tiny would decline everything with a reason that blames the pair.
+    """
+    found = _SIZE.fullmatch(text.strip().upper())
+    value = float(found["number"]) if found else 0.0
+    if not value > 0:
+        raise ValueError(f"{text!r} is not a size like 2.5G, 2560M or 2684354560")
+    return int(value * _SIZE_UNITS[found["unit"] or ""])
+
+
+def metric_memory() -> int | None:
+    """Bytes one metric run may use beyond what the worker already holds (§50).
+
+    A metric that declares a memory estimate (`limits.memory` in its
+    metric.json) is declined when the estimate is over this. Set with
+    PHYLODELTA_METRIC_MEMORY; read on every call, so tests and an operator's
+    restart see a change without a code edit.
+
+    **No default.** It is a property of the machine, so it is whoever deploys
+    the app who sets it; a number chosen here would be right for one machine
+    and wrong for the rest. Unset is None: no budget, and every metric runs.
+    The worker says so when it starts.
+    """
+    raw = os.environ.get("PHYLODELTA_METRIC_MEMORY", "").strip()
+    if not raw:
+        return None
+    try:
+        return parse_size(raw)
+    except ValueError as bad:
+        raise ValueError(f"PHYLODELTA_METRIC_MEMORY: {bad}") from None
+
+
+def format_size(n_bytes: int) -> str:
+    """Bytes as the unit PHYLODELTA_METRIC_MEMORY is written in: 2.3 GiB, 594 MiB."""
+    if n_bytes >= 2**30:
+        return f"{n_bytes / 2**30:.1f} GiB"
+    if n_bytes >= 2**20:
+        return f"{n_bytes / 2**20:.0f} MiB"
+    if n_bytes >= 2**10:
+        return f"{n_bytes / 2**10:.0f} KiB"
+    return f"{n_bytes} bytes"

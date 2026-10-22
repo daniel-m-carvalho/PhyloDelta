@@ -252,6 +252,9 @@ def test_limits_are_parsed():
         ({"max_leaves": "10"}, "positive integer"),
         ({"max_leaves": True}, "positive integer"),
         ([10], "must be an object"),
+        ({"memory": 10}, "'module:function'"),
+        ({"memory": "no_colon"}, "'module:function'"),
+        ({"memory": "module:"}, "'module:function'"),
     ],
 )
 def test_a_malformed_limit_is_refused_by_name(raw, says):
@@ -274,10 +277,89 @@ def test_a_pair_above_the_limit_is_declined_before_it_runs():
 
 def test_the_shipped_manifest_has_a_limit_and_says_where_it_comes_from():
     manifest = registry.discover()["mast"]
-    assert manifest.limits.max_leaves == 40_000
+    # A memory estimate checked against the deployment's budget, not a fixed
+    # leaf count that knows nothing of the machine (§50).
+    assert manifest.limits.memory == "phylodelta.metrics.plugins.mast.mast:table_bytes"
+    assert manifest.limits.max_leaves is None
     assert "PhyloDelta's own implementation" in manifest.reference.citation
     assert "Steel" in manifest.reference.citation
     assert manifest.reference.doi == "10.1016/0020-0190(93)90181-8"
+
+
+# --- the memory budget (§50) ------------------------------------------------------
+
+
+def test_the_estimate_is_the_native_table():
+    # Internal x internal cells, as mast.hpp allocates them; two bytes each up
+    # to 65,535 leaves and four above. tools/measure_mast_memory.py checks it
+    # against the real allocation (within 0.1% from 10,000 leaves).
+    left, right, _ = _pair("(((A,B),C),(D,E));", "((A,(B,C)),(D,E));")
+    assert mast_module.table_bytes(left, right) == 4 * 4 * 2
+    end = np.array([7, 4, 3, 4, 7, 6, 7])  # three internal nodes
+    assert mast_module.internal_table_bytes(end, end, 0xFFFF) == 3 * 3 * 2
+    assert mast_module.internal_table_bytes(end, end, 0x10000) == 3 * 3 * 4
+
+
+class _Prepared:
+    left, right, correspondence = _pair("((A,B),(C,D));", "((A,C),(B,D));")
+    files = None
+
+
+def test_a_pair_over_the_memory_budget_is_declined_with_both_numbers(monkeypatch):
+    # The table for four leaves is 3 x 3 cells of 2 bytes: 18 bytes.
+    run = make_runner(registry.discover()["mast"])
+    monkeypatch.setenv("PHYLODELTA_METRIC_MEMORY", "17")
+    with pytest.raises(MetricFailed) as declined:
+        run(_Prepared())
+    assert str(declined.value) == (
+        "declined: 4 shared leaves need about 18 bytes of memory, above this server's "
+        "budget of 17 bytes for one metric (PHYLODELTA_METRIC_MEMORY)"
+    )
+    monkeypatch.setenv("PHYLODELTA_METRIC_MEMORY", "18")
+    assert run(_Prepared()).summary["n_leaves"] == 4
+
+
+@pytest.mark.parametrize("unset", [None, "", "  "])
+def test_there_is_no_default_budget_and_unset_runs_every_pair(monkeypatch, unset):
+    # The budget is the deployer's to set (§50); a number here would be right
+    # for one machine and wrong for the rest. Unset, nothing is declined.
+    if unset is None:
+        monkeypatch.delenv("PHYLODELTA_METRIC_MEMORY", raising=False)
+    else:
+        monkeypatch.setenv("PHYLODELTA_METRIC_MEMORY", unset)
+    assert config.metric_memory() is None
+    assert make_runner(registry.discover()["mast"])(_Prepared()).summary["n_leaves"] == 4
+
+
+def test_a_misconfigured_budget_is_refused_by_name_not_defaulted(monkeypatch):
+    run = make_runner(registry.discover()["mast"])
+    monkeypatch.setenv("PHYLODELTA_METRIC_MEMORY", "lots")
+    with pytest.raises(MetricFailed, match=r"not run: PHYLODELTA_METRIC_MEMORY: 'lots' is not a size"):
+        run(_Prepared())
+
+
+def test_an_estimate_that_cannot_be_loaded_refuses_rather_than_running_unchecked():
+    manifest = registry.discover()["mast"]
+    broken = MetricManifest.from_json(
+        {**manifest.raw, "limits": {"memory": "phylodelta.metrics.plugins.mast.mast:no_such"}}
+    )
+    with pytest.raises(MetricFailed, match="memory estimate .*no_such.* cannot be loaded"):
+        make_runner(broken)(_Prepared())
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [("2.5G", int(2.5 * 2**30)), ("2560M", 2560 * 2**20), ("2.5GiB", int(2.5 * 2**30)),
+     ("512 MB", 512 * 2**20), ("1024", 1024), ("1t", 2**40)],
+)
+def test_sizes_are_read_in_binary_units(text, expected):
+    assert config.parse_size(text) == expected
+
+
+@pytest.mark.parametrize("text", ["", "lots", "-1G", "0", "0.0G", "2.5X", "G", "1e9", "nanG"])
+def test_a_size_that_is_not_one_is_refused(text):
+    with pytest.raises(ValueError, match="is not a size like 2.5G"):
+        config.parse_size(text)
 
 
 # --- through an upload ------------------------------------------------------------
@@ -361,3 +443,17 @@ def test_a_declined_mast_is_named_and_the_comparison_is_still_ready(client, monk
     assert status["status"] == "ready"
     assert status["metrics_ready"] == ["rf"]
     assert "above this metric's limit of 3" in status["metrics_failed"]["mast"]
+
+
+def test_a_mast_over_the_memory_budget_is_named_after_upload(client, monkeypatch):
+    # What the uploader reads in /status, and the upload panel shows (§36).
+    from phylodelta.precompute.jobs import process_next
+
+    monkeypatch.setenv("PHYLODELTA_METRIC_MEMORY", "10")
+    pair = _upload(client, b"((A,B),(C,D));", b"((A,C),(B,D));", "rf,mast")
+    assert process_next("w1") is True
+    status = client.get(f"/api/v1/comparisons/{pair}/status", headers={AUTH_HEADER: "alice"}).json()
+    assert status["status"] == "ready"
+    assert status["metrics_ready"] == ["rf"]
+    assert "above this server's budget" in status["metrics_failed"]["mast"]
+    assert "PHYLODELTA_METRIC_MEMORY" in status["metrics_failed"]["mast"]

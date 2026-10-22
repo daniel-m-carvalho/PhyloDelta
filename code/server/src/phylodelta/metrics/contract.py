@@ -266,13 +266,18 @@ class Limits:
     A metric whose cost grows faster than the tree — MAST keeps a table over
     every pair of clades — must decline a pair it cannot finish within the
     machine's memory, by name, rather than run until the worker is killed.
-    Declared in the manifest so a deployment with more or less memory changes
-    a number, not code.
+    Two kinds (§50). `max_leaves` is a fixed ceiling. `memory` names a
+    function, `"module:function"`, that estimates from the two reconciled
+    trees how many bytes the metric will need; the runner declines when that is
+    over the deployment's budget (PHYLODELTA_METRIC_MEMORY). The second is what
+    a memory limit should be: the same pair fits one machine and not another,
+    and a leaf count cannot know which.
     """
 
     max_leaves: int | None = None
+    memory: str | None = None
 
-    KNOWN = ("max_leaves",)
+    KNOWN = ("max_leaves", "memory")
 
     @staticmethod
     def from_json(raw: object, metric: str) -> "Limits":
@@ -293,7 +298,15 @@ class Limits:
                 f"metric {metric!r}: limits.max_leaves must be a positive integer, "
                 f"not {max_leaves!r}"
             )
-        return Limits(max_leaves=max_leaves)
+        memory = raw.get("memory")
+        if memory is not None and (
+            not isinstance(memory, str) or not all(memory.partition(":")[::2])
+        ):
+            raise ValueError(
+                f"metric {metric!r}: limits.memory must name a function as "
+                f"'module:function', not {memory!r}"
+            )
+        return Limits(max_leaves=max_leaves, memory=memory)
 
 
 @dataclass(frozen=True, slots=True)

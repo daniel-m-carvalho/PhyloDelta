@@ -291,6 +291,19 @@ def work(
     """
     who = queue.worker_name()
     print(f"worker {who} started; polling every {poll_seconds:g}s", flush=True)
+    # Said at start, where an operator reads it, rather than discovered when
+    # a large pair takes the machine down (§50).
+    try:
+        budget = config.metric_memory()
+    except ValueError as misconfigured:
+        print(f"worker {who}: {misconfigured}; metrics with a memory estimate will not run", flush=True)
+    else:
+        print(
+            f"worker {who}: memory budget for one metric "
+            + (config.format_size(budget) if budget is not None
+               else "not set (PHYLODELTA_METRIC_MEMORY), so MAST runs on any pair"),
+            flush=True,
+        )
     db.create_schema()
 
     while True:
