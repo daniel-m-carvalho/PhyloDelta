@@ -7,6 +7,8 @@ is Robinson-Foulds.
 
 from __future__ import annotations
 
+import re
+
 import numpy as np
 import pytest
 
@@ -303,7 +305,19 @@ def test_thread_count_is_configurable(monkeypatch):
     assert config.threads() == 3
     monkeypatch.setenv("PHYLODELTA_THREADS", "")
     assert config.threads() == 0, "empty means auto"
-    monkeypatch.setenv("PHYLODELTA_THREADS", "nonsense")
-    assert config.threads() == 0, "unparseable must not crash a batch"
-    monkeypatch.setenv("PHYLODELTA_THREADS", "-4")
-    assert config.threads() == 0
+    # Refused by name, not read as 0 ("every core"), and refused before a
+    # command starts rather than partway through a batch.
+    for bad in ("nonsense", "-4", "2.5"):
+        monkeypatch.setenv("PHYLODELTA_THREADS", bad)
+        with pytest.raises(ValueError, match=f"PHYLODELTA_THREADS: '{re.escape(bad)}' is not a thread count"):
+            config.threads()
+
+
+def test_the_cli_refuses_a_bad_thread_count_before_starting(monkeypatch, capsys):
+    from phylodelta.precompute.pipeline import main
+
+    monkeypatch.setenv("PHYLODELTA_THREADS", "lots")
+    with pytest.raises(SystemExit) as stopped:
+        main(["build-all"])
+    assert stopped.value.code == 2
+    assert "PHYLODELTA_THREADS: 'lots' is not a thread count" in capsys.readouterr().err

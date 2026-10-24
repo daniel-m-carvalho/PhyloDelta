@@ -28,7 +28,7 @@ def store(tmp_path, monkeypatch):
     monkeypatch.setenv("PHYLODELTA_STORE", str(tmp_path))
     for name, sub in (
         ("STORE_DIR", ""), ("TREES_DIR", "trees"), ("PAIRS_DIR", "pairs"),
-        ("ISOLATES_DIR", "isolates"), ("SCRATCH_DIR", "scratch"),
+        ("ISOLATES_DIR", "isolates"),
     ):
         monkeypatch.setattr(config, name, tmp_path / sub if sub else tmp_path)
     monkeypatch.setenv("PHYLODELTA_AUTH", "header")

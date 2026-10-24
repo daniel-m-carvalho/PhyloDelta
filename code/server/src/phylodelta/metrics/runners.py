@@ -184,11 +184,9 @@ def _subprocess_runner(manifest: MetricManifest) -> Runner:
 
 
 def _estimator(manifest: MetricManifest):
-    """The metric's memory estimate, `limits.memory`, imported; None if it has none."""
+    """The metric's memory estimate, `limits.memory`, imported."""
     import importlib
 
-    if manifest.limits.memory is None:
-        return None
     module_name, _, attr = manifest.limits.memory.partition(":")
     try:
         return getattr(importlib.import_module(module_name), attr)
@@ -213,34 +211,26 @@ def _within_limits(manifest: MetricManifest, run: Runner) -> Runner:
     allows, so "use smaller trees" and "give the server more memory" are both
     readable from it.
     """
-    limit = manifest.limits.max_leaves
-    if limit is None and manifest.limits.memory is None:
+    if manifest.limits.memory is None:
         return run
 
     def checked(prepared: PreparedPair) -> MetricResult:
-        leaves = prepared.left.n_leaves
-        if limit is not None and leaves > limit:
-            raise MetricFailed(
-                f"declined: {leaves:,} shared leaves, above this metric's limit of "
-                f"{limit:,} (limits.max_leaves in its metric.json)"
-            )
         estimate = _estimator(manifest)
-        if estimate is not None:
-            try:
-                budget = config.metric_memory()
-            except ValueError as misconfigured:
-                raise MetricFailed(f"not run: {misconfigured}") from None
-            # None: nobody configured a budget, so there is nothing to decline
-            # against (config.metric_memory).
-            if budget is not None:
-                needed = int(estimate(prepared.left, prepared.right))
-                if needed > budget:
-                    raise MetricFailed(
-                        f"declined: {leaves:,} shared leaves need about "
-                        f"{config.format_size(needed)} of memory, above this server's "
-                        f"budget of {config.format_size(budget)} for one metric "
-                        "(PHYLODELTA_METRIC_MEMORY)"
-                    )
+        try:
+            budget = config.metric_memory()
+        except ValueError as misconfigured:
+            raise MetricFailed(f"not run: {misconfigured}") from None
+        # None: nobody configured a budget, so there is nothing to decline
+        # against (config.metric_memory).
+        if budget is not None:
+            needed = int(estimate(prepared.left, prepared.right))
+            if needed > budget:
+                raise MetricFailed(
+                    f"declined: {prepared.left.n_leaves:,} shared leaves need about "
+                    f"{config.format_size(needed)} of memory, above this server's "
+                    f"budget of {config.format_size(budget)} for one metric "
+                    "(PHYLODELTA_METRIC_MEMORY)"
+                )
         return run(prepared)
 
     return checked

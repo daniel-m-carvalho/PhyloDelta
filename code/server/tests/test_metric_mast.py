@@ -240,17 +240,17 @@ def test_a_table_that_does_not_fit_is_declined(monkeypatch):
 
 
 def test_limits_are_parsed():
-    assert Limits.from_json({"max_leaves": 10}, "m").max_leaves == 10
-    assert Limits.from_json({}, "m").max_leaves is None
+    assert Limits.from_json({"memory": "a.b:c"}, "m").memory == "a.b:c"
+    assert Limits.from_json({}, "m").memory is None
 
 
 @pytest.mark.parametrize(
     "raw, says",
     [
-        ({"max_leafs": 10}, "unknown limit"),
-        ({"max_leaves": 0}, "positive integer"),
-        ({"max_leaves": "10"}, "positive integer"),
-        ({"max_leaves": True}, "positive integer"),
+        ({"memroy": "a:b"}, "unknown limit"),
+        # Removed in favour of `memory` (§50): a manifest still declaring it is
+        # told so, rather than having its limit silently ignored.
+        ({"max_leaves": 10}, "unknown limit"),
         ([10], "must be an object"),
         ({"memory": 10}, "'module:function'"),
         ({"memory": "no_colon"}, "'module:function'"),
@@ -262,25 +262,11 @@ def test_a_malformed_limit_is_refused_by_name(raw, says):
         Limits.from_json(raw, "m")
 
 
-def test_a_pair_above_the_limit_is_declined_before_it_runs():
-    manifest = registry.discover()["mast"]
-    small = MetricManifest.from_json({**manifest.raw, "limits": {"max_leaves": 3}})
-    run = make_runner(small)
-
-    class Prepared:
-        left, right, correspondence = _pair("((A,B),(C,D));", "((A,C),(B,D));")
-        files = None
-
-    with pytest.raises(MetricFailed, match="declined: 4 shared leaves, above this metric's limit of 3"):
-        run(Prepared())
-
-
 def test_the_shipped_manifest_has_a_limit_and_says_where_it_comes_from():
     manifest = registry.discover()["mast"]
     # A memory estimate checked against the deployment's budget, not a fixed
     # leaf count that knows nothing of the machine (§50).
     assert manifest.limits.memory == "phylodelta.metrics.plugins.mast.mast:table_bytes"
-    assert manifest.limits.max_leaves is None
     assert "PhyloDelta's own implementation" in manifest.reference.citation
     assert "Steel" in manifest.reference.citation
     assert manifest.reference.doi == "10.1016/0020-0190(93)90181-8"
@@ -370,7 +356,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("PHYLODELTA_STORE", str(tmp_path))
     for name, sub in (
         ("STORE_DIR", ""), ("TREES_DIR", "trees"), ("PAIRS_DIR", "pairs"),
-        ("ISOLATES_DIR", "isolates"), ("SCRATCH_DIR", "scratch"),
+        ("ISOLATES_DIR", "isolates"),
     ):
         monkeypatch.setattr(config, name, tmp_path / sub if sub else tmp_path)
     monkeypatch.setenv("PHYLODELTA_AUTH", "header")
@@ -421,28 +407,6 @@ def test_an_upload_gets_moved_leaves_and_a_leaf_only_one_tree_has_is_not_measure
     by_label = dict(zip(sliced["nodes"]["label"], sliced["comparison"]["columns"]["moved"], strict=True))
     assert by_label["E"] is None, "a leaf only one tree has must read as not measured"
     assert by_label["C"] == 1 and by_label["A"] == 0
-
-
-def test_a_declined_mast_is_named_and_the_comparison_is_still_ready(client, monkeypatch):
-    from phylodelta.precompute.jobs import process_next
-
-    shipped = registry.discover()
-
-    def small_limit(plugins_dir=None):
-        found = dict(shipped)
-        found["mast"] = MetricManifest.from_json(
-            {**shipped["mast"].raw, "limits": {"max_leaves": 3}},
-            directory=shipped["mast"].directory,
-        )
-        return found
-
-    monkeypatch.setattr(registry, "discover", small_limit)
-    pair = _upload(client, b"((A,B),(C,D));", b"((A,C),(B,D));", "rf,mast")
-    assert process_next("w1") is True
-    status = client.get(f"/api/v1/comparisons/{pair}/status", headers={AUTH_HEADER: "alice"}).json()
-    assert status["status"] == "ready"
-    assert status["metrics_ready"] == ["rf"]
-    assert "above this metric's limit of 3" in status["metrics_failed"]["mast"]
 
 
 def test_a_mast_over_the_memory_budget_is_named_after_upload(client, monkeypatch):

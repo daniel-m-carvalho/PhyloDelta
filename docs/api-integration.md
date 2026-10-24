@@ -39,6 +39,10 @@ and a caller sees only their own data plus the shared demo data. The mode is cho
 | `header` | From the `X-PhyloDelta-Owner: <owner id>` header, trusted as sent. | Testing with several users. **Not security.** |
 | `jwt` | From a signed `Authorization: Bearer <token>`. `exp`, `iss` and `aud` are required and checked. | Production, e.g. behind PHYLOViZ's login. |
 
+In `mock` mode the one user's owner id is `local`. `PHYLODELTA_MOCK_OWNER` sets another, and the
+app then lists that owner's data instead. The demo catalogue `build-all` writes belongs to `local`,
+so under another owner it is not listed.
+
 `jwt` needs:
 
 | Variable | |

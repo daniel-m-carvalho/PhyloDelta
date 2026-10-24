@@ -20,7 +20,7 @@ import type {
   PairSummary,
   WhoAmI,
 } from "./api/types";
-import { hasMovedLeaves, headline, presentation, viewMetric } from "./comparison/metric";
+import { hasMovedLeaves, headline, movedLeavesMissing, presentation, viewMetric } from "./comparison/metric";
 import { pairName, treeName } from "./names";
 import { describeKey, unusedTables } from "./upload/isolateReport";
 
@@ -135,11 +135,10 @@ export function App() {
     setIsolateJoins(undefined);
     if (!chosen || chosen.status !== "ready") return;
     const moved = hasMovedLeaves(chosen);
-    const notComputed = "Not computed for this comparison";
     if (moved) {
       api.comparison(chosen.id, "mast").then(setMovedSummary).catch(() => setMovedSummary(null));
     } else {
-      setMovedMissing(notComputed);
+      setMovedMissing(movedLeavesMissing());
     }
     let live = true;
     api
@@ -147,12 +146,14 @@ export function App() {
       .then((status) => {
         if (!live) return;
         setIsolateJoins(status.isolates);
-        if (moved) return;
-        const reason = status.metrics_failed?.mast;
-        setMovedMissing(reason ? `Not available: ${reason}` : notComputed);
+        if (!moved) setMovedMissing(movedLeavesMissing(status));
       })
-      // The catalogue's pairs have no upload record to ask; the plain reason stands.
-      .catch(() => undefined);
+      // Every comparison has a /status, the catalogue's included (a row is
+      // recorded for each), so a failure here is a real one.
+      .catch((failed: unknown) => {
+        if (!live || moved) return;
+        setMovedMissing(movedLeavesMissing(failed instanceof Error ? failed : new Error(String(failed))));
+      });
     return () => {
       live = false;
     };

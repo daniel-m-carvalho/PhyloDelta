@@ -42,17 +42,6 @@ TREES_DIR = STORE_DIR / "trees"
 PAIRS_DIR = STORE_DIR / "pairs"
 ISOLATES_DIR = STORE_DIR / "isolates"
 
-#: Scratch space for work that is not an artefact: trees materialised as Newick
-#: for a subprocess metric to read, and anything else with a lifetime shorter
-#: than a run.
-#:
-#: Inside STORE_DIR rather than the system temp directory, deliberately. These
-#: files can be hundreds of KB per tree and are written per pair; keeping them
-#: beside the store they derive from means one directory to point at a large
-#: disk, one to clean, and no surprise when a container's /tmp turns out to be
-#: a small tmpfs. It is safe to delete at any time.
-SCRATCH_DIR = STORE_DIR / "scratch"
-
 #: Where built native helpers live — the conformance oracle, and any metric that
 #: is a binary rather than a Python function. Sources and build scripts are in
 #: the repository; what they produce is not, so this is gitignored and
@@ -68,14 +57,25 @@ def threads() -> int:
     Overridable because a shared machine should not have its whole CPU taken by
     an offline batch, and because the tests pin it to compare thread counts —
     the result must not depend on this value.
+
+    A value that is not a count is refused by name, not read as 0: 0 means
+    every core, the opposite of what someone setting this usually wants. The
+    CLI checks it once at start (`pipeline.main`), so a bad value stops a
+    command before it begins rather than a batch halfway through.
     """
-    raw = os.environ.get("PHYLODELTA_THREADS")
+    raw = os.environ.get("PHYLODELTA_THREADS", "").strip()
     if not raw:
         return 0
     try:
-        return max(0, int(raw))
+        count = int(raw)
     except ValueError:
-        return 0
+        count = -1
+    if count < 0:
+        raise ValueError(
+            f"PHYLODELTA_THREADS: {raw!r} is not a thread count "
+            "(a whole number; 0 or unset means one per core)"
+        )
+    return count
 
 
 _SIZE_UNITS = {"": 1, "K": 2**10, "M": 2**20, "G": 2**30, "T": 2**40}

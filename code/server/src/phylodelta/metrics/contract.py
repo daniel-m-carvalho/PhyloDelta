@@ -266,18 +266,17 @@ class Limits:
     A metric whose cost grows faster than the tree — MAST keeps a table over
     every pair of clades — must decline a pair it cannot finish within the
     machine's memory, by name, rather than run until the worker is killed.
-    Two kinds (§50). `max_leaves` is a fixed ceiling. `memory` names a
-    function, `"module:function"`, that estimates from the two reconciled
-    trees how many bytes the metric will need; the runner declines when that is
-    over the deployment's budget (PHYLODELTA_METRIC_MEMORY). The second is what
-    a memory limit should be: the same pair fits one machine and not another,
-    and a leaf count cannot know which.
+    `memory` names a function, `"module:function"`, that estimates from the
+    two reconciled trees how many bytes the metric will need; the runner
+    declines when that is over the deployment's budget
+    (PHYLODELTA_METRIC_MEMORY, §50). A memory need rather than a leaf count,
+    because the same pair fits one machine and not another. (A fixed
+    `max_leaves` came first, §46, and was removed once nothing used it.)
     """
 
-    max_leaves: int | None = None
     memory: str | None = None
 
-    KNOWN = ("max_leaves", "memory")
+    KNOWN = ("memory",)
 
     @staticmethod
     def from_json(raw: object, metric: str) -> "Limits":
@@ -290,14 +289,6 @@ class Limits:
             raise ValueError(
                 f"metric {metric!r}: unknown limit(s) {unknown}; known: {list(Limits.KNOWN)}"
             )
-        max_leaves = raw.get("max_leaves")
-        if max_leaves is not None and (
-            isinstance(max_leaves, bool) or not isinstance(max_leaves, int) or max_leaves < 1
-        ):
-            raise ValueError(
-                f"metric {metric!r}: limits.max_leaves must be a positive integer, "
-                f"not {max_leaves!r}"
-            )
         memory = raw.get("memory")
         if memory is not None and (
             not isinstance(memory, str) or not all(memory.partition(":")[::2])
@@ -306,7 +297,7 @@ class Limits:
                 f"metric {metric!r}: limits.memory must name a function as "
                 f"'module:function', not {memory!r}"
             )
-        return Limits(max_leaves=max_leaves, memory=memory)
+        return Limits(memory=memory)
 
 
 @dataclass(frozen=True, slots=True)

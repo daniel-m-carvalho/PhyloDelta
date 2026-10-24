@@ -262,10 +262,6 @@ class NotComparable(ValueError):
 
 @dataclass(frozen=True, slots=True)
 class PairComputed:
-    pair_id: str
-    notes: dict
-    shared_ms: float
-    metrics_written: list[str]
     report_lines: list[str]
     #: Requested metrics that produced nothing, as ``{name: reason}``.
     #:
@@ -390,11 +386,15 @@ def compute_pair(
         correspondence=correspondence,
         files=MaterialisedPair(
             pair_id=pair_id, left=left_r, right=right_r,
+            # Inside the store rather than the system temp directory: these
+            # can be hundreds of KB per tree, and beside the store they derive
+            # from there is one directory to point at a large disk and to
+            # clean, and no surprise when a container's /tmp is a small tmpfs.
+            # Removed after each run (and by retention.py if a run was killed).
             directory=Path(store) / "scratch" / pair_id,
         ),
     )
 
-    written: list[str] = []
     failed: dict[str, str] = {}
     try:
         for name in wanted:
@@ -426,7 +426,6 @@ def compute_pair(
             write_pair(
                 directory, result, pair_id, left_id, right_id, left_arrays, right_arrays
             )
-            written.append(name)
 
             # Report whatever this metric actually produced, rather than
             # assuming RF's keys: a scalar-only metric has no shared_clusters.
@@ -452,7 +451,7 @@ def compute_pair(
         + (f", {dropped:,} leaf/leaves dropped to reconcile" if dropped else "")
         + ("  [CROSS-SPECIES: labels matched by coincidence]" if same_species is False else "")
     )
-    return PairComputed(pair_id, notes, shared_ms, written, lines, failed)
+    return PairComputed(lines, failed)
 
 
 def store_is_populated(store_dir: Path | None = None) -> bool:
@@ -551,6 +550,10 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("list-metrics", help="show the registered metric plugins")
 
     args = parser.parse_args(argv)
+    try:
+        config.threads()
+    except ValueError as misconfigured:
+        parser.exit(2, f"phylodelta: {misconfigured}\n")
     if args.command == "ingest-trees":
         return ingest_trees()
     if args.command == "compute-pairs":

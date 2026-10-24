@@ -37,7 +37,6 @@ def store(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "TREES_DIR", tmp_path / "trees")
     monkeypatch.setattr(config, "PAIRS_DIR", tmp_path / "pairs")
     monkeypatch.setattr(config, "ISOLATES_DIR", tmp_path / "isolates")
-    monkeypatch.setattr(config, "SCRATCH_DIR", tmp_path / "scratch")
     monkeypatch.setenv("PHYLODELTA_AUTH", "header")
     db.reset()
     with db.using_store(tmp_path):

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { ComparisonSummary } from "../api/types";
-import { hasMovedLeaves, headline, presentation, sliceMetric, viewMetric } from "./metric";
+import { hasMovedLeaves, headline, movedLeavesMissing, presentation, sliceMetric, viewMetric } from "./metric";
 
 describe("viewMetric", () => {
   it("reads a comparison under the metric it was computed with", () => {
@@ -65,5 +65,24 @@ describe("moved leaves (§46)", () => {
     // The bug: a link with mv=1 to a comparison without them opened uncoloured,
     // which reads as "nothing differs".
     expect(presentation({ gradient: false, moved: true }, without)).toBe("divergence");
+  });
+});
+
+describe("movedLeavesMissing", () => {
+  it("says not computed before /status answers, and when nothing failed", () => {
+    expect(movedLeavesMissing()).toBe("Not computed for this comparison");
+    expect(movedLeavesMissing({ metrics_failed: {} })).toBe("Not computed for this comparison");
+  });
+
+  it("gives the server's reason when MAST was declined", () => {
+    expect(movedLeavesMissing({ metrics_failed: { mast: "declined: too big" } })).toBe(
+      "Not available: declined: too big",
+    );
+  });
+
+  it("says a failed /status failed, rather than hiding that a reason was lost", () => {
+    expect(movedLeavesMissing(new Error("Request failed (502)"))).toBe(
+      "Not computed for this comparison; the reason could not be fetched (Request failed (502))",
+    );
   });
 });
