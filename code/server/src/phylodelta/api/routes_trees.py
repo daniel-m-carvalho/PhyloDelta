@@ -34,17 +34,6 @@ MAX_BUDGET = 50_000
 MAX_SEARCH_RESULTS = 200
 
 
-def _reader(tree_id: str):
-    try:
-        return registry.get_tree(tree_id)
-    except registry.TreeNotFound:
-        raise errors.not_found(
-            "tree_not_found",
-            f"No tree {tree_id!r}.",
-            "GET /api/datasets lists the ingested trees.",
-        ) from None
-
-
 @router.get("/{tree_id}", response_model=TreeDetail, summary="One tree's header")
 def tree_detail(
     tree_id: str = Path(examples=["vibrio-upgma"]),

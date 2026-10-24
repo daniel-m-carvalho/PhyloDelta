@@ -48,32 +48,6 @@ def get_tree(tree_id: str) -> TreeReader:
         return _readers.setdefault(tree_id, reader)
 
 
-_leaf_labels: dict[str, frozenset[str]] = {}
-
-
-def leaf_label_set(tree_id: str) -> frozenset[str]:
-    """The tree's leaf labels, decoded once per process.
-
-    Pairing decisions are made on the actual overlap between two trees' labels
-    rather than on a rule about species, so this is needed per tree. Decoding
-    17.6k labels costs a few milliseconds and the result is small; the mmap it
-    reads from is shared anyway.
-    """
-    cached = _leaf_labels.get(tree_id)
-    if cached is not None:
-        return cached
-
-    import numpy as np
-
-    reader = get_tree(tree_id)
-    end = np.asarray(reader.subtree_end)
-    labels = reader.labels()
-    is_leaf = end == np.arange(reader.meta.n_nodes) + 1
-    result = frozenset(label for label, leaf in zip(labels, is_leaf, strict=True) if leaf)
-    with _lock:
-        return _leaf_labels.setdefault(tree_id, result)
-
-
 _label_indexes: dict[str, LabelIndex] = {}
 
 
@@ -97,5 +71,4 @@ def reset_cache() -> None:
     """Drop every open map. Used by tests that rebuild a fixture store."""
     with _lock:
         _readers.clear()
-        _leaf_labels.clear()
         _label_indexes.clear()

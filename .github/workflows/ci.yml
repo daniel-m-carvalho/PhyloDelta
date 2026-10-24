@@ -6,8 +6,9 @@
 #               extension and TreeDiff built, so it tests the code path
 #               production runs and the RF conformance check against an
 #               independent implementation
-#   frontend    oxlint, typecheck and tests for the library, the web app and
-#               the bench, and the library packed and used from an app outside
+#   frontend    oxlint over the library, the web app and the bench; typecheck
+#               and tests for the library and the web app (the bench has
+#               neither); and the library packed and used from an app outside
 #               the workspace, as it would be once published (§48)
 #   repository  the repository-wide hooks of .pre-commit-config.yaml: one
 #               release version (§48) and that script's tests, this workflow
@@ -143,7 +144,8 @@ jobs:
   docker:
     name: Docker images (build + smoke test)
     runs-on: ubuntu-latest
-    # Normally ~6 min, nearly all of it the service image's C++ builds.
+    # Normally 2-3 min (measured over the first four runs), most of it the
+    # service image's C++ builds.
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

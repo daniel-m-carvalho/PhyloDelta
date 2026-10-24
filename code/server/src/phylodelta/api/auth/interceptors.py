@@ -230,7 +230,6 @@ class JwtInterceptor:
             issuer=self.issuer,
             email=str(claims.get("email") or ""),
             display_name=str(claims.get("name") or claims.get("email") or ""),
-            scopes=frozenset(str(claims.get("scope") or "").split()),
         )
 
 

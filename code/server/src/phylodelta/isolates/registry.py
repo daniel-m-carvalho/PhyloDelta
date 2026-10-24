@@ -15,13 +15,6 @@ class IsolatesNotFound(KeyError):
     pass
 
 
-def available_species() -> list[str]:
-    root = config.ISOLATES_DIR
-    if not root.is_dir():
-        return []
-    return sorted(p.name for p in root.iterdir() if (p / "meta.json").exists())
-
-
 def get_isolates(species: str) -> IsolateReader:
     with _lock:
         cached = _readers.get(species)

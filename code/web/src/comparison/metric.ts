@@ -9,7 +9,7 @@
  * against it.
  */
 
-import type { ComparisonSummary, PairSummary } from "../api/types";
+import type { ComparisonStatus, ComparisonSummary, PairSummary } from "../api/types";
 
 export function viewMetric(pair: Pick<PairSummary, "metrics">): string {
   if (pair.metrics.includes("rf")) return "rf";
@@ -19,6 +19,26 @@ export function viewMetric(pair: Pick<PairSummary, "metrics">): string {
 /** Whether the comparison carries moved leaves, so the view can be offered (§46). */
 export function hasMovedLeaves(pair: Pick<PairSummary, "metrics">): boolean {
   return pair.metrics.includes("mast");
+}
+
+const NOT_COMPUTED = "Not computed for this comparison";
+
+/**
+ * Why moved leaves are missing, for the note under the greyed-out option.
+ *
+ * `undefined` while /status has not answered; the status once it has; the
+ * error if asking failed. A failure is said as one: the comparison really has
+ * no moved leaves, but swallowing the error used to drop the server's reason
+ * with nothing on screen to say a reason existed.
+ */
+export function movedLeavesMissing(
+  status?: Pick<ComparisonStatus, "metrics_failed"> | Error,
+): string {
+  if (status instanceof Error) {
+    return `${NOT_COMPUTED}; the reason could not be fetched (${status.message})`;
+  }
+  const reason = status?.metrics_failed?.mast;
+  return reason ? `Not available: ${reason}` : NOT_COMPUTED;
 }
 
 /** What colours the trees: one presentation at a time (§46). */

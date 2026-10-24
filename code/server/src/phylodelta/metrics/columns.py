@@ -95,9 +95,6 @@ class ColumnReader:
     def columns(self, side: str) -> list[str]:
         return sorted(self.schema.get(side, {}))
 
-    def has(self, side: str, column: str) -> bool:
-        return column in self.schema.get(side, {})
-
     def column(self, side: str, column: str) -> np.ndarray:
         key = (side, column)
         if key not in self._cache:

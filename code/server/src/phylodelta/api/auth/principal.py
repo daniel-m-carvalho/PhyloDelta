@@ -8,7 +8,7 @@ rather than a rewrite.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,7 +28,6 @@ class Principal:
 
     email: str = ""
     display_name: str = ""
-    scopes: frozenset[str] = field(default_factory=frozenset)
 
     #: True when nothing was actually verified. Carried so the fact is
     #: visible in logs and at /health rather than being invisible once the

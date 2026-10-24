@@ -5159,7 +5159,8 @@ worker and Chrome.
 **Decision.** MAST is declined when its agreement table would need more memory than the deployment
 allows one metric run: `PHYLODELTA_METRIC_MEMORY`, read by the worker and the seed
 (`docker-compose.yml`). **It has no default**: whoever deploys the app sets it, and unset there is
-no budget. The fixed `limits.max_leaves = 40000` is gone from its manifest.
+no budget. The fixed `limits.max_leaves = 40000` is gone from its manifest, and with nothing left
+using it, from the manifest contract too: a manifest still declaring it is refused by name.
 In its place, `limits.memory` names a function that estimates the bytes from the two reconciled
 trees (`mast.table_bytes`), and the runner compares it with the budget before the metric starts,
 as it did the leaf count (§46). The reason carries both numbers:
