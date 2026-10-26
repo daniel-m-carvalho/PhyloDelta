@@ -318,5 +318,9 @@ Every error has the same shape, with a stable `code` to branch on and a `hint` s
 | Data location | `code/server/store` | `PHYLODELTA_STORE` |
 | Database | SQLite in the store | `PHYLODELTA_DATABASE_URL`, e.g. a PostgreSQL URL |
 
+In the Docker deployment, the memory budget, ports, authentication mode and CORS origins are set
+in a `.env` file beside `docker-compose.yml`; `.env.example` lists them. The other settings go in
+`docker-compose.yml` itself: `.env` only fills in the values that file asks for.
+
 Comparisons are computed by the **worker** (`phylodelta worker`), separately from the API. An upload
 stays `pending` until a worker is running.
