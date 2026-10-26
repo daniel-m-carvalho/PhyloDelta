@@ -64,23 +64,83 @@ make. Only `/api/v1/health` and the documentation routes are public, and that li
 place (`api/auth/middleware.py`). Route handlers contain no auth logic at all; they ask for an owner
 id and receive one.
 
-For real authentication:
+For real authentication, set these in the environment — with Docker, in `.env` beside
+`docker-compose.yml` (`.env.example` lists them), never in the committed compose file:
 
 ```sh
-export PHYLODELTA_AUTH=jwt
-export PHYLODELTA_JWT_ISSUER=https://accounts.google.com
-export PHYLODELTA_JWT_AUDIENCE=<this service's client id>
-export PHYLODELTA_JWT_JWKS_URL=https://www.googleapis.com/oauth2/v3/certs   # RS256
+PHYLODELTA_AUTH=jwt
+PHYLODELTA_JWT_ISSUER=https://accounts.google.com
+PHYLODELTA_JWT_AUDIENCE=<this service's client id>
+PHYLODELTA_JWT_JWKS_URL=https://www.googleapis.com/oauth2/v3/certs   # RS256
 # or, for a shared secret (>= 32 bytes):
-# export PHYLODELTA_JWT_SECRET=... PHYLODELTA_JWT_ALGORITHMS=HS256
+# PHYLODELTA_JWT_SECRET=...
+# PHYLODELTA_JWT_ALGORITHMS=HS256
 ```
 
 Clients then send `Authorization: Bearer <token>`. Incomplete configuration is refused **at
-startup**, not per request.
+startup**, not per request, naming the setting that is missing.
 
-**Integrating with PHYLOViZ** means writing one class — an `Interceptor` that validates PHYLOViZ's
-tokens — and selecting it in `api/auth/interceptors.py`. Routes, business logic and data models do
-not change, because none of them can see which interceptor is running.
+### Integrating with PHYLOViZ
+
+PhyloDelta has no login of its own, and should not get one: users sign in to the PHYLOViZ
+application, and each API it calls verifies what it is sent through an **interceptor**. So
+integrating is work in one place, `src/phylodelta/api/auth/`. Routes, business logic and data
+models do not change, because none of them can see which interceptor is running.
+
+**Step 1 — check whether `jwt` already fits.** If PHYLOViZ signs in through OAuth / OpenID Connect,
+its tokens are JWTs and nothing needs writing. Set `PHYLODELTA_AUTH=jwt` and the four settings
+above from PHYLOViZ's identity provider: its issuer (`iss`), the audience its tokens carry for this
+service (`aud`), and its JWKS URL (or a shared secret, if it signs with HS256). The interceptor
+already requires `exp`, `iss`, `aud` and `sub`, fetches keys only from the configured URL, and refuses
+`alg: none` and algorithm confusion; `tests/test_auth.py` shows each.
+
+**Step 2 — otherwise, write an interceptor.** If PHYLOViZ hands over something else (an opaque
+session token to check against its own API, a signed header from a gateway), add a class beside
+the three in `interceptors.py`:
+
+```python
+class PhylovizInterceptor:
+    name = "phyloviz"
+
+    def authenticate(self, request) -> Principal:
+        token = request.headers.get("authorization", "").removeprefix("Bearer ").strip()
+        if not token:
+            raise errors.ApiError(401, "token_required", "This endpoint needs a bearer token.",
+                                  "Send Authorization: Bearer <token>.")
+        user = ...  # verify the token with PHYLOViZ; raise ApiError(401, ...) if it is not valid
+        return Principal(subject=user.id, issuer="phyloviz", email=user.email,
+                         display_name=user.name)
+```
+
+and select it in `select()` with a new `PHYLODELTA_AUTH` value (`if chosen == "phyloviz": ...`). Its
+settings come from the environment; read them there, and add them to `docker-compose.yml` as
+`${…}` placeholders and to `.env.example`, as the JWT ones are (DECISIONS §51). The rules the
+existing interceptors follow:
+
+* **Return a principal or raise; never `None`, never a default user.** Raise `errors.ApiError(401,
+  …)` for a request that is not authenticated. Anything else that escapes — PHYLOViZ unreachable,
+  a bug — is turned into a 503 by the middleware (`middleware.py`), so a broken interceptor fails
+  closed rather than letting the request through.
+* **`subject` is the owner id**, together with `issuer`: `Principal.owner_id` is
+  `"<issuer>:<subject>"`, and it is what every dataset is stored under and filtered by. Use a stable
+  id, not an email address that can change, and keep `issuer` the same for the life of the
+  deployment — changing either hands each user an empty account.
+* **Refuse an incomplete configuration in `__init__`**, as `JwtInterceptor` does: the server then
+  will not start, rather than starting and refusing every request.
+* **Test it** the way `tests/test_auth.py` tests the others: a valid request, a missing token, a
+  forged one, and the configuration refusals.
+
+**Step 3 — the web app sends the token.** Today the app sends no credentials. Every request it
+makes goes through one function, `request()` in `code/web/src/api/client.ts`; add the
+`Authorization: Bearer <token>` header there, with the token PHYLOViZ gives the page. How the page
+receives it (a URL parameter, a message from the embedding page, a cookie) depends on how PHYLOViZ
+embeds the app, which is why it is left until then. A `401` with `code: "token_expired"` is the
+signal to get a fresh one.
+
+**Step 4 — narrow CORS.** If the app is served from PHYLOViZ's origin rather than through this
+deployment's own nginx, set `PHYLODELTA_CORS_ORIGINS` to that origin.
+
+`GET /api/v1/me` shows the result: the owner id the server resolved, and `"mock": false`.
 
 ### The native extension is optional
 

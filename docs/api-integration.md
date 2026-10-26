@@ -54,7 +54,8 @@ so under another owner it is not listed.
 | `PHYLODELTA_JWT_ALGORITHMS` | Accepted algorithms, default `RS256` (also when set but empty). Never read from the token. |
 
 With Docker, set these in `.env` (see `.env.example`), not in `docker-compose.yml`, which is
-committed. The server refuses to start in `jwt` mode with an incomplete configuration. `GET /me` says who the
+committed. To connect PhyloDelta to another sign-in system, such as the PHYLOViZ application's, see
+"Integrating with PHYLOViZ" in `code/server/README.md`. The server refuses to start in `jwt` mode with an incomplete configuration. `GET /me` says who the
 server thinks you are:
 
 ```bash
