@@ -51,9 +51,10 @@ so under another owner it is not listed.
 | `PHYLODELTA_JWT_AUDIENCE` | This service's audience (`aud`). |
 | `PHYLODELTA_JWT_JWKS_URL` | For RS256 tokens from an identity provider (e.g. Google, an institution, PHYLOViZ). |
 | or `PHYLODELTA_JWT_SECRET` | For HS256 tokens signed with a shared secret (at least 32 bytes). |
-| `PHYLODELTA_JWT_ALGORITHMS` | Accepted algorithms, default `RS256`. Never read from the token. |
+| `PHYLODELTA_JWT_ALGORITHMS` | Accepted algorithms, default `RS256` (also when set but empty). Never read from the token. |
 
-The server refuses to start in `jwt` mode with an incomplete configuration. `GET /me` says who the
+With Docker, set these in `.env` (see `.env.example`), not in `docker-compose.yml`, which is
+committed. The server refuses to start in `jwt` mode with an incomplete configuration. `GET /me` says who the
 server thinks you are:
 
 ```bash
@@ -318,9 +319,10 @@ Every error has the same shape, with a stable `code` to branch on and a `hint` s
 | Data location | `code/server/store` | `PHYLODELTA_STORE` |
 | Database | SQLite in the store | `PHYLODELTA_DATABASE_URL`, e.g. a PostgreSQL URL |
 
-In the Docker deployment, the memory budget, ports, authentication mode and CORS origins are set
-in a `.env` file beside `docker-compose.yml`; `.env.example` lists them. The other settings go in
-`docker-compose.yml` itself: `.env` only fills in the values that file asks for.
+In the Docker deployment, the memory budget, ports, authentication (mode and `jwt` settings) and
+CORS origins are set in a `.env` file beside `docker-compose.yml`; `.env.example` lists them. The
+other settings go in `docker-compose.yml` itself: `.env` only fills in the values that file asks
+for.
 
 Comparisons are computed by the **worker** (`phylodelta worker`), separately from the API. An upload
 stays `pending` until a worker is running.

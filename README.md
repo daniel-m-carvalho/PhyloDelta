@@ -34,8 +34,8 @@ Then open <http://localhost:3001>. The API is on <http://localhost:8001> (refere
 [`/docs`](http://localhost:8001/docs)). On first start the demo comparisons (*Vibrio* and
 *Clostridium*) are built automatically, which takes a few minutes.
 
-To change the ports or set the machine's memory budget, copy `.env.example` to `.env` and fill it
-in; [`deploy/README.md`](deploy/README.md) explains each setting.
+To change the ports, set the machine's memory budget or turn on login, copy `.env.example` to
+`.env` and fill it in; [`deploy/README.md`](deploy/README.md) explains each setting.
 
 **For development**, in three terminals (needs Python 3.12 with [uv](https://docs.astral.sh/uv/),
 and Node 20.19+ or 22.12+):

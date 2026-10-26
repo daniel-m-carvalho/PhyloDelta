@@ -149,6 +149,38 @@ def test_a_short_hmac_secret_is_refused():
         )
 
 
+def test_no_algorithm_at_all_is_refused_at_start():
+    # Otherwise the server starts and then refuses every token as "not valid".
+    with pytest.raises(RuntimeError, match="PHYLODELTA_JWT_ALGORITHMS names no algorithm"):
+        JwtInterceptor(issuer=ISSUER, audience=AUDIENCE, secret=SECRET, algorithms=())
+
+
+@pytest.mark.parametrize("value, expected", [(None, ["RS256"]), ("", ["RS256"]), ("  ", ["RS256"]),
+                                             ("HS256", ["HS256"]), ("RS256, HS256", ["RS256", "HS256"])])
+def test_an_empty_algorithm_list_reads_as_unset(monkeypatch, value, expected):
+    # docker-compose.yml passes the placeholder as "" when .env leaves it out
+    # (§51); that must mean the default, as an absent variable does.
+    monkeypatch.setenv("PHYLODELTA_AUTH", "jwt")
+    monkeypatch.setenv("PHYLODELTA_JWT_ISSUER", ISSUER)
+    monkeypatch.setenv("PHYLODELTA_JWT_AUDIENCE", AUDIENCE)
+    monkeypatch.setenv("PHYLODELTA_JWT_SECRET", SECRET)
+    monkeypatch.setenv("PHYLODELTA_JWT_JWKS_URL", "")
+    if value is None:
+        monkeypatch.delenv("PHYLODELTA_JWT_ALGORITHMS", raising=False)
+    else:
+        monkeypatch.setenv("PHYLODELTA_JWT_ALGORITHMS", value)
+    assert select().algorithms == expected
+
+
+def test_jwt_settings_left_empty_by_compose_refuse_to_start_by_name(monkeypatch):
+    # jwt chosen in .env, its settings not filled in: every placeholder is "".
+    monkeypatch.setenv("PHYLODELTA_AUTH", "jwt")
+    for name in ("ISSUER", "AUDIENCE", "JWKS_URL", "SECRET", "ALGORITHMS"):
+        monkeypatch.setenv(f"PHYLODELTA_JWT_{name}", "")
+    with pytest.raises(RuntimeError, match="PHYLODELTA_JWT_ISSUER and PHYLODELTA_JWT_AUDIENCE"):
+        select()
+
+
 def test_none_is_not_an_algorithm():
     with pytest.raises(RuntimeError, match="not a signature algorithm"):
         JwtInterceptor(
