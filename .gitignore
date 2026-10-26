@@ -3,6 +3,8 @@ node_modules/
 __pycache__/
 dist/
 CLAUDE.md
+# A deployment's own settings (.env.example is the committed template).
+.env
 .claude/
 # Benchmark ladder trees: 32 MB of generated Newick, reproducible in minutes
 # from the real pair with `tools/make_ladder.py`. The generator is the record;

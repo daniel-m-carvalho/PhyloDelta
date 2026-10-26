@@ -21,7 +21,7 @@ services:
       # with a fresh deployment.
       PHYLODELTA_THREADS: "2"
       # How much memory one metric run may take, e.g. 4G (DECISIONS §50). No
-      # default: it depends on this machine, so set it here or in .env. MAST's
+      # default: it depends on this machine, so set it in .env (.env.example). MAST's
       # table grows with the square of the tree — 0.6 GiB at 17,645 shared
       # leaves, 2.3 GiB at 35,290 — and a pair over the budget is declined by
       # name. Left empty there is no budget: MAST runs on any pair, and one too
@@ -117,7 +117,7 @@ services:
       # matters when the API and the web container share it.
       PHYLODELTA_THREADS: "2"
       # How much memory one metric run may take, e.g. 4G (DECISIONS §50). No
-      # default: it depends on this machine, so set it here or in .env. MAST's
+      # default: it depends on this machine, so set it in .env (.env.example). MAST's
       # table grows with the square of the tree — 0.6 GiB at 17,645 shared
       # leaves, 2.3 GiB at 35,290 — and a pair over the budget is declined by
       # name. Left empty there is no budget: MAST runs on any pair, and one too
