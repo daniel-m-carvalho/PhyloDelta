@@ -52,17 +52,19 @@ services:
       # so the app runs with no identity provider. It is opt-in and the
       # service logs a warning at startup while it is on.
       #
-      # For real authentication set PHYLODELTA_AUTH=jwt and supply the issuer,
-      # the audience, and either a JWKS URL (RS256 — Google, an institutional
-      # IdP, PHYLOViZ) or a shared secret of at least 32 bytes (HS256). The
-      # service refuses to start if these are incomplete, rather than running
-      # in an undefined auth state.
-      #
-      #   PHYLODELTA_AUTH: jwt
-      #   PHYLODELTA_JWT_ISSUER: https://accounts.google.com
-      #   PHYLODELTA_JWT_AUDIENCE: <this service's client id>
-      #   PHYLODELTA_JWT_JWKS_URL: https://www.googleapis.com/oauth2/v3/certs
+      # For real authentication set, in .env (.env.example), PHYLODELTA_AUTH=jwt
+      # and the issuer, the audience, and either a JWKS URL (RS256 — Google,
+      # an institutional IdP, PHYLOViZ) or a shared secret of at least 32
+      # bytes (HS256). In .env, never here: this file is committed, and the
+      # secret would be in git. The service refuses to start if these are
+      # incomplete, rather than running in an undefined auth state. Left out
+      # of .env, each reaches the service as "", which it reads as unset.
       PHYLODELTA_AUTH: "${PHYLODELTA_AUTH:-mock}"
+      PHYLODELTA_JWT_ISSUER: "${PHYLODELTA_JWT_ISSUER:-}"
+      PHYLODELTA_JWT_AUDIENCE: "${PHYLODELTA_JWT_AUDIENCE:-}"
+      PHYLODELTA_JWT_JWKS_URL: "${PHYLODELTA_JWT_JWKS_URL:-}"
+      PHYLODELTA_JWT_SECRET: "${PHYLODELTA_JWT_SECRET:-}"
+      PHYLODELTA_JWT_ALGORITHMS: "${PHYLODELTA_JWT_ALGORITHMS:-}"
       # Narrow this to the frontend's origin once it is known.
       PHYLODELTA_CORS_ORIGINS: "${PHYLODELTA_CORS_ORIGINS:-*}"
     volumes:

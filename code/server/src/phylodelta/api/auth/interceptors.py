@@ -152,6 +152,13 @@ class JwtInterceptor:
                 "(RS256, for an OAuth provider) or PHYLODELTA_JWT_SECRET "
                 "(HS256, for a shared secret)."
             )
+        if not algorithms:
+            # An empty list would accept no token at all, and say so only as
+            # "token not valid" on every login; refused here, by name, instead.
+            raise RuntimeError(
+                "PHYLODELTA_JWT_ALGORITHMS names no algorithm; leave it unset "
+                "for RS256, or list them, e.g. HS256."
+            )
         if "none" in {a.lower() for a in algorithms}:
             raise RuntimeError("'none' is not a signature algorithm.")
         # RFC 7518 §3.2: an HMAC key shorter than the digest is weaker than the
@@ -253,11 +260,12 @@ def select() -> Interceptor:
     if chosen == "header":
         return HeaderInterceptor()
     if chosen == "jwt":
-        algorithms = tuple(
-            a.strip()
-            for a in os.environ.get("PHYLODELTA_JWT_ALGORITHMS", "RS256").split(",")
-            if a.strip()
-        )
+        # Empty is unset: docker-compose.yml passes every PHYLODELTA_JWT_*
+        # placeholder, as "" where .env leaves it out, and `get`'s default
+        # applies only to an absent variable. The other four already read ""
+        # as not configured.
+        raw = os.environ.get("PHYLODELTA_JWT_ALGORITHMS", "").strip() or "RS256"
+        algorithms = tuple(a.strip() for a in raw.split(",") if a.strip())
         return JwtInterceptor(
             issuer=os.environ.get("PHYLODELTA_JWT_ISSUER", ""),
             audience=os.environ.get("PHYLODELTA_JWT_AUDIENCE", ""),

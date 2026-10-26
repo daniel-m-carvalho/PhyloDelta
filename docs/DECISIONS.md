@@ -5225,6 +5225,26 @@ checks that every pair runs.
   Rejected for now: the number would change with where the worker happens to run, and the same
   comparison could be declined on one deployment of the "same" setting and not another.
 
+
+## 51. A deployment's settings in `.env`, the login ones included
+
+**Decision.** Every setting a deployment chooses is a `${…}` placeholder in `docker-compose.yml`
+and is set in `.env` beside it, which git ignores (`.env.example` lists them all). That now
+includes the five `PHYLODELTA_JWT_*` settings, which were only comments to copy into the
+committed compose file — so the obvious way to turn on login put a shared secret into git.
+
+**Placeholders, not `env_file`.** Passing all of `.env` to the API would also have worked, but
+`PHYLODELTA_PORT` means the host port to compose and the port the API listens on inside its
+image (`Dockerfile`); a host port set in `.env` would have reached the container and moved the
+API off the port compose forwards to. Naming each setting passes only those.
+
+**Empty is unset.** A placeholder `.env` leaves out reaches the container as `""`, not absent.
+Measured before relying on it: four of the five already read `""` as not configured, but
+`PHYLODELTA_JWT_ALGORITHMS` used `os.environ.get(name, "RS256")`, whose default applies only to
+an absent variable. Empty, it became an empty list, the server started normally, and every
+login was refused as "That token is not valid for this service". It now reads empty as `RS256`,
+and an empty algorithm list is refused at start by name.
+
 ---
 
 ## References and provenance
