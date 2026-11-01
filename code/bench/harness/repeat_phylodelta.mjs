@@ -64,7 +64,7 @@ for (const rung of wanted) {
     await page.close();
     if (i < WARMUP) continue;
     times.push(elapsed);
-    if (before !== null && after !== null) heaps.push((after - before) / 1e6);
+    if (before !== null && after !== null) heaps.push(after - before);
   }
   await browser.close();
   const row = {
@@ -73,7 +73,7 @@ for (const rung of wanted) {
     min_ms: Math.min(...times),
     max_ms: Math.max(...times),
     samples: times,
-    heap_mb: +median(heaps).toFixed(1),
+    heap_bytes: median(heaps),
   };
   // Merged into what is already there, so measuring one rung does not
   // discard the other nine.
@@ -87,7 +87,7 @@ for (const rung of wanted) {
   console.log(
     `${rung.leaves.toLocaleString().padStart(9)} | ${(row.median_ms / 1000).toFixed(2).padStart(6)}s | ` +
       `${(row.min_ms / 1000).toFixed(2)}-${(row.max_ms / 1000).toFixed(2)}s`.padStart(13) +
-      ` | ${row.heap_mb}MB`,
+      ` | ${(row.heap_bytes / 2 ** 20).toFixed(1)}MiB`,
   );
 }
 server.close();

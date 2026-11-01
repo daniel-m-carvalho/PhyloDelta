@@ -4260,6 +4260,54 @@ catalogue was rebuilt with `phylodelta build-all`; the deployment needs the same
 Neither external library becomes a dependency: `bench/harness/rf_external.py` carries the
 throwaway-environment recipe and runs once.
 
+### 34.20 One campaign, from one tag
+
+The tables quoted `801f465`, which sits on `origin/search-by-name` and is no ancestor of `main`: the
+history here restarts at `2808b85`. So no commit a reader can reach from `main` produced them, and
+Table 23 said "b31de35 + uncommitted changes" on top. `bench/harness/run_campaign.sh` is the answer:
+every measurement, in order, from a fresh clone of the tag `v<VERSION>`.
+
+**The version under test was checked on 2026-11-01.** npm publishes it as `phyloio`, not `phylo-io`,
+and `latest` is 2.2.5 (2026-01-30). GitHub's `master` ends at the 2.2.5 commit, though its newest git
+tag is only `v2.2.3`, and no other branch is newer. `bench/vendor/phyloio-2.2.5` is identical to the
+npm tarball. The vendored copy is gitignored, so the campaign takes it from `PHYLOIO_HOME` and records
+a hash of its `dist/`.
+
+**The run refuses rather than labels.** `campaign_env.py` will not start on a dirty tree or off the
+tag, and reads the Environment block from the machine into `results/environment.json`, so the tables
+can be regenerated later from any checkout and still name the commit that measured them. It reads
+everything again at the end and refuses if anything moved, because Chrome updates itself. Results
+left from an earlier campaign are deleted first, so a step that fails cannot be filled by an old
+figure. The one exception is 2.1.1's probe, which cannot be re-measured against this release. Thread
+counts are read back from each pair (`tools/bench_build.py`), and no answer is now a refusal: the
+check used to pass when a pair reported nothing.
+
+**Faults found while preparing it**, each of which would have reached a table:
+
+* `endurance.mjs` took the largest `--type=renderer` on the machine, so any other Chrome open during
+  the 30 minutes would have been reported as phylo.io's memory.
+* `rf_external.py` carried PhyloDelta's values as a literal dict and the ETE3 version as a string, so
+  Table 22 compared the libraries against a copy of an old result. It now reads the campaign's builds
+  and the installed versions.
+* `make_tables.py` counted a result file as an uncommitted change, so a clean clone would have
+  reported itself dirty the moment it wrote anything; `phyloio_paint.mjs` likewise.
+* Heap figures were divided by 1e6 at the source and converted afterwards; the runners now store bytes.
+* Table 23 counted `querySelectorAll("*")` and Table 2 CDP's `domCounters`. Both use CDP now.
+
+**The ladder, measured.** `tools/ladder_stats.py` reads the Newick text, not the parser.
+Regenerating with the same seeds is byte-identical to the previous ladder in all 20 files. Depth
+resolves the three figures that stood in the documents: the NJ trees run 79 to 207 and the UPGMA
+trees 68 to 474, with the real pair at 176 and 443. So 443 was the real UPGMA tree, "79 to 191" the NJ
+side without its top rung, and "79 to 474" a mix of the two sides. **"All ten are 100% shared" (§34.1)
+is false from 17,645 up:** ST 211 is in the UPGMA tree only (§2.6) and every nested copy carries it, so
+the leaves shared are 99.9943%, 32 unshared at the top rung. PhyloDelta reconciles this away; phylo.io
+is handed it.
+
+**Decision: the ladder stays as it was, and the figure is reported.** Removing the leaf would make the
+rungs 100% shared at the cost of the 17,645 rung no longer being the real pair untouched, and of six
+rungs no longer matching the previous campaign. Table 5 is unaffected: every rung it can use is pruned
+from the shared leaves, so it is 100%.
+
 ## 35. The frontend holds what it has already seen
 
 The library shipped a two-tier LRU — `CacheManager`, with warm and rendered queues, an eviction

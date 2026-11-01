@@ -65,7 +65,7 @@ function say(line) {
  * it.
  */
 function meter(page) {
-  const totals = { app: 0, data: 0, other: 0, requests: 0, byUrl: [] };
+  const totals = { app: 0, data: 0, other: 0, requests: 0, byUrl: [], api: [] };
   const pending = [];
 
   page.on("requestfinished", (request) => {
@@ -86,6 +86,12 @@ function meter(page) {
         totals[isData ? "data" : "app"] += bytes;
         totals.requests += 1;
         totals.byUrl.push({ url, bytes, kind: isData ? "data" : "app" });
+        // With the query: `?metric=` is what says whether a slice carried the
+        // MAST column, and it is read from the request rather than assumed.
+        if (url.startsWith("/api/")) {
+          const { pathname, search } = new URL(request.url());
+          totals.api.push({ url: pathname + search, bytes });
+        }
       })(),
     );
   });
@@ -185,7 +191,12 @@ async function attempt(label, fn) {
   }
 }
 
-const built = JSON.parse(readFileSync(join(BENCH, "results", "server_build.json"), "utf8"));
+const built = JSON.parse(
+  readFileSync(
+    join(BENCH, "results", process.env.BENCH_BUILD_FILE ?? "server_build.json"),
+    "utf8",
+  ),
+);
 const server = await start(PORT);
 const probe = await launch();
 const BROWSER = versionOf(probe);
@@ -195,7 +206,9 @@ mkdirSync(join(BENCH, "results"), { recursive: true });
 //: Which transport this run measures. Separate files, because the two are not
 //: interchangeable and merging them would silently mix encodings in one column.
 const GZIP = process.env.BENCH_GZIP === "1";
-const suffix = GZIP ? "_gzip" : "";
+//: `BENCH_LABEL=app` is the comparison as the app uploads it, in its own file.
+const LABEL = process.env.BENCH_LABEL ? `_${process.env.BENCH_LABEL}` : "";
+const suffix = `${LABEL}${GZIP ? "_gzip" : ""}`;
 const out = join(BENCH, "results", `transfer${suffix}.json`);
 const stream = join(BENCH, "results", `transfer${suffix}.jsonl`);
 const only = process.argv[2] ? Number(process.argv[2]) : null;

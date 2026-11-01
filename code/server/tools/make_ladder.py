@@ -37,7 +37,7 @@ RIGHT = REPO / "datasets" / "gen_trees" / "vibrio-upgma-tree.nwk"
 #: Leaf counts to build. Below the original by pruning, above it by nesting.
 #: Chosen to double, so a cost curve has enough points to show its shape, and
 #: to bracket the sizes phylo.io is documented to handle.
-RUNGS = [1_000, 2_500, 5_000, 10_000, 17_645, 35_290, 70_580, 141_160, 282_320]
+RUNGS = [1_000, 2_500, 5_000, 10_000, 17_645, 35_290, 70_580, 141_160, 282_320, 564_640]
 
 
 def leaves_of(arrays) -> list[str]:
