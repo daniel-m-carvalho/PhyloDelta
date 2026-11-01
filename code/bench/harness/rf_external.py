@@ -14,7 +14,7 @@ Neither library is a dependency of the server, and neither should become one
 for a check that runs once. Build a throwaway environment instead:
 
     uv venv /tmp/rfcheck --python 3.12
-    uv pip install --python /tmp/rfcheck/bin/python dendropy ete3 numpy
+    uv pip install --python /tmp/rfcheck/bin/python dendropy==5.1.0 ete3==3.1.3 numpy setuptools six
     /tmp/rfcheck/bin/python harness/rf_external.py > results/rf_external.json
 
 Two settings decide whether the comparison is like-for-like, and getting
@@ -36,6 +36,7 @@ import json
 import re
 import subprocess
 import sys
+from importlib.metadata import version
 from pathlib import Path
 
 import dendropy
@@ -57,22 +58,15 @@ TREEDIFF = (Path(__file__).resolve().parents[2] / "server" / "native"
 #: external check there would be measuring the construction, not the data.
 RUNGS = [1000, 2500, 5000, 10000, 17645]
 
-#: The values the pipeline produces, recorded here so this runner needs no
-#: server. Since the rf metric's v2 these are the full symmetric difference
-#: (§34.19); v1 reported half of each.
-PHYLODELTA = {1000: 1062, 2500: 2438, 5000: 4414, 10000: 8226, 17645: 13650}
+#: What the pipeline produced, read from this campaign's own builds, so a stale
+#: copy here cannot agree or disagree with anything. Run after
+#: `tools/measure_metric_builds.py`.
+BUILDS = Path(__file__).resolve().parent.parent / "results" / "metric_builds.json"
 
-#: `rf_normalised` for the same pairs: rf over the maximum it could reach for
-#: those two trees. Recorded because the ratio was the half of this that was
-#: actually wrong — v1 divided the halved rf by the full maximum, giving a
-#: figure that could never exceed 0.5.
-PHYLODELTA_NORMALISED = {
-    1000: 1062 / (999 + 999 - 2),
-    2500: 2438 / (2499 + 2499 - 2),
-    5000: 4414 / (4999 + 4999 - 2),
-    10000: 8226 / (9999 + 9999 - 2),
-    17645: 13650 / (17644 + 17644 - 2),
-}
+
+def built_rf() -> dict[int, dict]:
+    rows = json.loads(BUILDS.read_text())["rows"]
+    return {r["leaves"]: r["builds"][0]["values"]["rf"]["summary"] for r in rows}
 
 
 def files(leaves: int) -> tuple[Path, Path]:
@@ -161,6 +155,7 @@ def ete3_rf(a: Path, b: Path) -> int:
     return int(t1.robinson_foulds(t2, unrooted_trees=False)[0])
 
 
+PHYLODELTA = built_rf()
 rows = []
 for leaves in RUNGS:
     a, b = files(leaves)
@@ -170,8 +165,8 @@ for leaves in RUNGS:
     ours = PHYLODELTA[leaves]
     rows.append({
         "leaves": leaves,
-        "phylodelta": ours,
-        "phylodelta_normalised": round(PHYLODELTA_NORMALISED[leaves], 6),
+        "phylodelta": ours["rf"],
+        "phylodelta_normalised": round(ours["rf_normalised"], 6),
         "treediff": (treediff_rf(*prepared) if (prepared := treediff_input(leaves)) else None),
         "dendropy_rooted": dendropy_sd(a, b, "force-rooted"),
         "dendropy_unrooted": dendropy_sd(a, b, "force-unrooted"),
@@ -179,8 +174,8 @@ for leaves in RUNGS:
     })
 
 json.dump({
-    "dendropy": dendropy.__version__,
-    "ete3": "3.1.3",
+    "dendropy": version("dendropy"),
+    "ete3": version("ete3"),
     "note": "rooted comparisons, both trees reconciled to their shared leaf set",
     "rows": rows,
 }, sys.stdout, indent=1)

@@ -20,16 +20,38 @@ import { start } from "./serve.mjs";
 
 const BENCH = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 const PORT = 8097;
-const BUDGET_MS = 30 * 60 * 1000;
-const RUNGS = [141160, 282320];
+const BUDGET_MS = Number(process.env.BENCH_BUDGET_S ?? 30 * 60) * 1000;
+const RUNGS = (process.env.BENCH_RUNGS ?? "141160 282320").split(" ").map(Number);
 
+/**
+ * The largest renderer of the Chrome this run launched, in MiB.
+ *
+ * Found through the process tree, from the browser Playwright drives (the only
+ * one started with `--remote-debugging-pipe`). This used to take the largest
+ * `--type=renderer` on the machine, so any other Chrome open during the run
+ * would have been reported as phylo.io's memory.
+ */
 function peakRendererMb() {
   try {
-    const out = execSync(
-      "ps -Ao rss=,command= | grep '[C]hrome.*--type=renderer' | awk '{print $1}' | sort -rn | head -1",
-      { encoding: "utf8" },
-    ).trim();
-    return out ? Math.round(Number(out) / 1024) : 0;
+    const procs = execSync("ps -Ao pid=,ppid=,rss=,command=", { encoding: "utf8" })
+      .split("\n")
+      .map((line) => line.trim().match(/^(\d+)\s+(\d+)\s+(\d+)\s+(.*)$/))
+      .filter(Boolean)
+      .map(([, pid, ppid, rss, command]) => ({ pid, ppid, rss: Number(rss), command }));
+    const ours = new Set(
+      procs.filter((p) => p.command.includes("--remote-debugging-pipe")).map((p) => p.pid),
+    );
+    for (let grew = true; grew; ) {
+      grew = false;
+      for (const p of procs) {
+        if (ours.has(p.ppid) && !ours.has(p.pid)) {
+          ours.add(p.pid);
+          grew = true;
+        }
+      }
+    }
+    const renderers = procs.filter((p) => ours.has(p.pid) && p.command.includes("--type=renderer"));
+    return Math.round(Math.max(0, ...renderers.map((p) => p.rss)) / 1024);
   } catch {
     return 0;
   }

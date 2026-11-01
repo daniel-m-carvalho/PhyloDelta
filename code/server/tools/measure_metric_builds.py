@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import sys
 import time
 import urllib.error
@@ -37,8 +38,11 @@ import urllib.request
 import uuid
 from pathlib import Path
 
+from bench_build import verified_threads
+
 LADDER = Path(sys.argv[1])
 BASE = sys.argv[2]
+THREADS = int(os.environ["PHYLODELTA_THREADS"])
 
 #: Metric sets, each a separate build of the same pair.
 SETS: list[list[str]] = [
@@ -132,6 +136,11 @@ def main() -> None:
                     "status": record["status"],
                     "error": record.get("error"),
                     "id": comparison_id,
+                    "threads_verified": (
+                        verified_threads(BASE, comparison_id, THREADS)
+                        if record["status"] == "ready"
+                        else None
+                    ),
                     "values": {m: summary(comparison_id, m) for m in metrics},
                 }
             )

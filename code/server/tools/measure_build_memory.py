@@ -13,7 +13,7 @@ The worker is a separate process, so its RSS is sampled directly rather than
 inferred. Sampling is every 200 ms — a build takes seconds to minutes, so the
 peak is unlikely to hide between samples the way a crashing browser's does.
 
-    uv run python tools/measure_build_memory.py <ladder-dir> <api-base> <worker-pid>
+    uv run python tools/measure_build_memory.py <ladder-dir> <api-base> <worker-pid> <threads>
 """
 
 from __future__ import annotations
@@ -28,9 +28,12 @@ import urllib.request
 import uuid
 from pathlib import Path
 
+from bench_build import verified_threads
+
 LADDER = Path(sys.argv[1])
 BASE = sys.argv[2]
 WORKER_PID = int(sys.argv[3])
+THREADS = int(sys.argv[4])
 SAMPLE_S = 0.2
 
 
@@ -70,7 +73,9 @@ def post(left: Path, right: Path, name: str) -> str:
 def main() -> None:
     rungs = sorted({int(p.name.split("-")[1]) for p in LADDER.glob("ladder-*-a.nwk")})
     baseline = rss_mb(WORKER_PID)
-    target = Path(__file__).resolve().parents[2] / "bench" / "results" / "build_memory.json"
+    target = Path(__file__).resolve().parents[2] / "bench" / "results" / (
+        "build_memory.json" if THREADS == 2 else f"build_memory_{THREADS}threads.json"
+    )
     print(f"worker pid {WORKER_PID}, idle RSS {baseline:,.0f} MB\n", flush=True)
     print(f"{'leaves':>9} {'build':>8} {'peak RSS':>11} {'over idle':>11}")
 
@@ -108,6 +113,11 @@ def main() -> None:
             "peak_rss_mb": round(peak, 1),
             "over_idle_mb": round(peak - baseline, 1),
             "status": record["status"],
+            "threads_verified": (
+                verified_threads(BASE, comparison_id, THREADS)
+                if record["status"] == "ready"
+                else None
+            ),
         }
         out.append(row)
         print(

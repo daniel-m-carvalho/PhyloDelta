@@ -10,12 +10,18 @@ it, poll until ready — so what is timed includes ingest, reconciliation, the
 correspondence search and the metric, exactly as a user would pay for it.
 
     uv run python tools/build_ladder_stores.py <ladder-dir> [api-base]
+
+`BENCH_METRICS` is what the upload asks for (default `rf`) and `BENCH_BUILD_FILE`
+the results file (default `server_build.json`), so the same tool builds the store
+the app's own upload would produce. `PHYLODELTA_THREADS` must be set to what the
+worker was started with: every row is checked against the pair it built.
 """
 
 from __future__ import annotations
 
 import io
 import json
+import os
 import sys
 import time
 import urllib.error
@@ -23,13 +29,18 @@ import urllib.request
 import uuid
 from pathlib import Path
 
+from bench_build import verified_threads
+
 BASE = sys.argv[2] if len(sys.argv) > 2 else "http://127.0.0.1:8010/api/v1"
+METRICS = os.environ.get("BENCH_METRICS", "rf")
+THREADS = int(os.environ["PHYLODELTA_THREADS"])
+BUILD_FILE = os.environ.get("BENCH_BUILD_FILE", "server_build.json")
 
 
 def post_bundle(left: Path, right: Path, name: str) -> str:
     boundary = f"----ladder{uuid.uuid4().hex}"
     buf = io.BytesIO()
-    for key, value in (("name", name), ("metrics", "rf")):
+    for key, value in (("name", name), ("metrics", METRICS)):
         buf.write(f"--{boundary}\r\n".encode())
         buf.write(f'Content-Disposition: form-data; name="{key}"\r\n\r\n{value}\r\n'.encode())
     for key, path in (("left_tree", left), ("right_tree", right)):
@@ -52,15 +63,15 @@ def post_bundle(left: Path, right: Path, name: str) -> str:
         return json.load(response)["id"]
 
 
-def poll(comparison_id: str, limit: float) -> tuple[str, str | None]:
+def poll(comparison_id: str, limit: float) -> tuple[str, str | None, dict]:
     deadline = time.time() + limit
     while time.time() < deadline:
         with urllib.request.urlopen(f"{BASE}/comparisons/{comparison_id}/status", timeout=60) as r:
             record = json.load(r)
         if record["status"] in {"ready", "failed"}:
-            return record["status"], record.get("error")
+            return record["status"], record.get("error"), record
         time.sleep(0.5)
-    return "timeout", f"not ready within {limit:.0f}s"
+    return "timeout", f"not ready within {limit:.0f}s", {}
 
 
 def main() -> None:
@@ -70,7 +81,7 @@ def main() -> None:
     # Already-built rungs are kept as they are. Rebuilding them would mint new
     # comparison ids and break the link between server_build.json and the
     # ceiling results that reference them.
-    target = Path(__file__).resolve().parents[2] / "bench" / "results" / "server_build.json"
+    target = Path(__file__).resolve().parents[2] / "bench" / "results" / BUILD_FILE
     out = json.loads(target.read_text()) if target.exists() else []
     done = {r["leaves"] for r in out}
     rungs = [r for r in rungs if r not in done]
@@ -94,7 +105,7 @@ def main() -> None:
 
         # Generous, and scaled: the search is quadratic, so a fixed limit would
         # turn "slow" into "failed" at exactly the sizes the thesis is about.
-        status, error = poll(comparison_id, limit=max(300.0, leaves / 200))
+        status, error, record = poll(comparison_id, limit=max(300.0, leaves / 200))
         finished = time.perf_counter()
 
         row = {
@@ -106,6 +117,12 @@ def main() -> None:
             "status": status,
             "error": error,
             "bytes": left.stat().st_size + right.stat().st_size,
+            "metrics_asked": METRICS.split(","),
+            "metrics_ready": record.get("metrics_ready"),
+            "metrics_failed": record.get("metrics_failed"),
+            "threads_verified": (
+                verified_threads(BASE, comparison_id, THREADS) if status == "ready" else None
+            ),
         }
         out.append(row)
         print(

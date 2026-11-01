@@ -26,15 +26,21 @@ import urllib.request
 import uuid
 from pathlib import Path
 
+from bench_build import verified_threads
+
 LADDER = Path(sys.argv[1])
 BASE = sys.argv[2]
 THREADS = int(sys.argv[3])
+#: What each upload asks for. Anything but the default goes to its own file, so
+#: Table 8's two builds can never be read as one.
+METRICS = sys.argv[4] if len(sys.argv) > 4 else "rf"
+SUFFIX = "" if METRICS == "rf" else "_app"
 
 
 def post(left: Path, right: Path, name: str) -> str:
     boundary = f"----thr{uuid.uuid4().hex}"
     buf = io.BytesIO()
-    for key, value in (("name", name), ("metrics", "rf")):
+    for key, value in (("name", name), ("metrics", METRICS)):
         buf.write(f"--{boundary}\r\n".encode())
         buf.write(f'Content-Disposition: form-data; name="{key}"\r\n\r\n{value}\r\n'.encode())
     for key, path in (("left_tree", left), ("right_tree", right)):
@@ -52,21 +58,6 @@ def post(left: Path, right: Path, name: str) -> str:
     )
     with urllib.request.urlopen(request, timeout=1800) as response:
         return json.load(response)["id"]
-
-
-def built_with(comparison_id: str) -> int | None:
-    """The thread count the worker actually used, from the pair's own notes.
-
-    None when the store predates `build.threads` being recorded, so an older
-    store degrades to the previous behaviour rather than refusing everything.
-    """
-    url = f"{BASE}/comparisons/{comparison_id}?metric=rf"
-    try:
-        with urllib.request.urlopen(url, timeout=120) as r:
-            body = json.load(r)
-    except Exception:
-        return None
-    return (body.get("build") or {}).get("threads")
 
 
 def main() -> None:
@@ -94,28 +85,27 @@ def main() -> None:
         # starts nor controls, so the argument was only ever a filename.
         # Refusing here is the difference between a parameter that describes a
         # run and one that is checked against it.
-        if record["status"] == "ready":
-            actual = built_with(comparison_id)
-            if actual is not None and actual != THREADS:
-                raise SystemExit(
-                    f"\nREFUSING TO WRITE: asked for {THREADS} threads, but the "
-                    f"worker built {comparison_id} with {actual}.\n"
-                    f"Start the worker with PHYLODELTA_THREADS={THREADS} and "
-                    f"re-run. Nothing has been written."
-                )
+        actual = (
+            verified_threads(BASE, comparison_id, THREADS) if record["status"] == "ready" else None
+        )
 
         out.append(
             {
                 "leaves": leaves,
                 "build_s": elapsed,
                 "status": record["status"],
-                "threads_verified": actual if record["status"] == "ready" else None,
+                "threads_verified": actual,
+                "metrics_asked": METRICS.split(","),
+                "metrics_ready": record.get("metrics_ready"),
+                "metrics_failed": record.get("metrics_failed"),
             }
         )
         print(f"{leaves:>9,} {elapsed:>9.1f}s  {record['status']}")
-        target = Path(__file__).resolve().parents[2] / "bench" / "results" / f"thread_builds_{THREADS}.json"
-        target.write_text(json.dumps({"threads": THREADS, "rungs": out}, indent=2))
-    print(f"\nwritten to thread_builds_{THREADS}.json")
+        target = Path(__file__).resolve().parents[2] / "bench" / "results" / f"thread_builds_{THREADS}{SUFFIX}.json"
+        target.write_text(
+            json.dumps({"threads": THREADS, "metrics": METRICS.split(","), "rungs": out}, indent=2)
+        )
+    print(f"\nwritten to thread_builds_{THREADS}{SUFFIX}.json")
 
 
 if __name__ == "__main__":

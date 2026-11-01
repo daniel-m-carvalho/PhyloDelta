@@ -76,7 +76,7 @@ async function measure(page, client, run) {
     ms: elapsed,
     // null, not NaN, when a reading timed out: the cell should say "not
     // measured" rather than quietly become a number-shaped nothing.
-    heap_mb: before === null || after === null ? null : +((after - before) / 1e6).toFixed(1),
+    heap_bytes: before === null || after === null ? null : after - before,
     dom: await domCounters(client).catch(() => null),
     ...detail,
   };
@@ -196,7 +196,8 @@ try {
           ? ` cmp ${(r.phases.toCompare / 1000).toFixed(0)}s`
           : " cmp INCOMPLETE"
         : "";
-      return `${paint}s ${String(r.heap_mb ?? "n/a").padStart(5)}MB${cmp}`;
+      const heap = r.heap_bytes == null ? "n/a" : (r.heap_bytes / 2 ** 20).toFixed(1);
+      return `${paint}s ${heap.padStart(5)}MiB${cmp}`;
     };
     say(`${rung.leaves.toLocaleString().padStart(9)}  ${show(phyloio).padEnd(26)}  ${show(phylodelta)}`);
   }

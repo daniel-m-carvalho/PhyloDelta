@@ -34,14 +34,14 @@ import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
 import { launch, versionOf } from "./browser.mjs";
 import { start } from "./serve.mjs";
-import { attach, heapBytes } from "./metrics_cdp.mjs";
+import { attach, heapBytes, domCounters } from "./metrics_cdp.mjs";
 
 const BENCH = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 const PORT = 8099;
 const VIEWPORT = { width: 1440, height: 900 };
 
 //: The two rungs whose paint figures the thesis still quotes from 2.1.1.
-const RUNGS = [17645, 35290];
+const RUNGS = (process.env.BENCH_RUNGS ?? "17645 35290").split(" ").map(Number);
 
 //: Three loads per rung. The jump probe found phylo.io failures to be
 //: all-or-nothing *per page load* rather than per operation (§34.14), so a
@@ -65,7 +65,10 @@ const nwk = (leaves, side) =>
 const commit = (() => {
   try {
     const sha = execSync("git rev-parse --short HEAD", { cwd: BENCH }).toString().trim();
-    const dirty = execSync("git status --porcelain", { cwd: BENCH }).toString().trim();
+    // Results excluded: writing them is what this run does.
+    const dirty = execSync("git status --porcelain -- . ':!results'", { cwd: BENCH })
+      .toString()
+      .trim();
     return dirty ? `${sha} + uncommitted changes` : sha;
   } catch {
     return "unknown";
@@ -106,16 +109,20 @@ async function oneLoad(leaves) {
       svg: document.querySelectorAll("svg").length,
       paths: document.querySelectorAll("path").length,
       texts: document.querySelectorAll("text").length,
-      nodes: document.querySelectorAll("*").length,
     }));
     const after = await heapBytes(client);
+    // CDP's counter, the one Table 2 reads. This used to be
+    // `querySelectorAll("*")`, which skips text nodes: 3,558 here against 6,921
+    // there at the same rung.
+    const dom = await domCounters(client).catch(() => null);
 
     return {
       outcome: drawn.paths > 0 || drawn.texts > 0 ? "painted" : "drew nothing",
       paint_ms: phases === null ? null : Math.round(phases.total),
       phases,
       drawn,
-      heap_mb: before === null || after === null ? null : +((after - before) / 1e6).toFixed(1),
+      dom,
+      heap_bytes: before === null || after === null ? null : after - before,
       compared: phases === null ? null : phases.compareComplete,
     };
   } catch (failed) {
@@ -155,7 +162,7 @@ for (const leaves of RUNGS) {
       `${leaves.toLocaleString().padStart(7)} load ${i + 1}/${LOADS}: ` +
         `${result.outcome}` +
         `${result.paint_ms === null ? "" : ` · paint ${(result.paint_ms / 1000).toFixed(1)}s`}` +
-        `${result.drawn ? ` · ${result.drawn.paths} paths, ${result.drawn.nodes} DOM nodes` : ""}` +
+        `${result.drawn ? ` · ${result.drawn.paths} paths, ${result.dom?.nodes} DOM nodes` : ""}` +
         ` · compare ${
           result.compared === null
             ? "not reached"
@@ -172,7 +179,7 @@ for (const leaves of RUNGS) {
     painted: ok.length,
     paint_ms_median: median(ok.map((l) => l.paint_ms)),
     paths_median: median(ok.map((l) => l.drawn.paths)),
-    dom_nodes_median: median(ok.map((l) => l.drawn.nodes)),
+    dom_nodes_median: median(ok.map((l) => l.dom?.nodes).filter((n) => n != null)),
     compare_completed: loads.filter((l) => l.compared === true).length,
     per_load: loads,
   });

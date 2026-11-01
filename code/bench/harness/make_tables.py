@@ -34,28 +34,19 @@ def _run(*argv, default="unknown"):
 
 
 def _commit() -> str:
-    """The commit these tables were generated at, flagged if the tree is dirty.
+    """The commit that **measured** these tables, read from what the run recorded.
 
-    `TABLES.md` is excluded from the dirty check, because writing it is what makes
-    the tree dirty — including it made the marker fire on every single run, which
-    is a warning that means nothing. The marker is for *uncommitted inputs*: a
-    changed runner or an unsaved result file, where the tables would describe code
-    that is not in the commit named beside them.
+    Not this checkout's HEAD: the results are measured in a clean clone of the
+    tag and the tables are generated wherever they are committed, so HEAD says
+    which checkout printed them and nothing about which code produced the
+    numbers. `campaign_env.py` refused to start on a dirty tree or off the tag.
     """
-    sha = _run("git", "rev-parse", "--short", "HEAD")
-    import subprocess
-
-    try:
-        out = subprocess.run(
-            ["git", "status", "--porcelain"], capture_output=True, text=True, timeout=10
-        )
-        changed = [
-            line for line in out.stdout.splitlines()
-            if line.strip() and not line.endswith("results/TABLES.md")
-        ]
-    except Exception:
-        changed = []
-    return f"{sha}{' + uncommitted changes' if changed else ''}"
+    env = load("environment.json")
+    if env is None:
+        sha = _run("git", "rev-parse", "--short", "HEAD")
+        return f"{sha}, **no environment.json: not a tagged campaign**"
+    dry = " **(dry run)**" if env.get("dry_run") else ""
+    return f"{env['commit_short']} (`{env['tag']}`){dry}"
 
 
 def _os_version() -> str:
@@ -227,15 +218,10 @@ def mib(byte_count) -> str:
     return f"{byte_count / MIB:,.2f} MiB"
 
 
-def heap_mib(decimal_mb):
-    """Heap readings are stored as decimal MB (the harness divides by 1e6).
-
-    Converted rather than re-measured: the stored value has already lost its
-    raw byte count, and the factor is exact at the precision printed. Fixing it
-    at the source means changing `ceiling.mjs` to record bytes, which is worth
-    doing before the next run but does not retroactively recover these.
-    """
-    return None if decimal_mb is None else decimal_mb * 1e6 / MIB
+def heap_mib(reading):
+    """A runner's `heap_bytes` in MiB, or None where the reading timed out."""
+    value = reading.get("heap_bytes")
+    return None if value is None else value / MIB
 
 
 def fmt(value, unit="", nd=1, dash="—"):
@@ -361,7 +347,7 @@ for row in rows:
         ph = p.get("phases") or {}
         paint = fmt(ph.get("postFetch", p["ms"]) / 1000, " s")
         comp = fmt(ph["toCompare"] / 1000, " s", 0) if ph.get("compareComplete") else "**did not finish**"
-        heap = fmt(heap_mib(p.get("heap_mb")), " MiB")
+        heap = fmt(heap_mib(p), " MiB")
     else:
         paint = comp = heap = "**failed**"
     # Compared against phylo.io's COMPARE time, not its paint: that is the
@@ -377,7 +363,7 @@ for row in rows:
     print(
         f"| {leaves:,} | {paint} | {comp} | {heap} | "
         f"{fmt(d['ms'] / 1000, ' s', 2) if d.get('ok') else '**failed**'} | "
-        f"{fmt(heap_mib(d.get('heap_mb')), ' MiB')} | {ratio} | "
+        f"{fmt(heap_mib(d), ' MiB')} | {ratio} | "
         f"{fmt(precompute_s(leaves), ' s')}"
         f"{'' if precompute_is_pinned(leaves) else ' *(10 threads)*'} |"
     )
@@ -424,11 +410,11 @@ previous = None
 for row in rows:
     p, d = row["phyloio"], row["phylodelta"]
     finished = bool((p.get("phases") or {}).get("compareComplete"))
-    heap = p.get("heap_mb") if p.get("ok") else None
+    heap = heap_mib(p) if p.get("ok") else None
     growth = f"{heap / previous:.2f}x" if heap and previous and finished else "—"
     note = "" if finished else " *(compare unfinished — worker excluded)*"
-    print(f"| {row['leaves']:,} | {fmt(heap_mib(heap), ' MiB')}{note} | {growth} | "
-          f"{fmt(heap_mib(d.get('heap_mb')), ' MiB')} |")
+    print(f"| {row['leaves']:,} | {fmt(heap, ' MiB')}{note} | {growth} | "
+          f"{fmt(heap_mib(d), ' MiB')} |")
     if heap and finished:
         previous = heap
 
@@ -512,7 +498,7 @@ if repeats:
         beyond = " *(beyond phylo.io — it crashes at 141,160)*" if r["leaves"] > 141160 else ""
         print(
             f"| {r['leaves']:,} | {nodes:,} | **{r['median_ms'] / 1000:.2f} s** | "
-            f"{r['min_ms'] / 1000:.2f} s | {r['max_ms'] / 1000:.2f} s | {heap_mib(r['heap_mb']):.1f} MiB{beyond} |"
+            f"{r['min_ms'] / 1000:.2f} s | {r['max_ms'] / 1000:.2f} s | {heap_mib(r):.1f} MiB{beyond} |"
         )
 
 # --- 5d. the server side ---------------------------------------------------
