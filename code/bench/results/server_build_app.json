@@ -1,0 +1,206 @@
+[
+  {
+    "leaves": 1000,
+    "id": "d6420cc5ebbc__9b77bd6d336a",
+    "upload_s": 0.01984075002837926,
+    "build_s": 2.0561181670054793,
+    "total_s": 2.0759589170338586,
+    "status": "ready",
+    "error": null,
+    "bytes": 16704,
+    "metrics_asked": [
+      "rf",
+      "mast"
+    ],
+    "metrics_ready": [
+      "mast",
+      "rf"
+    ],
+    "metrics_failed": {},
+    "threads_verified": 2
+  },
+  {
+    "leaves": 2500,
+    "id": "0a582b882017__33aec439c2c9",
+    "upload_s": 0.005107500008307397,
+    "build_s": 2.0540681660640985,
+    "total_s": 2.059175666072406,
+    "status": "ready",
+    "error": null,
+    "bytes": 41832,
+    "metrics_asked": [
+      "rf",
+      "mast"
+    ],
+    "metrics_ready": [
+      "mast",
+      "rf"
+    ],
+    "metrics_failed": {},
+    "threads_verified": 2
+  },
+  {
+    "leaves": 5000,
+    "id": "52a8f0b52ee3__d61d91b2e668",
+    "upload_s": 0.00675737508572638,
+    "build_s": 2.56615270790644,
+    "total_s": 2.5729100829921663,
+    "status": "ready",
+    "error": null,
+    "bytes": 83748,
+    "metrics_asked": [
+      "rf",
+      "mast"
+    ],
+    "metrics_ready": [
+      "mast",
+      "rf"
+    ],
+    "metrics_failed": {},
+    "threads_verified": 2
+  },
+  {
+    "leaves": 10000,
+    "id": "427e681e0e28__4862a8dc89c8",
+    "upload_s": 0.0058358750538900495,
+    "build_s": 3.0788430409738794,
+    "total_s": 3.0846789160277694,
+    "status": "ready",
+    "error": null,
+    "bytes": 167408,
+    "metrics_asked": [
+      "rf",
+      "mast"
+    ],
+    "metrics_ready": [
+      "mast",
+      "rf"
+    ],
+    "metrics_failed": {},
+    "threads_verified": 2
+  },
+  {
+    "leaves": 17645,
+    "id": "308f9d1d913f__d0b64a498fe9",
+    "upload_s": 0.010513750021345913,
+    "build_s": 6.1379714159993455,
+    "total_s": 6.148485166020691,
+    "status": "ready",
+    "error": null,
+    "bytes": 1110525,
+    "metrics_asked": [
+      "rf",
+      "mast"
+    ],
+    "metrics_ready": [
+      "mast",
+      "rf"
+    ],
+    "metrics_failed": {},
+    "threads_verified": 2
+  },
+  {
+    "leaves": 35290,
+    "id": "5ec91f6a468e__56f956926788",
+    "upload_s": 0.01231262506917119,
+    "build_s": 17.865941416937858,
+    "total_s": 17.87825404200703,
+    "status": "ready",
+    "error": null,
+    "bytes": 2072023,
+    "metrics_asked": [
+      "rf",
+      "mast"
+    ],
+    "metrics_ready": [
+      "mast",
+      "rf"
+    ],
+    "metrics_failed": {},
+    "threads_verified": 2
+  },
+  {
+    "leaves": 70580,
+    "id": "1ca4fe0d6c68__7aca914e3c61",
+    "upload_s": 0.023191249929368496,
+    "build_s": 6.1368328330572695,
+    "total_s": 6.160024082986638,
+    "status": "ready",
+    "error": null,
+    "bytes": 4249923,
+    "metrics_asked": [
+      "rf",
+      "mast"
+    ],
+    "metrics_ready": [
+      "rf"
+    ],
+    "metrics_failed": {
+      "mast": "declined: 70,580 shared leaves need about 18.6 GiB of memory, above this server's budget of 16.0 GiB for one metric (PHYLODELTA_METRIC_MEMORY)"
+    },
+    "threads_verified": 2
+  },
+  {
+    "leaves": 141160,
+    "id": "22898c305381__071444953df2",
+    "upload_s": 0.026858124998398125,
+    "build_s": 16.814716042019427,
+    "total_s": 16.841574167017825,
+    "status": "ready",
+    "error": null,
+    "bytes": 8605723,
+    "metrics_asked": [
+      "rf",
+      "mast"
+    ],
+    "metrics_ready": [
+      "rf"
+    ],
+    "metrics_failed": {
+      "mast": "declined: 141,160 shared leaves need about 74.2 GiB of memory, above this server's budget of 16.0 GiB for one metric (PHYLODELTA_METRIC_MEMORY)"
+    },
+    "threads_verified": 2
+  },
+  {
+    "leaves": 282320,
+    "id": "a9b9e316d8a9__68845f10dc10",
+    "upload_s": 0.02517100004479289,
+    "build_s": 60.20170504192356,
+    "total_s": 60.22687604196835,
+    "status": "ready",
+    "error": null,
+    "bytes": 17493778,
+    "metrics_asked": [
+      "rf",
+      "mast"
+    ],
+    "metrics_ready": [
+      "rf"
+    ],
+    "metrics_failed": {
+      "mast": "declined: 282,320 shared leaves need about 296.9 GiB of memory, above this server's budget of 16.0 GiB for one metric (PHYLODELTA_METRIC_MEMORY)"
+    },
+    "threads_verified": 2
+  },
+  {
+    "leaves": 564640,
+    "id": "137d574281a2__61cfd1d2d25b",
+    "upload_s": 0.07425345794763416,
+    "build_s": 243.2431526670698,
+    "total_s": 243.31740612501744,
+    "status": "ready",
+    "error": null,
+    "bytes": 35481634,
+    "metrics_asked": [
+      "rf",
+      "mast"
+    ],
+    "metrics_ready": [
+      "rf"
+    ],
+    "metrics_failed": {
+      "mast": "declined: 564,640 shared leaves need about 1187.7 GiB of memory, above this server's budget of 16.0 GiB for one metric (PHYLODELTA_METRIC_MEMORY)"
+    },
+    "threads_verified": 2
+  }
+]

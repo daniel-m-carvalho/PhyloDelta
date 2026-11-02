@@ -1,0 +1,50 @@
+{
+ "commit": "015f70bb262fe542da7e7743504516d503f664ad",
+ "commit_short": "015f70b",
+ "tag": "v0.1.0",
+ "machine": {
+  "chip": "Apple M4",
+  "memory_gib": 24,
+  "performance_cores": 4,
+  "efficiency_cores": 6
+ },
+ "os": {
+  "product": "27.0.1",
+  "build": "26A434",
+  "kernel": "27.0.0"
+ },
+ "browser": "Chrome 156.0.8078.47",
+ "browser_flags": [
+  "--js-flags=--max-old-space-size=8192",
+  "--disable-dev-shm-usage"
+ ],
+ "runtimes": {
+  "python": "3.12.14",
+  "node": "26.3.0",
+  "playwright": "1.63.0",
+  "uv": "0.12.17"
+ },
+ "phyloio": {
+  "name": "phyloio",
+  "version": "2.2.5",
+  "home": "/Users/danielcarvalho/Documents/masters/Theses/repo/theses/code/bench/vendor/phyloio-2.2.5",
+  "dist_sha256": "9f9be045924a4f73cfc8daad5d0b4fbfe899ae1486cb04aa72bf35cce2bc999e"
+ },
+ "settings": {
+  "PHYLODELTA_THREADS": "2",
+  "PHYLODELTA_METRIC_MEMORY": "16G"
+ },
+ "store": {
+  "root": "/private/tmp/claude-501/-Users-danielcarvalho-Documents-masters-Theses-repo-theses/56e62ce4-3f73-4844-b239-6befaa1a5bc2/scratchpad/campaign/root",
+  "file_system": "APFS",
+  "solid_state": "Yes"
+ },
+ "dry_run": false,
+ "started": "2026-11-01T18:21:44+00:00",
+ "power_at_start": "Now drawing from 'AC Power'",
+ "finished": "2026-11-01T23:25:15+00:00",
+ "power_at_finish": "Now drawing from 'AC Power'",
+ "moved_during_run": [
+  "browser"
+ ]
+}

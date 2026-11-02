@@ -1,0 +1,29 @@
+[
+  {
+    "ok": true,
+    "ms": 674758,
+    "phases": {
+      "fetch": 6.700000047683716,
+      "parse": 2036.6999999284744,
+      "layout": 53979.300000071526,
+      "paint": 18496.099999904633,
+      "postFetch": 74512.09999990463,
+      "total": 74518.79999995232,
+      "compareComplete": false,
+      "toCompare": null
+    },
+    "drawn": {
+      "paths": 1036,
+      "texts": 1610
+    },
+    "leaves": 70580,
+    "peak_renderer_mb": 9743
+  },
+  {
+    "ok": false,
+    "ms": 1801288,
+    "why": "30 min budget",
+    "leaves": 564640,
+    "peak_renderer_mb": 10657
+  }
+]

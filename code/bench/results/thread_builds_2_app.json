@@ -1,0 +1,163 @@
+{
+  "threads": 2,
+  "metrics": [
+    "rf",
+    "mast"
+  ],
+  "rungs": [
+    {
+      "leaves": 1000,
+      "build_s": 2.0814447079319507,
+      "status": "ready",
+      "threads_verified": 2,
+      "metrics_asked": [
+        "rf",
+        "mast"
+      ],
+      "metrics_ready": [
+        "mast",
+        "rf"
+      ],
+      "metrics_failed": {}
+    },
+    {
+      "leaves": 2500,
+      "build_s": 2.0614717080025002,
+      "status": "ready",
+      "threads_verified": 2,
+      "metrics_asked": [
+        "rf",
+        "mast"
+      ],
+      "metrics_ready": [
+        "mast",
+        "rf"
+      ],
+      "metrics_failed": {}
+    },
+    {
+      "leaves": 5000,
+      "build_s": 2.5772058750735596,
+      "status": "ready",
+      "threads_verified": 2,
+      "metrics_asked": [
+        "rf",
+        "mast"
+      ],
+      "metrics_ready": [
+        "mast",
+        "rf"
+      ],
+      "metrics_failed": {}
+    },
+    {
+      "leaves": 10000,
+      "build_s": 3.0740577089600265,
+      "status": "ready",
+      "threads_verified": 2,
+      "metrics_asked": [
+        "rf",
+        "mast"
+      ],
+      "metrics_ready": [
+        "mast",
+        "rf"
+      ],
+      "metrics_failed": {}
+    },
+    {
+      "leaves": 17645,
+      "build_s": 6.155552624957636,
+      "status": "ready",
+      "threads_verified": 2,
+      "metrics_asked": [
+        "rf",
+        "mast"
+      ],
+      "metrics_ready": [
+        "mast",
+        "rf"
+      ],
+      "metrics_failed": {}
+    },
+    {
+      "leaves": 35290,
+      "build_s": 17.386823041946627,
+      "status": "ready",
+      "threads_verified": 2,
+      "metrics_asked": [
+        "rf",
+        "mast"
+      ],
+      "metrics_ready": [
+        "mast",
+        "rf"
+      ],
+      "metrics_failed": {}
+    },
+    {
+      "leaves": 70580,
+      "build_s": 6.158018874935806,
+      "status": "ready",
+      "threads_verified": 2,
+      "metrics_asked": [
+        "rf",
+        "mast"
+      ],
+      "metrics_ready": [
+        "rf"
+      ],
+      "metrics_failed": {
+        "mast": "declined: 70,580 shared leaves need about 18.6 GiB of memory, above this server's budget of 16.0 GiB for one metric (PHYLODELTA_METRIC_MEMORY)"
+      }
+    },
+    {
+      "leaves": 141160,
+      "build_s": 17.361680374946445,
+      "status": "ready",
+      "threads_verified": 2,
+      "metrics_asked": [
+        "rf",
+        "mast"
+      ],
+      "metrics_ready": [
+        "rf"
+      ],
+      "metrics_failed": {
+        "mast": "declined: 141,160 shared leaves need about 74.2 GiB of memory, above this server's budget of 16.0 GiB for one metric (PHYLODELTA_METRIC_MEMORY)"
+      }
+    },
+    {
+      "leaves": 282320,
+      "build_s": 59.8035757499747,
+      "status": "ready",
+      "threads_verified": 2,
+      "metrics_asked": [
+        "rf",
+        "mast"
+      ],
+      "metrics_ready": [
+        "rf"
+      ],
+      "metrics_failed": {
+        "mast": "declined: 282,320 shared leaves need about 296.9 GiB of memory, above this server's budget of 16.0 GiB for one metric (PHYLODELTA_METRIC_MEMORY)"
+      }
+    },
+    {
+      "leaves": 564640,
+      "build_s": 243.71069770795293,
+      "status": "ready",
+      "threads_verified": 2,
+      "metrics_asked": [
+        "rf",
+        "mast"
+      ],
+      "metrics_ready": [
+        "rf"
+      ],
+      "metrics_failed": {
+        "mast": "declined: 564,640 shared leaves need about 1187.7 GiB of memory, above this server's budget of 16.0 GiB for one metric (PHYLODELTA_METRIC_MEMORY)"
+      }
+    }
+  ]
+}

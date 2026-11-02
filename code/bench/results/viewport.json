@@ -1,5 +1,5 @@
 {
-  "browser": "Chrome 154.0.8037.58",
+  "browser": "Chrome 156.0.8078.74",
   "width": 1440,
   "heights": [
     400,
@@ -28,8 +28,8 @@
           "displayed_leaves": 50,
           "total_leaves": 17645,
           "right_budget": 50,
-          "panel_px": 255,
-          "bytes": 15009,
+          "panel_px": 210,
+          "bytes": 15033,
           "count": 2
         },
         {
@@ -40,8 +40,8 @@
           "displayed_leaves": 50,
           "total_leaves": 564640,
           "right_budget": 50,
-          "panel_px": 255,
-          "bytes": 12221,
+          "panel_px": 210,
+          "bytes": 12245,
           "count": 2
         }
       ]
@@ -57,8 +57,8 @@
           "displayed_leaves": 50,
           "total_leaves": 17645,
           "right_budget": 50,
-          "panel_px": 555,
-          "bytes": 15009,
+          "panel_px": 510,
+          "bytes": 15033,
           "count": 2
         },
         {
@@ -69,8 +69,8 @@
           "displayed_leaves": 50,
           "total_leaves": 564640,
           "right_budget": 50,
-          "panel_px": 555,
-          "bytes": 12221,
+          "panel_px": 510,
+          "bytes": 12245,
           "count": 2
         }
       ]
@@ -86,8 +86,8 @@
           "displayed_leaves": 50,
           "total_leaves": 17645,
           "right_budget": 50,
-          "panel_px": 855,
-          "bytes": 15009,
+          "panel_px": 810,
+          "bytes": 15033,
           "count": 2
         },
         {
@@ -98,8 +98,8 @@
           "displayed_leaves": 50,
           "total_leaves": 564640,
           "right_budget": 50,
-          "panel_px": 855,
-          "bytes": 12221,
+          "panel_px": 810,
+          "bytes": 12245,
           "count": 2
         }
       ]
@@ -115,8 +115,8 @@
           "displayed_leaves": 75,
           "total_leaves": 17645,
           "right_budget": 75,
-          "panel_px": 1055,
-          "bytes": 22477,
+          "panel_px": 1010,
+          "bytes": 22501,
           "count": 2
         },
         {
@@ -127,8 +127,8 @@
           "displayed_leaves": 75,
           "total_leaves": 564640,
           "right_budget": 75,
-          "panel_px": 1055,
-          "bytes": 19586,
+          "panel_px": 1010,
+          "bytes": 19610,
           "count": 2
         }
       ]
@@ -139,25 +139,25 @@
         {
           "leaves": 17645,
           "ok": true,
-          "budget": 100,
-          "auto_budget": 100,
-          "displayed_leaves": 100,
+          "budget": 75,
+          "auto_budget": 75,
+          "displayed_leaves": 75,
           "total_leaves": 17645,
-          "right_budget": 100,
-          "panel_px": 1255,
-          "bytes": 29020,
+          "right_budget": 75,
+          "panel_px": 1210,
+          "bytes": 22501,
           "count": 2
         },
         {
           "leaves": 564640,
           "ok": true,
-          "budget": 100,
-          "auto_budget": 100,
-          "displayed_leaves": 100,
+          "budget": 75,
+          "auto_budget": 75,
+          "displayed_leaves": 75,
           "total_leaves": 564640,
-          "right_budget": 100,
-          "panel_px": 1255,
-          "bytes": 27024,
+          "right_budget": 75,
+          "panel_px": 1210,
+          "bytes": 19610,
           "count": 2
         }
       ]
@@ -173,8 +173,8 @@
           "displayed_leaves": 100,
           "total_leaves": 17645,
           "right_budget": 100,
-          "panel_px": 1555,
-          "bytes": 29020,
+          "panel_px": 1510,
+          "bytes": 29044,
           "count": 2
         },
         {
@@ -185,8 +185,8 @@
           "displayed_leaves": 100,
           "total_leaves": 564640,
           "right_budget": 100,
-          "panel_px": 1555,
-          "bytes": 27024,
+          "panel_px": 1510,
+          "bytes": 27048,
           "count": 2
         }
       ]
@@ -202,8 +202,8 @@
           "displayed_leaves": 125,
           "total_leaves": 17645,
           "right_budget": 125,
-          "panel_px": 1855,
-          "bytes": 35628,
+          "panel_px": 1810,
+          "bytes": 35652,
           "count": 2
         },
         {
@@ -214,8 +214,8 @@
           "displayed_leaves": 125,
           "total_leaves": 564640,
           "right_budget": 125,
-          "panel_px": 1855,
-          "bytes": 33938,
+          "panel_px": 1810,
+          "bytes": 33962,
           "count": 2
         }
       ]
@@ -231,8 +231,8 @@
           "displayed_leaves": 175,
           "total_leaves": 17645,
           "right_budget": 175,
-          "panel_px": 2455,
-          "bytes": 48113,
+          "panel_px": 2410,
+          "bytes": 48137,
           "count": 2
         },
         {
@@ -243,8 +243,8 @@
           "displayed_leaves": 175,
           "total_leaves": 564640,
           "right_budget": 175,
-          "panel_px": 2455,
-          "bytes": 47114,
+          "panel_px": 2410,
+          "bytes": 47138,
           "count": 2
         }
       ]
@@ -260,8 +260,8 @@
           "displayed_leaves": 225,
           "total_leaves": 17645,
           "right_budget": 225,
-          "panel_px": 3055,
-          "bytes": 60481,
+          "panel_px": 3010,
+          "bytes": 60505,
           "count": 2
         },
         {
@@ -272,8 +272,8 @@
           "displayed_leaves": 225,
           "total_leaves": 564640,
           "right_budget": 225,
-          "panel_px": 3055,
-          "bytes": 59051,
+          "panel_px": 3010,
+          "bytes": 59075,
           "count": 2
         }
       ]
