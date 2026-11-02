@@ -1,0 +1,104 @@
+{
+ "label": "2.2.5",
+ "browser": "Chrome 156.0.8078.74",
+ "viewport": {
+  "width": 1440,
+  "height": 900
+ },
+ "phyloio_home": "/Users/danielcarvalho/Documents/masters/Theses/repo/theses/code/bench/vendor/phyloio-2.2.5",
+ "bench_commit": "015f70b",
+ "attempt_budget_ms": 700000,
+ "compare_budget_ms": 600000,
+ "rows": [
+  {
+   "leaves": 70580,
+   "loads": 3,
+   "painted": 3,
+   "paint_ms_median": 74866,
+   "paths_median": 1036,
+   "dom_nodes_median": 7962,
+   "compare_completed": 0,
+   "per_load": [
+    {
+     "outcome": "painted",
+     "paint_ms": 74973,
+     "phases": {
+      "fetch": 7.099999904632568,
+      "parse": 2070.5,
+      "layout": 54298.200000047684,
+      "paint": 18597.200000047684,
+      "postFetch": 74965.90000009537,
+      "total": 74973,
+      "compareComplete": false,
+      "toCompare": null
+     },
+     "drawn": {
+      "svg": 4,
+      "paths": 1036,
+      "texts": 1610
+     },
+     "dom": {
+      "documents": 1,
+      "nodes": 7962,
+      "jsEventListeners": 5696
+     },
+     "heap_bytes": 240435788,
+     "compared": false
+    },
+    {
+     "outcome": "painted",
+     "paint_ms": 74866,
+     "phases": {
+      "fetch": 6.899999976158142,
+      "parse": 2046.6000000238419,
+      "layout": 54402.60000002384,
+      "paint": 18409.600000023842,
+      "postFetch": 74858.80000007153,
+      "total": 74865.70000004768,
+      "compareComplete": false,
+      "toCompare": null
+     },
+     "drawn": {
+      "svg": 4,
+      "paths": 1036,
+      "texts": 1610
+     },
+     "dom": {
+      "documents": 1,
+      "nodes": 7962,
+      "jsEventListeners": 5696
+     },
+     "heap_bytes": 240443520,
+     "compared": false
+    },
+    {
+     "outcome": "painted",
+     "paint_ms": 74350,
+     "phases": {
+      "fetch": 6.5,
+      "parse": 2049.2999999523163,
+      "layout": 54023.39999997616,
+      "paint": 18271.100000023842,
+      "postFetch": 74343.79999995232,
+      "total": 74350.29999995232,
+      "compareComplete": false,
+      "toCompare": null
+     },
+     "drawn": {
+      "svg": 4,
+      "paths": 1036,
+      "texts": 1610
+     },
+     "dom": {
+      "documents": 1,
+      "nodes": 7962,
+      "jsEventListeners": 5696
+     },
+     "heap_bytes": 240443092,
+     "compared": false
+    }
+   ]
+  }
+ ],
+ "summary": "*The 70,580 row was run after the campaign, from the same tag and by the same runner, because the single ceiling attempt could not tell a slow load from a failed one: its 660 s limit is shorter than this rung's 75 s paint plus the 600 s comparison.*"
+}

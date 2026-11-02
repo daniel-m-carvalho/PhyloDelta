@@ -1,0 +1,84 @@
+[
+  {
+    "leaves": 1000,
+    "median_ms": 1.7180000431835651,
+    "min_ms": 1.6071659047156572,
+    "max_ms": 1.8661660142242908,
+    "bytes": 5446,
+    "gzip_bytes": 1709,
+    "metric": "mast",
+    "displayed_leaves": 50,
+    "total_leaves": 1000
+  },
+  {
+    "leaves": 2500,
+    "median_ms": 1.5850829659029841,
+    "min_ms": 1.5306250425055623,
+    "max_ms": 1.6375830164179206,
+    "bytes": 5662,
+    "gzip_bytes": 1800,
+    "metric": "mast",
+    "displayed_leaves": 50,
+    "total_leaves": 2500
+  },
+  {
+    "leaves": 5000,
+    "median_ms": 1.6581249656155705,
+    "min_ms": 1.601708005182445,
+    "max_ms": 1.7340000486001372,
+    "bytes": 5803,
+    "gzip_bytes": 1872,
+    "metric": "mast",
+    "displayed_leaves": 50,
+    "total_leaves": 5000
+  },
+  {
+    "leaves": 10000,
+    "median_ms": 1.6007079975679517,
+    "min_ms": 1.5388339525088668,
+    "max_ms": 1.6572499880567193,
+    "bytes": 5802,
+    "gzip_bytes": 1874,
+    "metric": "mast",
+    "displayed_leaves": 50,
+    "total_leaves": 10000
+  },
+  {
+    "leaves": 17645,
+    "median_ms": 1.5684999525547028,
+    "min_ms": 1.5380829572677612,
+    "max_ms": 1.664959010668099,
+    "bytes": 7162,
+    "gzip_bytes": 2885,
+    "metric": "mast",
+    "displayed_leaves": 50,
+    "total_leaves": 17645
+  },
+  {
+    "leaves": 35290,
+    "median_ms": 1.6070830170065165,
+    "min_ms": 1.5916250413283706,
+    "max_ms": 1.7384160310029984,
+    "bytes": 7124,
+    "gzip_bytes": 2852,
+    "metric": "mast",
+    "displayed_leaves": 50,
+    "total_leaves": 35290
+  },
+  {
+    "leaves": 70580,
+    "absent": "No metric 'mast' for pair '1ca4fe0d6c68__7aca914e3c61'."
+  },
+  {
+    "leaves": 141160,
+    "absent": "No metric 'mast' for pair '22898c305381__071444953df2'."
+  },
+  {
+    "leaves": 282320,
+    "absent": "No metric 'mast' for pair 'a9b9e316d8a9__68845f10dc10'."
+  },
+  {
+    "leaves": 564640,
+    "absent": "No metric 'mast' for pair '137d574281a2__61cfd1d2d25b'."
+  }
+]

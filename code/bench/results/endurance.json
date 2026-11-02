@@ -1,16 +1,16 @@
 [
   {
     "ok": false,
-    "ms": 796529,
+    "ms": 271006,
     "why": "page.evaluate: Target crashed ",
     "leaves": 141160,
-    "peak_renderer_mb": 10877
+    "peak_renderer_mb": 10392
   },
   {
     "ok": false,
-    "ms": 865512,
+    "ms": 451321,
     "why": "page.evaluate: Target crashed ",
     "leaves": 282320,
-    "peak_renderer_mb": 10715
+    "peak_renderer_mb": 10289
   }
 ]

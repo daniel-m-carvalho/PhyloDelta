@@ -1,0 +1,234 @@
+{
+ "rungs": [
+  {
+   "rung": 1000,
+   "shared_fraction": 1.0,
+   "shared_leaves": 1000,
+   "a": {
+    "file": "ladder-001000-a.nwk",
+    "bytes": 8352,
+    "sha256": "83f590033eba9af85312edf1a8d543499b910b76b7d5b51065579b053a024dbd",
+    "leaves": 1000,
+    "distinct_leaves": 1000,
+    "clades": 999,
+    "max_depth": 79
+   },
+   "b": {
+    "file": "ladder-001000-b.nwk",
+    "bytes": 8352,
+    "sha256": "0988f785a414a4d0a0b1cf3b54a23c7a06123e3eca8092bd22a5c08e95fe2906",
+    "leaves": 1000,
+    "distinct_leaves": 1000,
+    "clades": 999,
+    "max_depth": 68
+   }
+  },
+  {
+   "rung": 2500,
+   "shared_fraction": 1.0,
+   "shared_leaves": 2500,
+   "a": {
+    "file": "ladder-002500-a.nwk",
+    "bytes": 20916,
+    "sha256": "bd9999709ef27057aba00de18b886aad6ccbc46fd345f26f1ed53eee964d8e99",
+    "leaves": 2500,
+    "distinct_leaves": 2500,
+    "clades": 2499,
+    "max_depth": 97
+   },
+   "b": {
+    "file": "ladder-002500-b.nwk",
+    "bytes": 20916,
+    "sha256": "20b552c9ff8781220b9580109d64bdc8b39ceffbd93b9c6a1b67cc6cb3a72e93",
+    "leaves": 2500,
+    "distinct_leaves": 2500,
+    "clades": 2499,
+    "max_depth": 130
+   }
+  },
+  {
+   "rung": 5000,
+   "shared_fraction": 1.0,
+   "shared_leaves": 5000,
+   "a": {
+    "file": "ladder-005000-a.nwk",
+    "bytes": 41874,
+    "sha256": "82cbc1d86201ae18b3408f783b0b897747b5156bbca71884e3693e8ddd1ebf3c",
+    "leaves": 5000,
+    "distinct_leaves": 5000,
+    "clades": 4999,
+    "max_depth": 110
+   },
+   "b": {
+    "file": "ladder-005000-b.nwk",
+    "bytes": 41874,
+    "sha256": "ff4e68ff90371f31a45646809c892ffcce7f0cb574544c60b9c16a8d1ae126a8",
+    "leaves": 5000,
+    "distinct_leaves": 5000,
+    "clades": 4999,
+    "max_depth": 181
+   }
+  },
+  {
+   "rung": 10000,
+   "shared_fraction": 1.0,
+   "shared_leaves": 10000,
+   "a": {
+    "file": "ladder-010000-a.nwk",
+    "bytes": 83704,
+    "sha256": "7d6397dae9f318758fc9d381d20215f27c0e11be18268edc5a1e0033365ea64b",
+    "leaves": 10000,
+    "distinct_leaves": 10000,
+    "clades": 9999,
+    "max_depth": 144
+   },
+   "b": {
+    "file": "ladder-010000-b.nwk",
+    "bytes": 83704,
+    "sha256": "63c54ad533027429748e4ddea8654f51a6327f4958ccd1738a4e39ce3d2c9290",
+    "leaves": 10000,
+    "distinct_leaves": 10000,
+    "clades": 9999,
+    "max_depth": 296
+   }
+  },
+  {
+   "rung": 17645,
+   "shared_fraction": 0.9999433299331293,
+   "shared_leaves": 17645,
+   "a": {
+    "file": "ladder-017645-a.nwk",
+    "bytes": 639359,
+    "sha256": "a856510f265f661a9611a30bd43f57f3c50124ad15808c9ceff3371ea49278b9",
+    "leaves": 17645,
+    "distinct_leaves": 17645,
+    "clades": 17645,
+    "max_depth": 176
+   },
+   "b": {
+    "file": "ladder-017645-b.nwk",
+    "bytes": 471166,
+    "sha256": "ff19f19ece6819dd8c6306f21802dfdb95cf5c8ce88a0d2fda98d45f5975ef46",
+    "leaves": 17646,
+    "distinct_leaves": 17646,
+    "clades": 17645,
+    "max_depth": 443
+   }
+  },
+  {
+   "rung": 35290,
+   "shared_fraction": 0.9999433299331293,
+   "shared_leaves": 35290,
+   "a": {
+    "file": "ladder-035290-a.nwk",
+    "bytes": 1045773,
+    "sha256": "19f718b5f754347ee4e0f251846f1c0a1fd51b634f474afdd6fe86a352e32f07",
+    "leaves": 35290,
+    "distinct_leaves": 35290,
+    "clades": 35291,
+    "max_depth": 177
+   },
+   "b": {
+    "file": "ladder-035290-b.nwk",
+    "bytes": 1026250,
+    "sha256": "85d6e3a2b99141eddd731c915852568a9c782da248381d8885a7d83e494ffe60",
+    "leaves": 35292,
+    "distinct_leaves": 35292,
+    "clades": 35291,
+    "max_depth": 444
+   }
+  },
+  {
+   "rung": 70580,
+   "shared_fraction": 0.9999433299331293,
+   "shared_leaves": 70580,
+   "a": {
+    "file": "ladder-070580-a.nwk",
+    "bytes": 2144483,
+    "sha256": "e0b8205a8e6de26372d18c6949f8949098e57fb601fff29e77af76f625e66a64",
+    "leaves": 70580,
+    "distinct_leaves": 70580,
+    "clades": 70583,
+    "max_depth": 179
+   },
+   "b": {
+    "file": "ladder-070580-b.nwk",
+    "bytes": 2105440,
+    "sha256": "ef33b8f30113b22947af748965fcfa7c16ddcc3a04f907a1ebb05be6790751cb",
+    "leaves": 70584,
+    "distinct_leaves": 70584,
+    "clades": 70583,
+    "max_depth": 446
+   }
+  },
+  {
+   "rung": 141160,
+   "shared_fraction": 0.9999433299331293,
+   "shared_leaves": 141160,
+   "a": {
+    "file": "ladder-141160-a.nwk",
+    "bytes": 4341903,
+    "sha256": "01cba9852dad5dfffd30c62b0a8c72395423c347b20a74f2aface045212e31cc",
+    "leaves": 141160,
+    "distinct_leaves": 141160,
+    "clades": 141167,
+    "max_depth": 183
+   },
+   "b": {
+    "file": "ladder-141160-b.nwk",
+    "bytes": 4263820,
+    "sha256": "adf3b34baac75406f81907897981bda800c0f87ba1ff62bd7861717d5a5da71c",
+    "leaves": 141168,
+    "distinct_leaves": 141168,
+    "clades": 141167,
+    "max_depth": 450
+   }
+  },
+  {
+   "rung": 282320,
+   "shared_fraction": 0.9999433299331293,
+   "shared_leaves": 282320,
+   "a": {
+    "file": "ladder-282320-a.nwk",
+    "bytes": 8824968,
+    "sha256": "f476f1da58f6ed3f794dfddc3c83af03c1eb9995a44b72935f6ca2aeb152d412",
+    "leaves": 282320,
+    "distinct_leaves": 282320,
+    "clades": 282335,
+    "max_depth": 191
+   },
+   "b": {
+    "file": "ladder-282320-b.nwk",
+    "bytes": 8668810,
+    "sha256": "6a8cd0093920c421aa8c2bbb518612e0de582937159419cafa43a688d54b92e4",
+    "leaves": 282336,
+    "distinct_leaves": 282336,
+    "clades": 282335,
+    "max_depth": 458
+   }
+  },
+  {
+   "rung": 564640,
+   "shared_fraction": 0.9999433299331293,
+   "shared_leaves": 564640,
+   "a": {
+    "file": "ladder-564640-a.nwk",
+    "bytes": 17896968,
+    "sha256": "76a7477b7baed6c88ed543f8207ba401641341ff29d83a38533ba3a70778a3db",
+    "leaves": 564640,
+    "distinct_leaves": 564640,
+    "clades": 564671,
+    "max_depth": 207
+   },
+   "b": {
+    "file": "ladder-564640-b.nwk",
+    "bytes": 17584666,
+    "sha256": "9e45e0fff4ddeb9147bd6fd08f616a75700081c40a6052e1631763d3070443ea",
+    "leaves": 564672,
+    "distinct_leaves": 564672,
+    "clades": 564671,
+    "max_depth": 474
+   }
+  }
+ ]
+}

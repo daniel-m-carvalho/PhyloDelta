@@ -22,10 +22,11 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 1.57,
+          "build_s": 2.08,
           "status": "ready",
           "error": null,
-          "id": "bd870fc4638a__149ab6df9952",
+          "id": "7441a751e9e5__07313897fcff",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -45,10 +46,11 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 2.08,
+          "build_s": 2.06,
           "status": "ready",
           "error": null,
-          "id": "c3575f9dbbed__fa723f75f898",
+          "id": "59c04eff87b3__8e9c3c35154b",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -78,7 +80,8 @@
           "build_s": 2.06,
           "status": "ready",
           "error": null,
-          "id": "948cf0b7f6dd__e7166e423979",
+          "id": "c3e603850973__6c70288422a4",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -114,10 +117,11 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 2.05,
+          "build_s": 2.57,
           "status": "ready",
           "error": null,
-          "id": "b4078fe1f700__58a509a3ee99",
+          "id": "d42a0a58a009__30a1824d0d24",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -140,7 +144,8 @@
           "build_s": 2.06,
           "status": "ready",
           "error": null,
-          "id": "365478e9eab5__a5520ddb1bba",
+          "id": "a42eee05d18d__2387cae50785",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -167,10 +172,11 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 2.06,
+          "build_s": 2.07,
           "status": "ready",
           "error": null,
-          "id": "ad0dd1774a91__1500bcda1c03",
+          "id": "cf8ecca2c769__b9cf1fbdaf32",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -206,10 +212,11 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 2.05,
+          "build_s": 2.06,
           "status": "ready",
           "error": null,
-          "id": "c9647e03244f__6eac928cbf31",
+          "id": "b6495369190e__d595f1ba5354",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -229,10 +236,11 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 2.56,
+          "build_s": 2.07,
           "status": "ready",
           "error": null,
-          "id": "c72c8a32cfd7__2e4e721c30c2",
+          "id": "e93087679c9a__db92a77fea7b",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -259,10 +267,11 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 2.05,
+          "build_s": 2.57,
           "status": "ready",
           "error": null,
-          "id": "744227da98bf__b97a9a682244",
+          "id": "50064353e144__cdb141006c6a",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -298,10 +307,11 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 2.04,
+          "build_s": 2.06,
           "status": "ready",
           "error": null,
-          "id": "614a927579d5__dfece8e3b0a9",
+          "id": "244aaefdeae3__fe417e20dc68",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -321,10 +331,11 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 2.56,
+          "build_s": 2.07,
           "status": "ready",
           "error": null,
-          "id": "8deaff6b2713__2fc50ada1e90",
+          "id": "1690282e8e51__b5567403b432",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -351,10 +362,11 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 2.58,
+          "build_s": 3.07,
           "status": "ready",
           "error": null,
-          "id": "0fbeec2d07e8__8ab88275f1b5",
+          "id": "5a2d85deacc4__c74c9a5fecde",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -390,10 +402,11 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 2.57,
+          "build_s": 2.05,
           "status": "ready",
           "error": null,
-          "id": "3145a5d3c9d7__9315b4defc6d",
+          "id": "54a758570487__f49c0e1ab22b",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -413,10 +426,11 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 2.58,
+          "build_s": 2.56,
           "status": "ready",
           "error": null,
-          "id": "d4efe0e54ea0__07aa658189f4",
+          "id": "f026eff6f52d__0b5dc4ee6135",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -443,10 +457,11 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 3.6,
+          "build_s": 4.06,
           "status": "ready",
           "error": null,
-          "id": "f71fa5c90b79__6e49875f2e7d",
+          "id": "4618fba09e48__fe29e7333b66",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -482,10 +497,11 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 3.08,
+          "build_s": 3.06,
           "status": "ready",
           "error": null,
-          "id": "a1ab5ccd63d4__66c9ba8c53be",
+          "id": "7e65e1d4137a__390687ad7442",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -505,10 +521,11 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 3.07,
+          "build_s": 3.57,
           "status": "ready",
           "error": null,
-          "id": "2d227e893eea__2c18631fe870",
+          "id": "2dd0570a26a7__d054d6561568",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -535,10 +552,11 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 6.12,
+          "build_s": 6.11,
           "status": "ready",
           "error": null,
-          "id": "7051a64b159f__62d599006341",
+          "id": "d8d79f75d241__5584c0c2d726",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -574,10 +592,11 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 6.15,
+          "build_s": 6.11,
           "status": "ready",
           "error": null,
-          "id": "d064ea1d8453__f9c98f6eb0b7",
+          "id": "bf9165474b9a__afa3906276b3",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -597,10 +616,11 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 6.14,
+          "build_s": 6.62,
           "status": "ready",
           "error": null,
-          "id": "5b82428da054__ea5fa0443443",
+          "id": "a2fb445780c3__a517b49d20b9",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -627,10 +647,11 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 12.24,
+          "build_s": 12.18,
           "status": "ready",
           "error": null,
-          "id": "1a4bbc71b397__c0662da16597",
+          "id": "68d1f482857b__58a1b1f0f4dc",
+          "threads_verified": 2,
           "values": {
             "rf": {
               "ok": true,
@@ -653,6 +674,291 @@
               "ok": true,
               "summary": {
                 "triplet": 1708289626296
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "leaves": 141160,
+      "builds": [
+        {
+          "metrics": [
+            "rf"
+          ],
+          "build_s": 16.73,
+          "status": "ready",
+          "error": null,
+          "id": "499bbe09c8bf__ba7877feab7b",
+          "threads_verified": 2,
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 109200,
+                "rf_normalised": 0.38680060641267233,
+                "shared_clusters": 86559,
+                "clusters_left": 141159,
+                "clusters_right": 141159,
+                "n_leaves": 141160
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff"
+          ],
+          "build_s": 17.76,
+          "status": "ready",
+          "error": null,
+          "id": "bc476af41bcb__df23500e8b3d",
+          "threads_verified": 2,
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 109200,
+                "rf_normalised": 0.38680060641267233,
+                "shared_clusters": 86559,
+                "clusters_left": 141159,
+                "clusters_right": 141159,
+                "n_leaves": 141160
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 54600.0
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet"
+          ],
+          "build_s": 29.47,
+          "status": "ready",
+          "error": null,
+          "id": "7f113cd93a87__f745096855b5",
+          "threads_verified": 2,
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 109200,
+                "rf_normalised": 0.38680060641267233,
+                "shared_clusters": 86559,
+                "clusters_left": 141159,
+                "clusters_right": 141159,
+                "n_leaves": 141160
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 54600.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 3416579252592
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "leaves": 282320,
+      "builds": [
+        {
+          "metrics": [
+            "rf"
+          ],
+          "build_s": 59.77,
+          "status": "ready",
+          "error": null,
+          "id": "db6682c8af2e__c080e152ae45",
+          "threads_verified": 2,
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 218400,
+                "rf_normalised": 0.3867978662359467,
+                "shared_clusters": 173119,
+                "clusters_left": 282319,
+                "clusters_right": 282319,
+                "n_leaves": 282320
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff"
+          ],
+          "build_s": 61.28,
+          "status": "ready",
+          "error": null,
+          "id": "966fb33c81b5__cb3f7d8cdbea",
+          "threads_verified": 2,
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 218400,
+                "rf_normalised": 0.3867978662359467,
+                "shared_clusters": 173119,
+                "clusters_left": 282319,
+                "clusters_right": 282319,
+                "n_leaves": 282320
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 109200.0
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet"
+          ],
+          "build_s": 86.2,
+          "status": "ready",
+          "error": null,
+          "id": "579550400f3b__a96ec366ca34",
+          "threads_verified": 2,
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 218400,
+                "rf_normalised": 0.3867978662359467,
+                "shared_clusters": 173119,
+                "clusters_left": 282319,
+                "clusters_right": 282319,
+                "n_leaves": 282320
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 109200.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 6833158505184
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "leaves": 564640,
+      "builds": [
+        {
+          "metrics": [
+            "rf"
+          ],
+          "build_s": 243.72,
+          "status": "ready",
+          "error": null,
+          "id": "ab41d6f384d2__c843dd62d349",
+          "threads_verified": 2,
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 436800,
+                "rf_normalised": 0.38679649616214284,
+                "shared_clusters": 346239,
+                "clusters_left": 564639,
+                "clusters_right": 564639,
+                "n_leaves": 564640
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff"
+          ],
+          "build_s": 247.77,
+          "status": "ready",
+          "error": null,
+          "id": "a4d0fc38404c__8aebf1fbd940",
+          "threads_verified": 2,
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 436800,
+                "rf_normalised": 0.38679649616214284,
+                "shared_clusters": 346239,
+                "clusters_left": 564639,
+                "clusters_right": 564639,
+                "n_leaves": 564640
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 218400.0
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet"
+          ],
+          "build_s": 297.38,
+          "status": "ready",
+          "error": null,
+          "id": "e5df7905daa7__c1b4e751e460",
+          "threads_verified": 2,
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 436800,
+                "rf_normalised": 0.38679649616214284,
+                "shared_clusters": 346239,
+                "clusters_left": 564639,
+                "clusters_right": 564639,
+                "n_leaves": 564640
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 218400.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 13666317010368
               }
             }
           }

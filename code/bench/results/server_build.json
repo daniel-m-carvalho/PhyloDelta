@@ -1,102 +1,182 @@
 [
   {
     "leaves": 1000,
-    "id": "8f6848318bb7__02aadd5969c6",
-    "upload_s": 0.02513266704045236,
-    "build_s": 2.043330916960258,
-    "total_s": 2.0684635840007104,
+    "id": "d4851293df73__db4d2f5440a6",
+    "upload_s": 0.019537750049494207,
+    "build_s": 2.040830541984178,
+    "total_s": 2.0603682920336723,
     "status": "ready",
     "error": null,
-    "bytes": 16704
+    "bytes": 16704,
+    "metrics_asked": [
+      "rf"
+    ],
+    "metrics_ready": [
+      "rf"
+    ],
+    "metrics_failed": {},
+    "threads_verified": 2
   },
   {
     "leaves": 2500,
-    "id": "a199b239285d__e7bbb5004bf4",
-    "upload_s": 0.0056585410493426025,
-    "build_s": 2.039219749975018,
-    "total_s": 2.044878291024361,
+    "id": "1aefae7bf0e8__0e70d318a0e0",
+    "upload_s": 0.006804417003877461,
+    "build_s": 2.0586407500086352,
+    "total_s": 2.0654451670125127,
     "status": "ready",
     "error": null,
-    "bytes": 41832
+    "bytes": 41832,
+    "metrics_asked": [
+      "rf"
+    ],
+    "metrics_ready": [
+      "rf"
+    ],
+    "metrics_failed": {},
+    "threads_verified": 2
   },
   {
     "leaves": 5000,
-    "id": "073ab38d2b0b__ce11d0873231",
-    "upload_s": 0.00839829200413078,
-    "build_s": 2.034992582979612,
-    "total_s": 2.043390874983743,
+    "id": "6cf8ead2c6d6__112aa9c834ce",
+    "upload_s": 0.007394084008410573,
+    "build_s": 2.0486712499987334,
+    "total_s": 2.056065334007144,
     "status": "ready",
     "error": null,
-    "bytes": 83748
+    "bytes": 83748,
+    "metrics_asked": [
+      "rf"
+    ],
+    "metrics_ready": [
+      "rf"
+    ],
+    "metrics_failed": {},
+    "threads_verified": 2
   },
   {
     "leaves": 10000,
-    "id": "96c986f4644e__f004fcd59435",
-    "upload_s": 0.008069457951933146,
-    "build_s": 2.032438042049762,
-    "total_s": 2.040507500001695,
+    "id": "de9ea996bdc7__8cc89cfa4b2a",
+    "upload_s": 0.00703045807313174,
+    "build_s": 2.0509157079504803,
+    "total_s": 2.057946166023612,
     "status": "ready",
     "error": null,
-    "bytes": 167408
+    "bytes": 167408,
+    "metrics_asked": [
+      "rf"
+    ],
+    "metrics_ready": [
+      "rf"
+    ],
+    "metrics_failed": {},
+    "threads_verified": 2
   },
   {
     "leaves": 17645,
-    "id": "0a6014b9ea46__808cbb0b83b4",
-    "upload_s": 0.008965875022113323,
-    "build_s": 2.538056749966927,
-    "total_s": 2.54702262498904,
+    "id": "63c2a1b9287c__fa8148b21b94",
+    "upload_s": 0.005885374965146184,
+    "build_s": 2.5682762910146266,
+    "total_s": 2.574161665979773,
     "status": "ready",
     "error": null,
-    "bytes": 1110525
+    "bytes": 1110525,
+    "metrics_asked": [
+      "rf"
+    ],
+    "metrics_ready": [
+      "rf"
+    ],
+    "metrics_failed": {},
+    "threads_verified": 2
   },
   {
     "leaves": 35290,
-    "id": "35229a82c461__57053a3d073e",
-    "upload_s": 0.015193499973975122,
-    "build_s": 3.049553457996808,
-    "total_s": 3.064746957970783,
+    "id": "51786711ea74__9e113678dcd2",
+    "upload_s": 0.014835749985650182,
+    "build_s": 3.078809041995555,
+    "total_s": 3.0936447919812053,
     "status": "ready",
     "error": null,
-    "bytes": 2072023
+    "bytes": 2072023,
+    "metrics_asked": [
+      "rf"
+    ],
+    "metrics_ready": [
+      "rf"
+    ],
+    "metrics_failed": {},
+    "threads_verified": 2
   },
   {
     "leaves": 70580,
-    "id": "92c684b9e08f__f611cecdf2a9",
-    "upload_s": 0.012516915972810239,
-    "build_s": 6.078113458992448,
-    "total_s": 6.090630374965258,
+    "id": "13fe3678de7c__2d6fd322f5e3",
+    "upload_s": 0.007813250063918531,
+    "build_s": 6.655736499931663,
+    "total_s": 6.663549749995582,
     "status": "ready",
     "error": null,
-    "bytes": 4249923
+    "bytes": 4249923,
+    "metrics_asked": [
+      "rf"
+    ],
+    "metrics_ready": [
+      "rf"
+    ],
+    "metrics_failed": {},
+    "threads_verified": 2
   },
   {
     "leaves": 141160,
-    "id": "8e25362c4e66__db20b0818b64",
-    "upload_s": 0.02430329198250547,
-    "build_s": 17.206091500003822,
-    "total_s": 17.230394791986328,
+    "id": "b9d27b8dab3b__f144c3829f9b",
+    "upload_s": 0.03024383308365941,
+    "build_s": 16.873238666914403,
+    "total_s": 16.903482499998063,
     "status": "ready",
     "error": null,
-    "bytes": 8605723
+    "bytes": 8605723,
+    "metrics_asked": [
+      "rf"
+    ],
+    "metrics_ready": [
+      "rf"
+    ],
+    "metrics_failed": {},
+    "threads_verified": 2
   },
   {
     "leaves": 282320,
-    "id": "bf1257c0c248__dfdb2e097198",
-    "upload_s": 0.03920358297182247,
-    "build_s": 60.78972387500107,
-    "total_s": 60.828927457972895,
+    "id": "3219107f4c49__88198de03c57",
+    "upload_s": 0.047609041910618544,
+    "build_s": 59.688965166104026,
+    "total_s": 59.736574208014645,
     "status": "ready",
     "error": null,
-    "bytes": 17493778
+    "bytes": 17493778,
+    "metrics_asked": [
+      "rf"
+    ],
+    "metrics_ready": [
+      "rf"
+    ],
+    "metrics_failed": {},
+    "threads_verified": 2
   },
   {
     "leaves": 564640,
-    "id": "7019ce8c4a43__851105db5e2f",
-    "upload_s": 0.08403545798501,
-    "build_s": 250.99756529199658,
-    "total_s": 251.0816007499816,
+    "id": "f07d7149d60b__fcaef373f595",
+    "upload_s": 0.05047845793887973,
+    "build_s": 242.60293429205194,
+    "total_s": 242.65341274999082,
     "status": "ready",
     "error": null,
-    "bytes": 35481634
+    "bytes": 35481634,
+    "metrics_asked": [
+      "rf"
+    ],
+    "metrics_ready": [
+      "rf"
+    ],
+    "metrics_failed": {},
+    "threads_verified": 2
   }
 ]

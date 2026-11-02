@@ -1,0 +1,4 @@
+{
+ "chrome_update": "Chrome then updated itself to 156.0.8078.74 at 19:23:03 local time, 79 seconds later (the framework's version folder and `Info.plist` carry that time), which was before the first browser step at 20:27.",
+ "ceiling_rerun": "The ceiling step hung after its 660 s deadline, because `ceiling.mjs` does not close the browser when the deadline fires, and the campaign's Chrome was stopped by hand. Its first pass is kept as `ceiling_first_pass.json`. The rungs from 70,580 up were then measured again, one process each, and those are the rows here."
+}

@@ -1,55 +1,138 @@
 {
   "threads": 2,
+  "metrics": [
+    "rf"
+  ],
   "rungs": [
     {
       "leaves": 1000,
-      "build_s": 0.5466745829908177,
-      "status": "ready"
+      "build_s": 2.0642310000257567,
+      "status": "ready",
+      "threads_verified": 2,
+      "metrics_asked": [
+        "rf"
+      ],
+      "metrics_ready": [
+        "rf"
+      ],
+      "metrics_failed": {}
     },
     {
       "leaves": 2500,
-      "build_s": 2.045887916989159,
-      "status": "ready"
+      "build_s": 2.0462217080639675,
+      "status": "ready",
+      "threads_verified": 2,
+      "metrics_asked": [
+        "rf"
+      ],
+      "metrics_ready": [
+        "rf"
+      ],
+      "metrics_failed": {}
     },
     {
       "leaves": 5000,
-      "build_s": 2.0507237919955514,
-      "status": "ready"
+      "build_s": 2.0504876249469817,
+      "status": "ready",
+      "threads_verified": 2,
+      "metrics_asked": [
+        "rf"
+      ],
+      "metrics_ready": [
+        "rf"
+      ],
+      "metrics_failed": {}
     },
     {
       "leaves": 10000,
-      "build_s": 2.043997832981404,
-      "status": "ready"
+      "build_s": 2.04807370796334,
+      "status": "ready",
+      "threads_verified": 2,
+      "metrics_asked": [
+        "rf"
+      ],
+      "metrics_ready": [
+        "rf"
+      ],
+      "metrics_failed": {}
     },
     {
       "leaves": 17645,
-      "build_s": 2.550691957992967,
-      "status": "ready"
+      "build_s": 2.556383332936093,
+      "status": "ready",
+      "threads_verified": 2,
+      "metrics_asked": [
+        "rf"
+      ],
+      "metrics_ready": [
+        "rf"
+      ],
+      "metrics_failed": {}
     },
     {
       "leaves": 35290,
-      "build_s": 3.5682032500044443,
-      "status": "ready"
+      "build_s": 3.5670481249690056,
+      "status": "ready",
+      "threads_verified": 2,
+      "metrics_asked": [
+        "rf"
+      ],
+      "metrics_ready": [
+        "rf"
+      ],
+      "metrics_failed": {}
     },
     {
       "leaves": 70580,
-      "build_s": 6.111662833020091,
-      "status": "ready"
+      "build_s": 6.110083832987584,
+      "status": "ready",
+      "threads_verified": 2,
+      "metrics_asked": [
+        "rf"
+      ],
+      "metrics_ready": [
+        "rf"
+      ],
+      "metrics_failed": {}
     },
     {
       "leaves": 141160,
-      "build_s": 17.249123625049833,
-      "status": "ready"
+      "build_s": 16.75470225000754,
+      "status": "ready",
+      "threads_verified": 2,
+      "metrics_asked": [
+        "rf"
+      ],
+      "metrics_ready": [
+        "rf"
+      ],
+      "metrics_failed": {}
     },
     {
       "leaves": 282320,
-      "build_s": 60.81202479201602,
-      "status": "ready"
+      "build_s": 60.2812205000082,
+      "status": "ready",
+      "threads_verified": 2,
+      "metrics_asked": [
+        "rf"
+      ],
+      "metrics_ready": [
+        "rf"
+      ],
+      "metrics_failed": {}
     },
     {
       "leaves": 564640,
-      "build_s": 262.5642518340028,
-      "status": "ready"
+      "build_s": 242.35883958393242,
+      "status": "ready",
+      "threads_verified": 2,
+      "metrics_asked": [
+        "rf"
+      ],
+      "metrics_ready": [
+        "rf"
+      ],
+      "metrics_failed": {}
     }
   ]
 }

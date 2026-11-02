@@ -1,0 +1,387 @@
+{
+  "browser": "Chrome 156.0.8078.74",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "budget_ms": 180000,
+  "attempt_ms": 660000,
+  "rows": [
+    {
+      "leaves": 1000,
+      "server_s": 2,
+      "phyloio": {
+        "ms": 4886,
+        "heap_bytes": 27405180,
+        "dom": {
+          "documents": 1,
+          "nodes": 8908,
+          "jsEventListeners": 5330
+        },
+        "phases": {
+          "fetch": 1.2999999523162842,
+          "parse": 17.800000071525574,
+          "layout": 145.10000002384186,
+          "paint": 184.39999997615814,
+          "postFetch": 347.3000000715256,
+          "total": 348.60000002384186,
+          "compareComplete": true,
+          "toCompare": 4882.800000071526
+        },
+        "drawn": {
+          "svg": 4,
+          "paths": 918,
+          "texts": 1436
+        },
+        "ok": true
+      },
+      "phylodelta": {
+        "ms": 234,
+        "heap_bytes": 3836236,
+        "dom": {
+          "documents": 1,
+          "nodes": 280,
+          "jsEventListeners": 191
+        },
+        "drawn": {
+          "canvases": 16,
+          "shown": [
+            "showing 50 of 1,000 leaves · 993 behind wedges",
+            "showing 50 of 1,000 leaves · 976 behind wedges"
+          ]
+        },
+        "ok": true
+      }
+    },
+    {
+      "leaves": 2500,
+      "server_s": 2.1,
+      "phyloio": {
+        "ms": 18349,
+        "heap_bytes": 100080568,
+        "dom": {
+          "documents": 1,
+          "nodes": 9662,
+          "jsEventListeners": 6344
+        },
+        "phases": {
+          "fetch": 1.4000000953674316,
+          "parse": 43.09999990463257,
+          "layout": 316,
+          "paint": 527.2000000476837,
+          "postFetch": 886.2999999523163,
+          "total": 887.7000000476837,
+          "compareComplete": true,
+          "toCompare": 18338.899999976158
+        },
+        "drawn": {
+          "svg": 4,
+          "paths": 1126,
+          "texts": 1748
+        },
+        "ok": true
+      },
+      "phylodelta": {
+        "ms": 228,
+        "heap_bytes": 3805592,
+        "dom": {
+          "documents": 1,
+          "nodes": 291,
+          "jsEventListeners": 191
+        },
+        "drawn": {
+          "canvases": 16,
+          "shown": [
+            "showing 50 of 2,500 leaves · 2,489 behind wedges",
+            "showing 50 of 2,500 leaves · 2,469 behind wedges"
+          ]
+        },
+        "ok": true
+      }
+    },
+    {
+      "leaves": 5000,
+      "server_s": 2,
+      "phyloio": {
+        "ms": 51888,
+        "heap_bytes": 291097172,
+        "dom": {
+          "documents": 1,
+          "nodes": 9836,
+          "jsEventListeners": 6568
+        },
+        "phases": {
+          "fetch": 1.399999976158142,
+          "parse": 90.5,
+          "layout": 710,
+          "paint": 951.6000000238419,
+          "postFetch": 1752.1000000238419,
+          "total": 1753.5,
+          "compareComplete": true,
+          "toCompare": 51878.200000047684
+        },
+        "drawn": {
+          "svg": 4,
+          "paths": 1166,
+          "texts": 1808
+        },
+        "ok": true
+      },
+      "phylodelta": {
+        "ms": 204,
+        "heap_bytes": 3815828,
+        "dom": {
+          "documents": 1,
+          "nodes": 273,
+          "jsEventListeners": 191
+        },
+        "drawn": {
+          "canvases": 16,
+          "shown": [
+            "showing 50 of 5,000 leaves · 4,983 behind wedges",
+            "showing 50 of 5,000 leaves · 4,993 behind wedges"
+          ]
+        },
+        "ok": true
+      }
+    },
+    {
+      "leaves": 10000,
+      "server_s": 2.1,
+      "phyloio": {
+        "ms": 200647,
+        "heap_bytes": 1181354448,
+        "dom": {
+          "documents": 1,
+          "nodes": 10166,
+          "jsEventListeners": 7008
+        },
+        "phases": {
+          "fetch": 1.399999976158142,
+          "parse": 228.30000007152557,
+          "layout": 1936.7999999523163,
+          "paint": 1892.8000000715256,
+          "postFetch": 4057.9000000953674,
+          "total": 4059.3000000715256,
+          "compareComplete": true,
+          "toCompare": 200636.20000004768
+        },
+        "drawn": {
+          "svg": 4,
+          "paths": 1254,
+          "texts": 1940
+        },
+        "ok": true
+      },
+      "phylodelta": {
+        "ms": 231,
+        "heap_bytes": 3808196,
+        "dom": {
+          "documents": 1,
+          "nodes": 271,
+          "jsEventListeners": 191
+        },
+        "drawn": {
+          "canvases": 16,
+          "shown": [
+            "showing 50 of 10,000 leaves · 9,982 behind wedges",
+            "showing 50 of 10,000 leaves · 9,996 behind wedges"
+          ]
+        },
+        "ok": true
+      }
+    },
+    {
+      "leaves": 17645,
+      "server_s": 2.6,
+      "phyloio": {
+        "ms": 608974,
+        "heap_bytes": 58654204,
+        "dom": {
+          "documents": 1,
+          "nodes": 6921,
+          "jsEventListeners": 3900
+        },
+        "phases": {
+          "fetch": 2.399999976158142,
+          "parse": 520.6000000238419,
+          "layout": 4675.800000071526,
+          "paint": 3515.1999999284744,
+          "postFetch": 8711.600000023842,
+          "total": 8714,
+          "compareComplete": false,
+          "toCompare": null
+        },
+        "drawn": {
+          "svg": 4,
+          "paths": 670,
+          "texts": 1061
+        },
+        "ok": true
+      },
+      "phylodelta": {
+        "ms": 227,
+        "heap_bytes": 3849852,
+        "dom": {
+          "documents": 1,
+          "nodes": 271,
+          "jsEventListeners": 191
+        },
+        "drawn": {
+          "canvases": 16,
+          "shown": [
+            "showing 50 of 17,645 leaves · 17,626 behind wedges",
+            "showing 50 of 17,646 leaves · 17,643 behind wedges"
+          ]
+        },
+        "ok": true
+      }
+    },
+    {
+      "leaves": 35290,
+      "server_s": 3.1,
+      "phyloio": {
+        "ms": 623711,
+        "heap_bytes": 115524408,
+        "dom": {
+          "documents": 1,
+          "nodes": 6506,
+          "jsEventListeners": 3744
+        },
+        "phases": {
+          "fetch": 3.600000023841858,
+          "parse": 998.3999999761581,
+          "layout": 15249.699999928474,
+          "paint": 7209.400000095367,
+          "postFetch": 23457.5,
+          "total": 23461.100000023842,
+          "compareComplete": false,
+          "toCompare": null
+        },
+        "drawn": {
+          "svg": 4,
+          "paths": 640,
+          "texts": 1016
+        },
+        "ok": true
+      },
+      "phylodelta": {
+        "ms": 234,
+        "heap_bytes": 3850340,
+        "dom": {
+          "documents": 1,
+          "nodes": 270,
+          "jsEventListeners": 191
+        },
+        "drawn": {
+          "canvases": 16,
+          "shown": [
+            "showing 50 of 35,290 leaves · 35,272 behind wedges",
+            "showing 50 of 35,292 leaves · 35,289 behind wedges"
+          ]
+        },
+        "ok": true
+      }
+    },
+    {
+      "leaves": 70580,
+      "server_s": 6.7,
+      "phyloio": {
+        "ok": false,
+        "failed": "phylo.io exceeded 660s"
+      },
+      "phylodelta": {
+        "ms": 1353,
+        "heap_bytes": 3871696,
+        "dom": {
+          "documents": 1,
+          "nodes": 270,
+          "jsEventListeners": 191
+        },
+        "drawn": {
+          "canvases": 16,
+          "shown": [
+            "showing 50 of 70,580 leaves · 70,562 behind wedges",
+            "showing 50 of 70,584 leaves · 70,581 behind wedges"
+          ]
+        },
+        "ok": true
+      }
+    },
+    {
+      "leaves": 141160,
+      "server_s": 16.9,
+      "phyloio": {
+        "ok": false,
+        "failed": "page.evaluate: Target crashed "
+      },
+      "phylodelta": {
+        "ms": 237,
+        "heap_bytes": 3811768,
+        "dom": {
+          "documents": 1,
+          "nodes": 268,
+          "jsEventListeners": 191
+        },
+        "drawn": {
+          "canvases": 16,
+          "shown": [
+            "showing 50 of 141,160 leaves · 141,144 behind wedges",
+            "showing 50 of 141,168 leaves · 141,165 behind wedges"
+          ]
+        },
+        "ok": true
+      }
+    },
+    {
+      "leaves": 282320,
+      "server_s": 59.7,
+      "phyloio": {
+        "ok": false,
+        "failed": "page.evaluate: Target crashed "
+      },
+      "phylodelta": {
+        "ms": 250,
+        "heap_bytes": 3822324,
+        "dom": {
+          "documents": 1,
+          "nodes": 266,
+          "jsEventListeners": 191
+        },
+        "drawn": {
+          "canvases": 16,
+          "shown": [
+            "showing 50 of 282,320 leaves · 282,306 behind wedges",
+            "showing 50 of 282,336 leaves · 282,333 behind wedges"
+          ]
+        },
+        "ok": true
+      }
+    },
+    {
+      "leaves": 564640,
+      "server_s": 242.6,
+      "phyloio": {
+        "ok": false,
+        "failed": "phylo.io exceeded 660s"
+      },
+      "phylodelta": {
+        "ms": 625,
+        "heap_bytes": 3850076,
+        "dom": {
+          "documents": 1,
+          "nodes": 262,
+          "jsEventListeners": 191
+        },
+        "drawn": {
+          "canvases": 16,
+          "shown": [
+            "showing 50 of 564,640 leaves · 564,630 behind wedges",
+            "showing 50 of 564,672 leaves · 564,669 behind wedges"
+          ]
+        },
+        "ok": true
+      }
+    }
+  ]
+}
