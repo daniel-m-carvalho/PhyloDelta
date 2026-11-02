@@ -20,7 +20,12 @@ import { start } from "./serve.mjs";
 
 const BENCH = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 const PORT = 8097;
+//: Given to the comparison itself. The page's `load()` waits 600 s unless told
+//: otherwise, and this used not to tell it, so a run described as 30 minutes
+//: stopped at 10 and reported that as completing (§34.21).
 const BUDGET_MS = Number(process.env.BENCH_BUDGET_S ?? 30 * 60) * 1000;
+//: Above paint plus the comparison, so that the budget is what ends a run.
+const OUTER_MS = BUDGET_MS + 5 * 60 * 1000;
 const RUNGS = (process.env.BENCH_RUNGS ?? "141160 282320").split(" ").map(Number);
 
 /**
@@ -76,17 +81,23 @@ for (const leaves of RUNGS) {
     await page.waitForFunction(() => window.__benchReady === true, undefined, { timeout: 120_000 });
     const phases = await Promise.race([
       page.evaluate(
-        ([a, b]) => window.__bench.load(a, b),
+        ([a, b, budget]) => window.__bench.load(a, b, budget),
         [`/trees/ladder/ladder-${String(leaves).padStart(6, "0")}-a.nwk`,
-         `/trees/ladder/ladder-${String(leaves).padStart(6, "0")}-b.nwk`],
+         `/trees/ladder/ladder-${String(leaves).padStart(6, "0")}-b.nwk`,
+         BUDGET_MS],
       ),
-      new Promise((_, reject) => setTimeout(() => reject(new Error("30 min budget")), BUDGET_MS)),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`${OUTER_MS / 60000} min limit`)), OUTER_MS),
+      ),
     ]);
     const drawn = await page.evaluate(() => ({
       paths: document.querySelectorAll("path").length,
       texts: document.querySelectorAll("text").length,
     }));
-    outcome = { ok: true, ms: Date.now() - t0, phases, drawn };
+    // `ok` is the comparison finishing. `load()` returning says only that the
+    // wait ended.
+    outcome = { ok: phases.compareComplete, ms: Date.now() - t0, phases, drawn };
+    if (!outcome.ok) outcome.why = `comparison unfinished after ${BUDGET_MS / 60000} min`;
   } catch (failed) {
     outcome = { ok: false, ms: Date.now() - t0, why: String(failed.message || failed).split("\n")[0] };
   } finally {
@@ -94,6 +105,7 @@ for (const leaves of RUNGS) {
   }
 
   outcome.leaves = leaves;
+  outcome.compare_budget_ms = BUDGET_MS;
   outcome.peak_renderer_mb = peak;
   results.push(outcome);
   writeFileSync(join(BENCH, "results", "endurance.json"), JSON.stringify(results, null, 2));
@@ -106,3 +118,6 @@ for (const leaves of RUNGS) {
   await browser.close().catch(() => {});
 }
 server.close();
+// The limit's timer outlives a run that ends early, and would hold the process
+// open for up to 35 minutes more.
+process.exit(0);

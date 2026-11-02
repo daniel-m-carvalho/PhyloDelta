@@ -3879,8 +3879,8 @@ earlier campaign this affected is not known, which is itself a reason the re-run
 * **Accuracy measured to 10,000 leaves only**, because beyond that their comparison does not finish
   inside the 600 s the accuracy runner allows, so the miss-rate trend is established over a narrow
   range. (It read 5,000 until the re-run of §34.11b, where the extra rung came free.)
-* **Two campaign runners have defects, recorded in §34.21 and not fixed at the tag**: `ceiling.mjs`
-  hangs after its deadline, and `endurance.mjs` does not give the comparison its 30 minutes.
+* **Two runners at the tag have defects, recorded and since fixed in §34.21**: `ceiling.mjs` hangs
+  after its deadline, and `endurance.mjs` does not give the comparison its 30 minutes.
 
 ### 34.13 Why 500,000 leaves is not tested with real data
 
@@ -4373,6 +4373,11 @@ refused at the end, and that refusal stands in `environment.json`.
 * `endurance.mjs`: it never passes a compare budget, so `load()` stops at 600 s inside a run described
   as 30 minutes, and `ok` then reads as completed. Table 4 reads `compareComplete` instead, and the 30
   minutes were then actually given to the comparison.
+
+Both are fixed after the tag, and nothing published changes. `withDeadline` now lives in `browser.mjs`
+and closes the attempt's browsers when it fires, for `navigation.mjs` and `transfer.mjs` too, which
+carried the same wrapper. The ceiling attempt is derived from the steps it bounds, 840 s. `endurance.mjs`
+passes its budget to `load()`, and its `ok` now means the comparison finished.
 
 **Four checks ran after the campaign, from the same tag**, each in its own file: `accuracy_repeats.json`,
 `phyloio_paint_extra.json`, `endurance_extra.json`, `phyloio_long_compare.json`. The last uses

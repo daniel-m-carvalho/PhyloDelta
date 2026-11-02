@@ -33,7 +33,7 @@
 import { writeFileSync, readFileSync, existsSync, mkdirSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { launch, versionOf } from "./browser.mjs";
+import { launch, versionOf, withDeadline } from "./browser.mjs";
 import { start } from "./serve.mjs";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
@@ -99,8 +99,8 @@ function nwk(leaves, side) {
 
 /* ------------------------------------------------------------------ phylo.io */
 
-async function runPhyloio(leaves) {
-  const browser = await launch();
+async function runPhyloio(launchOwned, leaves) {
+  const browser = await launchOwned();
   const page = await browser.newPage({ viewport: VIEWPORT });
   try {
     await page.goto(`http://localhost:${PORT}/harness/navigation.html`, { timeout: LOAD_MS });
@@ -317,8 +317,8 @@ async function openComparison(page, pairId) {
  * differs between the pair, which is the only way its contribution can be
  * attributed to it.
  */
-async function runPhylodelta(pairId) {
-  const browser = await launch();
+async function runPhylodelta(launchOwned, pairId) {
+  const browser = await launchOwned();
   const page = await browser.newPage({ viewport: VIEWPORT });
   try {
     await openComparison(page, pairId);
@@ -467,19 +467,9 @@ async function runPhylodelta(pairId) {
 
 /* --------------------------------------------------------------------- run */
 
-function withDeadline(promise, ms, label) {
-  let timer;
-  return Promise.race([
-    promise.finally(() => clearTimeout(timer)),
-    new Promise((_, reject) => {
-      timer = setTimeout(() => reject(new Error(`${label} exceeded ${ms / 1000}s`)), ms);
-    }),
-  ]);
-}
-
 async function attempt(label, fn) {
   try {
-    return await withDeadline(fn(), ATTEMPT_MS, label);
+    return await withDeadline(fn, ATTEMPT_MS, label);
   } catch (failed) {
     return { ok: false, failed: String(failed.message || failed).split("\n")[0] };
   }
@@ -515,8 +505,8 @@ try {
       say(`${leaves.toLocaleString().padStart(8)}  not built — skipped`);
       continue;
     }
-    const phyloio = await attempt("phylo.io", () => runPhyloio(leaves));
-    const phylodelta = await attempt("phylodelta", () => runPhylodelta(rung.id));
+    const phyloio = await attempt("phylo.io", (owned) => runPhyloio(owned, leaves));
+    const phylodelta = await attempt("phylodelta", (owned) => runPhylodelta(owned, rung.id));
 
     rows.push({ leaves, pair: rung.id, phyloio, phylodelta });
     // Appended as it goes. The first version wrote only at the end, and the
@@ -550,3 +540,4 @@ writeFileSync(
   ),
 );
 say(`\nwritten to results/navigation.json`);
+process.exit(0);
