@@ -79,7 +79,7 @@ The script checks found no contradiction between Tables 1, 2, 3, 7, 8, 9 and 23.
   at 70,580 and 564,640, and the comparison given 30 minutes. The last is `endurance.mjs` with the budget
   passed, which is not at the tag, so that one runner is a one-line variant.
 * **`endurance.mjs` reported `70,580 COMPLETED in 675s` falsely.** `compareComplete` was false. Table 4 reads
-  that field. The defects in it and `ceiling.mjs` are not fixed, because the harness is what the tag ran.
+  that field. It and `ceiling.mjs` keep their defects at the tag, and are fixed after it (§34.21).
 * **Not re-measured:** `mast_memory.json` and `thread_builds_2_hot.json`, which the campaign does not
   produce, and the mid-sized-clade breakdown of misses in §34.4.
 * **Not edited:** the thesis LaTeX. `CLAUDE.md` still says accuracy reaches 5,000 and phylo.io is n=1.

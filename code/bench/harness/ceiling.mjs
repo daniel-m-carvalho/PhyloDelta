@@ -23,7 +23,7 @@
 import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { launch, versionOf } from "./browser.mjs";
+import { launch, versionOf, withDeadline } from "./browser.mjs";
 import { start } from "./serve.mjs";
 import { attach, heapBytes, domCounters } from "./metrics_cdp.mjs";
 
@@ -36,27 +36,19 @@ const PORT = 8099;
 //: not to discover where an impatient timeout was set.
 const BUDGET_MS = 180_000;
 
-//: Hard ceiling on one (tool, rung) attempt, INCLUDING instrumentation. The
-//: per-step Playwright timeouts do not cover a CDP call, which is how the
-//: first version stalled for 44 minutes inside a forced GC.
-const ATTEMPT_MS = 660_000;
-
 //: How long phylo.io's comparison worker is given after it has painted.
 const COMPARE_MS = 600_000;
+
+//: Hard ceiling on one (tool, rung) attempt, INCLUDING instrumentation. The
+//: per-step Playwright timeouts do not cover a CDP call, which is how the
+//: first version stalled for 44 minutes inside a forced GC. Above the steps it
+//: bounds: at 660 s it was shorter than 70,580 leaves' 75 s paint plus the
+//: comparison, so that rung reported the limit and not the tool (§34.21).
+const ATTEMPT_MS = BUDGET_MS + COMPARE_MS + 60_000;
 
 /** Unbuffered: a run this long is useless if its progress is invisible. */
 function say(line) {
   writeFileSync(1, line + "\n");
-}
-
-function withDeadline(promise, ms, label) {
-  let timer;
-  return Promise.race([
-    promise.finally(() => clearTimeout(timer)),
-    new Promise((_, reject) => {
-      timer = setTimeout(() => reject(new Error(`${label} exceeded ${ms / 1000}s`)), ms);
-    }),
-  ]);
 }
 
 const VIEWPORT = { width: 1440, height: 900 };
@@ -83,8 +75,8 @@ async function measure(page, client, run) {
 }
 
 /** phylo.io: load both Newick files and let it build its SVG. */
-async function runPhyloio(rung) {
-  const browser = await launch();
+async function runPhyloio(launchOwned, rung) {
+  const browser = await launchOwned();
   const page = await browser.newPage({ viewport: VIEWPORT });
   const client = await attach(page);
   try {
@@ -108,8 +100,8 @@ async function runPhyloio(rung) {
 }
 
 /** PhyloDelta: open the comparison and wait for both panels to report a slice. */
-async function runPhylodelta(rung) {
-  const browser = await launch();
+async function runPhylodelta(launchOwned, rung) {
+  const browser = await launchOwned();
   const page = await browser.newPage({ viewport: VIEWPORT });
   const client = await attach(page);
   try {
@@ -143,7 +135,7 @@ async function runPhylodelta(rung) {
 
 async function attempt(label, fn) {
   try {
-    return await withDeadline(fn(), ATTEMPT_MS, label);
+    return await withDeadline(fn, ATTEMPT_MS, label);
   } catch (failed) {
     const why = String(failed.message || failed).split("\n")[0];
     return { ok: false, failed: /Timeout|timeout/.test(why) ? `timeout >${BUDGET_MS / 1000}s` : why };
@@ -181,8 +173,8 @@ try {
       a: `ladder-${String(rung.leaves).padStart(6, "0")}-a.nwk`,
       b: `ladder-${String(rung.leaves).padStart(6, "0")}-b.nwk`,
     };
-    const phyloio = await attempt("phylo.io", () => runPhyloio(spec));
-    const phylodelta = await attempt("phylodelta", () => runPhylodelta(spec));
+    const phyloio = await attempt("phylo.io", (owned) => runPhyloio(owned, spec));
+    const phylodelta = await attempt("phylodelta", (owned) => runPhylodelta(owned, spec));
 
     const row = { leaves: rung.leaves, server_s: +rung.build_s.toFixed(1), phyloio, phylodelta };
     rows.push(row);
@@ -217,3 +209,4 @@ writeFileSync(
   ),
 );
 say(`\nwritten to results/ceiling.json`);
+process.exit(0);

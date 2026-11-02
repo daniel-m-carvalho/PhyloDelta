@@ -249,6 +249,10 @@ def fmt(value, unit="", nd=1, dash="—"):
     return dash if value is None else f"{value:,.{nd}f}{unit}"
 
 
+#: The ceiling attempt's limit, as that run recorded it.
+OVER_ATTEMPT = f"over {ceiling.get('attempt_ms', 0) / 1000:.0f} s"
+
+
 def phyloio_reading(row):
     """phylo.io at one rung, from the runner that measured it best.
 
@@ -269,7 +273,7 @@ def phyloio_reading(row):
             "paths": r["paths_median"], "dom": r["dom_nodes_median"], "phases": None,
         }
     if not p.get("ok"):
-        why = "crashed" if "crashed" in p["failed"] else "over 660 s"
+        why = "crashed" if "crashed" in p["failed"] else OVER_ATTEMPT
         return {"ok": False, "why": why, "n": 0, "of": 1}
     ph = p.get("phases") or {}
     return {
@@ -424,7 +428,7 @@ print("**PhyloDelta's column is the median of six samples** (Table 7), taken bef
       "the overlap is the setting of those readings and not an isolated cause. phylo.io "
       "is one load per rung, except 17,645, 35,290 and 70,580 (marked †), which are the "
       "median of three from Table 23.\n")
-print("*`over 660 s` is the attempt's budget, not a failure of the tool: its renderer "
+print(f"*`{OVER_ATTEMPT}` is the attempt's budget, not a failure of the tool: its renderer "
       "was still working when the attempt ended (Table 4). `crashed` is the "
       "renderer's own failure. `did not finish in 600 s` is the budget this table "
       "gives the comparison; Table 4 gives it 30 minutes.*\n")
@@ -511,11 +515,12 @@ if endurance:
         ph = r.get("phases") or {}
         if ph.get("compareComplete"):
             outcome = "comparison finished"
-        elif r.get("ok"):
-            # The page's load() waits 600 s unless told otherwise, and
-            # endurance.mjs does not tell it, so `ok` here is that wait ending.
+        elif ph:
+            # Runs at v0.1.0 left the page's load() at its default wait and
+            # called its end `ok`, so these rows carry no budget of their own.
+            waited = r.get("compare_budget_ms", 600_000) / 1000
             outcome = (f"painted in {ph['postFetch'] / 1000:.0f} s; **comparison unfinished "
-                       "when the page's own 600 s wait ended**")
+                       f"when the page's own {waited:.0f} s wait ended**")
         elif "crashed" in r.get("why", ""):
             outcome = "**renderer process crashed**"
         else:

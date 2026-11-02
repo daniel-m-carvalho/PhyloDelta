@@ -38,7 +38,7 @@
 import { writeFileSync, readFileSync, existsSync, mkdirSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { launch, versionOf } from "./browser.mjs";
+import { launch, versionOf, withDeadline } from "./browser.mjs";
 import { start } from "./serve.mjs";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
@@ -114,8 +114,8 @@ function nwk(leaves, side) {
   return `/trees/ladder/ladder-${String(leaves).padStart(6, "0")}-${side}.nwk`;
 }
 
-async function runPhyloio(leaves) {
-  const browser = await launch();
+async function runPhyloio(launchOwned, leaves) {
+  const browser = await launchOwned();
   const page = await browser.newPage({ viewport: VIEWPORT });
   const counted = meter(page);
   try {
@@ -140,8 +140,8 @@ async function runPhyloio(leaves) {
   }
 }
 
-async function runPhylodelta(pairId) {
-  const browser = await launch();
+async function runPhylodelta(launchOwned, pairId) {
+  const browser = await launchOwned();
   const page = await browser.newPage({ viewport: VIEWPORT });
   const counted = meter(page);
   try {
@@ -173,19 +173,9 @@ async function runPhylodelta(pairId) {
   }
 }
 
-function withDeadline(promise, ms, label) {
-  let timer;
-  return Promise.race([
-    promise.finally(() => clearTimeout(timer)),
-    new Promise((_, reject) => {
-      timer = setTimeout(() => reject(new Error(`${label} exceeded ${ms / 1000}s`)), ms);
-    }),
-  ]);
-}
-
 async function attempt(label, fn) {
   try {
-    return await withDeadline(fn(), FETCH_MS, label);
+    return await withDeadline(fn, FETCH_MS, label);
   } catch (failed) {
     return { ok: false, failed: String(failed.message || failed).split("\n")[0] };
   }
@@ -231,8 +221,8 @@ try {
   for (const rung of built.filter(
     (r) => r.status === "ready" && (only === null || r.leaves === only),
   )) {
-    const phyloio = await attempt("phylo.io", () => runPhyloio(rung.leaves));
-    const phylodelta = await attempt("phylodelta", () => runPhylodelta(rung.id));
+    const phyloio = await attempt("phylo.io", (owned) => runPhyloio(owned, rung.leaves));
+    const phylodelta = await attempt("phylodelta", (owned) => runPhylodelta(owned, rung.id));
 
     const row = { leaves: rung.leaves, pair: rung.id, phyloio, phylodelta };
     rows.push(row);
@@ -262,3 +252,4 @@ writeFileSync(
   JSON.stringify({ browser: BROWSER, viewport: VIEWPORT, compressed: GZIP, rows: merged }, null, 2),
 );
 say(`\nwritten to results/transfer${suffix}.json`);
+process.exit(0);
