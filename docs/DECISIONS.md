@@ -642,9 +642,10 @@ work done once, offline, and neither is on the request path. RF itself and the e
 are identical under both, exactly as the theory predicts, which is itself a useful check.
 
 **Provenance.** The measure itself — best corresponding node by maximum Jaccard overlap — is
-**adopted from Phylo.io** (`worker_bcn.js`), not original here; see *References and provenance*.
-What differs is that Phylo.io approximates the candidate set with MinHash/LSH in the browser, while
-this is exact and computed offline.
+**TreeJuxtaposer's** (Munzner et al. 2003, §3), reached here through Phylo.io (`worker_bcn.js`),
+which cites it for the score; not original here, see *References and provenance*. What differs is
+that Phylo.io approximates the candidate set with MinHash/LSH in the browser, while this is exact
+and computed offline.
 
 **Implementation.** For a clade `A` and a candidate `C`, `|A n C|` is the count of A's taxa falling
 in C's contiguous leaf range - two binary searches. Evaluating every candidate at once with numpy
@@ -5370,6 +5371,393 @@ an absent variable. Empty, it became an empty list, the server started normally,
 login was refused as "That token is not valid for this service". It now reads empty as `RS256`,
 and an empty algorithm list is refused at start by name.
 
+## 52. Each metric declares its correspondence
+
+*Code: `metrics/contract.py`, `metrics/registry_pairs.py`, `metrics/project.py`, the comparison
+and tree slice routes, `metrics/plugins/mast/`, `web/src/comparison/metric.ts`. Brief:
+`.claude/handoff/per-metric-correspondence.md`.*
+
+**Decision.** A metric's `metric.json` says what colours its view and links its two panels:
+`"correspondence": "jaccard"`, the shared best-corresponding-clade search (§9.1), which is the
+default, or `"self"`, a pairing the metric's own computation produces. A slice asks for one with
+`correspondence=shared` (the default, exactly what was served before) or `correspondence=metric`
+(whatever the requested metric declares). MAST is the first metric with its own.
+
+**Why.** A comparison view shows two things: the metric's number, and a correspondence — per node,
+a score for its branch colour and a counterpart in the other tree, which the jump and the linked
+highlight follow. Until now the second was always Jaccard, whatever the number was. So the colours
+said "leaf-set overlap with the best matching clade" while the header said moved leaves, and the
+two could disagree. §9.1 was right that the search should not be rewritten per metric, and it
+still is not. What it got wrong was treating one correspondence as the only one. The supervisor's
+answer to the plan (2026-11-06) set what this has to show: that the solution is **adaptable and
+supports several metrics**.
+
+**The contract.**
+
+* `correspondence` is one of `jaccard` and `self`. Anything else is refused by name, with the
+  names that exist. A misspelt `"self"` read as the default would colour the trees by something
+  the metric never said.
+* `self` means the metric returns two **reserved columns**, `similarity` (`float32`, semantics
+  `ratio`) and `corresponds` (`uint32`, semantics `index`). They have the shared correspondence's
+  meaning and storage, so every reader handles both the same way. The manifest must declare both,
+  with exactly those types. A metric that doesn't declare `self` may not use either name, so no
+  name means two things.
+* The scaling rule is the shared one's: a value at **every** node, for its whole subtree, so a
+  collapsed wedge is drawn from its own row at any tree size (§5).
+
+**Storage: in the metric's own directory, not a new one.** The brief proposed
+`pairs/<id>/correspondence@<name>/`. That was dropped once the contract made the two columns
+ordinary metric columns. They are written, versioned, projected and deleted with the metric that
+produced them. A new directory kind would have needed its own listing, retention and
+`available()` exclusion: §10.5 is the bug that exclusion already caused once. The only new step is
+in `project()`: a `corresponds` column points into the *other* tree, so it is translated through
+that tree's index exactly as the shared one is. The reserved name is what makes that safe.
+
+**Serving.**
+
+* `registry_pairs.correspondence_for` is the one place that decides. `shared` is always the pair's
+  Jaccard. `metric` is Jaccard again for a metric that declares it, and the metric's own columns
+  for one that declares `self`.
+* The response names what it served: `comparison.correspondence` is `"jaccard"` or the metric's
+  name. A metric's own two columns are served in `similarity` and `corresponds`, never again under
+  `columns`.
+* `order=difference` ranks by the correspondence being served, cached per (pair, side,
+  correspondence). "Most different first" then means what that metric calls different.
+* A stored result computed before its metric declared `self` is refused with **409
+  `correspondence_not_computed`**, naming the `compute-pairs` command. It is never served from
+  Jaccard instead: the view would then say it showed the metric's pairing while showing another.
+  The shared correspondence of the same pair is untouched. MAST's version stays `1`, because its
+  numbers mean what they did, so a deployed store keeps working as it was. Only the new view needs
+  `compute-pairs --metric mast` once.
+
+**MAST's own correspondence.** The agreement subtree is itself a pairing:
+
+* a clade's `similarity` is the share of its leaves in the agreement subtree (1 wholly kept, 0
+  wholly moved; a leaf's own 1 or 0);
+* its counterpart is the LCA, in the other tree, of its kept leaves. A clade that keeps none is
+  linked by all its leaves, so a jump from it lands where they are; its 0 already says MAST does
+  not pair it. A leaf is linked to itself, kept or moved.
+
+The LCA of a leaf set is the LCA of its first and last leaf in the other tree's order. So one fold
+up the tree for the lowest and highest kept position, and one vectorised LCA query, give every
+node's counterpart.
+
+**One comparison is one metric (Daniel, 2026-11-07).** The first version of the view offered a
+metric's own correspondence as one more entry under "Colour the trees by", beside the shared
+divergence and MAST's leaf view. Shown to Daniel, it was the wrong model: MAST appeared twice, the
+header could read RF while the trees showed MAST, and the upload form treated MAST as an extra
+ticked beside "the" metric. MAST and SPR are metrics in their own right, so a comparison is made
+by **one** metric and is read only as that metric declares:
+
+* **Listing:** `/datasets` lists a pair once **per metric** (`PairSummary.metric`). A metric that
+  declined is listed as its own failed comparison, with the reason in `error`. The store and the
+  row are unchanged: a pair computed with several metrics is still one directory and one row,
+  listed several times. `DELETE …?metric=` removes one metric's comparison and keeps the pair's
+  others, while the last one takes the trees with it as before. The demo is one example per
+  metric (§53).
+* **Upload:** one **Metric** list, MAST in it like any other. The "Also find moved leaves" checkbox
+  is gone.
+* **What colours the trees** is declared by the metric: `presentations` in `metric.json`, each
+  `gradient` (the branches, by the metric's correspondence) or `categories` (each leaf by one
+  or more disjoint `count` columns, 0 or 1 at a leaf: `categories[0]` names a leaf in none,
+  `categories[i]` a leaf in `columns[i-1]`; a collapsed clade by how many of its leaves are in
+  each, and coloured by the last it holds any of). Colours are spread over the ramp, so two
+  categories are its blue and yellow ends, three add its middle teal. A metric that declares none gets one gradient, from its correspondence: "Divergence" for the
+  shared one. The View menu offers **exactly** these, plus Nothing. RF offers
+  Divergence. MAST offers "Share of each clade kept" (branches) and "Kept or moved" (leaves): its
+  leaf view, which was MAST code in the web app (§46), is now this declaration, and the web code
+  names no metric.
+* **The header** shows the comparison's own metric: `headline` in the manifest names the scalar
+  and what it is out of (MAST: moved of `n_leaves`, "Moved leaves 14,736 of 17,645"). RF's and
+  triplet's special cases stay.
+* **Slices** are always asked under the comparison's metric with `correspondence=metric`, so the
+  colours and the jump both follow what that metric declares. `correspondence=shared` remains the
+  API default, for clients that never ask.
+* **URL:** `m=<metric>` names the comparison, `cb=<presentation>` the colouring. Old links still
+  open as meant: `mv=1` is MAST by its leaves, `own=mast` MAST by its branches, `g=0` nothing.
+
+**Evidence that it is adaptable, asserted rather than argued.**
+
+* **A metric nobody wrote server code for:** `test_a_new_metric_brings_its_own_correspondence_with_no_server_code`
+  adds a plugin directory, a manifest and one function, to a copy of the shipped plugins. Through
+  the real upload, worker and routes, it is listed by `/api/metrics` as `self`, computed, served
+  with `correspondence: "toy"` and its own values, and ordered by its own similarity. No line of
+  server code knows its name.
+* **A metric the web code has never heard of:** `metric.test.ts` gives `quillwort`, an invented
+  name, its declared presentations and its declared headline, from the declaration alone.
+* **One comparison per metric, through the API:** a pair uploaded with `rf,mast` is listed as two
+  comparisons. A declined MAST is listed as a failed comparison with its reason. Deleting MAST's
+  keeps RF's, deleting a metric the pair lacks is refused by name, and deleting the last takes the
+  trees. A malformed presentation (an unknown kind, a categories column that is not a count, no
+  category labels, a repeated name) is refused by name.
+* **Nothing changed for what existed:** a slice without the parameter is identical to one with
+  `correspondence=shared`. A metric that declares Jaccard serves the same values under either.
+  The 588 existing server tests and 189 web tests pass unchanged.
+* **MAST's pairing is the one its definition gives:** on 60 random pairs of 14 leaves, every node
+  of both trees scores its share of kept leaves and points at the *smallest* clade of the other
+  tree holding them.
+* **On the demo pair (17,645 leaves):** MAST takes 7.0 s with its correspondence, as it did without
+  (§46). Its stored result grows from ~280 KB to 828 KB, the two columns' 8 B/node/side. The root
+  scores 0.165, i.e. 2,909 of 17,645 leaves kept. `tools/validate_navigation.py` passes under both
+  correspondences: every leaf of both trees jumped both ways, 0 mislabelled, 0 under the 20-leaf
+  floor, 0 not drawn. (The tool had been broken since §40 added `around`, a parameter it never
+  passed to the route function. It now passes every parameter, and takes a metric name to jump by
+  that metric's own correspondence.)
+* **In the browser:** the home screen lists one comparison per metric (§53). The MAST comparison heads "Moved leaves 14,736 of 17,645" and offers only its two
+  colourings and Nothing. Its branches go mostly to the diverged end, as an agreement subtree
+  holding 16% of the leaves says they should. The RF comparison heads "RF 13,650" and offers
+  Divergence and Nothing. A jump under MAST's correspondence lands on the leaf and marks it.
+* **The walks** (seed 11, 200 steps; both harness scripts now strip a view query such as `?m=mast`
+  from the pair before reading the tree ids): `check_marks.mjs` lights the node the slice names at
+  every step on the RF and on the MAST comparison. Under the shared and the MAST correspondence,
+  `measure_requests.mjs` counted 176 requests either way, step kind for step kind. MAST's own
+  correspondence costs no request the shared one does not.
+
+| what adding a metric takes | before | now |
+|---|---|---|
+| a number only (rf-treediff) | a directory with `metric.json` (§11) | the same |
+| a number and per-node columns (RF, MAST) | the directory, plus its function | the same |
+| its own colouring and pairing | not possible: the view was always Jaccard | the same directory, `"correspondence": "self"` and two more columns; **no server or web code** |
+| its own leaf view | MAST-only web code (§46) | a `categories` presentation over a `count` column in its manifest |
+| its own number in the header | RF and triplet only, by name in the web code | `headline` in its manifest |
+
+**Branches whose value says nothing are grey** (`min_leaves` on a gradient). A leaf always
+matches itself under Jaccard, is always one piece under SPR, and holds no triple; a clade of two
+holds no triple either. Each scores 1 by construction, so on the ramp it was strong blue: agreement
+that nothing measured, which "absent data must look absent" forbids. A gradient now declares the
+clade size below which its score says nothing — the shared Divergence 2, SPR's "How intact" 2,
+triplet's 3; MAST's "Share kept" 1, since a leaf's 0 or 1 there is its answer — and those branches
+are drawn grey with a legend row of their own ("A leaf: nothing to measure"), in the library as a
+third branch state beside a value and absent (`isUnmeasured`, `setUnmeasured`). It is checked
+after a missing value, so a leaf only one tree has stays red. Not NaN from the server, which
+already means "no counterpart". The exported report names it too.
+
+**Not done here.** The gradient legend's ends read "Identical" and "Diverged" for every metric, so the menu
+note is what says what the score means. The exported report does not
+yet say which correspondence coloured it. SPR is built (§53), and triplet's own correspondence
+(§54).
+
+### 52.1 Adding a metric: what it takes
+
+What is spread over §3.5, §9, §10.6, §11, §36, §42, §50 and this section, in one place, for
+someone adding the next one.
+
+1. **A directory** under `code/server/src/phylodelta/metrics/plugins/` holding `metric.json`.
+   `registry.discover()` finds it. There is no list to register it in.
+2. **The manifest** (`MetricManifest.from_json`, `metrics/contract.py`):
+   * required: `name`, `title`, and `kind`. `python` needs `entrypoint` (`"module:function"`).
+     `subprocess` needs `command`, with `input`, `parse` (regexes for the scalars) and
+     `timeout_s` (§11);
+   * `version`: bump it whenever the numbers' meaning changes. A stored result from another
+     version is refused with a 409, not served (§34.19);
+   * `description`, `capabilities`, and `reference` (one citation, by DOI or link, §42);
+   * `limits.memory`: a `"module:function"` estimating the bytes a pair needs. Above the
+     deployment's budget the pair is declined by name (§50);
+   * `outputs.summary` (labelled scalars) and `outputs.columns` (per-node: `name`, `dtype`,
+     `semantics`, `render`, `label`, `description`). A frontend can render a column it has never
+     seen from these;
+   * `correspondence`: `jaccard` (default) or `self`, with the two reserved columns (this section).
+   * `presentations`: how its result may colour the trees, `gradient` or `categories`; the View
+     menu offers exactly these (this section). Optional: without them it gets one gradient.
+   * `headline`: the summary `key` its comparison's header shows, `of`, what it is out of, and
+     `to`, when the number is a range (SPR, §53).
+   * `requires`: programs it runs, as paths (`${native}/rspr/rspr`). Where one is missing it is
+     listed as not installed, whatever its kind (§53).
+3. **What the code returns:** a `MetricResult` with the summary scalars and, per side, every
+   declared column at every node, in **reconciled** indexing. The pipeline projects onto the stored
+   trees; the metric never does. `validate_result` refuses a missing, extra or mistyped column
+   before anything is written. A metric that cannot run raises `MetricFailed` with a reason: the
+   comparison still succeeds, and the reason reaches the person who asked (§36).
+4. **What it gets for free:**
+   * reconciliation, and the leaf maps between the trees;
+   * the shared correspondence, as an input, and its view and ordering, if it brings none;
+   * projection, storage, slicing, `order=difference`;
+   * `/api/metrics`, the upload form's choice (§30), and the failure report;
+   * for a `python` metric, in-process speed. For `subprocess`, any language.
+5. **To make it live:** `phylodelta compute-pairs --metric <name>` on an existing store (repeatable
+   with other metrics; they share the shared work), or choose it when uploading. A worker computes
+   what the upload named. Each metric computed for a pair is listed as its own comparison.
+6. **Its tests:** an oracle where one exists (phangorn for MAST, TreeDiff for RF), small trees whose
+   answer is known by hand, and the shipped-manifest tests, which every manifest must already
+   satisfy (`test_metric_manifest.py`).
+
+## 53. SPR, a metric of its own, by rspr
+
+*Code: `metrics/plugins/spr/`, `native/build_rspr.sh`, the server `Dockerfile`. Measurements:
+`.claude/handoff/rspr-measurement/`.*
+
+**Decision.** `spr` is a metric: the rooted subtree-prune-and-regraft distance, with its agreement
+forest as its own correspondence. It is computed by **rspr** (Whidden; v1.3.1, commit `4530e11`,
+pinned), run as a separate program, and reported as a **range** unless the exact value is small
+enough to search. It is one of the four demo comparisons.
+
+**Why SPR, beside MAST.** MAST answers which leaves both trees arrange identically; SPR answers
+how many moves turn one tree into the other, and which leaves moved **together**. A clade of 100
+leaves that moved as one is 100 moved leaves to MAST and one move to SPR. For rooted trees,
+**rSPR = MAF − 1** (Bordewich & Semple 2005): cut both trees into the fewest blocks that each tree
+arranges identically, and every block beyond one is a move. Checked here before relying on it,
+by breadth-first search over every SPR move against brute-force forests: equal on all 12,250
+rooted pairs of 4–6 leaves. Unrooted it fails (uMAF − 1 is TBR, which was below uSPR on 180 of
+5,460 pairs of 6 leaves). `phangorn::SPR.dist`, which the supervisor's script uses, unroots both
+trees and estimates: it was below the exact unrooted SPR on 570 of 2,000 pairs, and below even TBR
+on 558. It is not this metric's oracle.
+
+**Why a range.** Exact rooted SPR is NP-hard. rspr's exact search is exponential in the
+distance, and did not finish in 600 s at 1,000, 2,500 or 5,000 leaves of the ladder, where the
+distance is at least 147. Its linear-time 3-approximation finds a forest of `a` blocks beyond the
+root's with `d ≤ a ≤ 3d`. So the metric reports `spr_lower = ⌈a/3⌉` (from the plain approximation,
+whose guarantee that is) and `spr_upper` = the best forest found (the plain or the quadratic
+`-cc` one). The header shows "SPR distance 1,905 to 5,653" on the demo pair, and one number when
+`exact` is true. The exact search is tried only when `spr_lower ≤ 100`, for at most 10 s; beyond
+that it cannot finish, and trying cost the demo pair 10 s for nothing.
+
+| leaves (ladder) | `-approx` a | `-cc` a | time | peak | SPR range | MAST moved |
+|---|---|---|---|---|---|---|
+| 1,000 | 441 | 429 | 0.01 s | 8 MB | 147–429 | 792 |
+| 2,500 | 1,018 | 1,007 | 0.03 s | 17 MB | 340–1,007 | 2,033 |
+| 5,000 | 1,850 | 1,835 | 0.05 s | 31 MB | 617–1,835 | 4,096 |
+| 10,000 | 3,451 | 3,415 | 0.09 s | 60 MB | 1,151–3,415 | 8,279 |
+| 17,645 (demo) | 5,714 | 5,653 | 0.23 s | 104 MB | 1,905–5,653 | 14,736 |
+| 564,640 | 182,848 | 180,896 | 8.5 s | 3.1 GB | — | — |
+
+(Apple M4, on battery, so indicative only. Rungs above 17,645 are synthetic, and `a` doubles
+exactly per rung, so they measure cost and not distance.) The whole metric, both rspr runs and
+the per-node columns, is **0.4 s** on the demo pair in the pipeline. Its upper bound is about 2.6×
+tighter than MAST's moved leaves, and unlike MAST it reaches 564,640 leaves. Memory is declared
+for the budget (§50) as 6 KB per leaf, from the 3.1 GB peak.
+
+**Reading rspr's output, checked rather than assumed.** Leaves are sent as `L0..Ln`, so no label
+can collide with Newick syntax or with `p`, which is how rspr prints the root when the root ends up
+in a block of its own. The root's block is the one holding `p`, else the first printed. That rule
+was checked on 1,020 forests (approximate, `-cc` and exact) of random pairs of 5–8 leaves: with the
+root added to the block it names, every forest is a valid agreement forest in both trees, and
+printed blocks always number the distance plus one. The metric's own tests then check every block
+of every forest it draws for agreement, rather than trusting rspr.
+
+**Per node.**
+
+* `similarity`, **how intact the clade is**: `1 − (pieces − 1) / (leaves − 1)`, where `pieces` is
+  how many blocks its leaves fall into; 1 in one piece, 0 with every leaf alone; a leaf is 1. The
+  blocks of an agreement forest are vertex-disjoint in each tree, so at most one block crosses the
+  branch above a clade: `pieces` = the blocks rooted inside it, plus one if any of its leaves
+  belong to a block rooted above. That makes it one prefix sum, not a set per clade.
+* `grouped` and `alone`: the same leaves split by the size of their block — a moved block of two
+  or more (moved together: what SPR says and MAST cannot) or of one (moved alone: what MAST would
+  also have said). Disjoint, so they add up to `moved`; on the demo pair 3,421 of the 5,654 blocks
+  are single leaves.
+* `moved`: the clade's leaves **outside the forest's largest block**; a leaf's 1 or 0. Not "outside
+  the root's block", as first written. On the demo pair the approximation left the root in a block
+  of its own, so every one of 17,645 leaves read as moved, which is true of that forest and says
+  nothing. SPR moves every block but one, and which one is where the root is put; the largest
+  block (448 leaves on the demo pair) is the backbone the view keeps. The number of moves stays
+  the summary's.
+* `corresponds`: the smallest clade of the other tree holding the clade's leaves; a leaf, itself.
+
+Presentations: "How intact each clade is" (branches; a leaf, always one piece, is grey) and
+"Largest block, moved together or moved alone" (leaves): four kinds of leaf — in the largest
+block (blue), moved with others (teal), moved alone (yellow), only in one tree (red) — from the
+`grouped` and `alone` columns. Version 2 of the metric, for those two columns.
+
+**Running it.** `spr` is a `python` metric that runs a program: the first such. It says so under a
+new manifest field, `requires` (`["${native}/rspr/rspr"]`), which `is_available` checks for any
+kind, so it is listed as not installed where rspr is not built, as TreeDiff's metrics are. rspr is
+GPL-3.0 and is never linked or vendored. `native/build_rspr.sh` fetches the pinned commit and
+compiles it without the Makefile's `-march=native`, which would tie the image to the build
+machine's CPU. The Dockerfile builds it and ships only the binary. `deploy/README.md` says to
+offer its source with a distributed image.
+
+**The demo is one example per metric** (Daniel, 2026-11-07): the vibrio NJ and UPGMA trees by RF,
+MAST, SPR and triplet. That pair is where a comparison means something (the same isolates, two
+methods). The cross-species clostridium pairs are no longer built for it, though uploading them
+still works. A metric whose program is not built is skipped, by name.
+
+**Tests** (`test_metric_spr.py`, 11):
+
+* the exact distance on small pairs, including one checked by breadth-first search;
+* the range holding the exact value when the approximation is forced;
+* on 25 random pairs of 16 leaves, every block agreeing in both trees, and every node's three
+  values matching their definitions;
+* the lower bound being ⌈a/3⌉;
+* labels never reaching rspr;
+* unavailable without rspr;
+* the demo's four metrics;
+* an upload by SPR listed as its own comparison and served with its own correspondence.
+
+**Not done.** A third leaf category, "moved alone" (3,421 single-leaf blocks on the demo pair),
+needs `categories` widened (§52). rspr's cluster reduction, which can make the exact search
+feasible on large but locally similar trees, is not used: its forests come per cluster and would
+need joining.
+
+## 54. Triplet's own correspondence, from TreeDiff's own counts
+
+*Code: `metrics/plugins/triplet_treediff/`, `native/patch_trip_sht_nodes.py`,
+`native/build_treediff.sh`. Measurements: `.claude/handoff/triplet-measurement/`.*
+
+**Decision.** `triplet` colours each clade by **the share of its own triples that both trees
+resolve alike**, as its own correspondence (§52): "Triplets grouped alike". Until now a triplet
+comparison showed the triplet number over Jaccard colours, which measure something else. The
+counts come from TreeDiff's `trip_sht` itself, patched to write what it already computes.
+
+**Why it is exact, and adds up.** A triple is decided at exactly one node of a tree: the smallest
+clade holding all three leaves, where two sit under one child and the third under the other. So
+the distance splits over the nodes. With `d(v)` the disagreeing triples decided at `v`, a clade's
+`D(A)` = the sum of `d` over its subtree is the triplet distance between the two trees restricted
+to its leaves. Its score is `1 − D(A) / C(|A|, 3)`. At the root that is 1 minus the normalised
+distance in the header, so the colours add up to the number. A clade of fewer than three leaves
+holds no triple and scores 1. Unlike Jaccard, a clade with exactly the same leaves in both trees
+can still score low: Jaccard sees its leaves together, triplets see them arranged differently.
+
+**Where the counts come from.** `trip_sht` walks the first tree with the smaller-half trick. At
+each node, once the smaller child's leaves are coloured, `values2[0]` is the number of triples
+decided there that the second tree resolves alike, and the program only adds those up. The patch
+records each one and writes them, one per node in pre-order, to the file named by a third
+argument. The printed distance is untouched. It is a script, not a diff (`patch_trip_sht_nodes.py`):
+the source has CRLF line endings, which a diff rewrote line by line, and each of its four
+replacements is asserted to apply exactly where expected, so an upstream change fails the build by
+name. `build_treediff.sh` builds `trip_sht_nodes` beside `trip_sht`, and the image ships it. The
+metric runs it once each way, for both trees' nodes, and refuses unless the per-node counts add up
+to the printed distance in both directions. Node numbering is `trip_sht`'s parse order of the
+Newick, which is our pre-order because we write the Newick (`spr._newick`).
+
+**Checked before building on it (the brief's gate).**
+
+* On 320 random pairs of 3–10 leaves, every node's count equals a brute-force count of the triples
+  decided there and resolved alike, and the counts sum to the distance.
+* On every ladder rung, reconciled as the metric receives them, the patched program prints the
+  original's distance, the counts sum to it, and it costs the same:
+
+| leaves | `trip_sht` | `trip_sht_nodes` | peak | distance |
+|---|---|---|---|---|
+| 1,000 | 0.03 s | 0.03 s | 2 MB | 81,869,156 |
+| 10,000 | 0.89 s | 0.87 s | 4 MB | 77,907,165,286 |
+| 17,645 (demo) | 2.24 s | 2.26 s | 5 MB | 427,072,406,574 |
+| 70,580 | 11.4 s | 11.3 s | 16 MB | 1,708,289,626,296 |
+| 564,640 | 109 s | 104 s | 116 MB | 13,666,317,010,368 |
+
+(Apple M4, on battery: indicative.) The metric runs it twice, so 4.4 s on the demo pair in the
+pipeline and about 3.5 min at 564,640 leaves, offline. The ladder files at 17,645 and above are
+raw, with ST 211 on one side only. `trip_sht` assumes identical leaf sets and aborts on them
+(`Assertion failed: (i < m_size)`), which is why the metric only ever gives it reconciled trees.
+
+**Triplet is no longer configuration only.** It was §11's example of a metric added without code,
+a manifest and a regex. Per-node counts are more than a scalar pattern can parse (§11.5), so it is
+now a `python` metric that runs a program, declared with `requires` like SPR (§53). The claim
+itself still holds and is still asserted, on `rf-treediff`, which is a manifest alone. The number
+is TreeDiff's, unchanged, so its version stays `1`. A deployed triplet result has no per-node
+columns and is refused by name (409) under the new view until `compute-pairs --metric triplet`
+recomputes it.
+
+**What it does not give.** A per-leaf share (the triples containing a leaf) is not in these counts,
+which are per node only. A clade of fewer than three leaves holds no triple and scores 1 by
+construction, so its branch is drawn grey, not blue (`min_leaves: 3`, §52).
+
+**Tests** (`test_metric_triplet.py`):
+
+* a moved leaf's two disagreeing triples, at the root and at the clade they sit in;
+* every clade of 20 random pairs of 9 leaves against brute force, both trees;
+* counts that do not add up are refused, and so is a non-binary tree;
+* the patch script applies to CRLF source and refuses a source it does not recognise.
+
 ---
 
 ## References and provenance
@@ -5391,7 +5779,8 @@ otherwise — none is quoted from memory.
 | **Quartet distance** | Estabrook, G.F.; McMorris, F.; Meacham, C.A. *Comparison of undirected phylogenetic trees based on subtrees of four evolutionary units.* Syst. Zool. **1985**, 34, 193–200 | candidate metric (§9.4) |
 | **Geodesic distance (BHV space)** | Billera, L.J.; Holmes, S.P.; Vogtmann, K. *Geometry of the space of phylogenetic trees.* Adv. Appl. Math. **2001**, 27, 733–767 — exact algorithm: Kupczok, A.; von Haeseler, A.; Klaere, S. J. Comput. Biol. **2008**, 15, 577–591 | candidate metric; scalar only (§9.3) |
 | **Succinct trees / balanced parentheses** | Navarro, G. *Compact Data Structures: A Practical Approach.* CUP **2016**; Navarro, G.; Sadakane, K. *Fully Functional Static and Dynamic Succinct Trees.* ACM Trans. Algorithms **2014**, 10, 1–39 | the representation the native core targets (§2.1) |
-| **Jaccard gradient + best corresponding node** | **the approach is Phylo.io's, adopted here** — Robinson, Dylus & Dessimoz (2016), implementation in `phylo-io/src/worker_bcn.js`. What differs is exactness and placement, not the idea (see below) | the similarity gradient (§9.1) |
+| **Best corresponding node and its similarity** | **the reference for the measure** — Munzner, T.; Guimbretière, F.; Tasiran, S.; Zhang, L.; Zhou, Y. *TreeJuxtaposer: Scalable Tree Comparison using Focus+Context with Guaranteed Visibility.* ACM Trans. Graph. **2003**, 22(3), 453–462 (SIGGRAPH 2003). doi:10.1145/882262.882291. §3 defines the similarity of two nodes as \|L(A) ∩ L(B)\| / \|L(A) ∪ L(B)\| over their leaf sets (the Jaccard index, which it takes from Broder's document resemblance) and a node's BCN as the node of the other tree maximising it, ties broken arbitrarily | the similarity gradient and the counterpart (§3, §9.1) |
+| **Jaccard gradient + best corresponding node, in a browser** | **the approach is Phylo.io's, adopted here** — Robinson, Dylus & Dessimoz (2016), implementation in `phylo-io/src/worker_bcn.js`. The paper attributes the score to TreeJuxtaposer (and to Bremm et al. 2011, *Interactive visual comparison of multiple trees*, IEEE VAST, 31–40) and gives no formula; the code is exact Jaccard over 10 MinHash/LSH candidates. What differs here is exactness and placement, not the idea (see below) | the similarity gradient (§9.1) |
 
 ### Implementations used
 
@@ -5400,11 +5789,12 @@ otherwise — none is quoted from memory.
 | **TreeDiff** | **conformance oracle**, run as an external process. Source study in §Next; **not linked**. **Pinned** to commit `1fa132a` (2024-01-14) in `native/build_treediff.sh`, the version every measurement used; its vendored sdsl-lite is a submodule, pinned with it | `github.com/pedroparedesbranco/TreeDiff` — the reference implementation of Branco et al. (2024) | **GPL-3.0** |
 | `rf_postorder`, `rf_nextsibling` | the two oracle binaries actually used | TreeDiff | GPL-3.0 |
 | `rf_day` | **rejected** as an oracle — returns 11,831 comparing a tree with itself (§2.5) | TreeDiff | GPL-3.0 |
-| `trip_treediff`, `trip_sht` | triplet distance; planned second metric (§9.4) | TreeDiff | GPL-3.0 |
+| `trip_treediff`, `trip_sht` | triplet distance (§9.4); `trip_sht_nodes`, patched here to write its per-node counts, is the `triplet` metric's program (§54) | TreeDiff | GPL-3.0 |
 | **sdsl-lite** (original) | what TreeDiff vendors; needed three patches to build (§2.2) | Gog, S.; Beller, T.; Moffat, A.; Petri, M. *From Theory to Practice: Plug and Play with Succinct Data Structures.* SEA **2014**. `github.com/simongog/sdsl-lite` | **GPL-3.0** |
 | **sdsl-lite v3** | **the library the native core will build against** (§Next) | `github.com/xxsds/sdsl-lite`, actively maintained | **BSD-3-Clause** |
 | **tqDist** | candidate for quartet distance | Sand, A.; Holt, M.K.; Johansen, J.; et al. *tqDist: a library for computing the quartet and triplet distances between binary or general trees.* Bioinformatics **2014**. doi:10.1093/bioinformatics/btu157 | to verify before use |
 | **GTP** / R `distory` | candidate for geodesic distance; natural `subprocess` metrics (§9.2) | GTP implements Owen & Provan; `distory` is on CRAN | to verify before use |
+| **rspr** | the `spr` metric, run as a separate program (§53). Pinned to commit `4530e11` (v1.3.1) in `native/build_rspr.sh` | `github.com/cwhidden/rspr`, by C. Whidden | **GPL-3.0** |
 | **Phylo.io** | the comparison target this project measures against | Robinson, O.; Dylus, D.; Dessimoz, C. *Phylo.io: Interactive Viewing and Comparison of Large Phylogenetic Trees on the Web.* Mol. Biol. Evol. **2016**. doi:10.1093/molbev/msw080 | — |
 | `phylodiff` | examined and **rejected** — its RF is incorrect (see *Corrections*) | — | — |
 
@@ -5420,7 +5810,10 @@ otherwise — none is quoted from memory.
 Recorded precisely because the distinction belongs in a contributions chapter and overclaiming there
 is a real error. **The per-clade similarity used in this project is Phylo.io's approach**: score each
 clade by the maximum Jaccard overlap of its leaf set against clades of the other tree, and colour by
-that score. This was taken from Phylo.io, not arrived at independently.
+that score. This was taken from Phylo.io, not arrived at independently. **The measure is not
+Phylo.io's own**: TreeJuxtaposer (Munzner et al. 2003, §3) defines both the score and the best
+corresponding node, and the Phylo.io paper cites it for them. Cite TreeJuxtaposer for the measure
+and Phylo.io for the browser approach this project is measured against.
 
 Their implementation, `phylo-io/src/worker_bcn.js:89-135`:
 

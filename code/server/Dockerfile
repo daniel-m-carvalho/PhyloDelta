@@ -47,9 +47,16 @@ RUN ./native/build_treediff.sh /app/native/TreeDiff \
 # Only the programs the metrics run, not the sources or sdsl: a directory that
 # exists whatever happened, so the COPY below never fails the build.
 RUN mkdir -p /app/treediff-bin \
- && for b in rf_postorder trip_sht; do \
+ && for b in rf_postorder trip_sht trip_sht_nodes; do \
       [ -x "/app/native/TreeDiff/$b" ] && cp "/app/native/TreeDiff/$b" /app/treediff-bin/ || true; \
     done
+
+# rspr, for the spr metric (§53). GPL-3.0 too, and run the same way: a separate
+# program, never linked. Optional: without it spr reports `available: false`.
+RUN ./native/build_rspr.sh /app/native/rspr \
+ || echo "rspr unavailable; spr will report available: false"
+RUN mkdir -p /app/rspr-bin \
+ && { [ -x /app/native/rspr/rspr ] && cp /app/native/rspr/rspr /app/rspr-bin/ || true; }
 
 # --- runtime ---------------------------------------------------------------
 FROM python:3.12-slim
@@ -69,6 +76,7 @@ COPY --from=build /app/pyproject.toml /app/README.md ./
 COPY --from=build /app/native/*.so /app/native/
 COPY --from=build /app/native/build.sh /app/native/
 COPY --from=build /app/treediff-bin/ /app/native/TreeDiff/
+COPY --from=build /app/rspr-bin/ /app/native/rspr/
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \

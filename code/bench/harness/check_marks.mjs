@@ -66,7 +66,9 @@ const settle = async () => {
 };
 
 // Leaves to jump to, per panel, straight from each tree's search.
-const [leftTree, rightTree] = PAIR.split("__");
+// The pair may carry view options for the URL, e.g. `a__b?m=mast` (§52);
+// the tree ids are the part before them.
+const [leftTree, rightTree] = PAIR.split("?")[0].split("__");
 const targets = await page.evaluate(
   async (trees) =>
     Promise.all(

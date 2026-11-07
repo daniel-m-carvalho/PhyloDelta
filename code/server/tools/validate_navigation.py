@@ -1,6 +1,11 @@
 """Exhaustive navigation + cross-tree jump validation.
 
 Calls the real route functions, so what is checked is what ships.
+
+    validate_navigation.py <pair> <left> <right> [metric]
+
+With a metric whose correspondence is its own (§52), the jumps follow that
+metric's `corresponds` instead of the shared one's.
 """
 import sys
 from collections import Counter
@@ -11,7 +16,7 @@ import numpy as np
 from phylodelta import config
 from phylodelta.api.routes_trees import tree_ancestor, tree_slice
 from phylodelta.metrics.contract import NO_CORRESPONDENCE
-from phylodelta.metrics.store import CorrespondenceReader
+from phylodelta.metrics.store import CorrespondenceReader, PairReader
 from phylodelta.trees.store import read_tree
 
 OWNER = "local"
@@ -27,8 +32,11 @@ def bad(msg):
 
 
 def slice_of(tree_id, root, budget, compare=None, keep=None):
+    # Called as a plain function, so every query parameter is passed: an
+    # omitted one would arrive as FastAPI's `Query(...)` marker, which is truthy.
     return tree_slice(tree_id=tree_id, root=root, budget=budget, compare=compare,
-                      metric="rf", order="size", keep=keep, owner=OWNER)
+                      metric="rf", order="size", keep=keep, around=None,
+                      min_leaves=MIN_LEAVES, correspondence="shared", owner=OWNER)
 
 
 def walk(tree_id, arrays, budget=500):
@@ -90,8 +98,12 @@ def check_tree(tree_id):
     return arrays
 
 
-def check_jumps(pair_id, left_id, right_id, L, R, shared):
-    corr = CorrespondenceReader(Path(config.STORE_DIR) / "pairs" / pair_id / "correspondence")
+def check_jumps(pair_id, left_id, right_id, L, R, shared, metric=None):
+    pair_dir = Path(config.STORE_DIR) / "pairs" / pair_id
+    corr = (
+        PairReader(pair_dir / metric) if metric else CorrespondenceReader(pair_dir / "correspondence")
+    )
+    print(f"\n== jumping by {metric + chr(39) + 's own correspondence' if metric else 'the shared correspondence'}")
     for side, src_id, src, dst_id, dst in (("left", left_id, L, right_id, R),
                                            ("right", right_id, R, left_id, L)):
         cor = np.asarray(corr.column(side, "corresponds"))
@@ -177,6 +189,7 @@ if __name__ == "__main__":
     shared = int(meta["summary"]["n_leaves"])
     print(f"\nreconciliation: {shared:,} shared leaves "
           f"({left_id} has {L.n_leaves:,}, {right_id} has {R.n_leaves:,})")
-    check_jumps(pair_id, left_id, right_id, L, R, shared)
+    check_jumps(pair_id, left_id, right_id, L, R, shared,
+                sys.argv[4] if len(sys.argv) > 4 else None)
     print(f"\n{'PASS' if not fails else f'{len(fails):,} FAILURES'}")
     sys.exit(1 if fails else 0)

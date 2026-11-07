@@ -28,9 +28,6 @@ const TREE_HINT = "Newick — .nwk, .newick, .tree";
 const TABLE_HINT = "Isolate data, tab- or comma-separated — .tsv, .csv";
 const TABLE_ACCEPT = ".tsv,.tab,.csv,.txt";
 
-/** The moved-leaves metric, offered as a checkbox beside the chosen distance (§46). */
-const MOVED_METRIC = "mast";
-
 export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => void }) {
   // Read once, synchronously, so the form renders filled after a refresh
   // rather than empty and then filling (draft.ts).
@@ -65,18 +62,9 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
    * not being able to choose is better than choosing something absent.
    */
   const [metrics, setMetrics] = useState<MetricSummary[]>([]);
-  /*
-   * Moved leaves are asked for beside the chosen metric, not instead of it
-   * (§46): they are a list of leaves rather than a distance, so a comparison
-   * computed with them alone would open with no score in its header. Ticked by
-   * default — seconds on a demo-sized pair, and declined by name above its
-   * limit without failing the comparison.
-   */
-  const [alsoMoved, setAlsoMoved] = useState(true);
-  const movedMetric = metrics.find((metric) => metric.name === MOVED_METRIC);
-  const distances = metrics.filter((metric) => metric.name !== MOVED_METRIC);
-  // One metric per comparison, chosen like the bar length is: a comparison
-  // is read under one metric, and the view shows the one it was computed with.
+  // One metric per comparison (§52): MAST, SPR and every other metric are
+  // choices in one list, not extras beside a distance. A comparison is read,
+  // numbered and coloured only as the metric it was computed with declares.
   const [chosen, setChosen] = useState<string>("");
   useEffect(() => {
     api
@@ -87,7 +75,7 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
         // usable ones hid the picker entirely when one was left, and on the
         // deployment that read as the choice having disappeared.
         setMetrics(found);
-        const usable = found.filter((metric) => metric.available && metric.name !== MOVED_METRIC);
+        const usable = found.filter((metric) => metric.available);
         // The remembered choice only if this server still offers it: a
         // metric whose runtime has gone would be sent and refused by name.
         const remembered = usable.some((metric) => metric.name === draft.metric)
@@ -149,8 +137,7 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
     if (name.trim()) form.append("name", name.trim());
     if (leftSpecies.trim()) form.append("left_species", leftSpecies.trim());
     if (rightSpecies.trim()) form.append("right_species", rightSpecies.trim());
-    const wanted = [chosen, alsoMoved && movedMetric?.available ? MOVED_METRIC : ""].filter(Boolean);
-    if (wanted.length) form.append("metrics", wanted.join(","));
+    if (chosen) form.append("metrics", chosen);
 
     try {
       const accepted = await api.upload(form);
@@ -259,11 +246,11 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
             onChange={(event) => setRightSpecies(event.target.value)}
           />
         </label>
-        {distances.length > 0 ? (
+        {metrics.length > 0 ? (
           <label className="upload-metric">
-            Compare with
+            Metric
             <select value={chosen} onChange={(event) => setChosen(event.target.value)}>
-              {distances.map((metric) => (
+              {metrics.map((metric) => (
                 <option key={metric.name} value={metric.name} disabled={!metric.available}>
                   {metric.available ? metric.title : `${metric.title} — not installed on this server`}
                 </option>
@@ -276,23 +263,6 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
             <MetricReferenceLine
               reference={metrics.find((metric) => metric.name === chosen)?.reference ?? null}
             />
-          </label>
-        ) : null}
-        {movedMetric ? (
-          <label className="switch upload-moved">
-            <input
-              type="checkbox"
-              checked={alsoMoved && movedMetric.available}
-              disabled={!movedMetric.available}
-              onChange={(event) => setAlsoMoved(event.target.checked)}
-            />
-            Also find moved leaves (MAST)
-            <span className="switch-note">
-              {movedMetric.available
-                ? "The leaves outside the largest subtree both trees agree on, to show on the trees."
-                : "Not installed on this server."}
-            </span>
-            {movedMetric.available ? <MetricReferenceLine reference={movedMetric.reference ?? null} /> : null}
           </label>
         ) : null}
       </div>

@@ -47,6 +47,8 @@ export interface SliceKeyParts {
   compare?: string;
   metric: string;
   keep?: number;
+  /** Which correspondence the values come from; "shared" when absent (§52). */
+  correspondence?: "shared" | "metric";
 }
 
 /**
@@ -57,7 +59,9 @@ export interface SliceKeyParts {
  * different requests colliding on one key would serve the wrong tree, which is
  * far worse than a miss.
  */
-export function sliceKey({ treeId, root, budget, compare, metric, keep }: SliceKeyParts): string {
+export function sliceKey({
+  treeId, root, budget, compare, metric, keep, correspondence,
+}: SliceKeyParts): string {
   return [
     encodeURIComponent(treeId),
     root ?? "",
@@ -65,6 +69,9 @@ export function sliceKey({ treeId, root, budget, compare, metric, keep }: SliceK
     compare ?? "",
     metric,
     keep ?? "",
+    // The same nodes with another correspondence's values: a different
+    // response, so a different key, or switching would show stale colours.
+    correspondence === "metric" ? "own" : "",
   ].join("|");
 }
 

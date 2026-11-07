@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import json
 
-from fastapi import APIRouter, Depends, File, Form, Path, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Path, Query, UploadFile, status
 
 from .. import db, retention, uploads
 from . import errors
@@ -311,6 +311,14 @@ def comparison_status(
 def delete_comparison(
     owner: str = Depends(current_owner),
     comparison_id: str = Path(description="The comparison to remove."),
+    metric: str | None = Query(
+        None,
+        description=(
+            "Remove only this metric's comparison of the pair (§52). The pair, "
+            "its trees and its other metrics stay; if it has no other, the whole "
+            "comparison goes, as without this."
+        ),
+    ),
 ) -> ComparisonRemoved:
     """Remove a comparison, its trees and its typing data.
 
@@ -327,7 +335,27 @@ def delete_comparison(
     worker notices its row has gone and discards what it built, rather than
     finishing into a comparison nobody can reach.
     """
-    removed = retention.remove_comparison(owner, comparison_id)
+    removed = None
+    if metric:
+        record = db.comparison_for(owner, comparison_id)
+        others = []
+        if record is not None:
+            asked = {m for m in (record.metrics or "").split(",") if m}
+            known = asked | set(registry_pairs.available(comparison_id)) | set(_metric_errors(record))
+            if metric not in known:
+                # Refused by name: removing nothing and reporting success would
+                # read as "deleted" for a comparison that never existed.
+                raise errors.not_found(
+                    "metric_not_computed",
+                    f"Comparison {comparison_id!r} has no metric {metric!r}.",
+                    f"It has: {', '.join(sorted(known)) or 'none'}.",
+                )
+            others = sorted(known - {metric})
+        if others:
+            removed = retention.remove_metric(owner, comparison_id, metric)
+            registry_pairs.reset_cache()
+    if removed is None:
+        removed = retention.remove_comparison(owner, comparison_id)
     if removed is None:
         # The same 404 a stranger gets, so deletion cannot probe for existence.
         raise errors.not_found(

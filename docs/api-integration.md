@@ -282,6 +282,19 @@ reports, and `reference`, which says where its implementation comes from:
               "doi":"10.3390/a17010015","url":"https://doi.org/10.3390/a17010015"}}
 ```
 
+Each also has `correspondence`: what colours the trees and links the two panels. `jaccard` is the
+pair's shared best-matching-clade search, the same for every metric. `self` means the metric pairs
+the trees itself — `mast` does, by its agreement subtree — and its `similarity` column in `outputs`
+says what the score means. To get those values in a slice, add `correspondence=metric` along with
+`metric`:
+
+```bash
+curl "$BASE/trees/$LEFT/slice?budget=200&compare=$ID&metric=mast&correspondence=metric"
+```
+
+`comparison.correspondence` in the response names what was served: `"jaccard"` or the metric.
+Without the parameter a slice is coloured by the shared correspondence, as it always was.
+
 ## 10. Delete
 
 ```bash
@@ -303,7 +316,7 @@ Every error has the same shape, with a stable `code` to branch on and a `hint` s
 |---|---|---|
 | 401 | Missing or invalid credentials | `owner_required`, `token_required`, `token_expired`, `token_invalid` |
 | 404 | Unknown tree, comparison, node | `tree_not_found`, `comparison_not_found`, `node_out_of_range` |
-| 409 | A stored result was computed by an older metric version and must be recomputed | `metric_version_mismatch` |
+| 409 | A stored result was computed by an older metric version, or before its metric had its own correspondence, and must be recomputed | `metric_version_mismatch`, `correspondence_not_computed` |
 | 422 | A parameter is invalid or missing | `invalid_request` (with an `errors` list per field), `metric_not_computed`, `empty_query` |
 
 `detail` may be reworded between versions; `code` will not.

@@ -80,9 +80,11 @@ export const api = {
    * Trees still referenced by another comparison are kept, so this is not
    * "delete these two trees" and cannot orphan a neighbour.
    */
-  removeComparison: (comparisonId: string) =>
+  /** With `metric`, only that metric's comparison of the pair; the others stay (§52). */
+  removeComparison: (comparisonId: string, metric?: string) =>
     request<{ id: string; removed_datasets: string[] }>(
-      `/comparisons/${encodeURIComponent(comparisonId)}`,
+      `/comparisons/${encodeURIComponent(comparisonId)}` +
+        (metric ? `?metric=${encodeURIComponent(metric)}` : ""),
       { method: "DELETE" },
     ),
 
@@ -106,6 +108,8 @@ export const api = {
       budget?: number;
       compare?: string;
       metric?: string;
+      /** "metric": the values from `metric`'s own correspondence (§52). */
+      correspondence?: "shared" | "metric";
       order?: "size" | "difference";
       /** A node to draw as itself rather than summarise into a wedge. */
       keep?: number;
@@ -125,6 +129,7 @@ export const api = {
     query.set("budget", String(options.budget ?? 500));
     if (options.compare) query.set("compare", options.compare);
     if (options.metric) query.set("metric", options.metric);
+    if (options.correspondence === "metric") query.set("correspondence", "metric");
     if (options.order) query.set("order", options.order);
     if (options.keep !== undefined) query.set("keep", String(options.keep));
     if (options.around !== undefined) query.set("around", String(options.around));

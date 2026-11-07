@@ -13,7 +13,8 @@ import math
 import numpy as np
 from fastapi import APIRouter, Depends, Path, Query
 
-from ..metrics.contract import NO_CORRESPONDENCE
+from ..metrics import registry_pairs
+from ..metrics.contract import CORRESPONDENCE_COLUMNS, NO_CORRESPONDENCE
 from ..metrics.store import PairReader
 from ..trees import registry as tree_registry
 from ..trees.summarise import flatten
@@ -25,7 +26,14 @@ from .access import (
     pair_or_404,
 )
 from .identity import current_owner
-from .slicing import ORDER_DESCRIPTION, Order, side_of, summariser_for
+from .slicing import (
+    ORDER_DESCRIPTION,
+    SOURCE_DESCRIPTION,
+    Order,
+    Source,
+    side_of,
+    summariser_for,
+)
 
 router = APIRouter(prefix=f"{API_PREFIX}/comparisons", tags=["comparisons"])
 
@@ -36,6 +44,7 @@ def values_at(
     side: str,
     ids: list[int],
     metric_reader: PairReader | None = None,
+    source: Source = "shared",
 ) -> ComparisonValues:
     """Gather per-node values at the given stored ids, in that order.
 
@@ -50,13 +59,23 @@ def values_at(
     0xFFFFFFFF would look like a valid node id.
     """
     index = np.asarray(ids, dtype=np.int64)
+    # Ownership first, whichever correspondence is served (access.py).
     correspondence = correspondence_or_404(owner, pair_id)
+    served = "jaccard"
+    if source == "metric" and metric_reader is not None:
+        served, correspondence = registry_pairs.correspondence_for(
+            pair_id, metric_reader, source
+        )
     similarity = np.asarray(correspondence.column(side, "similarity"))[index]
     corresponds = np.asarray(correspondence.column(side, "corresponds"))[index]
 
     columns: dict[str, list] = {}
     if metric_reader is not None:
         for name in metric_reader.columns(side):
+            if name in CORRESPONDENCE_COLUMNS:
+                # A metric's own correspondence is served in the two fields
+                # above when asked for, and never twice as a column.
+                continue
             values = np.asarray(metric_reader.column(side, name))[index]
             if name == "exact" or values.dtype == np.uint8:
                 columns[name] = [bool(v) for v in values]
@@ -67,6 +86,7 @@ def values_at(
 
     return ComparisonValues(
         id=list(ids),
+        correspondence=served,
         similarity=[None if math.isnan(v) else float(v) for v in similarity],
         corresponds=[
             None if int(c) == int(NO_CORRESPONDENCE) else int(c) for c in corresponds
@@ -131,6 +151,7 @@ def comparison_slice(
     budget: int = Query(500, ge=1, le=50_000),
     metric: str = Query("rf"),
     order: Order = Query("size", description=ORDER_DESCRIPTION),
+    correspondence: Source = Query("shared", description=SOURCE_DESCRIPTION),
     owner: str = Depends(current_owner),
 ) -> ComparisonSlice:
     """Values for exactly the nodes a tree slice with the same parameters returns.
@@ -159,7 +180,9 @@ def comparison_slice(
             f"{tree_reader.meta.n_nodes:,} nodes.",
         )
 
-    node = summariser_for(tree_reader, tree, order, reader, metric).summarise(root, budget)
+    node = summariser_for(
+        tree_reader, tree, order, reader, metric, correspondence
+    ).summarise(root, budget)
     ids = flatten(node)["id"]
 
     other = reader.meta.right if side == "left" else reader.meta.left
@@ -170,5 +193,5 @@ def comparison_slice(
         other_tree=other,
         root=root,
         budget=budget,
-        nodes=values_at(owner, reader.meta.pair_id, side, ids, reader),
+        nodes=values_at(owner, reader.meta.pair_id, side, ids, reader, correspondence),
     )

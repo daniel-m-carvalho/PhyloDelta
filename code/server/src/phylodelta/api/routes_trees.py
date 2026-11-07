@@ -20,7 +20,14 @@ from .schemas import (
     KeptNode, NodeContext, NodeMatch, NodeSearch, SliceNodes, TreeDetail, TreeSlice,
 )
 from .access import pair_or_404 as access_pair
-from .slicing import ORDER_DESCRIPTION, Order, side_of, summariser_for
+from .slicing import (
+    ORDER_DESCRIPTION,
+    SOURCE_DESCRIPTION,
+    Order,
+    Source,
+    side_of,
+    summariser_for,
+)
 
 router = APIRouter(prefix=f"{API_PREFIX}/trees", tags=["trees"])
 
@@ -204,6 +211,9 @@ def tree_slice(
     ),
     metric: str = Query("rf", description="Only meaningful with `compare`."),
     order: Order = Query("size", description=ORDER_DESCRIPTION),
+    correspondence: Source = Query(
+        "shared", description=SOURCE_DESCRIPTION + " Only meaningful with `compare`."
+    ),
     keep: int | None = Query(
         None,
         ge=0,
@@ -279,7 +289,7 @@ def tree_slice(
         )
 
     pair = access_pair(owner, compare, metric) if compare is not None else None
-    summariser = summariser_for(reader, tree_id, order, pair, metric)
+    summariser = summariser_for(reader, tree_id, order, pair, metric, correspondence)
     trace = KeepTrace()
     node = summariser.summarise(root, budget, keep=keep, trace=trace)
     if node is None:  # unreachable while budget >= 1, but do not serve a lie
@@ -295,7 +305,8 @@ def tree_slice(
         # Built from the same `flat["id"]` this response carries, so the two are
         # aligned by construction rather than by re-running anything.
         comparison = values_at(
-            owner, pair.meta.pair_id, side_of(pair, tree_id), flat["id"], pair
+            owner, pair.meta.pair_id, side_of(pair, tree_id), flat["id"], pair,
+            correspondence,
         )
 
     hidden = sum(

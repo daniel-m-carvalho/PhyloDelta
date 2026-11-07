@@ -39,6 +39,11 @@ export interface SliceNodes {
 export interface ComparisonValues {
   /** The node ids again, aligned with `nodes.id`. */
   id?: number[];
+  /**
+   * Which correspondence `similarity` and `corresponds` come from: "jaccard",
+   * the shared one, or the name of the metric whose own was asked for (§52).
+   */
+  correspondence?: string;
   similarity: (number | null)[];
   corresponds: (number | null)[];
   /** RF's per-clade verdict; empty when the slice was asked under another metric. */
@@ -99,7 +104,15 @@ export interface PairSummary {
   shared_leaves: number;
   shared_fraction: number;
   caution: string | null;
+  /** Every metric computed for this pair of trees. */
   metrics: string[];
+  /**
+   * The metric this entry is the comparison by (§52): a pair computed with
+   * several is listed once for each. Empty from a server older than that.
+   */
+  metric?: string;
+  /** Why this comparison could not be made, when it could not. */
+  error?: string | null;
   status: "pending" | "running" | "ready" | "failed";
 }
 
@@ -284,6 +297,57 @@ export interface MetricSummary {
   capabilities: Record<string, unknown>;
   /** Where its implementation comes from (§42); null when none is given. */
   reference?: MetricReference | null;
+  /** What it contributes: labelled scalars, and per-node columns that say what they mean. */
+  outputs?: { summary?: MetricScalar[]; columns: MetricColumn[] };
+  /** The ways its result colours the trees, in the order to offer them (§52). */
+  presentations?: Presentation[];
+  /** The scalar its header shows, and what it is out of. */
+  headline?: { key: string; of: string; to?: string } | null;
+  /**
+   * What colours its view (§52): "jaccard", the shared correspondence, or
+   * "self", its own — served with `correspondence=metric`, and described by
+   * its `similarity` column.
+   */
+  correspondence?: string;
+}
+
+/** One labelled summary scalar a metric declares. */
+export interface MetricScalar {
+  key: string;
+  label: string;
+  description: string;
+}
+
+/**
+ * One way a metric's result colours the trees (§52).
+ *
+ * `gradient`: each branch by the comparison's `similarity`. `categories`: each
+ * leaf by `column` — 0 or 1, named by `categories` — and a collapsed clade by
+ * how many of its leaves are 1.
+ */
+export interface Presentation {
+  name: string;
+  label: string;
+  kind: "gradient" | "categories";
+  description: string;
+  /** The first of `columns`; older servers send only this. */
+  column: string;
+  /** `categories`: disjoint count columns, one per category after the first. */
+  columns?: string[];
+  /** `categories[0]` names a leaf in none of `columns`; `categories[i]` one in `columns[i-1]`. */
+  categories: string[];
+  /** `gradient`: clades with fewer leaves have nothing to score, and are drawn grey. */
+  min_leaves?: number;
+}
+
+/** One per-node column a metric declares. */
+export interface MetricColumn {
+  name: string;
+  dtype: string;
+  semantics: string;
+  label: string;
+  description: string;
+  render: string;
 }
 
 /** Where a metric's implementation comes from. */

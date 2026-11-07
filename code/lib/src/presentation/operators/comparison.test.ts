@@ -712,6 +712,54 @@ describe("branches the backend gave no value for", () => {
   });
 });
 
+describe("ComparisonOperator — branches whose value says nothing", () => {
+  // A single leaf always matches itself, a clade of two holds no triple: a
+  // value is there, but nothing was measured. Drawn on the ramp it reads as
+  // strong agreement, so it gets a grey and a row of its own — and a node
+  // with no counterpart stays absent, whatever the rule says.
+  const unmeasured = (node: { name?: string }) => node.name === "a" || node.name === "c";
+
+  it("draws them grey, at full width, and keeps an absent node absent", () => {
+    const h = makeHarness(namedTree());
+    const every = new Map(
+      [...h.nodeMap().values()]
+        .filter((n) => n.source.name !== "c")
+        .map((n) => [n.source.name ?? "", 0] as const),
+    );
+    new ComparisonOperator({
+      enabled: true,
+      values: every,
+      keyOf: keyByName,
+      absentColor: "#e03131",
+      isUnmeasured: unmeasured,
+      edgeWidth: 3,
+    }).attach(h.viewer);
+    h.render();
+
+    expect(h.edgeStyleOf("named_a")!.color).toBe("#adb5bd");
+    expect(h.edgeStyleOf("named_a")!.size).toBe(3);
+    expect(h.edgeStyleOf("named_c")!.color).toBe("#e03131");
+  });
+
+  it("names them in the legend, and can be switched off in place", () => {
+    const h = makeHarness(namedTree());
+    const every = new Map(
+      [...h.nodeMap().values()].map((n) => [n.source.name ?? "", 0] as const),
+    );
+    const cmp = new ComparisonOperator({ enabled: true, values: every, keyOf: keyByName });
+    cmp.attach(h.viewer);
+    cmp.setUnmeasured(unmeasured, "Nothing to measure");
+    h.render();
+    expect(h.edgeStyleOf("named_a")!.color).toBe("#adb5bd");
+    expect(h.container.textContent).toContain("Nothing to measure");
+
+    cmp.setUnmeasured(undefined);
+    h.render();
+    expect(h.edgeStyleOf("named_a")!.color).not.toBe("#adb5bd");
+    expect(h.container.textContent).not.toContain("Nothing to measure");
+  });
+});
+
 describe("placeInside — a tooltip stays inside its panel", () => {
   // A tooltip that ran past the right panel's edge made the page wider than
   // the window, and on Windows that brought in a scrollbar which resized

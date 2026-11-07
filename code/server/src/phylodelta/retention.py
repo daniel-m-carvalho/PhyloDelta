@@ -102,6 +102,21 @@ def remove_comparison(owner_id: str, comparison_id: str) -> Removed | None:
     return report
 
 
+def remove_metric(owner_id: str, comparison_id: str, metric: str) -> Removed | None:
+    """Delete one metric's comparison of a pair whose other metrics remain (§52).
+
+    A pair computed with several metrics is listed as one comparison per metric,
+    so deleting one must not take the others. Only that metric's directory
+    goes; the trees, the shared correspondence and the row stay, for the rest.
+    None for "not yours" or "no such id", like `remove_comparison`.
+    """
+    if not db.drop_metric(owner_id, comparison_id, metric):
+        return None
+    report = Removed(comparison_id=comparison_id)
+    _remove(Path(config.STORE_DIR) / "pairs" / comparison_id / metric, report)
+    return report
+
+
 def remove_orphaned_stores(comparison_id: str, dataset_ids: tuple[str, ...]) -> None:
     """Clean up after a job whose comparison was deleted while it ran.
 

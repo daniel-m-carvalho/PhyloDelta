@@ -468,10 +468,28 @@ def store_is_populated(store_dir: Path | None = None) -> bool:
     )
 
 
-#: What the demo catalogue is built with. Moved leaves are part of it so the
-#: demo shows the view (§46). A store built before gets it with
-#: `phylodelta compute-pairs --metric mast`, which leaves RF as it is.
-DEMO_METRICS = ["rf", "mast"]
+#: The demo: one comparison per metric, all of the same pair (§52, §53). One
+#: comparison is one metric, so this lists four — the same two vibrio trees by
+#: RF, by moved leaves, by SPR and by triplets — rather than every pair of
+#: catalogue trees by each. The vibrio NJ and UPGMA trees are the pair where a
+#: comparison means something: the same isolates, two methods.
+DEMO_PAIR = "vibrio-nj__vibrio-upgma"
+DEMO_METRICS = ["rf", "mast", "spr", "triplet"]
+
+
+def _demo_metrics() -> list[str]:
+    """The demo metrics this build can run; the others are skipped by name.
+
+    `spr` needs rspr and `triplet` TreeDiff, each built separately. A missing
+    one leaves the demo without that example rather than failing the build.
+    """
+    from ..metrics.runners import is_available
+
+    manifests = registry.discover()
+    usable = [m for m in DEMO_METRICS if m in manifests and is_available(manifests[m])]
+    for name in sorted(set(DEMO_METRICS) - set(usable)):
+        print(f"demo: skipping {name}, its program is not built here", file=sys.stderr)
+    return usable
 
 
 def build_all(if_empty: bool = False) -> int:
@@ -487,7 +505,7 @@ def build_all(if_empty: bool = False) -> int:
 
     for step, run in (
         ("trees", ingest_trees),
-        ("comparisons", lambda: compute_pairs(metrics=DEMO_METRICS)),
+        ("comparisons", lambda: compute_pairs(metrics=_demo_metrics(), only=DEMO_PAIR)),
         ("isolates", ingest_isolates_all),
     ):
         print(f"--- {step}")

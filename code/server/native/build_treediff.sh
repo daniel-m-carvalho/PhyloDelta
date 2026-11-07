@@ -112,9 +112,17 @@ make
 "$CXX" -O3 -Wall -std=c++11 -I./sdsl/include/ rf_postorder_double.cpp   sdsl/lib/libsdsl.a -o rf_postorder_double
 "$CXX" -O3 -Wall -std=c++11 -I./sdsl/include/ rf_nextsibling_double.cpp sdsl/lib/libsdsl.a -o rf_nextsibling_double
 
+# --- trip_sht_nodes: the triplet metric's per-node counts (§54) -------------
+# trip_sht counts, at every node, the triples decided there that both trees
+# resolve alike, and prints only their sum. This copy also writes each node's
+# count to a file. A script, not a diff: the source has CRLF line endings, and
+# every replacement is asserted, so an upstream change fails here by name.
+python3 "$HERE/patch_trip_sht_nodes.py" trip_sht.cpp trip_sht_nodes.cpp
+"$CXX" -O3 -Wall -std=c++11 -I./sdsl/include/ trip_sht_nodes.cpp sdsl/lib/libsdsl.a -o trip_sht_nodes
+
 echo
 echo "Built in $DEST:"
-ls -1 rf_postorder rf_postorder_double rf_nextsibling rf_nextsibling_double rf_day trip_treediff trip_sht
+ls -1 rf_postorder rf_postorder_double rf_nextsibling rf_nextsibling_double rf_day trip_treediff trip_sht trip_sht_nodes
 
 echo
 echo "Sanity check against the paper's own documented example (expect RF = 1):"

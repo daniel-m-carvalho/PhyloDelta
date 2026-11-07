@@ -183,6 +183,8 @@ export function useSide(
   initialPath: number[] = [],
   autoBudget: number = DEFAULT_BUDGET,
   labelClades: boolean = false,
+  /** Which correspondence colours and links the panels (§52). */
+  correspondence: "shared" | "metric" = "shared",
 ): [SideState, SideActions] {
   const [path, setPath] = useState<number[]>(initialPath);
 
@@ -260,7 +262,9 @@ export function useSide(
     // Nothing to ask for until the panel has been measured.
     if (budget <= 0) return;
 
-    const parts: SliceKeyParts = { treeId, root, budget, compare, metric, keep: keep ?? undefined };
+    const parts: SliceKeyParts = {
+      treeId, root, budget, compare, metric, keep: keep ?? undefined, correspondence,
+    };
 
     /*
      * **Removing the pin keeps the picture** (§40). The slice on screen was
@@ -345,6 +349,7 @@ export function useSide(
         budget,
         compare,
         metric,
+        correspondence,
         keep: keep ?? undefined,
         signal: controller.signal,
       })
@@ -370,7 +375,7 @@ export function useSide(
     // `labelClades` only changes a node's display name, so the slice itself is
     // unchanged — but the tree handed to the viewer must be rebuilt for the
     // new names to reach it.
-  }, [treeId, root, budget, compare, metric, nonce, labelClades, keep]);
+  }, [treeId, root, budget, compare, metric, correspondence, nonce, labelClades, keep]);
 
   // A panel that goes away stops protecting its slice. Without this the entry
   // would sit in the rendered tier forever, evictable only as a last resort —
@@ -413,7 +418,7 @@ export function useSide(
          * panel will make once it has moved, so the panel's own fetch below
          * finds it there instead of asking again.
          */
-        const asked = { compare, metric, budget: autoBudget };
+        const asked = { compare, metric, correspondence, budget: autoBudget };
         void api
           // No ceiling on how wide this may go. Capping it at the panel's
           // budget looked right — a subtree that fits draws every tip — but on
@@ -446,7 +451,7 @@ export function useSide(
             );
           });
       },
-      [treeId, focus, compare, metric, autoBudget],
+      [treeId, focus, compare, metric, correspondence, autoBudget],
     ),
 
     reportJumpFailure: useCallback((reason: string, fades = false) => {

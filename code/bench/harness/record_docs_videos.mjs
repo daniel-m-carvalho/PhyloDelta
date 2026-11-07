@@ -404,7 +404,7 @@ await record(browser, "02-open-comparison", async (h) => {
   await page.waitForSelector(".pair-list");
   await h.pause(600);
   h.begin();
-  await h.caption("Your comparisons: every comparison you have, with its shared leaves and metrics", 2200);
+  await h.caption("Your comparisons: one per metric, each with its shared leaves", 2200);
   await h.hover(".pair-list li >> nth=0");
   await h.pause(800);
   await h.poster();

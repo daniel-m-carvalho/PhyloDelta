@@ -73,6 +73,11 @@ export interface ComparisonView {
    */
   absent?: { label: string; color: string };
   /**
+   * Label and colour for branches whose value says nothing — a single leaf,
+   * which always matches itself — when the view drew them apart from the ramp.
+   */
+  unmeasured?: { label: string; color: string };
+  /**
    * Leaves painted by category instead of the gradient — moved leaves, say
    * (§46). What the colours mean and their key; when set it is what the
    * pictures show, and the gradient is not described.
@@ -213,6 +218,13 @@ function viewSetup(view: ComparisonView): Report["sections"][number] {
           "is not the same as a score of zero.",
       );
       swatches.push({ label: view.absent.label, color: view.absent.color });
+    }
+    if (view.unmeasured) {
+      body.push(
+        "Grey branches have a value that says nothing: the clade is too small " +
+          "for the metric to measure anything in it, so it is not drawn as agreement.",
+      );
+      swatches.push({ label: view.unmeasured.label, color: view.unmeasured.color });
     }
   } else {
     body.push("Divergence colouring was off: branch colour carries no meaning here.");

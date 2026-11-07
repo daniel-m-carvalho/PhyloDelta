@@ -1,83 +1,98 @@
 /**
- * Which metric to read a comparison under.
+ * One comparison is one metric (§52).
  *
- * A comparison is computed with the metric its uploader chose, and the server
- * refuses any other by name (404, "unknown metric"). Asking for "rf" regardless
- * worked only while every comparison had RF; one computed with Triplet alone
- * would open to an error. RF stays the preference where it was computed,
- * because the catalogue pairs carry it and the gradient reads most directly
- * against it.
+ * A pair of trees computed with several metrics is listed as one comparison per
+ * metric, and a comparison is read, numbered and coloured only as its metric
+ * declares: the header shows that metric's number, and the View menu offers
+ * that metric's presentations and no others. Nothing here names a metric. What
+ * each one offers comes from GET /metrics, so a metric added on the server —
+ * SPR, triplet's own colouring — reaches the view with no change to this file.
  */
 
-import type { ComparisonStatus, ComparisonSummary, PairSummary } from "../api/types";
+import type { ComparisonSummary, MetricSummary, PairSummary, Presentation } from "../api/types";
 
-export function viewMetric(pair: Pick<PairSummary, "metrics">): string {
+/**
+ * The metric a listing entry is the comparison by.
+ *
+ * The entry's own `metric` where the server says it. A server from before
+ * §52 lists a pair once with all its metrics; RF is then preferred where
+ * computed, as the view always did, since the catalogue pairs carry it.
+ */
+export function viewMetric(pair: Pick<PairSummary, "metrics" | "metric">): string {
+  if (pair.metric) return pair.metric;
   if (pair.metrics.includes("rf")) return "rf";
   return pair.metrics[0] ?? "rf";
 }
 
-/** Whether the comparison carries moved leaves, so the view can be offered (§46). */
-export function hasMovedLeaves(pair: Pick<PairSummary, "metrics">): boolean {
-  return pair.metrics.includes("mast");
-}
-
-const NOT_COMPUTED = "Not computed for this comparison";
-
-/**
- * Why moved leaves are missing, for the note under the greyed-out option.
- *
- * `undefined` while /status has not answered; the status once it has; the
- * error if asking failed. A failure is said as one: the comparison really has
- * no moved leaves, but swallowing the error used to drop the server's reason
- * with nothing on screen to say a reason existed.
- */
-export function movedLeavesMissing(
-  status?: Pick<ComparisonStatus, "metrics_failed"> | Error,
-): string {
-  if (status instanceof Error) {
-    return `${NOT_COMPUTED}; the reason could not be fetched (${status.message})`;
-  }
-  const reason = status?.metrics_failed?.mast;
-  return reason ? `Not available: ${reason}` : NOT_COMPUTED;
-}
-
-/** What colours the trees: one presentation at a time (§46). */
-export type Presentation = "divergence" | "moved" | "none";
-
-/**
- * The presentation actually shown, from what was asked for and what exists.
- *
- * Moved leaves asked for on a comparison without them — an old link, a shared
- * one, a comparison that declined the metric — falls back to the divergence
- * gradient rather than to nothing: the person asked for colour, and "no
- * colour" would read as "nothing differs".
- */
-export function presentation(
-  options: { gradient: boolean; moved: boolean },
-  pair: Pick<PairSummary, "metrics">,
-): Presentation {
-  if (options.moved) return hasMovedLeaves(pair) ? "moved" : "divergence";
-  return options.gradient ? "divergence" : "none";
+/** Whether a listing entry is the comparison a link names: same pair, same metric. */
+export function isEntry(
+  pair: Pick<PairSummary, "id" | "metrics" | "metric">,
+  id: string,
+  metric: string | null,
+): boolean {
+  return pair.id === id && (metric === null || viewMetric(pair) === metric);
 }
 
 /**
- * Which metric to ask slices under.
- *
- * A slice carries the per-node columns of the metric it was asked for, and
- * only those. The gradient does not depend on it — similarity comes from the
- * pair's correspondence, served with every metric — so asking under `mast`
- * where it exists brings the moved-leaf counts along with the same gradient,
- * and switching between the two presentations costs no request. Nothing here
- * reads RF's own column (`exact`).
+ * The colouring every metric has when its manifest says nothing: the shared
+ * correspondence's gradient. Also what is offered while /metrics is loading,
+ * so the view opens coloured rather than waiting.
  */
-export function sliceMetric(pair: Pick<PairSummary, "metrics">): string {
-  return hasMovedLeaves(pair) ? "mast" : viewMetric(pair);
+const DIVERGENCE: Presentation = {
+  name: "divergence",
+  label: "Divergence",
+  kind: "gradient",
+  description:
+    "Branches: blue where the clade also exists in the other tree, yellow where its leaves are scattered, grey on a leaf",
+  column: "",
+  categories: [],
+  // A leaf always matches itself: its branch says nothing.
+  min_leaves: 2,
+};
+
+/** The ways a metric's comparison can be coloured, in the order to offer them. */
+export function presentationsOf(
+  metric: string,
+  metrics: readonly MetricSummary[] | undefined,
+): Presentation[] {
+  const declared = metrics?.find((m) => m.name === metric)?.presentations;
+  return declared && declared.length > 0 ? declared : [DIVERGENCE];
 }
 
-/** The header's number: RF where the metric reports it, else the metric's own. */
+/**
+ * The presentation actually shown, or null for the trees in black.
+ *
+ * "" asks for the metric's first. A name the metric does not offer — a link
+ * made under another metric — also opens with its first, rather than with
+ * nothing: the person asked for colour, and none would read as "nothing
+ * differs".
+ */
+export function shownPresentation(
+  colour: string,
+  presentations: readonly Presentation[],
+): Presentation | null {
+  if (colour === "none") return null;
+  return presentations.find((p) => p.name === colour) ?? presentations[0] ?? null;
+}
+
+/** The metric's title, for the list and the header; its name before /metrics answers. */
+export function metricTitle(metric: string, metrics: readonly MetricSummary[] | undefined): string {
+  return metrics?.find((m) => m.name === metric)?.title ?? metric;
+}
+
+/** The header's number, from the comparison's own metric. */
 export function headline(
   summary: ComparisonSummary,
-): { label: string; title: string; value: number; normalised?: number } | null {
+  manifest?: MetricSummary,
+): {
+  label: string;
+  title: string;
+  value: number;
+  normalised?: number;
+  of?: number;
+  /** Set when the number is a range, `value` to `to` — SPR when not exact (§53). */
+  to?: number;
+} | null {
   const scalars = summary.summary;
   if (scalars.rf !== undefined) {
     return {
@@ -97,5 +112,41 @@ export function headline(
   if (scalars.triplet !== undefined) {
     return { label: "Triplet", title: "Triplet distance", value: Number(scalars.triplet) };
   }
-  return null;
+  // Any other metric: the scalar its manifest names, or the first it declares.
+  const declared = manifest?.outputs?.summary ?? [];
+  const key = manifest?.headline?.key ?? declared.find((s) => scalars[s.key] !== undefined)?.key;
+  if (!key || scalars[key] === undefined) return null;
+  const spec = declared.find((s) => s.key === key);
+  const whole = manifest?.headline?.of;
+  const upTo = manifest?.headline?.to;
+  const value = Number(scalars[key]);
+  const to = upTo && scalars[upTo] !== undefined ? Number(scalars[upTo]) : undefined;
+  return {
+    label: spec?.label || key,
+    title: spec?.description || manifest?.title || key,
+    value,
+    of: whole && scalars[whole] !== undefined ? Number(scalars[whole]) : undefined,
+    // A range only while the bounds differ: an exact value is one number.
+    to: to !== undefined && to !== value ? to : undefined,
+  };
+}
+
+/**
+ * Which nodes a gradient presentation has nothing to say about, or undefined
+ * when it scores every node: those with fewer leaves than it declares (§52).
+ * A leaf always matches itself, a clade of two holds no triple; drawn on the
+ * ramp they would read as agreement nobody measured.
+ */
+export function unmeasuredBy(
+  shown: Pick<Presentation, "kind" | "min_leaves"> | null,
+): ((node: { metadata?: Record<string, unknown> }) => boolean) | undefined {
+  const floor = shown?.kind === "gradient" ? (shown.min_leaves ?? 1) : 1;
+  if (floor <= 1) return undefined;
+  return (node) => Number(node.metadata?.trueLeafCount ?? 1) < floor;
+}
+
+/** What the legend calls those nodes. */
+export function unmeasuredLabel(shown: Pick<Presentation, "min_leaves">): string {
+  const floor = shown.min_leaves ?? 1;
+  return floor === 2 ? "A leaf: nothing to measure" : `Under ${floor} leaves: nothing to measure`;
 }

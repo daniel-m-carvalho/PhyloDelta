@@ -781,6 +781,11 @@ different metrics report differences differently:
   and any node's `label` is its hover text. Branches are left as drawn, so one
   presentation is on screen at a time. `setCategories(categoryOf, legend, title)`
   replaces it in place.
+- **Unmeasured branches**, in gradient mode: `isUnmeasured(node)` (or
+  `setUnmeasured(fn, label)`) marks nodes whose value says nothing — a single
+  leaf always matches itself — and they are drawn in `unmeasuredColor` (grey by
+  default) with a legend row of their own, never on the ramp. A node with no
+  value at all is still absent.
 
 > **Attribution.** The gradient branch-coloring model and the blue→yellow scale
 > are adapted from **phylo.io** (© Clement Train & the Dessimoz Lab, MIT license
@@ -835,7 +840,7 @@ interface ComparisonOptions {
   enabled?: boolean;                 // default true
 }
 ```
-- API: `setValues(map)`, `setCorrespondence(map)`, `setMode(mode)`, `getMode()`, `setCategories(categoryOf, legend, title)`,
+- API: `setValues(map)`, `setCorrespondence(map)`, `setMode(mode)`, `getMode()`, `setCategories(categoryOf, legend, title)`, `setUnmeasured(isUnmeasured, label)`,
   `setDiffering(keys)`, `setEnabled(on)`, `isEnabled()`, `link(peer)`,
   `highlightByKey(key)`, `highlightByNode(id, { flash? })`, `clearHighlight()`,
   `getHighlightedKey()`.

@@ -1,0 +1,127 @@
+{
+  "name": "spr",
+  "title": "SPR (subtree prune and regraft)",
+  "version": "2",
+  "kind": "python",
+  "entrypoint": "phylodelta.metrics.plugins.spr.spr:compute",
+  "requires": [
+    "${native}/rspr/rspr"
+  ],
+  "description": "The rooted subtree-prune-and-regraft (SPR) distance: the fewest moves, each cutting off a subtree and reattaching it elsewhere, that turn one tree into the other. It equals the size of a maximum agreement forest minus one, so the forest is also shown: the blocks of leaves both trees arrange identically, every block but the root's being one move. The exact distance is NP-hard to compute and is reported only when it is small enough to search, within 10 seconds; otherwise a range, from a linear-time 3-approximation. Computed by rspr, run as a separate program.",
+  "reference": {
+    "citation": "rspr 1.3.1 by C. Whidden, run as a separate program: exact rooted SPR distances and maximum agreement forests (Whidden, Beiko & Zeh), with a linear-time 3-approximation.",
+    "url": "https://github.com/cwhidden/rspr"
+  },
+  "limits": {
+    "memory": "phylodelta.metrics.plugins.spr.spr:memory_bytes"
+  },
+  "correspondence": "self",
+  "headline": {
+    "key": "spr_lower",
+    "to": "spr_upper"
+  },
+  "presentations": [
+    {
+      "name": "branches",
+      "label": "How intact each clade is",
+      "kind": "gradient",
+      "min_leaves": 2,
+      "description": "Branches: blue where the clade moved as one piece, yellow where it broke apart, grey on a leaf"
+    },
+    {
+      "name": "leaves",
+      "label": "Largest block, moved together or moved alone",
+      "kind": "categories",
+      "columns": [
+        "grouped",
+        "alone"
+      ],
+      "categories": [
+        "In the largest block",
+        "Moved with others",
+        "Moved alone"
+      ],
+      "description": "Leaves: blue in the largest group both trees share, teal if moved with others, yellow if moved alone, red if only in one tree"
+    }
+  ],
+  "capabilities": {
+    "per_clade": true,
+    "symmetric": true,
+    "weighted": false,
+    "requires_shared_leaf_set": true
+  },
+  "outputs": {
+    "summary": [
+      {
+        "key": "spr_lower",
+        "label": "SPR distance",
+        "description": "The rooted SPR distance is at least this: the exact value when the search finished, else a third of the approximation, rounded up."
+      },
+      {
+        "key": "spr_upper",
+        "label": "SPR distance, at most",
+        "description": "The rooted SPR distance is at most this: the exact value when the search finished, else the smallest agreement forest found, less one."
+      },
+      {
+        "key": "exact",
+        "label": "Exact",
+        "description": "Whether the exact search finished, so that the two bounds are equal."
+      },
+      {
+        "key": "blocks",
+        "label": "Blocks in the agreement forest",
+        "description": "The root's block and every moved one."
+      },
+      {
+        "key": "moved",
+        "label": "Leaves outside the largest block"
+      },
+      {
+        "key": "n_leaves",
+        "label": "Leaves compared"
+      }
+    ],
+    "columns": [
+      {
+        "name": "moved",
+        "dtype": "float32",
+        "semantics": "count",
+        "label": "Leaves of this clade outside the largest block",
+        "render": "overlay",
+        "description": "How many of the clade's leaves are in a block other than the agreement forest's largest: 1 or 0 at a leaf. Empty (NaN) outside the compared pair."
+      },
+      {
+        "name": "grouped",
+        "dtype": "float32",
+        "semantics": "count",
+        "label": "Leaves of this clade moved with others",
+        "render": "overlay",
+        "description": "How many of the clade's leaves are in a moved block of two or more leaves: 1 or 0 at a leaf. Empty (NaN) outside the compared pair."
+      },
+      {
+        "name": "alone",
+        "dtype": "float32",
+        "semantics": "count",
+        "label": "Leaves of this clade moved alone",
+        "render": "overlay",
+        "description": "How many of the clade's leaves are moved blocks of one leaf: 1 or 0 at a leaf. With the column before, they add up to the moved leaves. Empty (NaN) outside the compared pair."
+      },
+      {
+        "name": "similarity",
+        "dtype": "float32",
+        "semantics": "ratio",
+        "label": "How intact the clade is",
+        "render": "gradient",
+        "description": "1 - (pieces - 1) / (leaves - 1), where pieces is how many forest blocks the clade's leaves fall into; a leaf is 1."
+      },
+      {
+        "name": "corresponds",
+        "dtype": "uint32",
+        "semantics": "index",
+        "label": "The smallest clade of the other tree holding this clade's leaves",
+        "render": "link",
+        "description": "A leaf is linked to itself."
+      }
+    ]
+  }
+}

@@ -73,12 +73,25 @@ def pair_or_404(pair_id: str, metric: str) -> PairReader:
         ) from None
 
 
+#: The `correspondence` query parameter, shared by every route serving values.
+Source = Literal["shared", "metric"]
+
+SOURCE_DESCRIPTION = (
+    "Which correspondence colours the values and links the panels (§52). "
+    "`shared`: the pair's Jaccard best-corresponding clade, the same for every "
+    "metric. `metric`: the one `metric` declares — its own, for a metric whose "
+    "GET /api/metrics entry says `correspondence: self`, else the shared one. "
+    "`order=difference` ranks by the same one."
+)
+
+
 def summariser_for(
     tree_reader: TreeReader,
     tree_id: str,
     order: Order,
     pair: PairReader | None,
     metric: str,
+    source: Source = "shared",
 ) -> Summariser:
     """A summariser with the priority the requested order implies."""
     if order == "size":
@@ -91,9 +104,11 @@ def summariser_for(
             "contain, so it needs a comparison.",
             "Pass compare=<pair>, or use GET /api/comparisons/{pair}/slice.",
         )
-    # Ranked from correspondence, which is shared, so this works whatever
-    # metric was asked for — including one with no per-node columns.
+    # Ranked from the correspondence being served: the shared one works whatever
+    # metric was asked for — including one with no per-node columns — and a
+    # metric's own ranks by what that metric calls different.
     priority = registry_pairs.divergence_priority_for(
-        pair.meta.pair_id, side_of(pair, tree_id), np.asarray(tree_reader.parent)
+        pair.meta.pair_id, side_of(pair, tree_id), np.asarray(tree_reader.parent),
+        registry_pairs.correspondence_for(pair.meta.pair_id, pair, source),
     )
     return Summariser(tree_reader, priority=priority)

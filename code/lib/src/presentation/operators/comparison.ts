@@ -103,6 +103,22 @@ export interface ComparisonOptions {
    */
   absentColor?: string;
   /**
+   * Which nodes have a value that **says nothing**, in gradient mode.
+   *
+   * Not the same as absent. An absent node has no counterpart; an unmeasured
+   * one has a counterpart and a value, but a value it could not help having —
+   * a single leaf always matches itself, a clade of two holds no triple. Drawn
+   * on the ramp it reads as strong agreement, which nothing measured. Drawn in
+   * {@link unmeasuredColor} instead, with a legend row of its own while
+   * {@link unmeasuredLabel} is set. Checked after a missing value, so a node
+   * with no counterpart stays absent.
+   */
+  isUnmeasured?: (node: NewickNode) => boolean;
+  /** Colour for unmeasured branches (default "#adb5bd", a mid grey). */
+  unmeasuredColor?: string;
+  /** Legend row for unmeasured branches; unset means no row. */
+  unmeasuredLabel?: string;
+  /**
    * Colour a located node blinks in (default "#ff0000").
    *
    * Set it to something no other colour in the view claims. It has to be read
@@ -244,6 +260,9 @@ export class ComparisonOperator implements TreeOperator {
   private leafColor: string;
   private absentLabel?: string;
   private absentColor?: string;
+  private isUnmeasured?: (node: NewickNode) => boolean;
+  private unmeasuredColor: string;
+  private unmeasuredLabel?: string;
   private highlightColor: string;
   private mode: ComparisonMode;
   private differing?: DifferenceSet;
@@ -306,6 +325,9 @@ export class ComparisonOperator implements TreeOperator {
     this.leafColor = options.leafColor ?? "#212529";
     this.absentLabel = options.absentLabel;
     this.absentColor = options.absentColor;
+    this.isUnmeasured = options.isUnmeasured;
+    this.unmeasuredColor = options.unmeasuredColor ?? "#adb5bd";
+    this.unmeasuredLabel = options.unmeasuredLabel;
     this.highlightColor = options.highlightColor ?? "#ff0000";
     this.mode = options.mode ?? "gradient";
     this.differing = options.differing ? new Set(options.differing) : undefined;
@@ -426,6 +448,21 @@ export class ComparisonOperator implements TreeOperator {
     this.refresh();
   }
 
+  /**
+   * Replace which nodes are unmeasured in gradient mode (see
+   * {@link ComparisonOptions.isUnmeasured}), and the legend row naming them.
+   * Re-colours at once, like {@link setCategories}.
+   */
+  setUnmeasured(
+    isUnmeasured: ((node: NewickNode) => boolean) | undefined,
+    label?: string,
+  ): void {
+    this.isUnmeasured = isUnmeasured;
+    this.unmeasuredLabel = isUnmeasured ? label : undefined;
+    this.renderLegend();
+    this.refresh();
+  }
+
   /** Replace the membership-mode set of differing node keys and re-color. */
   setDiffering(differing: Iterable<string> | undefined): void {
     this.differing = differing ? new Set(differing) : undefined;
@@ -475,6 +512,9 @@ export class ComparisonOperator implements TreeOperator {
       return this.absentColor
         ? { ...data, color: this.absentColor, size: this.edgeWidth }
         : data;
+    }
+    if (this.isUnmeasured?.(layoutNode.source)) {
+      return { ...data, color: this.unmeasuredColor, size: this.edgeWidth };
     }
     return { ...data, color: this.scale.color(value), size: this.edgeWidth };
   }
@@ -791,7 +831,10 @@ export class ComparisonOperator implements TreeOperator {
     } else {
       const value = this.valueForNode(layoutNode.source);
       if (value == null) return;
-      detail = value.toFixed(2);
+      detail =
+        this.isUnmeasured?.(layoutNode.source) && this.unmeasuredLabel
+          ? this.unmeasuredLabel
+          : value.toFixed(2);
     }
     const renderer = this.viewer.getRenderer();
     const graph = this.viewer.getGraph();
@@ -885,6 +928,9 @@ export class ComparisonOperator implements TreeOperator {
       this.legendEl.appendChild(
         this.swatchRow(this.absentColor ?? BRANCH_COLOR, this.absentLabel),
       );
+    }
+    if (this.isUnmeasured && this.unmeasuredLabel) {
+      this.legendEl.appendChild(this.swatchRow(this.unmeasuredColor, this.unmeasuredLabel));
     }
   }
 

@@ -55,8 +55,14 @@ describe("the key is the request", () => {
       sliceKey({ ...base, compare: "pair1" }),
       sliceKey({ ...base, metric: "jaccard" }),
       sliceKey({ ...base, keep: 3296 }),
+      sliceKey({ ...base, correspondence: "metric" }),
     ]);
-    expect(keys.size).toBe(6);
+    expect(keys.size).toBe(7);
+  });
+
+  it("keys the shared correspondence as a request that names none", () => {
+    // The default, so a cache filled before the parameter existed still hits.
+    expect(sliceKey(parts({ correspondence: "shared" }))).toBe(sliceKey(parts()));
   });
 
   it("is stable for the same request", () => {

@@ -37,6 +37,8 @@ export interface ReportInput {
   gradientEnds?: { identical: string; diverged: string };
   /** Set when the panels held branches with no value at all. */
   absent?: { label: string; color: string };
+  /** Set when small clades were drawn grey, their value saying nothing. */
+  unmeasured?: { label: string; color: string };
   /** Set when the leaves were painted by moved leaves instead (§46). */
   leafCategories?: { description: string; swatches: { label: string; color: string }[] } | null;
 }
@@ -67,6 +69,7 @@ export function toReportInput(input: ReportInput): ComparisonReportInput {
       legend: [...(input.swatches ?? [])].map(([label, color]) => ({ label, color })),
       gradientEnds: input.gradientEnds,
       absent: input.absent,
+      unmeasured: input.unmeasured,
       leafCategories: input.leafCategories ?? null,
     },
     footnotes: [

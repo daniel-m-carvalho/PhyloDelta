@@ -28,13 +28,27 @@ The agreement set is recovered by walking back from the roots and re-asking
 which term won, in that fixed order. Where several sets are equally large the
 first term wins, so the moved set is deterministic — and can differ from
 phangorn's choice, though never in size.
+
+Its own correspondence (§52)
+----------------------------
+The agreement subtree is itself a pairing of the two trees, so MAST colours
+its view and links its panels by it rather than by the shared Jaccard search:
+
+* ``similarity`` of a clade is the share of its leaves inside the agreement
+  subtree — 1 for a clade wholly kept, 0 for one whose every leaf moved, and a
+  leaf's own 1 or 0.
+* ``corresponds`` is where those kept leaves sit in the other tree: their
+  lowest common ancestor there. A clade that keeps none is linked by all of its
+  leaves instead, so a jump from it still lands where its leaves are; its
+  similarity of 0 already says the agreement subtree does not pair it. A leaf
+  is linked to itself in the other tree, kept or moved.
 """
 
 from __future__ import annotations
 
 import numpy as np
 
-from ....trees.correspondence import Correspondence, _aggregate, _leaf_index
+from ....trees.correspondence import Correspondence, _aggregate, _Lca, _leaf_index
 from ....trees.newick import TreeArrays
 from ...contract import MetricResult, MetricSide
 from ...runners import MetricFailed
@@ -211,6 +225,41 @@ def _per_node(arrays: TreeArrays, moved_leaf: np.ndarray) -> np.ndarray:
     return (running[end] - running[np.arange(arrays.n_nodes)]).astype(np.float32)
 
 
+def _own_correspondence(
+    this: TreeArrays,
+    other: TreeArrays,
+    kept_leaf: np.ndarray,
+    this_in_other: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """``similarity`` and ``corresponds`` for one side, from the kept leaves.
+
+    ``kept_leaf`` marks this tree's kept leaves by node; ``this_in_other`` is
+    each leaf's position in the other tree's leaf order (-1 at internal nodes).
+    The LCA of a set of leaves is the LCA of its first and last in leaf order,
+    so each clade needs only the lowest and highest position among its kept
+    leaves — one fold up the tree — and one LCA query.
+    """
+    is_leaf = this_in_other >= 0
+    end = np.asarray(this.subtree_end, dtype=np.int64)
+    running = np.concatenate(([0], np.cumsum(kept_leaf, dtype=np.int64)))
+    kept_count = running[end] - running[np.arange(this.n_nodes)]
+    leaves = np.asarray(this.leaf_count, dtype=np.int64)
+    similarity = (kept_count / np.maximum(leaves, 1)).astype(np.float32)
+
+    none = np.iinfo(np.int64).max
+    position = np.asarray(this_in_other, dtype=np.int64)
+    kept_lo, _, _ = _aggregate(this, np.where(is_leaf & kept_leaf, position, none))
+    _, kept_hi, _ = _aggregate(this, np.where(is_leaf & kept_leaf, position, -1))
+    all_lo, all_hi, _ = _aggregate(this, position)
+    some = kept_count > 0
+    lo = np.where(some, kept_lo, all_lo)
+    hi = np.where(some, kept_hi, all_hi)
+
+    _, other_leaf_node = _leaf_index(other)
+    corresponds = _Lca(other).query(other_leaf_node[lo], other_leaf_node[hi])
+    return similarity, corresponds.astype(np.uint32)
+
+
 def compute(
     left: TreeArrays, right: TreeArrays, correspondence: Correspondence
 ) -> MetricResult:
@@ -241,6 +290,13 @@ def compute(
             f"{len(moved_labels_left)} vs {len(moved_labels_right)}"
         )
 
+    left_similarity, left_corresponds = _own_correspondence(
+        left, right, left_is_leaf & (left_moved == 0), inputs["left_in_right"]
+    )
+    right_similarity, right_corresponds = _own_correspondence(
+        right, left, right_is_leaf & (right_moved == 0), right_in_left
+    )
+
     n_leaves = left.n_leaves
     mast_size = int(kept_positions.sum())
     moved = n_leaves - mast_size
@@ -252,6 +308,14 @@ def compute(
             "moved_fraction": moved / n_leaves if n_leaves else 0.0,
             "n_leaves": n_leaves,
         },
-        left=MetricSide(columns={"moved": _per_node(left, left_moved)}),
-        right=MetricSide(columns={"moved": _per_node(right, right_moved)}),
+        left=MetricSide(columns={
+            "moved": _per_node(left, left_moved),
+            "similarity": left_similarity,
+            "corresponds": left_corresponds,
+        }),
+        right=MetricSide(columns={
+            "moved": _per_node(right, right_moved),
+            "similarity": right_similarity,
+            "corresponds": right_corresponds,
+        }),
     )
