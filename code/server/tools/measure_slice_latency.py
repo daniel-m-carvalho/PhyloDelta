@@ -62,6 +62,9 @@ def main() -> None:
         url = (
             f"{BASE}/trees/{left}/slice?budget={BUDGET}"
             f"&compare={record['id']}&metric={METRIC}"
+            # What the app asks since §52: the metric's own correspondence where it
+            # has one (MAST), the shared one otherwise (RF), so the same request.
+            "&correspondence=metric"
         )
 
         try:
