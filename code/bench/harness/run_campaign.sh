@@ -97,7 +97,8 @@ print(next(r["id"] for r in rows if r["leaves"] == int(sys.argv[2])))' \
 
 step_setup() {
   # Everything a fresh clone lacks, from the lockfiles and the pinned recipes.
-  (cd "$SERVER" && uv sync --frozen --python 3.12 && ./native/build.sh && ./native/build_treediff.sh)
+  (cd "$SERVER" && uv sync --frozen --python 3.12 && ./native/build.sh && ./native/build_treediff.sh \
+    && ./native/build_rspr.sh)
   (cd "$CODE" && npm ci --cache "$CAMPAIGN_ROOT/npm-cache" && npm run build --workspace web)
 }
 

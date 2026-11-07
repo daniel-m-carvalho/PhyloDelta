@@ -637,9 +637,10 @@ if server:
           "claims it, poll until ready. Includes ingest, reconciliation, the "
           "correspondence search and the metrics asked for. **Twice**, because the "
           "two answers differ: (a) `rf` alone, which is what `DEFAULT_UPLOAD_METRICS` "
-          "builds; (b) `rf,mast`, which is what the app's upload form sends by default, "
-          "with MAST run where its memory estimate fits the budget and declined "
-          "where it does not. Each build's metrics are read back from the pair.\n")
+          "builds and the upload form's default; (b) `rf,mast`, one upload computed by "
+          "two metrics, which the app lists as two comparisons (§52), with MAST run "
+          "where its memory estimate fits the budget and declined where it does not. "
+          "Each build's metrics are read back from the pair.\n")
     print("| leaves | (a) `rf`, 2 threads | (a) `rf`, 10 threads | (b) `rf,mast`, 2 threads | MAST in (b) | bundle size |")
     print("|---:|---:|---:|---:|---|---:|")
     app_by = {r["leaves"]: r for r in app_builds}
@@ -814,9 +815,11 @@ if latency:
           "Latency and payload are set by the viewport budget, so neither "
           f"tracks the tree: **{last['leaves'] / first['leaves']:.0f}x more leaves, the "
           "same few milliseconds and the same few kilobytes.**\n")
-    print("Measured twice: on the `rf` store, and with `metric=mast` on the store "
-          "built the way the app uploads. Where MAST was declined the pair has no such "
-          "metric and the server says so by name.\n")
+    print("Measured twice, each with `correspondence=metric` as the app asks: on the "
+          "`rf` store, and with `metric=mast` on the store built with `rf,mast` — the "
+          "slice of a MAST comparison, coloured by MAST's own correspondence (§52). "
+          "Where MAST was declined the pair has no such metric and the server says so "
+          "by name.\n")
     print("| leaves | median | min | max | response | gzip | leaves drawn | `metric=mast` median | response | gzip |")
     print("|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
     for r in latency:
@@ -1029,8 +1032,13 @@ if phase_rows:
     print("*Seconds, from the worker's own per-metric timings at "
           "`PHYLODELTA_THREADS=2`. \"Shared\" is what every metric in a set pays "
           "once: parse, reconcile, correspondence, store.*\n")
-    print("| leaves | shared work | rf | rf-treediff | triplet | total | metrics as % of total |")
-    print("|---:|---:|---:|---:|---:|---:|---:|")
+    # Every metric the widest build asked for, in the order it asked: from v0.2.0
+    # that is all five, MAST and SPR included (§52-§54).
+    shown = max(
+        (b["metrics"] for r in phase_rows for b in r["builds"]), key=len
+    )
+    print("| leaves | shared work | " + " | ".join(shown) + " | total | metrics as % of total |")
+    print("|---:|---:|" + "---:|" * len(shown) + "---:|---:|")
 
     def secs(value):
         # `is not None`, not truthiness: a real 0.0 s must not print as "—".
@@ -1055,8 +1063,9 @@ if phase_rows:
         # is quantisation, not a measurement: it printed "100%" at 2,500 leaves
         # and "0%" at 1,000. Suppressed rather than shown as a number.
         share = f"{metric_sum / total * 100:.0f}%" if total and total >= 1.0 else "*n/a*"
-        print(f"| {row['leaves']:,} | {secs(shared)} | {one('rf')} | {one('rf-treediff')} "
-              f"| {one('triplet')} | {secs(total)} | {share} |")
+        print(f"| {row['leaves']:,} | {secs(shared)} | "
+              + " | ".join(one(m) for m in shown)
+              + f" | {secs(total)} | {share} |")
 
     top = max(phase_rows, key=lambda r: r["leaves"])
     top_widest = max(top["builds"], key=lambda b: len(b["metrics"]))
@@ -1071,19 +1080,35 @@ if phase_rows:
     mid_per = mid_widest["per_metric"]
     top_total = top_widest.get("total_s") or 0
     trip_share = f"{trip / top_total * 100:.0f}%" if trip and top_total else "—"
+    mid_trip = (mid_per.get("triplet") or {}).get("seconds")
+    mid_shared = mid_widest.get("shared_s")
+    # Worked out, not written down: the claim has to follow the numbers when
+    # they are re-measured (triplet runs twice per build since §54).
+    mid_claim = (
+        f"costs {mid_trip:.1f} s against {mid_shared:.1f} s for all the shared work, adding "
+        f"{mid_trip / mid_shared * 100:.0f}% to it"
+        if mid_trip and mid_shared else "was not measured"
+    )
     print(f"\n**The answer reverses with size, so \"does the metric matter\" has no single "
           f"answer.** `rf` and `rf-treediff` are free at every scale — together {cheap:,.1f} s of a "
           f"{top_total:,.0f} s build at {top['leaves']:,} leaves. `triplet` is not: at 141,160 it "
-          f"costs {mid_per['triplet']['seconds']:.1f} s against {mid_widest['shared_s']:.1f} s for "
-          f"all the shared work, very nearly doubling the build. By "
-          f"{top['leaves']:,} `triplet` alone has fallen back to {trip_share} of the build (the "
-          f"table's last column counts all three metrics together), because the shared work is "
+          f"{mid_claim}. By "
+          f"{top['leaves']:,} `triplet` alone is {trip_share} of the build (the "
+          f"table's last column counts every metric together), because the shared work is "
           f"O(n^2) and the metric is near-linear, so correspondence overtakes it.\n")
+    spr = [(r["leaves"], (max(r["builds"], key=lambda b: len(b["metrics"]))["per_metric"]
+                          .get("spr") or {}).get("seconds")) for r in phase_rows]
+    spr = [(n, s) for n, s in spr if s is not None]
+    if spr:
+        n, s = spr[-1]
+        print(f"`spr`, by rspr's linear-time approximation (§53), stays small: {s:.1f} s at "
+              f"{n:,} leaves. `mast` runs where its memory estimate fits the campaign's "
+              f"budget and is **refused** by name above it (§50), so its column stops.\n")
     print("So §9's claim that several metrics cost little more than one is **true "
           "asymptotically and misleading in the middle** — which is where most real trees sit. "
           "The claim should be stated about the *shared* work, which is what is actually shared, "
           "rather than about metrics in general.\n")
-    print("**Measured from the worker's log, not from wall-clock differences.** The three metric "
+    print("**Measured from the worker's log, not from wall-clock differences.** The metric "
           "sets are uploaded in a fixed order, so the \"+triplet\" build is always last, and the "
           "first pass showed it at a suspiciously uniform 1.7-2x the others — the shape of an "
           "ordering artefact rather than a cost. Per-metric timings carry no such confound.\n")
@@ -1160,10 +1185,10 @@ if transfer_rows:
           "cost with a total one — the error Table 2 exists to prevent. Add the "
           "columns as you see fit; the application bytes are paid once per "
           "visit, the data bytes once per comparison.\n")
-    print("**The last two columns are the app's own path**: the store built with "
-          "`rf,mast`, as its upload form does. The slices carried MAST where the query "
-          "says `metric=mast`, read from the request itself; where MAST was declined "
-          "the app falls back to `rf`.\n")
+    print("**The last two columns are a MAST comparison in the app**: the store built "
+          "with `rf,mast`, opened as its MAST comparison (`m=mast`) where MAST ran and "
+          "as its RF one where it was declined. Whether the slices carried MAST is read "
+          "from the requests themselves (`metric=mast`).\n")
 
     def carried(entry):
         slices = [a["url"] for a in entry["phylodelta"]["api"] if "/slice" in a["url"]]

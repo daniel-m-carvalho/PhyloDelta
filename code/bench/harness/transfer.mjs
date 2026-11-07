@@ -140,12 +140,28 @@ async function runPhyloio(launchOwned, leaves) {
   }
 }
 
+/**
+ * Which comparison of a pair to open (§52: one comparison per metric).
+ *
+ * The plain run opens the pair's RF comparison. `BENCH_LABEL=app` opens its MAST
+ * comparison where MAST was computed, and its RF one where MAST was declined:
+ * asked of the server, not assumed from the rung.
+ */
+async function metricToOpen(pairId) {
+  if (!process.env.BENCH_LABEL) return "rf";
+  const response = await fetch(
+    `http://localhost:${PORT}/api/v1/comparisons/${pairId}?metric=mast`,
+  );
+  return response.ok ? "mast" : "rf";
+}
+
 async function runPhylodelta(launchOwned, pairId) {
   const browser = await launchOwned();
   const page = await browser.newPage({ viewport: VIEWPORT });
   const counted = meter(page);
   try {
-    await page.goto(`http://localhost:${PORT}/#/c/${pairId}`, { timeout: LOAD_MS });
+    const metric = await metricToOpen(pairId);
+    await page.goto(`http://localhost:${PORT}/#/c/${pairId}?m=${metric}`, { timeout: LOAD_MS });
     // The same readiness signal the ceiling run uses: both panels stating what
     // they are showing. Stopping earlier would undercount the slices.
     await page.waitForFunction(

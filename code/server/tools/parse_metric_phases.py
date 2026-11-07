@@ -107,7 +107,8 @@ def main() -> None:
 
     OUT.write_text(json.dumps({"log": str(LOG), "rows": rows}, indent=2))
 
-    print(f"{'leaves':>9}  {'shared':>8}  {'rf':>7}  {'treediff':>9}  {'triplet':>9}  {'total':>8}")
+    print(f"{'leaves':>9}  {'shared':>8}  {'rf':>7}  {'treediff':>9}  {'triplet':>9}  "
+          f"{'mast':>8}  {'spr':>7}  {'total':>8}")
     for row in rows:
         widest = max(row["builds"], key=lambda b: len(b["metrics"]))
         per = widest["per_metric"]
@@ -128,6 +129,7 @@ def main() -> None:
         print(
             f"{row['leaves']:>9,}  {secs(widest.get('shared_s')):>8}  "
             f"{cell('rf'):>7}  {cell('rf-treediff'):>9}  {cell('triplet'):>9}  "
+            f"{cell('mast'):>8}  {cell('spr'):>7}  "
             f"{secs(widest.get('total_s')):>8}"
         )
     print(f"\nwritten to {OUT.name}")

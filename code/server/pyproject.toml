@@ -1,6 +1,6 @@
 [project]
 name = "phylodelta"
-version = "0.1.0"
+version = "0.2.0"
 description = "PhyloDelta: backend for dynamic phylogenetic tree comparison — columnar tree store, pluggable comparison metrics, and a slicing API for a browser frontend."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"

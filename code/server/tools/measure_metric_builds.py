@@ -7,11 +7,13 @@ argument, not a measurement, and it is the kind of argument this project has
 already been wrong about — so it is measured through the real upload path, the
 same way the thread comparison was.
 
-Three sets, at the deployment thread count:
+Four sets, at the deployment thread count:
 
     rf                        the built-in, in-process, per-clade
     rf, rf-treediff           adds one subprocess over a succinct representation
     rf, rf-treediff, triplet  adds a finer-grained distance
+    all five                  adds MAST and SPR, each with its own correspondence
+                              (§52-§54): what supporting several metrics costs
 
 Each set is a **separate upload**, so each figure is a whole build: parse,
 reconcile, correspondence, store, metrics. That is deliberate — the question is
@@ -49,6 +51,7 @@ SETS: list[list[str]] = [
     ["rf"],
     ["rf", "rf-treediff"],
     ["rf", "rf-treediff", "triplet"],
+    ["rf", "rf-treediff", "triplet", "mast", "spr"],
 ]
 
 OUT = Path(__file__).resolve().parents[2] / "bench" / "results" / "metric_builds.json"
@@ -117,7 +120,7 @@ def main() -> None:
     rungs = sorted({int(p.name.split("-")[1]) for p in LADDER.glob("ladder-*-a.nwk")})
     rows: list[dict] = []
     print(f"api {BASE}\n")
-    print(f"{'leaves':>9}  {'rf':>9}  {'rf+treediff':>12}  {'+triplet':>9}")
+    print(f"{'leaves':>9}  {'rf':>9}  {'rf+treediff':>12}  {'+triplet':>9}  {'all five':>9}")
 
     for leaves in rungs:
         left = LADDER / f"ladder-{leaves:06d}-a.nwk"
@@ -151,7 +154,7 @@ def main() -> None:
             cells.append(
                 f"{build['build_s']:.1f}s" if build["status"] == "ready" else build["status"]
             )
-        print(f"{leaves:>9,}  {cells[0]:>9}  {cells[1]:>12}  {cells[2]:>9}")
+        print(f"{leaves:>9,}  {cells[0]:>9}  {cells[1]:>12}  {cells[2]:>9}  {cells[3]:>9}")
         # Written after every rung: a run this long is useless if being
         # interrupted loses it.
         OUT.write_text(json.dumps({"api": BASE, "sets": SETS, "rows": rows}, indent=2))
