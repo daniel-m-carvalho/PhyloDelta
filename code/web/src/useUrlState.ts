@@ -22,12 +22,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * refresh lossless, which is how the gap was noticed.
  */
 export interface ViewOptions {
-  gradient: boolean;
   /**
-   * Paint leaves by the moved-leaves metric instead of the gradient (§46).
-   * One presentation at a time: setting it clears `gradient`, and the reverse.
+   * The metric the comparison is read by (§52): one comparison is one metric,
+   * so this names which of a pair's comparisons is open. Null for the first
+   * the listing gives, which is what a link from before this opens.
    */
-  moved: boolean;
+  metric: string | null;
+  /**
+   * What colours the trees: the name of one of the metric's presentations,
+   * "none" for the trees in black, or "" for the metric's first.
+   */
+  colour: string;
   /** Where the gradient is drawn. */
   colorTarget: "branches" | "clades";
   typing: boolean;
@@ -55,8 +60,8 @@ export interface ViewOptions {
 }
 
 export const DEFAULT_OPTIONS: ViewOptions = {
-  gradient: true,
-  moved: false,
+  metric: null,
+  colour: "",
   colorTarget: "branches",
   typing: false,
   columns: [],
@@ -111,8 +116,13 @@ function parse(hash: string): ViewState {
     options: {
       // Absent means the default, so only what differs is ever written and an
       // old link without these keys still opens the view it always did.
-      gradient: query.get("g") !== "0" && query.get("mv") !== "1",
-      moved: query.get("mv") === "1",
+      // `mv=1` and `own=` are links from before one comparison was one metric:
+      // both meant MAST, coloured on the leaves or on the branches.
+      metric:
+        query.get("m") || query.get("own") || (query.get("mv") === "1" ? "mast" : null),
+      colour:
+        query.get("cb") ??
+        (query.get("mv") === "1" ? "leaves" : query.get("g") === "0" ? "none" : ""),
       colorTarget: query.get("gc") === "clades" ? "clades" : "branches",
       typing: query.get("t") === "1",
       // Repeated keys rather than a joined string: a column name is arbitrary
@@ -134,8 +144,8 @@ function format(state: ViewState): string {
   if (state.left.length) query.set("l", state.left.join(","));
   if (state.right.length) query.set("r", state.right.join(","));
   const options = state.options ?? DEFAULT_OPTIONS;
-  if (options.moved) query.set("mv", "1");
-  else if (!options.gradient) query.set("g", "0");
+  if (options.metric) query.set("m", options.metric);
+  if (options.colour) query.set("cb", options.colour);
   if (options.colorTarget !== DEFAULT_OPTIONS.colorTarget) query.set("gc", options.colorTarget);
   if (options.typing) query.set("t", "1");
   for (const column of options.columns) query.append("col", column);

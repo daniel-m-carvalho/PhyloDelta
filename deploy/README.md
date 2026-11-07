@@ -121,7 +121,11 @@ the repository. That is fine for running the image on the university VM. **If
 you distribute the image itself**, you must also offer TreeDiff's source
 (<https://github.com/pedroparedesbranco/TreeDiff>) with it.
 
-The build is optional: if it fails, the image still builds, those two metrics
+`spr` runs rspr (`native/build_rspr.sh`, seconds), the same way: GPL-3.0, a
+separate program under `/app/native/rspr/`, never linked. **If you distribute
+the image**, offer its source too (<https://github.com/cwhidden/rspr>).
+
+The builds are optional: if one fails, the image still builds, its metrics
 report `available: false` at `/api/v1/metrics`, the upload form lists them as
 "not installed on this server", and `rf` still works. Check with:
 

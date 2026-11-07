@@ -251,6 +251,12 @@ def is_available(manifest: MetricManifest) -> bool:
     exists and is configured — but a client should not offer it. Saying so is
     better than letting the user pick it and get an error.
     """
+    places = {"native": str(config.NATIVE_DIR), "plugin": str(manifest.directory or "")}
+    # A python metric may still run a program — `spr` runs rspr (§53) — and
+    # lists it under `requires`, so it is offered only where that program is.
+    for needed in manifest.raw.get("requires", []):
+        if not Path(_substitute(needed, places)).exists():
+            return False
     if manifest.kind != "subprocess":
         return True
     command = manifest.raw.get("command") or shlex.split(manifest.entrypoint or "")

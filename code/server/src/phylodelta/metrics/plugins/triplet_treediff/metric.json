@@ -2,27 +2,28 @@
   "name": "triplet",
   "title": "Triplet distance",
   "version": "1",
-  "kind": "subprocess",
-  "command": ["${native}/TreeDiff/trip_sht", "${left}", "${right}"],
-  "input": {
-    "format": "newick",
-    "include_lengths": false
+  "kind": "python",
+  "entrypoint": "phylodelta.metrics.plugins.triplet_treediff.triplet:compute",
+  "requires": [
+    "${native}/TreeDiff/trip_sht_nodes"
+  ],
+  "description": "Number of leaf triples resolved differently by the two trees. Finer-grained than Robinson-Foulds, which judges a whole clade present or absent; a triple disagreement is a smaller unit than a clade, so this does not saturate on large clades the way RF does. Computed by TreeDiff's trip_sht program, run as a separate process, in a copy that also writes how many triples each node decides alike, so every clade can be coloured by the share of its own triples the two trees resolve the same way. TreeDiff was released with Branco, Vaz & Francisco (2024), but that paper covers Robinson-Foulds only; no publication describes its triplet programs.",
+  "reference": {
+    "citation": "TreeDiff (trip_sht), with a PhyloDelta patch that writes its per-node counts. Open-source C++ tool; its triplet programs are not described in a publication.",
+    "url": "https://github.com/pedroparedesbranco/TreeDiff"
   },
-  "timeout_s": 1800,
-  "parse": {
-    "scalars": [
-      {
-        "key": "triplet",
-        "pattern": "Triplets distance is:\\s*([0-9]+)",
-        "type": "int",
-        "required": true
-      }
-    ]
-  },
-  "description": "Number of leaf triples resolved differently by the two trees. Finer-grained than Robinson-Foulds, which judges a whole clade present or absent; a triple disagreement is a smaller unit than a clade, so this does not saturate on large clades the way RF does. Computed by TreeDiff's trip_sht program, run as a separate process. TreeDiff was released with Branco, Vaz & Francisco (2024), but that paper covers Robinson-Foulds only; no publication describes its triplet programs.",
-  "reference": {"citation": "TreeDiff (trip_sht). Open-source C++ tool; its triplet programs are not described in a publication.", "url": "https://github.com/pedroparedesbranco/TreeDiff"},
+  "correspondence": "self",
+  "presentations": [
+    {
+      "name": "branches",
+      "label": "Triplets grouped alike",
+      "kind": "gradient",
+      "description": "Branches: blue where every three leaves inside the clade are grouped the same way in both trees, yellow where none are, grey where the clade has fewer than three leaves",
+      "min_leaves": 3
+    }
+  ],
   "capabilities": {
-    "per_clade": false,
+    "per_clade": true,
     "symmetric": true,
     "weighted": false,
     "requires_shared_leaf_set": true
@@ -33,8 +34,34 @@
         "key": "triplet",
         "label": "Triplet distance",
         "description": "Leaf triples on which the two trees disagree, out of C(n,3) possible."
+      },
+      {
+        "key": "triplet_normalised",
+        "label": "Triplet distance, normalised",
+        "description": "The triplet distance divided by C(n,3): 0 identical, 1 every triple differs."
+      },
+      {
+        "key": "n_leaves",
+        "label": "Leaves compared"
       }
     ],
-    "columns": []
+    "columns": [
+      {
+        "name": "similarity",
+        "dtype": "float32",
+        "semantics": "ratio",
+        "label": "Share of the clade's triples grouped alike",
+        "render": "gradient",
+        "description": "1 - D/C(leaves, 3), where D is the triplet distance between the two trees restricted to the clade's leaves; 1 for a clade of fewer than three leaves."
+      },
+      {
+        "name": "corresponds",
+        "dtype": "uint32",
+        "semantics": "index",
+        "label": "The smallest clade of the other tree holding this clade's leaves",
+        "render": "link",
+        "description": "Where all of the clade's triples are decided in the other tree. A leaf is linked to itself."
+      }
+    ]
   }
 }

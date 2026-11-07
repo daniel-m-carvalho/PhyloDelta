@@ -38,13 +38,12 @@ On the home page, under **New comparison**:
    species** / **Right species**. Naming the species lets the result say whether matching leaf names
    really are the same organisms. Sequence types are numbered per species, so across species the same
    number is a coincidence.
-4. Choose what to **Compare with** (the metric). Under the choice, "Computed as in…" says where the
-   metric's computation comes from.
-5. Keep **Also find moved leaves (MAST)** ticked to be able to show, later, which leaves the two
-   trees place differently ([Moved leaves](#moved-leaves)). It adds seconds on trees of tens of
-   thousands of leaves; above 40,000 leaves it is skipped, with the reason, and the rest of the
-   comparison is still computed.
-6. Click **Upload and compare**.
+4. Choose the **Metric**: Robinson-Foulds, Triplet, MAST (maximum agreement subtree), SPR (subtree prune and regraft), and any
+   other this server offers. A comparison is made by one metric; to see the same trees by another, upload them again
+   with it. Under the choice, "Computed as in…" says where the metric's computation comes from.
+   MAST adds seconds on trees of tens of thousands of leaves; a pair too large for the server's
+   memory budget is declined, and the list says why.
+5. Click **Upload and compare**.
 
 The comparison is computed on the server in the background. The panel shows **Queued — waiting for a
 worker**, then **Computing the comparison…**, then opens the comparison when it is ready. Large trees can take minutes. You can leave
@@ -126,8 +125,8 @@ The mark stays until you clear it with **×** on the chip, or **Esc**.
 
 | Option | What it does |
 |---|---|
-| **Colour the trees by: Divergence / Moved leaves (MAST) / Nothing** | One colouring at a time. **Divergence**: how much each clade disagrees, on the branches. **Moved leaves**: which leaves the two trees place differently ([below](#moved-leaves)). **Nothing**: the trees in black. See [Reading a comparison](reading-a-comparison.md). |
-| **Colour the divergence on: Branches / Clades** | With Divergence: put the colour on the branches, or on the collapsed triangles. |
+| **Colour the trees by** | Only the colourings the comparison's metric offers, one at a time, plus **Nothing** (the trees in black). Robinson-Foulds: **Divergence**, how much each clade disagrees, on the branches. Triplet: **Triplets grouped alike**, the share of each clade's groups of three leaves that both trees arrange the same way. MAST: **Share of each clade kept**, on the branches, or **Kept or moved**, on the leaves ([below](#moved-leaves)). SPR: **How intact each clade is**, on the branches, or **Largest block, moved together or moved alone**, on the leaves. A grey branch has nothing to measure (a single leaf, or under Triplet a clade of two). See [Reading a comparison](reading-a-comparison.md). |
+| **Colour the divergence on: Branches / Clades** | With a colouring on the branches: put the colour on the branches, or on the collapsed triangles. |
 | **Isolate data** | A bar on each leaf counting its isolates ([section 7](#7-isolate-data)). |
 | **Clade sizes** | Label every triangle with its number of leaves. |
 | **Branch lengths** | Write each branch's length beside it, where there is room. Zoom in to see more. |
@@ -136,20 +135,20 @@ The mark stays until you clear it with **×** on the chip, or **Esc**.
 
 ### Moved leaves
 
-**View options → Colour the trees by: Moved leaves (MAST)** paints each **leaf** by whether it is in
-the *maximum agreement subtree*, the largest set of leaves both trees arrange in exactly the same
-way:
+A comparison by **MAST (maximum agreement subtree)** shows **Moved leaves N of M** in the top bar, and offers two
+colourings. **Share of each clade kept** colours each branch from blue (all of its leaves kept) to
+yellow (all moved). **Kept or moved** paints each **leaf** by whether it is in the *maximum
+agreement subtree*, the largest set of leaves both trees arrange in exactly the same way:
 
 - **blue**: in the agreement subtree, placed the same in both trees;
 - **yellow**: moved, placed differently;
 - **red**: not in the other tree.
 
-A triangle is yellow if it holds any moved leaf; hover over it for "N of M leaves moved". The top
-bar adds **Moved N of M leaves**. The branches are black while this is on, and the panel legend
-changes to match.
+A triangle is yellow if it holds any moved leaf; hover over it for "N of M leaves: moved". The
+branches are black while this is on, and the panel legend changes to match.
 
-It is offered only for comparisons computed with it (the upload's **Also find moved leaves**
-checkbox; the demo comparisons have it). Otherwise it is greyed out, with the reason.
+The demo has one comparison per metric, all of the same two vibrio trees: by Robinson-Foulds, MAST,
+SPR and Triplet.
 
 ## 7. Isolate data
 

@@ -94,7 +94,7 @@ def the_api(api: str, version: str) -> list[str]:
     # Refused by name: TreeDiff's metrics are the ones that can go missing
     # while the image still builds (Dockerfile).
     check("every metric it lists can run", not missing,
-          f"unavailable: {', '.join(missing)} (TreeDiff not built into the image?)")
+          f"unavailable: {', '.join(missing)} (TreeDiff or rspr not built into the image?)")
     return [m["name"] for m in metrics if m["available"]]
 
 

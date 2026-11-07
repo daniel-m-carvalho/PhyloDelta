@@ -111,14 +111,25 @@ def project(
 
     A metric with no per-node columns passes through unchanged — that is a
     supported result, not an error.
+
+    A metric whose correspondence is its own (§52) returns ``corresponds``
+    among its columns, and it points into the other tree exactly as the shared
+    one does, so it is translated the same way. The name is reserved for such
+    metrics by the manifest, so no other column is mistaken for one.
     """
 
-    def side(values: MetricSide | None, own: np.ndarray, n: int) -> MetricSide | None:
+    def side(
+        values: MetricSide | None, own: np.ndarray, other: np.ndarray, n: int
+    ) -> MetricSide | None:
         if values is None or not values.columns:
             return values
         return MetricSide(
             columns={
-                name: project_column(column, own, n)
+                name: (
+                    project_corresponds(column, own, other, n)
+                    if name == "corresponds"
+                    else project_column(column, own, n)
+                )
                 for name, column in values.columns.items()
             }
         )
@@ -126,7 +137,7 @@ def project(
     return MetricResult(
         name=result.name,
         summary=dict(result.summary),
-        left=side(result.left, left_source_index, n_left_nodes),
-        right=side(result.right, right_source_index, n_right_nodes),
+        left=side(result.left, left_source_index, right_source_index, n_left_nodes),
+        right=side(result.right, right_source_index, left_source_index, n_right_nodes),
         notes=dict(result.notes),
     )

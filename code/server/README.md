@@ -386,7 +386,8 @@ anywhere.
 |---|---|---|
 | `rf` | python | Robinson-Foulds distance, plus a per-clade `exact` column |
 | `rf-treediff` | subprocess | The same distance from TreeDiff, as an independent check |
-| `triplet` | subprocess | Triplet distance — a finer-grained signal that does not saturate on large clades |
+| `triplet` | python, runs TreeDiff | Triplet distance — a finer-grained signal that does not saturate on large clades — with each clade coloured by the share of its own triples grouped alike (§54). Needs `./native/build_treediff.sh` |
+| `spr` | python, runs rspr | Rooted SPR distance as a range (exact when small enough to search), with its agreement forest as the view. Needs `./native/build_rspr.sh` (§53) |
 | `mast` | python (+ native) | Moved leaves: the maximum agreement subtree, with a per-clade `moved` count. Declines a pair whose table would exceed `PHYLODELTA_METRIC_MEMORY`, naming both numbers; no default, so unset it runs on any pair (§46, §50) |
 
 `rf` and `rf-treediff` should always agree; a disagreement means one of them is wrong. The
@@ -406,3 +407,9 @@ implementation. Two invocation kinds are defined: `python` (imported in-process)
 (trees in, results out, as JSON on stdio) — the second so a metric can be written in **any**
 language. Every metric returns the same shape, so neither the API nor the frontend knows which
 produced a result. See `metrics/contract.py`.
+
+A metric also says what colours its view and links the two panels: `"correspondence": "jaccard"`
+(the default, the shared best-matching-clade search) or `"self"`, when its own computation pairs
+the trees — it then returns two more columns, `similarity` and `corresponds`. MAST does. A slice
+asks for it with `correspondence=metric`. The whole checklist for a new metric is in
+[DECISIONS §52.1](../../docs/DECISIONS.md).

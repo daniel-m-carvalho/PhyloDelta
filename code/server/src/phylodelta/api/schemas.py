@@ -103,7 +103,24 @@ class PairSummary(BaseModel):
     #: types are numbered per species, so a vibrio and a clostridium tree
     #: overlap on ~99% of labels while sharing no actual organism.
     caution: str | None = None
+    #: Every metric computed for this pair of trees. The listing itself has one
+    #: entry per metric, named in `metric`.
     metrics: list[str] = Field(default_factory=list)
+    metric: str = Field(
+        "",
+        description=(
+            "The metric this entry is the comparison by (§52). A pair computed "
+            "with several metrics is listed once for each: one comparison is one "
+            "metric, read and coloured as that metric declares."
+        ),
+    )
+    error: str | None = Field(
+        None,
+        description=(
+            "Why this comparison could not be made: the job's failure, or this "
+            "metric's when the pair was computed but the metric declined."
+        ),
+    )
 
 
 class IsolateSummary(BaseModel):
@@ -167,6 +184,40 @@ class MetricOutputsDescription(BaseModel):
     columns: list[ColumnDescription] = Field(default_factory=list)
 
 
+class PresentationDescription(BaseModel):
+    """One way a metric's result colours the trees (§52)."""
+
+    name: str
+    label: str
+    kind: str = Field(
+        description=(
+            "`gradient`: each branch by the comparison's `similarity`. "
+            "`categories`: each leaf by `columns`, disjoint counts that are 0 or 1 at a "
+            "leaf — `categories[0]` names a leaf in none, `categories[i]` one in "
+            "`columns[i-1]` — and a collapsed clade by how many of its leaves are in each."
+        )
+    )
+    description: str = ""
+    #: The first of `columns`, kept for clients that read one.
+    column: str = ""
+    columns: list[str] = Field(default_factory=list)
+    categories: list[str] = Field(default_factory=list)
+    min_leaves: int = Field(
+        1,
+        description=(
+            "`gradient` only: a clade of fewer leaves has nothing to score — a leaf "
+            "always matches itself — and is drawn as such, not on the ramp."
+        ),
+    )
+
+
+class HeadlineDescription(BaseModel):
+    key: str
+    of: str = ""
+    #: Set when the number is a range, `key` to `to`.
+    to: str = ""
+
+
 class MetricReference(BaseModel):
     """Where a metric's implementation comes from."""
 
@@ -203,6 +254,27 @@ class MetricSummary(BaseModel):
     outputs: MetricOutputsDescription = Field(
         default_factory=MetricOutputsDescription,
         description="What this metric contributes, beyond the shared correspondence.",
+    )
+    presentations: list[PresentationDescription] = Field(
+        default_factory=list,
+        description=(
+            "The ways this metric's result can colour the trees, in the order to "
+            "offer them; never empty (§52). A client offers these and no others "
+            "for a comparison computed with it."
+        ),
+    )
+    headline: HeadlineDescription | None = Field(
+        None,
+        description="The summary scalar to show as its number, and what it is out of.",
+    )
+    correspondence: str = Field(
+        "jaccard",
+        description=(
+            "What colours this metric's view and links its two panels (§52). "
+            "`jaccard`: the pair's shared correspondence. `self`: the metric's own, "
+            "served with `correspondence=metric`; its `similarity` column in "
+            "`outputs` says what the score means, for a legend."
+        ),
     )
 
 
@@ -461,12 +533,23 @@ class ComparisonValues(BaseModel):
     """
 
     id: list[int] = Field(description="Stored node ids, matching the slice's nodes.id.")
+    correspondence: str = Field(
+        "jaccard",
+        description=(
+            "Which correspondence `similarity` and `corresponds` come from: "
+            "`jaccard`, the pair's shared best-corresponding-clade search, or the "
+            "name of the metric whose own correspondence was asked for with "
+            "`correspondence=metric` (GET /api/metrics says which metrics have one)."
+        ),
+    )
     similarity: list[float | None] = Field(
         description=(
-            "Overlap with the best corresponding clade in the other tree, 0..1. "
+            "How alike this node is to its counterpart in the other tree, 0..1, "
+            "as the correspondence named in `correspondence` measures it. For "
+            "`jaccard`, the overlap with the best corresponding clade. "
             "null where the node has no counterpart — it exists only in this "
             "tree, or was excluded when the leaf sets were reconciled. "
-            "Drives the branch colour gradient, for every metric."
+            "Drives the branch colour gradient."
         )
     )
     corresponds: list[int | None] = Field(

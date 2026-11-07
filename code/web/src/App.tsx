@@ -17,10 +17,18 @@ import type {
   ComparisonStatus,
   ComparisonSummary,
   DatasetsResponse,
+  MetricSummary,
   PairSummary,
   WhoAmI,
 } from "./api/types";
-import { hasMovedLeaves, headline, movedLeavesMissing, presentation, viewMetric } from "./comparison/metric";
+import {
+  headline,
+  isEntry,
+  metricTitle,
+  presentationsOf,
+  shownPresentation,
+  viewMetric,
+} from "./comparison/metric";
 import { pairName, treeName } from "./names";
 import { describeKey, unusedTables } from "./upload/isolateReport";
 
@@ -53,13 +61,18 @@ export function App() {
   );
   const [chosen, setChosen] = useState<PairSummary | null>(null);
   const [summary, setSummary] = useState<ComparisonSummary | null>(null);
-  /** The moved-leaves scalars, for the header while that view is on (§46). */
-  const [movedSummary, setMovedSummary] = useState<ComparisonSummary | null>(null);
-  /** Why moved leaves cannot be shown for this comparison, when they cannot. */
-  const [movedMissing, setMovedMissing] = useState<string | null>(null);
   /** How each uploaded isolate table met its tree, from /status (§47). */
   const [isolateJoins, setIsolateJoins] = useState<ComparisonStatus["isolates"]>(undefined);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * What the server can compute, and so how each metric's comparison can be
+   * coloured and numbered (§52). Undefined until asked; a failure leaves it so,
+   * and every comparison is then offered the shared divergence gradient.
+   */
+  const [metrics, setMetrics] = useState<MetricSummary[] | undefined>(undefined);
+  useEffect(() => {
+    api.metrics().then(setMetrics).catch(() => setMetrics(undefined));
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -81,10 +94,11 @@ export function App() {
     async (pair: PairSummary) => {
       setRemoveBusy(true);
       try {
-        await api.removeComparison(pair.id);
+        // This metric's comparison only: the pair's others stay (§52).
+        await api.removeComparison(pair.id, pair.metric || undefined);
         // Leave the comparison if it is the one being looked at; its slices
         // would 404 from the next navigation onwards.
-        if (chosen?.id === pair.id) {
+        if (chosen && isEntry(chosen, pair.id, viewMetric(pair))) {
           setChosen(null);
           setView({ comparison: null, left: [], right: [] });
         }
@@ -105,10 +119,11 @@ export function App() {
   // view of two large trees is not free, and a URL that does not name what it
   // shows cannot be shared.
   useEffect(() => {
-    if (!view.comparison || chosen?.id === view.comparison) return;
-    const found = pairs.find((pair) => pair.id === view.comparison);
+    if (!view.comparison) return;
+    if (chosen && isEntry(chosen, view.comparison, options.metric)) return;
+    const found = pairs.find((pair) => isEntry(pair, view.comparison as string, options.metric));
     if (found) setChosen(found);
-  }, [pairs, view.comparison, chosen]);
+  }, [pairs, view.comparison, options.metric, chosen]);
 
   useEffect(() => {
     if (!chosen || chosen.status !== "ready") {
@@ -121,47 +136,31 @@ export function App() {
       .catch(() => setSummary(null));
   }, [chosen]);
 
-  // Moved leaves: their totals if computed, or why not. The reason is the
-  // server's own, from /status, so "declined: above the limit" reaches the
-  // person looking rather than one fewer option appearing with no word.
-  //
-  // The same /status says how each uploaded isolate table met its tree
-  // (§47), so it is asked on every opening now, not only when moved leaves
-  // are missing: an upload switches straight to the comparison, and this is
+  // /status says how each uploaded isolate table met its tree (§47). Asked on
+  // every opening: an upload switches straight to the comparison, and this is
   // where a table joined on the wrong column can say so.
   useEffect(() => {
-    setMovedSummary(null);
-    setMovedMissing(null);
     setIsolateJoins(undefined);
     if (!chosen || chosen.status !== "ready") return;
-    const moved = hasMovedLeaves(chosen);
-    if (moved) {
-      api.comparison(chosen.id, "mast").then(setMovedSummary).catch(() => setMovedSummary(null));
-    } else {
-      setMovedMissing(movedLeavesMissing());
-    }
     let live = true;
     api
       .status(chosen.id)
       .then((status) => {
-        if (!live) return;
-        setIsolateJoins(status.isolates);
-        if (!moved) setMovedMissing(movedLeavesMissing(status));
+        if (live) setIsolateJoins(status.isolates);
       })
-      // Every comparison has a /status, the catalogue's included (a row is
-      // recorded for each), so a failure here is a real one.
-      .catch((failed: unknown) => {
-        if (!live || moved) return;
-        setMovedMissing(movedLeavesMissing(failed instanceof Error ? failed : new Error(String(failed))));
-      });
+      .catch(() => undefined);
     return () => {
       live = false;
     };
   }, [chosen]);
 
-  const top = summary ? headline(summary) : null;
-  const colourBy = chosen ? presentation(options, chosen) : options.gradient ? "divergence" : "none";
-  const movedOn = colourBy === "moved";
+  // One comparison, one metric (§52): its number in the header, and only the
+  // colourings it declares in the menu.
+  const metric = chosen ? viewMetric(chosen) : null;
+  const manifest = metric ? metrics?.find((m) => m.name === metric) : undefined;
+  const top = summary ? headline(summary, manifest) : null;
+  const offered = metric ? presentationsOf(metric, metrics) : [];
+  const shown = shownPresentation(options.colour, offered);
 
   return (
     <div className="app">
@@ -172,18 +171,16 @@ export function App() {
         {top ? (
           <span className="headline" title={top.title}>
             {top.label} <strong>{top.value.toLocaleString()}</strong>
+            {top.to !== undefined ? (
+              <>
+                {" to "}
+                <strong>{top.to.toLocaleString()}</strong>
+              </>
+            ) : null}
             {top.normalised !== undefined ? (
               <em> ({top.normalised.toFixed(3)} normalised)</em>
             ) : null}
-          </span>
-        ) : null}
-        {movedOn && movedSummary ? (
-          <span
-            className="headline"
-            title="Leaves outside the maximum agreement subtree: the largest set both trees arrange identically. Also an upper bound on the SPR distance."
-          >
-            Moved <strong>{Number(movedSummary.summary.moved).toLocaleString()}</strong>
-            <em> of {Number(movedSummary.summary.n_leaves).toLocaleString()} leaves</em>
+            {top.of !== undefined ? <em> of {top.of.toLocaleString()}</em> : null}
           </span>
         ) : null}
         {me?.mock ? (
@@ -203,30 +200,21 @@ export function App() {
             summary="View options"
             align="right"
             items={[
-              // What colours the trees: one presentation at a time, each with
-              // its own legend (§46), so a radio group rather than switches.
-              {
-                key: "colour-by:divergence",
-                label: "Divergence",
-                checked: colourBy === "divergence",
-                note: "How much each clade disagrees, on the branches",
+              // What colours the trees: only what this comparison's metric
+              // offers (§52), one at a time, each with its own legend — so a
+              // radio group rather than switches.
+              ...offered.map((option, index) => ({
+                key: `colour-by:${option.name}`,
+                label: option.label,
+                checked: shown?.name === option.name,
+                note: option.description,
                 group: "colour-by",
-                heading: "Colour the trees by",
-              },
-              {
-                key: "colour-by:moved",
-                label: "Moved leaves (MAST)",
-                checked: colourBy === "moved",
-                note:
-                  movedMissing ??
-                  "Each leaf: in the agreement subtree, moved, or not in the other tree",
-                group: "colour-by",
-                disabled: movedMissing !== null,
-              },
+                heading: index === 0 ? "Colour the trees by" : undefined,
+              })),
               {
                 key: "colour-by:none",
                 label: "Nothing",
-                checked: colourBy === "none",
+                checked: shown === null,
                 note: "The trees in black",
                 group: "colour-by",
               },
@@ -289,7 +277,7 @@ export function App() {
                 : []),
               // Where the gradient lands, not whether it is on — so the choice
               // is offered only while there is one to place.
-              ...(colourBy === "divergence"
+              ...(shown?.kind === "gradient"
                 ? COLOR_TARGETS.map((target, index) => ({
                     key: `colour:${target.key}`,
                     label: target.label,
@@ -301,9 +289,7 @@ export function App() {
                 : []),
             ]}
             onToggle={(key) => {
-              if (key === "colour-by:divergence") setOptions({ gradient: true, moved: false });
-              if (key === "colour-by:moved") setOptions({ gradient: false, moved: true });
-              if (key === "colour-by:none") setOptions({ gradient: false, moved: false });
+              if (key.startsWith("colour-by:")) setOptions({ colour: key.slice("colour-by:".length) });
               if (key === "typing") setOptions({ typing: !options.typing });
               if (key === "clades") setOptions({ cladeSizes: !options.cladeSizes });
               if (key === "lengths") setOptions({ lengths: !options.lengths });
@@ -349,10 +335,15 @@ export function App() {
 
       {removing ? (
         <Notice
-          title={`Remove ${pairName(removing, datasets)}?`}
+          title={`Remove ${pairName(removing, datasets)} (${metricTitle(viewMetric(removing), metrics)})?`}
           detail={
-            "This deletes the comparison, both trees, and any isolate data only it " +
-            "was using. Trees another comparison still needs are kept. It cannot be undone."
+            // Said as it will happen: a pair listed under other metrics keeps
+            // its trees, and only this metric's comparison goes (§52).
+            pairs.filter((pair) => pair.id === removing.id).length > 1
+              ? "This deletes this metric's comparison. The same trees compared by " +
+                "another metric are kept. It cannot be undone."
+              : "This deletes the comparison, both trees, and any isolate data only it " +
+                "was using. Trees another comparison still needs are kept. It cannot be undone."
           }
           confirm={{ label: "Remove", onConfirm: () => void remove(removing) }}
           busy={removeBusy}
@@ -372,7 +363,7 @@ export function App() {
             </p>
           ))}
           <ComparisonView
-            key={chosen.id}
+            key={`${chosen.id}|${metric}`}
             pair={chosen}
             initial={
               view.comparison === chosen.id
@@ -389,7 +380,8 @@ export function App() {
             options={options}
             onOptions={setOptions}
             summary={summary}
-            movedSummary={movedSummary}
+            metric={metric ?? "rf"}
+            shown={shown}
             exporting={exporting}
             onExportClose={() => setExporting(false)}
           />
@@ -403,7 +395,7 @@ export function App() {
             ) : (
               <ul className="pair-list">
                 {pairs.map((pair) => (
-                  <li key={pair.id}>
+                  <li key={`${pair.id}|${viewMetric(pair)}`}>
                     {/*
                       The remove control is a SIBLING of the row, not inside
                       it: a button within a button is invalid markup, and the
@@ -416,23 +408,31 @@ export function App() {
                       disabled={pair.status !== "ready"}
                       onClick={() => {
                         setChosen(pair);
-                        setView({ comparison: pair.id, left: [], right: [] });
+                        setView({
+                          comparison: pair.id,
+                          left: [],
+                          right: [],
+                          // A new comparison opens with its metric's first colouring.
+                          options: { ...options, metric: viewMetric(pair), colour: "" },
+                        });
                       }}
                     >
                       <span className="pair-name">{pairName(pair, datasets)}</span>
+                      {/* One comparison, one metric (§52): which one, named here. */}
+                      <span className="pair-metric">{metricTitle(viewMetric(pair), metrics)}</span>
                       <span className={`pair-status ${pair.status}`}>{pair.status}</span>
                       {pair.status === "ready" ? (
                         <span className="pair-detail">
-                          {pair.shared_leaves.toLocaleString()} shared leaves ·{" "}
-                          {pair.metrics.join(", ") || "no metrics"}
+                          {pair.shared_leaves.toLocaleString()} shared leaves
                         </span>
                       ) : null}
+                      {pair.error ? <span className="pair-detail">{pair.error}</span> : null}
                     </button>
                     <button
                       type="button"
                       className="pair-remove"
-                      title={`Remove ${pairName(pair, datasets)}`}
-                      aria-label={`Remove ${pairName(pair, datasets)}`}
+                      title={`Remove ${pairName(pair, datasets)} (${metricTitle(viewMetric(pair), metrics)})`}
+                      aria-label={`Remove ${pairName(pair, datasets)} (${metricTitle(viewMetric(pair), metrics)})`}
                       onClick={() => setRemoving(pair)}
                     >
                       ×
@@ -451,7 +451,12 @@ export function App() {
               const built = datasets.pairs.find((pair) => pair.id === comparisonId);
               if (built) {
                 setChosen(built);
-                setView({ comparison: built.id, left: [], right: [] });
+                setView({
+                  comparison: built.id,
+                  left: [],
+                  right: [],
+                  options: { ...options, metric: viewMetric(built), colour: "" },
+                });
               }
             }}
           />

@@ -227,6 +227,31 @@ def record_computed_pair(
         existing.finished_at = _utcnow()
 
 
+def drop_metric(owner_id: str, comparison_id: str, metric: str) -> bool:
+    """Forget one metric of a comparison, **only if this owner has it** (§52).
+
+    The row stays: the pair's other metrics are still comparisons. Removed from
+    what was asked for and from what failed, so neither the listing nor /status
+    offers it again. False for "not yours" as for "no such id".
+    """
+    import json
+
+    with session() as active:
+        found = active.get(Comparison, comparison_id)
+        if found is None or found.owner_id != owner_id:
+            return False
+        found.metrics = ",".join(m for m in (found.metrics or "").split(",") if m and m != metric)
+        if found.metric_errors:
+            try:
+                failed = json.loads(found.metric_errors)
+            except ValueError:
+                failed = {}
+            if isinstance(failed, dict):
+                failed.pop(metric, None)
+                found.metric_errors = json.dumps(failed) if failed else None
+        return True
+
+
 def delete_comparison_row(owner_id: str, comparison_id: str) -> tuple[str, str] | None:
     """Remove a comparison, **only if this owner has it**.
 

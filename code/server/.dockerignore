@@ -3,6 +3,9 @@
 store/
 native/sdsl-lite/
 native/TreeDiff/
+# rspr too: a host build (a Mach-O on a Mac) would be taken as already built
+# by build_rspr.sh and shipped, failing with "Exec format error" (§53).
+native/rspr/
 native/sdsl/
 native/*.so
 __pycache__/

@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import type { ComparisonSummary } from "../api/types";
-import { hasMovedLeaves, headline, movedLeavesMissing, presentation, sliceMetric, viewMetric } from "./metric";
+import type { ComparisonSummary, MetricSummary } from "../api/types";
+import {
+  headline,
+  isEntry,
+  presentationsOf,
+  shownPresentation,
+  unmeasuredBy,
+  unmeasuredLabel,
+  viewMetric,
+} from "./metric";
 
 describe("viewMetric", () => {
   it("reads a comparison under the metric it was computed with", () => {
@@ -38,51 +46,94 @@ describe("headline", () => {
   });
 });
 
-describe("moved leaves (§46)", () => {
-  const withMast = { metrics: ["mast", "rf"] };
-  const without = { metrics: ["rf"] };
+describe("one comparison, one metric (§52)", () => {
+  // Built as the server describes a metric. The names are invented on purpose:
+  // what is offered must come from the declaration, not from a list here.
+  const gradient = { name: "branches", label: "Share kept", kind: "gradient" as const, description: "", column: "", categories: [] };
+  const leaves = {
+    name: "leaves", label: "Kept or moved", kind: "categories" as const, description: "",
+    column: "moved", categories: ["Kept", "Moved"],
+  };
+  const metric = (name: string, extra: Partial<MetricSummary> = {}): MetricSummary => ({
+    name, title: `${name} title`, description: "", kind: "python", available: true,
+    version: "1", capabilities: {}, ...extra,
+  });
+  const metrics = [
+    metric("rf"),
+    metric("quillwort", {
+      presentations: [gradient, leaves],
+      headline: { key: "moved", of: "n_leaves" },
+      outputs: { summary: [{ key: "moved", label: "Moved", description: "Leaves that moved" }], columns: [] },
+    }),
+  ];
 
-  it("are offered only where the comparison computed them", () => {
-    expect(hasMovedLeaves(withMast)).toBe(true);
-    expect(hasMovedLeaves(without)).toBe(false);
+  it("names the metric each listing entry is by", () => {
+    expect(viewMetric({ metrics: ["rf", "quillwort"], metric: "quillwort" })).toBe("quillwort");
+    // A server from before §52 sends no `metric`: RF where computed, as before.
+    expect(viewMetric({ metrics: ["quillwort", "rf"] })).toBe("rf");
   });
 
-  it("ride along in the slices, without changing the metric the header reads", () => {
-    // The gradient comes from correspondence under any metric, so asking
-    // slices under mast costs it nothing and brings the moved counts.
-    expect(sliceMetric(withMast)).toBe("mast");
-    expect(viewMetric(withMast)).toBe("rf");
-    expect(sliceMetric(without)).toBe("rf");
+  it("finds the entry a link names, by pair and metric", () => {
+    const entry = { id: "a__b", metrics: ["rf", "quillwort"], metric: "quillwort" };
+    expect(isEntry(entry, "a__b", "quillwort")).toBe(true);
+    expect(isEntry(entry, "a__b", "rf")).toBe(false);
+    // A link without a metric opens the first of the pair's entries.
+    expect(isEntry(entry, "a__b", null)).toBe(true);
   });
 
-  it("show one presentation at a time", () => {
-    expect(presentation({ gradient: true, moved: false }, withMast)).toBe("divergence");
-    expect(presentation({ gradient: false, moved: true }, withMast)).toBe("moved");
-    expect(presentation({ gradient: false, moved: false }, withMast)).toBe("none");
+  it("offers exactly the presentations the metric declares", () => {
+    expect(presentationsOf("quillwort", metrics).map((p) => p.name)).toEqual(["branches", "leaves"]);
+    // A metric that declares none, or before /metrics answers: the divergence gradient.
+    expect(presentationsOf("rf", metrics).map((p) => p.name)).toEqual(["divergence"]);
+    expect(presentationsOf("quillwort", undefined).map((p) => p.name)).toEqual(["divergence"]);
   });
 
-  it("fall back to the gradient, not to nothing, where they were not computed", () => {
-    // The bug: a link with mv=1 to a comparison without them opened uncoloured,
-    // which reads as "nothing differs".
-    expect(presentation({ gradient: false, moved: true }, without)).toBe("divergence");
+  it("shows the one asked for, the first for a name it does not offer, and none for none", () => {
+    const offered = presentationsOf("quillwort", metrics);
+    expect(shownPresentation("leaves", offered)?.name).toBe("leaves");
+    expect(shownPresentation("", offered)?.name).toBe("branches");
+    // A link made under another metric: its colouring is not offered here.
+    expect(shownPresentation("divergence", offered)?.name).toBe("branches");
+    expect(shownPresentation("none", offered)).toBeNull();
+  });
+
+  it("heads a comparison known only within bounds with the range, and an exact one with its value", () => {
+    const ranged = metric("bounded", {
+      headline: { key: "lower", of: "", to: "upper" },
+      outputs: { summary: [{ key: "lower", label: "SPR distance", description: "" }], columns: [] },
+    });
+    const at = (scalars: Record<string, number>) =>
+      headline({ summary: scalars } as unknown as ComparisonSummary, ranged);
+    expect(at({ lower: 1905, upper: 5653 })).toMatchObject({ label: "SPR distance", value: 1905, to: 5653 });
+    expect(at({ lower: 3, upper: 3 })?.to).toBeUndefined();
+  });
+
+  it("heads the comparison with the scalar the metric names, and what it is out of", () => {
+    const summary = { summary: { moved: 14736, n_leaves: 17645 } } as unknown as ComparisonSummary;
+    expect(headline(summary, metrics[1])).toMatchObject({ label: "Moved", value: 14736, of: 17645 });
   });
 });
 
-describe("movedLeavesMissing", () => {
-  it("says not computed before /status answers, and when nothing failed", () => {
-    expect(movedLeavesMissing()).toBe("Not computed for this comparison");
-    expect(movedLeavesMissing({ metrics_failed: {} })).toBe("Not computed for this comparison");
+describe("unmeasuredBy", () => {
+  const node = (leaves: number) => ({ metadata: { trueLeafCount: leaves } });
+
+  it("marks clades too small for the score to say anything", () => {
+    const triplet = unmeasuredBy({ kind: "gradient", min_leaves: 3 })!;
+    expect([1, 2, 3, 40].map((n) => triplet(node(n)))).toEqual([true, true, false, false]);
+    expect(unmeasuredLabel({ min_leaves: 3 })).toBe("Under 3 leaves: nothing to measure");
   });
 
-  it("gives the server's reason when MAST was declined", () => {
-    expect(movedLeavesMissing({ metrics_failed: { mast: "declined: too big" } })).toBe(
-      "Not available: declined: too big",
-    );
+  it("greys the leaves under the shared one, before /metrics answers too", () => {
+    const divergence = unmeasuredBy(presentationsOf("rf", undefined)[0])!;
+    expect(divergence(node(1))).toBe(true);
+    expect(divergence(node(2))).toBe(false);
+    expect(unmeasuredLabel({ min_leaves: 2 })).toBe("A leaf: nothing to measure");
   });
 
-  it("says a failed /status failed, rather than hiding that a reason was lost", () => {
-    expect(movedLeavesMissing(new Error("Request failed (502)"))).toBe(
-      "Not computed for this comparison; the reason could not be fetched (Request failed (502))",
-    );
+  it("marks nothing where every node is scored, or the leaves are painted instead", () => {
+    expect(unmeasuredBy({ kind: "gradient", min_leaves: 1 })).toBeUndefined();
+    expect(unmeasuredBy({ kind: "gradient" })).toBeUndefined();
+    expect(unmeasuredBy({ kind: "categories", min_leaves: 3 })).toBeUndefined();
+    expect(unmeasuredBy(null)).toBeUndefined();
   });
 });

@@ -21,7 +21,9 @@ A metric declares what it produces; it is not forced into a shape
 **Clade correspondence is not part of a metric** (``trees.correspondence``).
 ``similarity`` and ``corresponds`` are computed once per pair and shared, so a
 metric never reimplements the best-match search and never has to pretend to
-produce one.
+produce one. A metric whose own computation already pairs the trees may say so
+— ``"correspondence": "self"`` — and return its own under those two names
+(§52); every other metric is coloured and linked by the shared one.
 
 What a metric returns is therefore whatever it actually knows:
 
@@ -58,6 +60,7 @@ __all__ = [
     "MetricOutputs",
     "MetricResult",
     "MetricSide",
+    "Presentation",
     "ScalarSpec",
     "Limits",
     "validate_result",
@@ -72,6 +75,25 @@ SEMANTICS = ("boolean", "ratio", "count", "index", "number")
 #: What a client might reasonably do with it. A hint, not an instruction — the
 #: server states no colours (§9.2).
 RENDER_HINTS = ("gradient", "overlay", "value", "link")
+
+#: Where a metric's colouring and its cross-tree pairing come from (§52).
+#:
+#: ``jaccard`` is the shared best-corresponding-clade search, computed once per
+#: pair whatever metric runs (§9.1) — the default, because most metrics have no
+#: pairing of their own. ``self`` means the metric's own computation already
+#: pairs the trees — MAST's agreement subtree does — and the metric returns it
+#: as two reserved columns, below. A name that is neither is refused, not read
+#: as the default: a misspelt ``"self"`` would otherwise colour the trees by
+#: something the metric never said.
+CORRESPONDENCES = ("jaccard", "self")
+
+#: The columns a ``self`` correspondence produces, with the same meaning and
+#: storage as the shared one's, so that slicing, the jump and the client read
+#: them through one path whichever correspondence is on screen.
+CORRESPONDENCE_COLUMNS = {
+    "similarity": ("float32", "ratio"),
+    "corresponds": ("uint32", "index"),
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -300,6 +322,104 @@ class Limits:
         return Limits(memory=memory)
 
 
+#: How a client can draw a metric's per-node values (§52).
+#:
+#: ``gradient`` colours each branch by the metric's correspondence score — the
+#: shared Jaccard one, or the metric's own; ``min_leaves`` says below what clade
+#: size the score says nothing (a leaf always matches itself), and those branches
+#: are drawn grey. ``categories`` paints each leaf by one or more disjoint
+#: ``count`` columns, 0 or 1 at a leaf: the first category is a leaf that is 0 in
+#: all of them, each next one a leaf that is 1 in the matching column; a collapsed
+#: clade by how many of its leaves are in each.
+PRESENTATION_KINDS = ("gradient", "categories")
+
+
+@dataclass(frozen=True, slots=True)
+class Presentation:
+    """One way a metric's result can colour the trees, as the View menu offers it.
+
+    Declared by the metric because only the metric knows what its values mean:
+    the menu offers exactly these for a comparison computed with it, and no
+    others (§52).
+    """
+
+    name: str
+    label: str
+    kind: str
+    description: str = ""
+    #: ``categories`` only: the first of :attr:`columns`, for clients that read one.
+    column: str = ""
+    #: ``categories`` only: the disjoint count columns, one per category after the first.
+    columns: tuple[str, ...] = ()
+    #: ``categories`` only: what each kind of leaf is called, the leaf in no column first.
+    categories: tuple[str, ...] = ()
+    #: ``gradient`` only: clades with fewer leaves have nothing to score, and are grey.
+    min_leaves: int = 1
+
+    @staticmethod
+    def from_json(raw: object, metric: str, columns: dict) -> "Presentation":
+        if not isinstance(raw, dict) or not raw.get("name") or not raw.get("label"):
+            raise ValueError(f"metric {metric!r}: a presentation needs a 'name' and a 'label'")
+        kind = raw.get("kind")
+        if kind not in PRESENTATION_KINDS:
+            raise ValueError(
+                f"metric {metric!r}: presentation {raw['name']!r} has kind {kind!r}; "
+                f"known: {list(PRESENTATION_KINDS)}"
+            )
+        if kind == "gradient":
+            min_leaves = raw.get("min_leaves", 1)
+            if isinstance(min_leaves, bool) or not isinstance(min_leaves, int) or min_leaves < 1:
+                raise ValueError(
+                    f"metric {metric!r}: presentation {raw['name']!r} has min_leaves "
+                    f"{min_leaves!r}; it must be a whole number of leaves, at least 1"
+                )
+            return Presentation(
+                name=raw["name"], label=raw["label"], kind=kind,
+                description=raw.get("description", ""), min_leaves=min_leaves,
+            )
+        named = raw.get("columns", [raw["column"]] if "column" in raw else None)
+        if not isinstance(named, list) or not named:
+            raise ValueError(
+                f"metric {metric!r}: presentation {raw['name']!r} paints by 'column', or "
+                "'columns' for more than two kinds of leaf"
+            )
+        for name in named:
+            column = columns.get(name) if isinstance(name, str) else None
+            if column is None or column.semantics != "count":
+                raise ValueError(
+                    f"metric {metric!r}: presentation {raw['name']!r} paints by a column, "
+                    f"which must be one it declares with semantics 'count'; got {name!r}"
+                )
+        if len(set(named)) != len(named):
+            raise ValueError(f"metric {metric!r}: presentation {raw['name']!r} repeats a column: {named}")
+        labels = raw.get("categories")
+        if not isinstance(labels, list) or len(labels) != len(named) + 1 or not all(labels):
+            raise ValueError(
+                f"metric {metric!r}: presentation {raw['name']!r} needs 'categories': "
+                f"{len(named) + 1} labels, the leaf in none of {named} first, then one per column"
+            )
+        return Presentation(
+            name=raw["name"], label=raw["label"], kind=kind,
+            description=raw.get("description", ""), column=named[0],
+            columns=tuple(named), categories=tuple(str(label) for label in labels),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class Headline:
+    """The number a comparison's header shows: a summary key, and optionally its whole.
+
+    ``to`` makes it a range, ``key`` to ``to``: a metric known only within
+    bounds — SPR, where only small distances can be computed exactly (§53) —
+    says so in its header rather than showing one bound as though it were the
+    value.
+    """
+
+    key: str
+    of: str = ""
+    to: str = ""
+
+
 @dataclass(frozen=True, slots=True)
 class MetricManifest:
     """A parsed ``metric.json``."""
@@ -323,6 +443,15 @@ class MetricManifest:
     reference: Reference | None = None
     #: The largest pair it will take on; above it the pair is declined by name.
     limits: Limits = field(default_factory=Limits)
+    #: Which correspondence colours this metric's view and links its panels:
+    #: one of ``CORRESPONDENCES`` (§52).
+    correspondence: str = "jaccard"
+    #: The ways its result can colour the trees, in the order offered (§52).
+    #: Never empty: a metric that declares none gets one gradient, from its
+    #: correspondence.
+    presentations: tuple[Presentation, ...] = ()
+    #: What the header shows; None to show the first declared scalar.
+    headline: Headline | None = None
     #: The plugin's own directory. Needed so a subprocess command can be
     #: resolved relative to where it lives rather than to the caller's cwd.
     directory: Path | None = None
@@ -357,6 +486,17 @@ class MetricManifest:
             raise ValueError(
                 f"metric {raw['name']!r} is kind 'subprocess' and needs 'command'"
             )
+        outputs = MetricOutputs.from_json(raw.get("outputs", {}))
+        correspondence = _correspondence_from(raw, outputs)
+        presentations = _presentations_from(raw, outputs, correspondence)
+        headline = None
+        if "headline" in raw:
+            spec = raw["headline"]
+            if not isinstance(spec, dict) or not isinstance(spec.get("key"), str):
+                raise ValueError(f"metric {raw['name']!r}: 'headline' needs a summary 'key'")
+            headline = Headline(
+                key=spec["key"], of=str(spec.get("of", "")), to=str(spec.get("to", ""))
+            )
         return MetricManifest(
             name=raw["name"],
             title=raw["title"],
@@ -365,14 +505,87 @@ class MetricManifest:
             description=raw.get("description", ""),
             version=str(raw.get("version", "1")),
             capabilities=raw.get("capabilities", {}),
-            outputs=MetricOutputs.from_json(raw.get("outputs", {})),
+            outputs=outputs,
             reference=(
                 Reference.from_json(raw["reference"], raw["name"]) if "reference" in raw else None
             ),
             limits=Limits.from_json(raw.get("limits", {}), raw["name"]),
+            correspondence=correspondence,
+            presentations=presentations,
+            headline=headline,
             directory=directory,
             raw=dict(raw),
         )
+
+
+def _presentations_from(
+    raw: dict, outputs: MetricOutputs, correspondence: str
+) -> tuple[Presentation, ...]:
+    """The declared presentations, or the one every metric has (§52).
+
+    A metric that declares none is drawn by its correspondence on the branches:
+    "Divergence" for the shared one, or what its own `similarity` column says
+    it measures. Names must be unique, since the client keys its choice by them.
+    """
+    metric = raw["name"]
+    columns = {c.name: c for c in outputs.columns}
+    declared = raw.get("presentations")
+    if declared is None:
+        if correspondence == "self":
+            label = columns["similarity"].label or "Its own score"
+            return (Presentation(name="branches", label=label, kind="gradient"),)
+        # A leaf always matches itself: its branch says nothing, and is grey.
+        return (Presentation(
+            name="divergence", label="Divergence", kind="gradient", min_leaves=2,
+            description="Branches: blue where the clade also exists in the other tree, yellow where its leaves are scattered, grey on a leaf",
+        ),)
+    if not isinstance(declared, list) or not declared:
+        raise ValueError(f"metric {metric!r}: 'presentations' must be a non-empty list")
+    presentations = tuple(Presentation.from_json(p, metric, columns) for p in declared)
+    names = [p.name for p in presentations]
+    if len(set(names)) != len(names):
+        raise ValueError(f"metric {metric!r}: presentation names repeat: {names}")
+    return presentations
+
+
+def _correspondence_from(raw: dict, outputs: MetricOutputs) -> str:
+    """The manifest's ``correspondence``, checked against what it declares (§52).
+
+    ``self`` must declare the two reserved columns with their storage types,
+    since they are served in place of the shared ones and read the same way.
+    Any other metric must not declare them: a column called ``similarity`` that
+    is not a correspondence would be one name with two meanings.
+    """
+    metric = raw["name"]
+    correspondence = raw.get("correspondence", "jaccard")
+    if correspondence not in CORRESPONDENCES:
+        raise ValueError(
+            f"metric {metric!r}: unknown correspondence {correspondence!r}; "
+            f"known: {list(CORRESPONDENCES)}"
+        )
+    declared = {c.name: c for c in outputs.columns}
+    reserved = sorted(set(declared) & set(CORRESPONDENCE_COLUMNS))
+    if correspondence != "self":
+        if reserved:
+            raise ValueError(
+                f"metric {metric!r}: columns {reserved} are reserved for a metric "
+                "whose correspondence is 'self'"
+            )
+        return correspondence
+    for name, (dtype, semantics) in CORRESPONDENCE_COLUMNS.items():
+        column = declared.get(name)
+        if column is None:
+            raise ValueError(
+                f"metric {metric!r}: correspondence 'self' needs a column {name!r} "
+                f"({dtype}, semantics {semantics!r})"
+            )
+        if column.dtype != dtype or column.semantics != semantics:
+            raise ValueError(
+                f"metric {metric!r}: column {name!r} must be {dtype} with semantics "
+                f"{semantics!r} for correspondence 'self', not {column.dtype} / "
+                f"{column.semantics!r}"
+            )
+    return correspondence
 
 
 def validate_result(result: MetricResult, manifest: MetricManifest) -> None:

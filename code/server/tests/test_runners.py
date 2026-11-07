@@ -153,28 +153,35 @@ def test_an_unimplemented_input_format_is_refused(tmp_path):
         make_runner(m)
 
 
-# --- the shipped triplet metric --------------------------------------------
+# --- the shipped subprocess metrics -------------------------------------------
 
-def test_triplet_is_configuration_only():
-    """The claim, asserted: adding it added no code."""
-    directory = PLUGINS / "triplet_treediff"
+def test_a_metric_can_be_configuration_only():
+    """The claim, asserted: adding rf-treediff added no code, only a manifest (§11).
+
+    Triplet was the example until it brought its own correspondence (§54),
+    which needs per-node counts a scalar pattern cannot parse; it is tested in
+    test_metric_triplet.py.
+    """
+    directory = PLUGINS / "rf_treediff"
     assert directory.is_dir()
     files = sorted(p.name for p in directory.iterdir() if p.is_file())
     assert files == ["metric.json"], f"expected configuration only, found {files}"
+    assert registry.discover()["rf-treediff"].kind == "subprocess"
 
 
-def test_triplet_is_registered_and_declares_no_columns():
+def test_triplet_is_registered_with_its_own_correspondence():
     m = registry.discover()["triplet"]
-    assert m.kind == "subprocess"
-    assert m.outputs.column_names == []
-    assert m.capabilities["per_clade"] is False
+    assert m.kind == "python"
+    assert m.correspondence == "self"
+    assert m.outputs.column_names == ["corresponds", "similarity"]
+    assert m.capabilities["per_clade"] is True
 
 
 @pytest.mark.skipif(
     not is_available(registry.discover().get("triplet", manifest())),
-    reason="TreeDiff is not built; see native/build_treediff.sh",
+    reason="trip_sht_nodes is not built; see native/build_treediff.sh",
 )
 def test_triplet_runs_on_a_small_pair(tmp_path):
     result = registry.load("triplet")(prepared_pair(tmp_path))
     assert result.summary["triplet"] >= 0
-    assert result.left is None
+    assert set(result.left.columns) == {"similarity", "corresponds"}

@@ -50,26 +50,28 @@ The colour legend sits at the bottom left of each panel.
 | **Blue** branch or triangle | **Identical**: this clade also exists in the other tree, with exactly the same leaves. |
 | **Blue → cyan → green → yellow** | **Increasingly diverged**: the most similar clade in the other tree shares a smaller part of the leaves. Yellow is the least similar. |
 | **Red** branch | **Not in the other tree**: a leaf present in only this tree, so it has no counterpart to compare with. |
-| **Black** | No comparison colour on the branches: the trees are coloured by **Nothing** or by **Moved leaves** (**View options → Colour the trees by**), or the colour has been moved to the triangles (**Colour the divergence on: Clades**). |
+| **Grey** branch | **Nothing to measure**: a single leaf always matches itself, so its score would be blue whatever the trees do. Grey says the colour has nothing to tell, rather than claim they agree. Under Triplet, clades of two leaves are grey too: they hold no group of three. |
+| **Black** | No comparison colour on the branches: the trees are coloured by **Nothing** or by a leaf colouring such as MAST's **Kept or moved** (**View options → Colour the trees by**), or the colour has been moved to the triangles (**Colour the divergence on: Clades**). |
 
 How the colour is computed: for each clade, PhyloDelta finds the clade in the other tree that shares
 the most leaves with it, measured as *shared leaves ÷ leaves in either*. Identical clades score 1 and
 are drawn blue; the lower the score, the further towards yellow.
 
-## Moved leaves (MAST)
+## MAST (maximum agreement subtree)
 
-With **View options → Colour the trees by: Moved leaves (MAST)**, the colours describe **leaves**,
-not clades, and the legend changes to say so:
+A comparison is made by one metric, and is coloured only in the ways that metric offers. A
+comparison by **MAST (maximum agreement subtree)** offers two. With **View options → Colour the trees by: Kept or
+moved**, the colours describe **leaves**, not clades, and the legend changes to say so:
 
 | You see | It means |
 |---|---|
 | **Blue** leaf | **In the agreement subtree**: one of the largest set of leaves both trees arrange in exactly the same way. |
 | **Yellow** leaf | **Moved**: outside that set; the two trees place it differently. |
 | **Red** leaf | **Not in the other tree**, as in the divergence colouring. |
-| **Yellow** triangle | The collapsed clade holds at least one moved leaf. Hover for how many: "12 of 340 leaves moved". |
+| **Yellow** triangle | The collapsed clade holds at least one moved leaf. Hover for how many: "12 of 340 leaves: moved". |
 | **Blue** triangle | None of its leaves moved. |
 
-The top bar adds **Moved N of M leaves**. Three things to know when reading it:
+The top bar shows **Moved leaves N of M**. Three things to know when reading it:
 
 - **It is strict.** The agreement subtree must agree *completely* in both trees, so trees built by
   different methods can share only a small one: on the demo's NJ and UPGMA trees, 2,909 of 17,645
@@ -79,6 +81,46 @@ The top bar adds **Moved N of M leaves**. Three things to know when reading it:
   interchangeable leaves is called moved is a choice.
 - **It bounds the SPR distance.** Each moved leaf can be put back with one prune-and-regraft move, so
   the trees are at most that many such moves apart.
+
+### Moved leaves on the branches
+
+**View options → Colour the trees by: Share of each clade kept**, MAST's first colouring, uses the
+same colour scale as Divergence, but scores each clade by MAST instead:
+
+- **Blue:** all of its leaves are in the agreement subtree.
+- **Yellow:** all of them moved.
+- **In between:** the share kept.
+
+**Find in the other tree** then goes to where the clade's kept leaves sit there. On the demo pair
+most branches are yellow, for the reason above: the agreement subtree holds 16% of the leaves.
+
+## Triplet distance
+
+A comparison by **Triplet distance** colours each branch by its clade's own share of it:
+**Triplets grouped alike**. Take every group of three leaves inside the clade; blue means both
+trees group each of them the same way (which two are closer), yellow means none, and grey marks
+a clade of one or two leaves, which holds no group of three to judge. The root's colour
+is the whole comparison's, so the colours add up to the number in the top bar. Unlike Divergence,
+a clade can keep exactly the same leaves in both trees and still be yellow: its leaves are all
+there, but arranged differently inside it.
+
+## SPR (subtree prune and regraft)
+
+A comparison by **SPR (subtree prune and regraft)** counts the fewest moves, each cutting off a subtree and
+reattaching it elsewhere, that turn one tree into the other. The top bar shows a **range**, such
+as **SPR distance 1,905 to 5,653**: the exact number is only computable when it is small, and
+otherwise the true value is known to lie between the two. When it is exact, one number is shown.
+
+Its picture is an *agreement forest*: the trees cut into blocks of leaves that both arrange
+identically, where every block but one is a move. Leaves that moved together share a block.
+
+- **How intact each clade is** (branches): blue where all of a clade's leaves are in one block,
+  yellow where each is in a block of its own; a single leaf, always one piece, is grey.
+- **Largest block, moved together or moved alone** (leaves): blue for a leaf in the forest's
+  largest block, teal for one moved together with others (its block has more than one leaf),
+  yellow for one moved on its own, red for a leaf not in the other tree. Teal is what SPR adds
+  over MAST: leaves that one move carried together. A triangle takes the colour of the furthest
+  kind it holds, and its hover counts each.
 
 ## Shapes
 

@@ -65,7 +65,7 @@ describe("view state in the URL", () => {
         right: [],
         options: {
           ...DEFAULT_OPTIONS,
-          gradient: false,
+          colour: "none",
           colorTarget: "clades",
           typing: true,
           columns: ["country", "year, collected"],
@@ -76,7 +76,7 @@ describe("view state in the URL", () => {
     );
 
     const restored = renderHook(() => useUrlState()).result.current[0].options;
-    expect(restored.gradient).toBe(false);
+    expect(restored.colour).toBe("none");
     expect(restored.colorTarget).toBe("clades");
     expect(restored.typing).toBe(true);
     // A column name may contain the separator any joined encoding would use.
@@ -156,29 +156,42 @@ describe("view state in the URL", () => {
     expect(window.history.length).toBe(before);
   });
 
-  it("round-trips moved leaves as one presentation, not beside the gradient (§46)", () => {
+  it("round-trips the comparison's metric and its colouring (§52)", () => {
     const { result } = renderHook(() => useUrlState());
     act(() =>
       result.current[1]({
         comparison: "a__b",
         left: [],
         right: [],
-        options: { ...DEFAULT_OPTIONS, gradient: false, moved: true },
+        options: { ...DEFAULT_OPTIONS, metric: "mast", colour: "leaves" },
       }),
     );
-    expect(window.location.hash).toContain("mv=1");
-    // Written once: mv implies the gradient is off, so g=0 would be noise.
-    expect(window.location.hash).not.toContain("g=0");
+    expect(window.location.hash).toContain("m=mast");
+    expect(window.location.hash).toContain("cb=leaves");
 
     const restored = renderHook(() => useUrlState()).result.current[0].options;
-    expect(restored.moved).toBe(true);
-    expect(restored.gradient).toBe(false);
+    expect(restored.metric).toBe("mast");
+    expect(restored.colour).toBe("leaves");
+  });
+
+  it("opens a link from before one comparison was one metric as it was meant", () => {
+    // mv=1 was MAST on the leaves; own=mast was MAST on the branches (§46, §52).
+    window.history.replaceState(null, "", "/#/c/a__b?mv=1");
+    let options = renderHook(() => useUrlState()).result.current[0].options;
+    expect(options.metric).toBe("mast");
+    expect(options.colour).toBe("leaves");
+
+    window.history.replaceState(null, "", "/#/c/a__b?own=mast");
+    options = renderHook(() => useUrlState()).result.current[0].options;
+    expect(options.metric).toBe("mast");
+    expect(options.colour).toBe("");
   });
 
   it("opens an old link, without mv, exactly as before", () => {
     window.history.replaceState(null, "", "/#/c/a__b?g=0");
     const options = renderHook(() => useUrlState()).result.current[0].options;
-    expect(options.moved).toBe(false);
-    expect(options.gradient).toBe(false);
+    // g=0 was "the trees in black", whatever the metric.
+    expect(options.colour).toBe("none");
+    expect(options.metric).toBeNull();
   });
 });

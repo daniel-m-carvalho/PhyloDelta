@@ -79,9 +79,15 @@ jobs:
       # An outside repository, cloned at build time. If it is unreachable or
       # stops building, say so and carry on: its conformance tests skip, and
       # the rest of the suite still has to pass.
-      - name: Build TreeDiff (RF conformance oracle)
+      - name: Build TreeDiff (RF conformance oracle, triplet's trip_sht_nodes)
         continue-on-error: true
         run: ./native/build_treediff.sh
+
+      # The same for rspr, which the spr metric runs (§53): without it the SPR
+      # tests skip rather than fail.
+      - name: Build rspr (SPR)
+        continue-on-error: true
+        run: ./native/build_rspr.sh
 
       - name: Run the tests
         run: uv run pytest -q

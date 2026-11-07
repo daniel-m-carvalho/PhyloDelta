@@ -18,12 +18,14 @@ from ..metrics.runners import is_available
 from .schemas import (
     ColumnDescription,
     DatasetsResponse,
+    HeadlineDescription,
     HealthResponse,
     IsolateSummary,
     MetricOutputsDescription,
     MetricReference,
     MetricSummary,
     PairSummary,
+    PresentationDescription,
     ScalarDescription,
     TreeSummary,
     WhoAmI,
@@ -153,8 +155,40 @@ def _pairs(owner: str, trees: list[TreeSummary]) -> list[PairSummary]:
                 summary.shared_fraction = round(summary.shared_leaves / smaller, 4)
             summary.metrics = registry_pairs.available(record.id)
 
-        out.append(summary)
+        out.extend(_one_per_metric(record, summary))
     return out
+
+
+def _one_per_metric(record, summary: PairSummary) -> list[PairSummary]:
+    """One comparison per metric (§52).
+
+    A ready pair is listed once for each metric computed, and once for each it
+    was asked for that declined, carrying the reason. A pair still pending or
+    failed is listed once for each metric asked for, in its own status.
+    """
+    asked = [m for m in (record.metrics or "").split(",") if m]
+    try:
+        declined = json.loads(record.metric_errors) if record.metric_errors else {}
+    except ValueError:
+        declined = {}
+    if not isinstance(declined, dict):
+        declined = {}
+
+    if summary.status != "ready":
+        error = record.error if summary.status == "failed" else None
+        return [
+            summary.model_copy(update={"metric": m, "error": error})
+            for m in (asked or [""])
+        ]
+    order = {m: k for k, m in enumerate(asked)}
+    computed = sorted(summary.metrics, key=lambda m: (order.get(m, len(order)), m))
+    entries = [summary.model_copy(update={"metric": m}) for m in computed]
+    entries += [
+        summary.model_copy(update={"metric": m, "status": "failed", "error": str(why)})
+        for m, why in declined.items()
+        if m not in summary.metrics
+    ]
+    return entries or [summary]
 
 def _isolates(owner: str) -> list[IsolateSummary]:
     out: list[IsolateSummary] = []
@@ -256,6 +290,22 @@ def metrics() -> list[MetricSummary]:
                     )
                     for c in manifest.outputs.columns
                 ],
+            ),
+            correspondence=manifest.correspondence,
+            presentations=[
+                PresentationDescription(
+                    name=p.name, label=p.label, kind=p.kind, description=p.description,
+                    column=p.column, columns=list(p.columns),
+                    categories=list(p.categories), min_leaves=p.min_leaves,
+                )
+                for p in manifest.presentations
+            ],
+            headline=(
+                HeadlineDescription(
+                    key=manifest.headline.key, of=manifest.headline.of, to=manifest.headline.to
+                )
+                if manifest.headline
+                else None
             ),
         )
         for manifest in metric_registry.discover().values()

@@ -110,6 +110,22 @@ def install(app: FastAPI) -> None:
             ),
         )
 
+    from ..metrics.registry_pairs import CorrespondenceNotStored
+
+    @app.exception_handler(CorrespondenceNotStored)
+    async def _no_own_correspondence(_: Request, exc: CorrespondenceNotStored) -> JSONResponse:
+        # The same kind of conflict as a version mismatch: the request is fine,
+        # the stored result predates what the metric now declares (§52).
+        return JSONResponse(
+            status_code=409,
+            content=_body(
+                str(exc),
+                "correspondence_not_computed",
+                "Recompute the metric for this pair, or ask with "
+                "`correspondence=shared` for the shared correspondence.",
+            ),
+        )
+
     @app.exception_handler(StarletteHTTPException)
     async def _http_error(_: Request, exc: StarletteHTTPException) -> JSONResponse:
         # Raised by the framework itself (an unrouted path, a wrong method) and
