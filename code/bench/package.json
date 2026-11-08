@@ -1,6 +1,6 @@
 {
   "name": "bench",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Client-performance benchmark harness: drives phylo.io and the PhyloDelta web app in a real browser and records load + navigation metrics.",
   "engines": {
