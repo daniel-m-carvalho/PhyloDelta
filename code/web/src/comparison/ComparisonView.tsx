@@ -296,6 +296,9 @@ const CONFIG: Config = {
         // without rebuilding the panels, and a leaf with no datum simply gets
         // no bar.
         barcharts: { enabled: false, scale: "log" },
+        // Fit the tree back to the panel, shown once it has been zoomed or
+        // moved. At the panels' outer corners, away from the gap between them.
+        resetView: { corner: "top-left" },
       },
     },
     {
@@ -308,6 +311,7 @@ const CONFIG: Config = {
         selection: { enabled: true },
         cladeShape: { ...CLADE_SHAPE },
         barcharts: { enabled: false, scale: "log" },
+        resetView: { corner: "top-right" },
       },
     },
   ],

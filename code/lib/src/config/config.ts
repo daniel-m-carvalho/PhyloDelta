@@ -3,6 +3,7 @@ import type { LayoutMode, LengthScale, NewickNode } from "../presentation/tree/t
 import { ExpandCollapseOperator, type ExpandMode } from "../presentation/operators/expand_collapse";
 import { CladeShapePresenter } from "../presentation/operators/clade_shape";
 import { BranchLengthPresenter } from "../presentation/operators/branch_lengths";
+import { ResetViewButton, type Corner } from "../presentation/operators/reset_view";
 import { SelectionOperator } from "../presentation/operators/selection";
 import { BarChartPresenter, type BarScale } from "../presentation/operators/barchart_presenter";
 import { ComparisonOperator, type ComparisonMode } from "../presentation/operators/comparison";
@@ -169,6 +170,11 @@ export interface OperatorsConfig {
    * always, drawn only when enabled; `true` or `{ enabled }`.
    */
   branchLengths?: boolean | { enabled?: boolean };
+  /**
+   * A button that fits the tree back to the panel, shown only once the view
+   * has been zoomed or moved. Off unless asked for; `true` puts it top-left.
+   */
+  resetView?: boolean | { corner?: Corner; title?: string };
   selection?: SelectionConfig;
   barcharts?: BarChartConfig;
   // No `comparison` here on purpose — it lives at the top level of `Config`,
@@ -245,6 +251,7 @@ export interface PanelOperators {
   expandCollapse?: ExpandCollapseOperator;
   cladeShape?: CladeShapePresenter;
   branchLengths?: BranchLengthPresenter;
+  resetView?: ResetViewButton;
   selection?: SelectionOperator;
   barcharts?: BarChartPresenter;
   comparison?: ComparisonOperator;
@@ -386,6 +393,13 @@ function buildPanel(
     operators.branchLengths = lengths;
   }
 
+  // The way back to the fitted view, where asked for.
+  if (ops.resetView) {
+    const button = new ResetViewButton(typeof ops.resetView === "object" ? ops.resetView : {});
+    button.attach(viewer);
+    operators.resetView = button;
+  }
+
   // Selection — on unless explicitly disabled.
   if (!ops.selection || ops.selection.enabled !== false) {
     const selection = new SelectionOperator({
@@ -474,6 +488,7 @@ function buildPanel(
       operators.selection?.detach();
       operators.cladeShape?.detach();
       operators.branchLengths?.detach();
+      operators.resetView?.detach();
       operators.expandCollapse?.detach();
       viewer.destroy();
     },

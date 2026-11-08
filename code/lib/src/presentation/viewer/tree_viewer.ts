@@ -100,6 +100,32 @@ export type LeafFilter = (
 /** Node color for a leaf filtered out by the active metadata filter. */
 export const FILTER_DIM_COLOR = "rgba(120,120,120,0.22)";
 
+/** A camera position, as Sigma's camera states it. */
+export interface CameraView {
+  x: number;
+  y: number;
+  ratio: number;
+  angle: number;
+}
+
+/**
+ * Whether the camera shows the same picture as the fitted view, to the eye.
+ *
+ * Judged in screen pixels for the pan, because camera units mean different
+ * distances at different zooms, and by a 1% band for the zoom. A sub-pixel
+ * difference is not a move: the right-reserve pan lands on slightly different
+ * sub-pixel positions as the container resizes (see `maybeRecenter`), and a
+ * reset button that appeared for that would appear for nothing.
+ */
+export function isSameView(current: CameraView, fitted: CameraView, pxPerUnit: number): boolean {
+  return (
+    Math.abs(current.x - fitted.x) * pxPerUnit < 1 &&
+    Math.abs(current.y - fitted.y) * pxPerUnit < 1 &&
+    Math.abs(current.ratio / fitted.ratio - 1) < 0.01 &&
+    Math.abs(current.angle - fitted.angle) < 1e-6
+  );
+}
+
 /** Events emitted by a {@link TreeViewer}. Operators subscribe to these. */
 export interface ViewerEvents extends Record<string, unknown> {
   /** Fired after every rebuild + (re)mount of Sigma. Carries the fresh handles. */
@@ -130,6 +156,12 @@ export interface ViewerEvents extends Record<string, unknown> {
   rightClickNode: { node: string; x: number; y: number; original: MouseEvent | TouchEvent };
   /** Right-click on empty stage (no node hit) — e.g. to dismiss a menu. */
   rightClickStage: { x: number; y: number; original: MouseEvent | TouchEvent };
+  /**
+   * The camera moved: a zoom, a pan, a jump's centring, or a reset. `atFit`
+   * says whether the picture is back at the fitted view, so a control can offer
+   * the way back only when there is somewhere to go back to.
+   */
+  cameraMoved: { atFit: boolean };
   /**
    * Fired when the active metadata filter changes (set or cleared). Overlay
    * operators that draw per-leaf (e.g. the bar-chart presenter) listen so they
@@ -249,6 +281,8 @@ export class TreeViewer {
   private rightReservePx = 0;
   /** Set when the camera still needs the right-reserve pan applied. */
   private pendingRecenter = false;
+  /** Where the camera sits when the tree is fitted to the panel; see `resetView`. */
+  private fitted: CameraView | null = null;
 
   private renderer: Sigma | null = null;
   private graph: Graph | null = null;
@@ -627,8 +661,32 @@ export class TreeViewer {
   private centerCamera(): void {
     const camera = this.renderer?.getCamera();
     if (!camera) return;
-    camera.setState({ x: 0.5, y: 0.5, angle: 0, ratio: 1 + this.fitPadding });
+    this.fitted = { x: 0.5, y: 0.5, angle: 0, ratio: 1 + this.fitPadding };
+    camera.setState(this.fitted);
     this.pendingRecenter = this.rightReservePx > 0;
+  }
+
+  /**
+   * Put the tree back where it was fitted to the panel: the same view a fresh
+   * render opens with, margins and the leaf-side reserve included. Animated by
+   * default, so the eye follows the tree back rather than losing it.
+   */
+  resetView(options: { animate?: boolean } = {}): void {
+    const camera = this.renderer?.getCamera();
+    if (!camera) return;
+    const target = this.fitted ?? { x: 0.5, y: 0.5, angle: 0, ratio: 1 + this.fitPadding };
+    if (options.animate === false) camera.setState(target);
+    else void camera.animate(target, { duration: 300 });
+  }
+
+  /** Whether the camera shows the fitted view, to the eye (see {@link isSameView}). */
+  isAtFittedView(): boolean {
+    if (!this.renderer || !this.fitted) return true;
+    const p0 = this.renderer.framedGraphToViewport({ x: 0, y: 0.5 });
+    const p1 = this.renderer.framedGraphToViewport({ x: 1, y: 0.5 });
+    const pxPerUnit = Math.abs(p1.x - p0.x);
+    if (!(pxPerUnit > 0)) return true;
+    return isSameView(this.renderer.getCamera().getState(), this.fitted, pxPerUnit);
   }
 
   /**
@@ -683,6 +741,8 @@ export class TreeViewer {
      * in `setRightReservePx`, one level further down: recomputing the same
      * answer must not move anything.
      */
+    // The fitted view includes this pan, wherever the camera is now.
+    if (this.fitted) this.fitted = { ...this.fitted, x: target };
     if (Math.abs(target - state.x) * pxPerFramed < 0.5) return;
 
     camera.setState({ ...state, x: target });
@@ -690,6 +750,9 @@ export class TreeViewer {
 
   private wireSigmaEvents(renderer: Sigma): void {
     renderer.on("afterRender", () => this.maybeRecenter());
+    renderer
+      .getCamera()
+      .on("updated", () => this.events.emit("cameraMoved", { atFit: this.isAtFittedView() }));
     renderer.on("clickNode", ({ node }: SigmaNodeEventPayload) => this.onClickNode(node));
     renderer.on("clickStage", ({ event }: SigmaStageEventPayload) =>
       this.events.emit("clickStage", { x: event.x, y: event.y })

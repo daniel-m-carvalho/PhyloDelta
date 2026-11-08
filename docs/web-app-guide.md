@@ -70,7 +70,9 @@ A tree too large to draw whole is shown as a summary: the biggest groups of leav
 **triangles** (collapsed clades), sized by how many leaves they hold. You go deeper by opening them.
 
 - **Zoom and move:** scroll to zoom, drag to move, in either panel. This only enlarges what is
-  already drawn.
+  already drawn. Once a panel is zoomed or moved, a small **fit** button (four corners) appears in
+  its outer top corner, top-left on the left panel and top-right on the right. Click it to put that
+  tree back to fit its panel.
 - **Open a clade:** right-click a triangle, then **Expand this clade**. The panel then shows that
   clade alone, in more detail. On any other internal point, the same menu offers **Focus this
   subtree**.

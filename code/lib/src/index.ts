@@ -37,10 +37,11 @@ export type { LayoutNode, LayoutEngine, LayoutContext, BuiltGraph } from "./pres
 export { buildGraph, LAYOUT_ENGINES, BRANCH_COLOR } from "./presentation/tree/layout";
 
 // --- Viewer core ---
-export { TreeViewer, FILTER_DIM_COLOR } from "./presentation/viewer/tree_viewer";
+export { TreeViewer, FILTER_DIM_COLOR, isSameView } from "./presentation/viewer/tree_viewer";
 export type {
   TreeViewerOptions,
   ViewerEvents,
+  CameraView,
   NodeReducer,
   EdgeReducer,
   LeafFilter,
@@ -78,6 +79,8 @@ export type { ExpandCollapseOptions } from "./presentation/operators/expand_coll
 export { CladeShapePresenter } from "./presentation/operators/clade_shape";
 export type { CladeShapeOptions } from "./presentation/operators/clade_shape";
 export { BranchLengthPresenter, formatBranchLength } from "./presentation/operators/branch_lengths";
+export { ResetViewButton } from "./presentation/operators/reset_view";
+export type { Corner, ResetViewOptions } from "./presentation/operators/reset_view";
 export type { BranchLengthOptions } from "./presentation/operators/branch_lengths";
 export type { ExpandMode } from "./presentation/operators/expand_collapse";
 export { SubtreeNavigator } from "./presentation/operators/subtree_navigator";
