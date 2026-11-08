@@ -21,7 +21,9 @@ try {
     ([a, b]) => window.__bench.extract(a, b),
     [`/trees/ladder/ladder-${pad}-a.nwk`, `/trees/ladder/ladder-${pad}-b.nwk`],
   );
-  const out = join(BENCH, "results", `phyloio_scores_${leaves}.json`);
+  // A repeat writes elsewhere, so the campaign's own run is not overwritten
+  // (`accuracy_repeats`, §34.22).
+  const out = process.env.BENCH_SCORES_OUT ?? join(BENCH, "results", `phyloio_scores_${leaves}.json`);
   writeFileSync(out, JSON.stringify(result));
   console.log(
     `${leaves.toLocaleString()} leaves: ${result.clades.length.toLocaleString()} clades, ` +
