@@ -1038,9 +1038,26 @@ if nav_rows:
         first = broken[0]["phyloio"]["failures"][0]
         print("\n### Table 15 note — phylo.io's \"Highlight BCN\" is intermittent\n")
         tried = sum(r["phyloio"].get("failure_count") or 0 for r in broken)
-        print(f"All {tried} attempts in the navigation run above failed, at each of the "
-              f"{len(broken)} rungs with a comparison, with the same error:\n")
+        # Each rung's outcome as Table 15 prints it, from the same nav() the
+        # cells come from, so the note cannot disagree with the table: a rung
+        # with no comparison is not a failed jump (v0.2.1 worked at 1,000).
+        jump_cells = {r["leaves"]: nav(r.get("phyloio", {}), "jump", r["leaves"], "phyloio")
+                      for r in nav_rows}
+        jump_failed = [n for n, c in jump_cells.items() if c == "**fails**"]
+        jump_worked = [n for n, c in jump_cells.items() if c not in ("**fails**", "*no comparison*")]
+        jump_absent = [n for n, c in jump_cells.items() if c == "*no comparison*"]
+
+        def rungs(ns):
+            names = [f"{n:,}" for n in ns]
+            return ", ".join(names[:-1]) + " and " + names[-1] if len(names) > 1 else "".join(names)
+
+        worked_too = (f"At {rungs(jump_worked)} leaves, the jump worked in that rung's load."
+                      if jump_worked else "")
+        print(f"All {tried} attempts in the navigation run above failed at "
+              f"{rungs(jump_failed)} leaves, with the same error:\n")
         print(f"> `{first.get('error')}`\n")
+        if worked_too:
+            print(worked_too + "\n")
         print("**But that is one page load per rung, and the failure is intermittent.** "
               "A dedicated probe over repeated loads of the same pair at 1,000 leaves:\n")
         if bcn_211 or bcn_225:
@@ -1053,23 +1070,24 @@ if nav_rows:
             print()
         worked = [load for load in bcn_225["per_load"] if load["succeeded"]]
         # Table 15's one load per rung can land on either outcome; say which it
-        # showed rather than assume the common one (v0.2.1 worked at 1,000).
-        jumped = [
-            r["leaves"] for r in nav_rows
-            if ((r.get("phyloio", {}).get("jump") or {}).get("median_ms") is not None
-                and r.get("phyloio", {}).get("ok") is not False)
-        ]
-        if jumped:
-            shown = (f"so it shows whichever outcome that load had: the jump worked at "
-                     f"{', '.join(f'{n:,}' for n in jumped)} leaves and failed elsewhere.")
+        # showed rather than assume the common one.
+        if jump_worked:
+            parts = [f"it worked at {rungs(jump_worked)}"]
+            if jump_failed:
+                parts.append(f"failed at {rungs(jump_failed)}")
+            if jump_absent:
+                parts.append(f"had no comparison to jump in at {rungs(jump_absent)}")
+            outcome_note = ("so it shows whichever outcome that load had: "
+                            + "; ".join(parts[:-1]) + ("; and " if len(parts) > 1 else "")
+                            + parts[-1] + ".")
         else:
-            shown = "which is why it shows only the common outcome."
+            outcome_note = "which is why it shows only the common outcome."
         print(f"The honest claim is that the jump fails in most loads, not that it never "
               f"works. It is **not** all-or-nothing within a load: in the "
               f"{len(worked)} of {bcn_225['loads']} loads where it worked at all, "
               f"{sum(w['succeeded'] for w in worked)} of "
               f"{sum(w['attempted'] for w in worked)} attempts succeeded. Table 15 reports "
-              f"one load per rung, {shown}\n")
+              f"one load per rung, {outcome_note}\n")
         print("**The mechanism, and why it is conditional.** It is reached only from the "
               "context-menu item of that name (`viewer.js` line 1175 is the sole caller). `api.js` "
               "builds **two separate models** from the BCN worker's reply, and the `elementBCN` "
@@ -1179,16 +1197,29 @@ if phase_rows:
           "first pass showed it at a suspiciously uniform 1.7-2x the others — the shape of an "
           "ordering artefact rather than a cost. Per-metric timings carry no such confound.\n")
     # Compare like with like: Table 9's figure is an `rf`-only build, so set it
-    # beside the `rf`-only set's shared work, and give the spread over the sets,
-    # which is the same work run once per set (v0.2.1: 240-258 s at 564,640).
-    top_shared = [b["shared_s"] for b in top["builds"] if b.get("shared_s") is not None]
-    top_rf = next((b for b in top["builds"] if b["metrics"] == ["rf"]), top_widest)
-    print(f"*The shared work at {top['leaves']:,} leaves, {top_rf['shared_s']:.1f} s in the `rf` "
-          f"build, sits beside Table 9's {deploy_build[top['leaves']]:.1f} s for a whole `rf` build "
-          "at two threads: the same work, from the worker's log and from the wall clock. Over the "
-          f"{len(top_shared)} metric sets the shared work, the same each time, took "
-          f"{min(top_shared):.1f}-{max(top_shared):.1f} s, so the column above, read from the "
-          "widest set, carries that much run-to-run spread.*\n")
+    # beside the `rf`-only set's shared work, and give the spread over the sets.
+    # Missing pieces are named, never filled from another set (CLAUDE.md).
+    top_shared = [(b["metrics"], b["shared_s"]) for b in top["builds"]
+                  if b.get("shared_s") is not None]
+    top_rf = next((s for m, s in top_shared if m == ["rf"]), None)
+    if top_rf is None or top["leaves"] not in deploy_build:
+        missing = ("`rf`-only build with its shared work" if top_rf is None
+                   else "Table 9 figure")
+        print(f"*No comparison with Table 9 at {top['leaves']:,} leaves: there is no "
+              f"{missing} at that size.*\n")
+    else:
+        widest_last = top_shared[-1][1] == max(s for _, s in top_shared)
+        print(f"*The shared work at {top['leaves']:,} leaves, {top_rf:.1f} s in the `rf` "
+              f"build, sits beside Table 9's {deploy_build[top['leaves']]:.1f} s for a whole "
+              "`rf` build at two threads: the same work, from the worker's log and from the "
+              f"wall clock. Over the {len(top_shared)} metric sets the shared work, the same "
+              f"each time, took {min(s for _, s in top_shared):.1f}-"
+              f"{max(s for _, s in top_shared):.1f} s"
+              + (", the most in the widest set, which is uploaded last. With one build per "
+                 "set this cannot tell an ordering cost from noise, so the column above, read "
+                 "from the widest set, may read high by that much.*\n"
+                 if widest_last else
+                 ". With one build per set that is the spread to allow on the column above.*\n"))
 
     # The cross-check, which matters more than either timing.
     build_rows = metric_builds.get("rows", [])
