@@ -66,6 +66,7 @@ phylo-tree-viewer/src/
       barchart_presenter.ts BarChartPresenter — per-leaf stacked composition bars.
       comparison.ts         ComparisonOperator — branch/node difference coloring + navigation.
       branch_lengths.ts     BranchLengthPresenter — each branch's length written beside it.
+      reset_view.ts         ResetViewButton — fits the tree back to the panel, shown once moved.
     export/
       snapshot.ts           snapshotViewer — a PNG of a panel, canvases plus DOM overlays.
       report.ts             Report model + renderReport (a self-contained HTML document).
@@ -869,6 +870,25 @@ attached: the triangle takes the highlight colour, blink included, and the marke
 stays hidden. A leaf, which has no wedge, is still marked on its marker.
 
 ---
+### 9.5b ResetViewButton (`operators/reset_view.ts`)
+
+A small button with a fit-frame icon (four corners, no text) that puts the tree
+back where it was fitted to the panel. It is **shown only when there is
+somewhere to go back to**: hidden at the fitted view and after every render,
+shown once a zoom, a pan or a centring moves the picture, hidden again when the
+camera returns.
+
+```ts
+new ResetViewButton({ corner: "top-right" }).attach(viewer); // or config: operators.resetView
+```
+
+- **The viewer decides "moved".** `TreeViewer` emits `cameraMoved` with
+  `atFit`, judged by `isSameView` in screen pixels (a pan of a pixel or more, a
+  zoom of 1% or more), so a sub-pixel settle never shows the button.
+- **`TreeViewer.resetView()`** animates the camera to the fitted view: the same
+  margins and leaf-side reserve a fresh render opens with. It changes where the
+  tree is seen from, never what is drawn.
+
 ### 9.6 BranchLengthPresenter (`operators/branch_lengths.ts`)
 
 Writes each branch's length beside it, in either layout. Off by default
@@ -1114,7 +1134,7 @@ Everything a consumer needs is re-exported from `./lib`:
   `CladeShapeOptions`, `SelectionOperator`, `SelectionOptions`, `BarChartPresenter`,
   `BarChartOptions`, `BarScale`, `ComparisonOperator`, `ComparisonOptions`,
   `ComparisonMode`, `LeafCategory`, `Linkable`, `BranchLengthPresenter`, `BranchLengthOptions`,
-  `formatBranchLength`.
+  `formatBranchLength`, `ResetViewButton`, `ResetViewOptions`, `Corner`, `isSameView`, `CameraView`.
 - **Branch lengths:** `LengthScale`, `BRANCH_COLOR`.
 - **Export:** `snapshotViewer`, `SnapshotOptions`, `buildComparisonReport`,
   `downloadComparisonReport`, `ComparisonReportInput`, `ComparisonPanel`,

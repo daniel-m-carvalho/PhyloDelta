@@ -518,3 +518,54 @@ describe("recentring for the bar-chart reserve", () => {
     expect(fake(v).cameraState.x).toBe(settled);
   });
 });
+
+describe("the fitted view: knowing when the camera has left it, and going back", () => {
+  function fake(v: TreeViewer) {
+    return v.getRenderer() as unknown as {
+      emit: (e: string, p: unknown) => void;
+      cameraState: { x: number; y: number; ratio: number; angle: number };
+      getCamera: () => { setState: (s: object) => void };
+    };
+  }
+
+  function withTree() {
+    const v = viewer();
+    v.setTree({ name: "root", branchset: [leaf("a"), leaf("b")] });
+    return v;
+  }
+
+  it("starts at the fit, and says so when a zoom or a pan leaves it", () => {
+    const v = withTree();
+    const moves: boolean[] = [];
+    v.events.on("cameraMoved", ({ atFit }) => moves.push(atFit));
+    expect(v.isAtFittedView()).toBe(true);
+
+    const camera = fake(v).getCamera();
+    camera.setState({ ratio: fake(v).cameraState.ratio * 0.5 }); // zoom in
+    expect(v.isAtFittedView()).toBe(false);
+    expect(moves[moves.length - 1]).toBe(false);
+  });
+
+  it("goes back to the fit, the leaf-side reserve included", () => {
+    const v = withTree();
+    v.setRightReservePx(100);
+    fake(v).emit("afterRender", {}); // applies the reserve pan: x = 1.0
+    const fitted = { ...fake(v).cameraState };
+
+    fake(v).getCamera().setState({ x: 0.2, y: 0.9, ratio: 0.3 });
+    expect(v.isAtFittedView()).toBe(false);
+
+    v.resetView();
+    expect(fake(v).cameraState.x).toBeCloseTo(fitted.x, 6);
+    expect(fake(v).cameraState.y).toBeCloseTo(fitted.y, 6);
+    expect(fake(v).cameraState.ratio).toBeCloseTo(fitted.ratio, 6);
+    expect(v.isAtFittedView()).toBe(true);
+  });
+
+  it("is at the fit again after a render, which fits the tree afresh", () => {
+    const v = withTree();
+    fake(v).getCamera().setState({ x: 0.1 });
+    v.setTree({ name: "root", branchset: [leaf("a"), leaf("b"), leaf("c")] });
+    expect(v.isAtFittedView()).toBe(true);
+  });
+});

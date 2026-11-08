@@ -79,14 +79,30 @@ export default class FakeSigma {
   /** Test-only: every `setState` the code under test issued, in order. */
   cameraWrites: Array<{ x: number; y: number; angle: number; ratio: number }> = [];
 
+  /** Listeners on the camera, as Sigma's camera keeps them ("updated"). */
+  private cameraListeners = new Set<() => void>();
+
   getCamera() {
+    const write = (state: Partial<{ x: number; y: number; angle: number; ratio: number }>) => {
+      this.cameraState = { ...this.cameraState, ...state };
+      this.cameraWrites.push({ ...this.cameraState });
+      this.cameraListeners.forEach((listener) => listener());
+    };
     return {
       getState: () => ({ ...this.cameraState }),
-      setState: (state: { x: number; y: number; angle: number; ratio: number }) => {
-        this.cameraState = { ...this.cameraState, ...state };
-        this.cameraWrites.push({ ...this.cameraState });
+      setState: write,
+      // Lands on the target at once: what an animation ends as.
+      animate: (state: Partial<{ x: number; y: number; angle: number; ratio: number }>, _opts: unknown, cb?: () => void) => {
+        write(state);
+        cb?.();
+        return Promise.resolve();
       },
-      animate: (_state: unknown, _opts: unknown, cb?: () => void) => cb?.(),
+      on: (event: string, listener: () => void) => {
+        if (event === "updated") this.cameraListeners.add(listener);
+      },
+      off: (event: string, listener: () => void) => {
+        if (event === "updated") this.cameraListeners.delete(listener);
+      },
     };
   }
 
