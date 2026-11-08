@@ -4386,6 +4386,39 @@ passes its budget to `load()`, and its `ok` now means the comparison finished.
 re-measured: the campaign does not produce them, they are kept from the tag's tree, and what cites them
 is an earlier run's figure.
 
+### 34.22 Nothing by hand: the checks after the campaign become steps of it
+
+**Decision.** From v0.2.1 the campaign runs the checks that v0.1.0 ran by hand afterwards, as three
+steps at its end, each writing its own file. `make_tables.py` writes the sentence under each from the
+numbers, where v0.1.0's files carried a paragraph typed in.
+
+**Why.** The full run of v0.2.0 (2026-11-07) showed what a hand-run check costs. `step_env` deletes the
+previous results, as it must, so the four extra checks vanished from its tables. Four rows of Table 4,
+its 30-minute sub-table and the paragraphs under Tables 5 and 23 were simply missing. And the typed
+paragraphs had gone stale: the paint note still said the ceiling's limit was 660 s, a figure #24 had
+already changed to 840 s. A claim that every table comes from one command on one tag has to include these.
+
+**The steps.**
+
+* `endurance_extra`: `endurance.mjs` at 17,645, 35,290, 70,580 and 564,640 leaves, 30 minutes each,
+  to `endurance_extra.json`. Since #24 the runner gives the comparison itself the budget, so this is
+  also v0.1.0's separate "comparison given 30 minutes" check (`phyloio_long_compare.json`). That check
+  is not repeated, and Table 4 is one table of six sizes, its sentence counted from the rows.
+* `paint_extra`: `phyloio_paint.mjs` at 70,580, to `phyloio_paint_extra.json`.
+* `accuracy_repeats`: Table 5's pair at 2,500 leaves four more times. Each run writes to its own files
+  (`BENCH_SCORES_OUT`, `BENCH_OUT`), so the campaign's run is neither overwritten nor read as another
+  size. `tools/collect_accuracy_repeats.py` gathers all five into `accuracy_repeats.json`: misses, gaps,
+  and how many clade scores each later run shares with the first.
+
+A rehearsal (`CAMPAIGN_DRY_RUN=1`) runs each on its largest rung with a one-minute budget, so the chain
+is exercised without its two hours. v0.1.0's files still build: the tables keep their old wording
+where the old files are what they read.
+
+**Found by the same run, and fixed before the tag.** The app fetched `/metrics` twice on opening. The
+per-metric change (§52) added a fetch in `App`, beside the upload panel's own, and the response had
+doubled with the new manifest fields. Table 19's data for opening a comparison rose from 26 to 47 KiB.
+The panel now takes the app's list. On the production build that is 31.7 KB, against 45.2 KB.
+
 ## 35. The frontend holds what it has already seen
 
 The library shipped a two-tier LRU — `CacheManager`, with warm and rendered queues, an eviction

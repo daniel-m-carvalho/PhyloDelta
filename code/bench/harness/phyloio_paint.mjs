@@ -42,6 +42,8 @@ const VIEWPORT = { width: 1440, height: 900 };
 
 //: The two rungs whose paint figures the thesis still quotes from 2.1.1.
 const RUNGS = (process.env.BENCH_RUNGS ?? "17645 35290").split(" ").map(Number);
+//: The campaign's `paint_extra` step writes 70,580 to its own file (§34.22).
+const OUT = process.env.BENCH_OUT ?? "phyloio_paint_2.2.5.json";
 
 //: Three loads per rung. The jump probe found phylo.io failures to be
 //: all-or-nothing *per page load* rather than per operation (§34.14), so a
@@ -186,7 +188,7 @@ for (const leaves of RUNGS) {
 }
 
 writeFileSync(
-  join(BENCH, "results", "phyloio_paint_2.2.5.json"),
+  join(BENCH, "results", OUT),
   JSON.stringify(
     {
       label: "2.2.5",
@@ -202,6 +204,6 @@ writeFileSync(
     1,
   ) + "\n",
 );
-console.log("\nwritten to results/phyloio_paint_2.2.5.json");
+console.log(`\nwritten to results/${OUT}`);
 await server.close?.();
 process.exit(0);

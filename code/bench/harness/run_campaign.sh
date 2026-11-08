@@ -250,6 +250,45 @@ step_rf_external() {
   (cd "$BENCH" && "$venv/bin/python" harness/rf_external.py >"$RESULTS/rf_external.json")
 }
 
+# --- checks v0.1.0 ran by hand after the campaign, now steps of it (§34.22) ---
+#
+# A rehearsal (CAMPAIGN_DRY_RUN=1) runs each on its largest rung with a short
+# budget, so the chain is exercised without its two hours.
+
+step_endurance_extra() {
+  # The comparison given its 30 minutes at the sizes `endurance` leaves out:
+  # where phylo.io paints (17,645 to 70,580) and the largest. Since #24 the
+  # runner passes its budget to load(), so this is also v0.1.0's separate
+  # "long compare" check, which is not repeated.
+  local rungs="17645 35290 70580 564640" budget=1800
+  if [ "${CAMPAIGN_DRY_RUN:-}" = 1 ]; then rungs="${RUNGS##* }"; budget=60; fi
+  (cd "$BENCH" && BENCH_RUNGS="$rungs" BENCH_BUDGET_S="$budget" BENCH_OUT=endurance_extra.json \
+    node harness/endurance.mjs)
+}
+
+step_paint_extra() {
+  # The paint runner at 70,580, which its default (17,645 and 35,290) leaves out.
+  local rungs="70580"
+  if [ "${CAMPAIGN_DRY_RUN:-}" = 1 ]; then rungs="${RUNGS##* }"; fi
+  (cd "$BENCH" && BENCH_RUNGS="$rungs" BENCH_OUT=phyloio_paint_extra.json node harness/phyloio_paint.mjs)
+}
+
+step_accuracy_repeats() {
+  # Table 5 at 2,500 leaves four more times: phylo.io's comparison is not
+  # deterministic, so how far one draw is from the next is part of the result.
+  [[ " $RUNGS " == *" 2500 "* ]] || return 0
+  local scratch="$CAMPAIGN_ROOT/accuracy-repeats" pair
+  rm -rf "$scratch" && mkdir -p "$scratch"
+  pair="$(pair_of 2500)"
+  for i in 1 2 3 4; do
+    (cd "$BENCH" && BENCH_SCORES_OUT="$scratch/scores_$i.json" node harness/accuracy.mjs 2500)
+    (cd "$SERVER" && BENCH_OUT="$scratch/accuracy_$i.json" PHYLODELTA_STORE="$CAMPAIGN_ROOT/stores/bench" \
+      "$PY" tools/bcn_accuracy.py \
+      "$scratch/scores_$i.json" "$pair" "$CAMPAIGN_ROOT/stores/bench")
+  done
+  (cd "$SERVER" && "$PY" tools/collect_accuracy_repeats.py "$RESULTS" "$scratch" 2500)
+}
+
 step_finish() { (cd "$BENCH" && "$PY" harness/campaign_env.py finish); }
 
 # ---------------------------------------------------------------------- the run
@@ -260,7 +299,8 @@ ALL=(
   store_rf store_app memory_2 memory_10 metric_builds scaling
   latency repeats ceiling paint endurance accuracy clade_repeats navigation
   bcn_probe ceiling_probe transfer transfer_gzip viewport
-  latency_mast transfer_app transfer_app_gzip rf_external finish
+  latency_mast transfer_app transfer_app_gzip rf_external
+  endurance_extra paint_extra accuracy_repeats finish
 )
 STEPS=("$@")
 [ ${#STEPS[@]} -gt 0 ] || STEPS=("${ALL[@]}")

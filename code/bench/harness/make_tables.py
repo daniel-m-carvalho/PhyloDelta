@@ -336,12 +336,21 @@ if env["moved_during_run"]:
           f"records the version that ran it, and all of them read {ceiling['browser']}.\n")
 if notes.get("ceiling_rerun"):
     print(f"**The ceiling step was run twice.** {notes['ceiling_rerun']}\n")
-print("**Measured after the campaign, from the same tag.** Four checks, each in its "
-      "own file, which the tables say where they use them: 2,500 leaves run four more "
-      "times (`accuracy_repeats.json`), the paint runner at 70,580 "
-      "(`phyloio_paint_extra.json`), the 30-minute run at 70,580 and 564,640 "
-      "(`endurance_extra.json`), and the comparison given 30 minutes "
-      "(`phyloio_long_compare.json`).\n")
+if long_compare:
+    # v0.1.0: four checks run by hand after the campaign, from the same tag.
+    print("**Measured after the campaign, from the same tag.** Four checks, each in its "
+          "own file, which the tables say where they use them: 2,500 leaves run four more "
+          "times (`accuracy_repeats.json`), the paint runner at 70,580 "
+          "(`phyloio_paint_extra.json`), the 30-minute run at 70,580 and 564,640 "
+          "(`endurance_extra.json`), and the comparison given 30 minutes "
+          "(`phyloio_long_compare.json`).\n")
+elif endurance_extra or paint_extra or accuracy_repeats:
+    # From v0.2.1 they are steps of the campaign itself (§34.22).
+    print("**Every table here comes from the campaign's own steps**, the checks beyond "
+          "its default sizes included, each in its own file: the 30-minute run at the "
+          "sizes `endurance` leaves out (`endurance_extra.json`), the paint runner at "
+          "70,580 (`phyloio_paint_extra.json`), and 2,500 leaves run four more times "
+          "(`accuracy_repeats.json`). Nothing was run by hand.\n")
 print("**The two entries that matter most for checking these numbers** are the "
       "browser flags and the phylo.io version. The heap cap decides *where* a tool "
       "fails, so Table 1's failures are statements about the tool at an 8 GiB cap, "
@@ -515,12 +524,14 @@ if endurance:
         ph = r.get("phases") or {}
         if ph.get("compareComplete"):
             outcome = "comparison finished"
+        elif ph and "compare_budget_ms" in r:
+            outcome = (f"painted in {ph['postFetch'] / 1000:.0f} s; **comparison unfinished "
+                       f"after {r['compare_budget_ms'] / 60000:.0f} minutes**")
         elif ph:
             # Runs at v0.1.0 left the page's load() at its default wait and
             # called its end `ok`, so these rows carry no budget of their own.
-            waited = r.get("compare_budget_ms", 600_000) / 1000
             outcome = (f"painted in {ph['postFetch'] / 1000:.0f} s; **comparison unfinished "
-                       f"when the page's own {waited:.0f} s wait ended**")
+                       f"when the page's own 600 s wait ended**")
         elif "crashed" in r.get("why", ""):
             outcome = "**renderer process crashed**"
         else:
@@ -531,10 +542,37 @@ if endurance:
         )
     print("\n*Peak memory is sampled every 2 s from process RSS, so it is a lower "
           "bound and the figures should not be read as an ordering.*\n")
-    print("*The tag's `endurance.mjs` lifts the budget for the load as a whole, not for "
-          "the comparison inside it: it calls the page's `load()` without a compare "
-          "budget, and that defaults to 600 s. Its `ok` therefore does not mean the "
-          "comparison finished, which is why this table reads `compareComplete`.*\n")
+    every = endurance + endurance_extra
+    if any("compare_budget_ms" not in r for r in every):
+        print("*The tag's `endurance.mjs` lifts the budget for the load as a whole, not for "
+              "the comparison inside it: it calls the page's `load()` without a compare "
+              "budget, and that defaults to 600 s. Its `ok` therefore does not mean the "
+              "comparison finished, which is why this table reads `compareComplete`.*\n")
+    else:
+        # Worked out, not written down: the sentence follows the rows (§34.22).
+        def leaves_list(rows):
+            sizes = [f"{r['leaves']:,}" for r in sorted(rows, key=lambda r: r["leaves"])]
+            return sizes[0] if len(sizes) == 1 else ", ".join(sizes[:-1]) + " and " + sizes[-1]
+        done = [r for r in every if (r.get("phases") or {}).get("compareComplete")]
+        slow = [r for r in every if r.get("phases") and r not in done]
+        crashed = [r for r in every if not r.get("phases") and "crashed" in r.get("why", "")]
+        blank = [r for r in every if not r.get("phases") and r not in crashed]
+        parts = []
+        if slow:
+            parts.append(f"at {leaves_list(slow)} it painted and its comparison was still "
+                         "running when the budget ended")
+        if crashed:
+            parts.append(f"at {leaves_list(crashed)} the renderer crashed")
+        if blank:
+            parts.append(f"at {leaves_list(blank)} nothing was painted in the time")
+        verdict = (f"finished the comparison at {leaves_list(done)}" if done
+                   else "finished the comparison at none of these sizes")
+        budget = max(r["compare_budget_ms"] for r in every) / 60000
+        rest = "; ".join(parts)
+        rest = (rest[:1].upper() + rest[1:] + ".") if rest else ""
+        caveat = (" This cannot tell a very slow comparison from one that never ends; it says "
+                  "that it does not finish in a time a reader waits." if slow or blank else "")
+        print(f"**Given {budget:.0f} minutes, phylo.io {verdict}.** {rest}{caveat}\n")
     if long_compare:
         print("**The comparison itself, given 30 minutes.** The same page, with `load()` "
               "told 1,800 s. One load per rung, run after the campaign from the same tag.\n")
@@ -544,7 +582,7 @@ if endurance:
             ph = r.get("phases") or {}
             if ph.get("compareComplete"):
                 cell = f"**finished in {ph['toCompare'] / 1000:.0f} s**"
-            elif r.get("ok"):
+            elif r.get("ok") or ph:
                 cell = "**unfinished at 30 minutes**"
             elif "crashed" in r.get("why", ""):
                 cell = "**renderer process crashed**"
@@ -584,7 +622,23 @@ if accuracy:
     print("*`clades` is the clades both sides scored. A clade phylo.io leaves "
           "unscored has no gap to compare, so it drops out here.*\n")
     if accuracy_repeats:
-        print(accuracy_repeats["summary"] + "\n")
+        # Worked out from the runs, not written down (§34.22).
+        runs = accuracy_repeats["runs"]
+        n = len(runs)
+        missed = [r["worse"] for r in runs]
+        shares = [r["worse"] / r["comparable"] * 100 for r in runs]
+        worst = [r["gap_worst"] for r in runs]
+        same = accuracy_repeats["scores_identical_to_first_run"]
+        clades = accuracy_repeats.get("clades")
+        of = f" of the {clades:,} clade scores" if clades else " clade scores"
+        word = dict(enumerate("zero one two three four five six seven eight nine ten".split()))
+        print(f"**The same pair, {word.get(n, n)} times.** At {accuracy_repeats['leaves']:,} "
+              f"leaves phylo.io was run {word.get(n, n)} times on one input with the same code: "
+              f"the campaign's run and {word.get(n - 1, n - 1)} more after it. It missed {', '.join(map(str, missed))} clades, so "
+              f"**{min(shares):.1f}% to {max(shares):.1f}%**, and its worst gap ranged from "
+              f"{min(worst):.3f} to {max(worst):.3f}. Between the first run and each later one "
+              f"only {min(same):,} to {max(same):,}{of} were identical. Its comparison is not "
+              "deterministic, so every row above is one draw.\n")
 
 # --- 5b. where phylo.io's time goes ---------------------------------------
 table(6, "Where phylo.io's time goes")
@@ -1468,4 +1522,10 @@ if paint.get("rows"):
           f"{paint['compare_budget_ms'] / 1000:.0f} s. Table 4 gives the comparison longer. "
           "A slice here arrives with its similarity values already in it.\n")
     if paint_extra:
-        print(paint_extra["summary"] + "\n")
+        extra_rows = ", ".join(f"{r['leaves']:,}" for r in paint_extra.get("rows", []))
+        source = ("run after the campaign, from the same tag and by the same runner"
+                  if "summary" in paint_extra else
+                  "from the campaign's `paint_extra` step: the same runner, at a size its "
+                  "default leaves out")
+        verb = "was" if "summary" in paint_extra else "comes"
+        print(f"*The {extra_rows} row {verb} {source}.*\n")

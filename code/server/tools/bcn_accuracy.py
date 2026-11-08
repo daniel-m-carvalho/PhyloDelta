@@ -27,6 +27,7 @@ differently and neither numbering is part of either's contract.
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -174,7 +175,9 @@ def main() -> None:
     bench = Path(__file__).resolve().parents[2] / "bench" / "results"
     sizes = {r["id"]: r["leaves"] for r in json.loads((bench / "server_build.json").read_text())}
     leaves = sizes.get(pair_id)
-    out = bench / f"bcn_accuracy_{leaves or pair_id}.json"
+    # BENCH_OUT for a repeat (`accuracy_repeats`, §34.22): a file named
+    # bcn_accuracy_* would be read by the tables as a rung of its own.
+    out = Path(os.environ.get("BENCH_OUT") or bench / f"bcn_accuracy_{leaves or pair_id}.json")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps({
         "pair": pair_id,

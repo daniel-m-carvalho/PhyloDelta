@@ -27,6 +27,9 @@ const BUDGET_MS = Number(process.env.BENCH_BUDGET_S ?? 30 * 60) * 1000;
 //: Above paint plus the comparison, so that the budget is what ends a run.
 const OUTER_MS = BUDGET_MS + 5 * 60 * 1000;
 const RUNGS = (process.env.BENCH_RUNGS ?? "141160 282320").split(" ").map(Number);
+//: Its own file per run: the campaign's `endurance_extra` step writes the sizes
+//: the default leaves out, beside this one rather than over it (§34.22).
+const OUT = process.env.BENCH_OUT ?? "endurance.json";
 
 /**
  * The largest renderer of the Chrome this run launched, in MiB.
@@ -108,7 +111,7 @@ for (const leaves of RUNGS) {
   outcome.compare_budget_ms = BUDGET_MS;
   outcome.peak_renderer_mb = peak;
   results.push(outcome);
-  writeFileSync(join(BENCH, "results", "endurance.json"), JSON.stringify(results, null, 2));
+  writeFileSync(join(BENCH, "results", OUT), JSON.stringify(results, null, 2));
   writeFileSync(
     1,
     `${leaves.toLocaleString().padStart(9)}  ${
