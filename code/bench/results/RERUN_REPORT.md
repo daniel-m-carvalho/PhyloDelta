@@ -63,10 +63,12 @@ The claims as the thesis states them; it has not been edited since v0.1.0's repo
   sets, where v0.1.0's three were 238.4–241.7 s. It is the same work each time (parse, reconcile,
   Jaccard correspondence, store). Table 17 used to set the widest set's figure beside Table 9's `rf`
   build as "the same work", which 258.1 against 245.7 no longer supports; it now compares the `rf`
-  set's 240.2 s and states the spread.
+  set's 240.2 s and states the spread. The widest set, uploaded last, took the most, so this may be
+  an ordering cost and not noise: one build per set cannot tell, and the Table 17 column may read
+  high by up to 18 s at the top.
 * **phylo.io's jump and DOM count** move between single loads. Table 15's jump at 1,000 worked in this
-  run's one load; its sentence now says which outcome each rung's load had instead of assuming the
-  common one. The DOM count at 10,000 (10,166 to 7,891, paths unchanged) is one load and unexplained.
+  run's one load. The note under it now gives each rung's outcome as the table prints it (worked at
+  1,000, failed at 2,500–10,000, no comparison at 17,645) instead of assuming the common one. The DOM count at 10,000 (10,166 to 7,891, paths unchanged) is one load and unexplained.
 * **Still open from v0.1.0**: whether phylo.io's comparison above 10,000 is slow or stuck (it does
   not finish in 30 minutes at 17,645, 35,290 or 70,580), and the jump's mechanism (§34.14), which a
   3-of-8 load rate fits no better than 1 of 8.

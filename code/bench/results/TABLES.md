@@ -433,9 +433,11 @@ Measured twice, each with `correspondence=metric` as the app asks: on the `rf` s
 
 ### Table 15 note — phylo.io's "Highlight BCN" is intermittent
 
-All 24 attempts in the navigation run above failed, at each of the 3 rungs with a comparison, with the same error:
+All 24 attempts in the navigation run above failed at 2,500, 5,000 and 10,000 leaves, with the same error:
 
 > `Cannot read properties of null (reading '_children')`
+
+At 1,000 leaves, the jump worked in that rung's load.
 
 **But that is one page load per rung, and the failure is intermittent.** A dedicated probe over repeated loads of the same pair at 1,000 leaves:
 
@@ -444,7 +446,7 @@ All 24 attempts in the navigation run above failed, at each of the 3 rungs with 
 | 2.1.1 | 8 | 0 | 0/80 |
 | 2.2.5 | 8 | 3 | 27/120 |
 
-The honest claim is that the jump fails in most loads, not that it never works. It is **not** all-or-nothing within a load: in the 3 of 8 loads where it worked at all, 27 of 45 attempts succeeded. Table 15 reports one load per rung, so it shows whichever outcome that load had: the jump worked at 1,000 leaves and failed elsewhere.
+The honest claim is that the jump fails in most loads, not that it never works. It is **not** all-or-nothing within a load: in the 3 of 8 loads where it worked at all, 27 of 45 attempts succeeded. Table 15 reports one load per rung, so it shows whichever outcome that load had: it worked at 1,000; failed at 2,500, 5,000 and 10,000; and had no comparison to jump in at 17,645.
 
 **The mechanism, and why it is conditional.** It is reached only from the context-menu item of that name (`viewer.js` line 1175 is the sole caller). `api.js` builds **two separate models** from the BCN worker's reply, and the `elementBCN` references inside the first point at that reply's own embedded copy of the second tree. `getHierarchyNodeFromModelNode` compares by object identity, so whether it finds anything depends on whether structured-clone identity between the two halves of one message survives into the rebuilt models — which is evidently not guaranteed. When it does not, the lookup returns null and `expandToRoot` hands that null to `apply_collapse_from_data_to_d3`, which reads `_children` on it.
 
@@ -482,7 +484,7 @@ So §9's claim that several metrics cost little more than one is **true asymptot
 
 **Measured from the worker's log, not from wall-clock differences.** The metric sets are uploaded in a fixed order, so the "+triplet" build is always last, and the first pass showed it at a suspiciously uniform 1.7-2x the others — the shape of an ordering artefact rather than a cost. Per-metric timings carry no such confound.
 
-*The shared work at 564,640 leaves, 240.2 s in the `rf` build, sits beside Table 9's 245.7 s for a whole `rf` build at two threads: the same work, from the worker's log and from the wall clock. Over the 4 metric sets the shared work, the same each time, took 240.2-258.1 s, so the column above, read from the widest set, carries that much run-to-run spread.*
+*The shared work at 564,640 leaves, 240.2 s in the `rf` build, sits beside Table 9's 245.7 s for a whole `rf` build at two threads: the same work, from the worker's log and from the wall clock. Over the 4 metric sets the shared work, the same each time, took 240.2-258.1 s, the most in the widest set, which is uploaded last. With one build per set this cannot tell an ordering cost from noise, so the column above, read from the widest set, may read high by that much.*
 
 
 ## Table 18 — Two RF implementations against each other

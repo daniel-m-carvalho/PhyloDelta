@@ -4452,10 +4452,16 @@ than in the markdown:
   v0.1.0 that held (238.4 s against 242.4 s); now the widest set's 258.1 s exceeds the whole `rf` build's
   245.7 s. The shared work is unchanged in scope (parse, reconcile, Jaccard correspondence, store;
   `pipeline.py` stops its clock before any metric), but over the four sets at 564,640 it took
-  240.2–258.1 s, a spread v0.1.0's three sets (238.4–241.7 s) did not show. The sentence now compares
-  the `rf` set and states the spread.
-* The jump probe's note said Table 15 "shows only the common outcome". It now says which outcome each
-  rung's load had.
+  240.2–258.1 s, a spread v0.1.0's three sets (238.4–241.7 s) did not show. The most was in the widest
+  set, which is uploaded last, so it may be an ordering cost rather than noise; with one build per set
+  the run cannot tell. The sentence now compares the `rf` set, states the spread and says that, and
+  names what is missing (no `rf` build, no shared-work figure) instead of reading another set.
+* The jump note under Table 15 opened with "all 24 attempts failed, at each of the 3 rungs with a
+  comparison", counting only the rungs that failed: there were four, and at 1,000 the jump worked.
+  It said Table 15 "shows only the common outcome", and the first fix said "failed elsewhere", which
+  took in 17,645, where no comparison finished and no jump was tried. Both sentences now read each
+  rung's outcome from the same function that prints Table 15's cells: worked at 1,000, failed at
+  2,500–10,000, no comparison at 17,645.
 
 ## 35. The frontend holds what it has already seen
 
