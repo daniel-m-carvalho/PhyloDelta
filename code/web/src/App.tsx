@@ -444,6 +444,7 @@ export function App() {
           </section>
 
           <UploadPanel
+            metrics={metrics}
             onReady={async (comparisonId) => {
               await refresh();
               const datasets = await api.datasets();

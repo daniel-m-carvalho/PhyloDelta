@@ -28,7 +28,17 @@ const TREE_HINT = "Newick — .nwk, .newick, .tree";
 const TABLE_HINT = "Isolate data, tab- or comma-separated — .tsv, .csv";
 const TABLE_ACCEPT = ".tsv,.tab,.csv,.txt";
 
-export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => void }) {
+export function UploadPanel({
+  onReady,
+  metrics: offered,
+}: {
+  onReady: (comparisonId: string) => void;
+  /**
+   * What this server can compute with, from the one GET /metrics the app makes
+   * (App.tsx). Undefined while it is asked, and after a failure.
+   */
+  metrics: MetricSummary[] | undefined;
+}) {
   // Read once, synchronously, so the form renders filled after a refresh
   // rather than empty and then filling (draft.ts).
   const [draft] = useState(loadFields);
@@ -60,31 +70,31 @@ export function UploadPanel({ onReady }: { onReady: (comparisonId: string) => vo
    * cannot run. If the call fails the panel simply offers nothing and the
    * upload proceeds on the server's default, which is the honest fallback:
    * not being able to choose is better than choosing something absent.
+   *
+   * Asked once, by the app, and handed down. This panel used to ask again, so
+   * opening the app fetched /metrics twice — 14 KB each since §52 — which the
+   * v0.2.0 campaign found as Table 19's data nearly doubling.
    */
-  const [metrics, setMetrics] = useState<MetricSummary[]>([]);
+  const metrics = offered ?? [];
   // One metric per comparison (§52): MAST, SPR and every other metric are
   // choices in one list, not extras beside a distance. A comparison is read,
   // numbered and coloured only as the metric it was computed with declares.
   const [chosen, setChosen] = useState<string>("");
+  // All of them are listed, not only the usable ones: a metric the server
+  // knows but cannot run is shown disabled, with the reason. Listing only the
+  // usable ones hid the picker entirely when one was left, and on the
+  // deployment that read as the choice having disappeared.
   useEffect(() => {
-    api
-      .metrics()
-      .then((found) => {
-        // All of them, not only the usable ones: a metric the server knows
-        // but cannot run is shown disabled, with the reason. Listing only the
-        // usable ones hid the picker entirely when one was left, and on the
-        // deployment that read as the choice having disappeared.
-        setMetrics(found);
-        const usable = found.filter((metric) => metric.available);
-        // The remembered choice only if this server still offers it: a
-        // metric whose runtime has gone would be sent and refused by name.
-        const remembered = usable.some((metric) => metric.name === draft.metric)
-          ? draft.metric
-          : "";
-        setChosen((current) => current || remembered || (usable[0]?.name ?? ""));
-      })
-      .catch(() => setMetrics([]));
-  }, []);
+    if (!offered) return;
+    const usable = offered.filter((metric) => metric.available);
+    // The remembered choice only if this server still offers it: a metric
+    // whose runtime has gone would be sent and refused by name.
+    const remembered = usable.some((metric) => metric.name === draft.metric)
+      ? draft.metric
+      : "";
+    setChosen((current) => current || remembered || (usable[0]?.name ?? ""));
+    // `offered` is the app's state, set once: no identity loop (§49).
+  }, [offered, draft.metric]);
   const [status, setStatus] = useState<ComparisonStatus | null>(null);
   // Entries, not the record itself, so the count and the single-item wording
   // below read from one thing.
