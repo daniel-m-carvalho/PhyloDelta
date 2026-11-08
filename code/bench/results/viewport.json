@@ -1,5 +1,5 @@
 {
-  "browser": "Chrome 156.0.8078.74",
+  "browser": "Chrome 156.0.8078.80",
   "width": 1440,
   "heights": [
     400,
@@ -29,7 +29,7 @@
           "total_leaves": 17645,
           "right_budget": 50,
           "panel_px": 210,
-          "bytes": 15033,
+          "bytes": 15087,
           "count": 2
         },
         {
@@ -41,7 +41,7 @@
           "total_leaves": 564640,
           "right_budget": 50,
           "panel_px": 210,
-          "bytes": 12245,
+          "bytes": 12299,
           "count": 2
         }
       ]
@@ -58,7 +58,7 @@
           "total_leaves": 17645,
           "right_budget": 50,
           "panel_px": 510,
-          "bytes": 15033,
+          "bytes": 15087,
           "count": 2
         },
         {
@@ -70,7 +70,7 @@
           "total_leaves": 564640,
           "right_budget": 50,
           "panel_px": 510,
-          "bytes": 12245,
+          "bytes": 12299,
           "count": 2
         }
       ]
@@ -87,7 +87,7 @@
           "total_leaves": 17645,
           "right_budget": 50,
           "panel_px": 810,
-          "bytes": 15033,
+          "bytes": 15087,
           "count": 2
         },
         {
@@ -99,7 +99,7 @@
           "total_leaves": 564640,
           "right_budget": 50,
           "panel_px": 810,
-          "bytes": 12245,
+          "bytes": 12299,
           "count": 2
         }
       ]
@@ -116,7 +116,7 @@
           "total_leaves": 17645,
           "right_budget": 75,
           "panel_px": 1010,
-          "bytes": 22501,
+          "bytes": 22555,
           "count": 2
         },
         {
@@ -128,7 +128,7 @@
           "total_leaves": 564640,
           "right_budget": 75,
           "panel_px": 1010,
-          "bytes": 19610,
+          "bytes": 19664,
           "count": 2
         }
       ]
@@ -145,7 +145,7 @@
           "total_leaves": 17645,
           "right_budget": 75,
           "panel_px": 1210,
-          "bytes": 22501,
+          "bytes": 22555,
           "count": 2
         },
         {
@@ -157,7 +157,7 @@
           "total_leaves": 564640,
           "right_budget": 75,
           "panel_px": 1210,
-          "bytes": 19610,
+          "bytes": 19664,
           "count": 2
         }
       ]
@@ -174,7 +174,7 @@
           "total_leaves": 17645,
           "right_budget": 100,
           "panel_px": 1510,
-          "bytes": 29044,
+          "bytes": 29098,
           "count": 2
         },
         {
@@ -186,7 +186,7 @@
           "total_leaves": 564640,
           "right_budget": 100,
           "panel_px": 1510,
-          "bytes": 27048,
+          "bytes": 27102,
           "count": 2
         }
       ]
@@ -203,7 +203,7 @@
           "total_leaves": 17645,
           "right_budget": 125,
           "panel_px": 1810,
-          "bytes": 35652,
+          "bytes": 35706,
           "count": 2
         },
         {
@@ -215,7 +215,7 @@
           "total_leaves": 564640,
           "right_budget": 125,
           "panel_px": 1810,
-          "bytes": 33962,
+          "bytes": 34016,
           "count": 2
         }
       ]
@@ -232,7 +232,7 @@
           "total_leaves": 17645,
           "right_budget": 175,
           "panel_px": 2410,
-          "bytes": 48137,
+          "bytes": 48191,
           "count": 2
         },
         {
@@ -244,7 +244,7 @@
           "total_leaves": 564640,
           "right_budget": 175,
           "panel_px": 2410,
-          "bytes": 47138,
+          "bytes": 47192,
           "count": 2
         }
       ]
@@ -261,7 +261,7 @@
           "total_leaves": 17645,
           "right_budget": 225,
           "panel_px": 3010,
-          "bytes": 60505,
+          "bytes": 60559,
           "count": 2
         },
         {
@@ -273,7 +273,7 @@
           "total_leaves": 564640,
           "right_budget": 225,
           "panel_px": 3010,
-          "bytes": 59075,
+          "bytes": 59129,
           "count": 2
         }
       ]

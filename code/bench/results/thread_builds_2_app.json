@@ -7,7 +7,7 @@
   "rungs": [
     {
       "leaves": 1000,
-      "build_s": 2.0814447079319507,
+      "build_s": 2.0811558339046314,
       "status": "ready",
       "threads_verified": 2,
       "metrics_asked": [
@@ -22,7 +22,7 @@
     },
     {
       "leaves": 2500,
-      "build_s": 2.0614717080025002,
+      "build_s": 2.0626116670900956,
       "status": "ready",
       "threads_verified": 2,
       "metrics_asked": [
@@ -37,7 +37,7 @@
     },
     {
       "leaves": 5000,
-      "build_s": 2.5772058750735596,
+      "build_s": 2.5636557498946786,
       "status": "ready",
       "threads_verified": 2,
       "metrics_asked": [
@@ -52,7 +52,7 @@
     },
     {
       "leaves": 10000,
-      "build_s": 3.0740577089600265,
+      "build_s": 3.0845584999769926,
       "status": "ready",
       "threads_verified": 2,
       "metrics_asked": [
@@ -67,7 +67,7 @@
     },
     {
       "leaves": 17645,
-      "build_s": 6.155552624957636,
+      "build_s": 6.13993941701483,
       "status": "ready",
       "threads_verified": 2,
       "metrics_asked": [
@@ -82,7 +82,7 @@
     },
     {
       "leaves": 35290,
-      "build_s": 17.386823041946627,
+      "build_s": 17.895456583006307,
       "status": "ready",
       "threads_verified": 2,
       "metrics_asked": [
@@ -97,7 +97,7 @@
     },
     {
       "leaves": 70580,
-      "build_s": 6.158018874935806,
+      "build_s": 6.141754999989644,
       "status": "ready",
       "threads_verified": 2,
       "metrics_asked": [
@@ -113,7 +113,7 @@
     },
     {
       "leaves": 141160,
-      "build_s": 17.361680374946445,
+      "build_s": 17.387368790921755,
       "status": "ready",
       "threads_verified": 2,
       "metrics_asked": [
@@ -129,7 +129,7 @@
     },
     {
       "leaves": 282320,
-      "build_s": 59.8035757499747,
+      "build_s": 60.279992250027135,
       "status": "ready",
       "threads_verified": 2,
       "metrics_asked": [
@@ -145,7 +145,7 @@
     },
     {
       "leaves": 564640,
-      "build_s": 243.71069770795293,
+      "build_s": 244.7235121660633,
       "status": "ready",
       "threads_verified": 2,
       "metrics_asked": [

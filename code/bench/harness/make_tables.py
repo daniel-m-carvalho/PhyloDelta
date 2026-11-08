@@ -1052,12 +1052,24 @@ if nav_rows:
                           f"| {d['attempts_succeeded']}/{d['attempts_total']} |")
             print()
         worked = [load for load in bcn_225["per_load"] if load["succeeded"]]
+        # Table 15's one load per rung can land on either outcome; say which it
+        # showed rather than assume the common one (v0.2.1 worked at 1,000).
+        jumped = [
+            r["leaves"] for r in nav_rows
+            if ((r.get("phyloio", {}).get("jump") or {}).get("median_ms") is not None
+                and r.get("phyloio", {}).get("ok") is not False)
+        ]
+        if jumped:
+            shown = (f"so it shows whichever outcome that load had: the jump worked at "
+                     f"{', '.join(f'{n:,}' for n in jumped)} leaves and failed elsewhere.")
+        else:
+            shown = "which is why it shows only the common outcome."
         print(f"The honest claim is that the jump fails in most loads, not that it never "
               f"works. It is **not** all-or-nothing within a load: in the "
               f"{len(worked)} of {bcn_225['loads']} loads where it worked at all, "
               f"{sum(w['succeeded'] for w in worked)} of "
               f"{sum(w['attempted'] for w in worked)} attempts succeeded. Table 15 reports "
-              "one load per rung, which is why it shows only the common outcome.\n")
+              f"one load per rung, {shown}\n")
         print("**The mechanism, and why it is conditional.** It is reached only from the "
               "context-menu item of that name (`viewer.js` line 1175 is the sole caller). `api.js` "
               "builds **two separate models** from the BCN worker's reply, and the `elementBCN` "
@@ -1166,9 +1178,17 @@ if phase_rows:
           "sets are uploaded in a fixed order, so the \"+triplet\" build is always last, and the "
           "first pass showed it at a suspiciously uniform 1.7-2x the others — the shape of an "
           "ordering artefact rather than a cost. Per-metric timings carry no such confound.\n")
-    print(f"*The shared work at {top['leaves']:,} leaves here, {top_widest['shared_s']:.1f} s, "
-          f"sits beside Table 9's {deploy_build[top['leaves']]:.1f} s for a whole `rf` build at two "
-          "threads: the same work, from the worker's log and from the wall clock.*\n")
+    # Compare like with like: Table 9's figure is an `rf`-only build, so set it
+    # beside the `rf`-only set's shared work, and give the spread over the sets,
+    # which is the same work run once per set (v0.2.1: 240-258 s at 564,640).
+    top_shared = [b["shared_s"] for b in top["builds"] if b.get("shared_s") is not None]
+    top_rf = next((b for b in top["builds"] if b["metrics"] == ["rf"]), top_widest)
+    print(f"*The shared work at {top['leaves']:,} leaves, {top_rf['shared_s']:.1f} s in the `rf` "
+          f"build, sits beside Table 9's {deploy_build[top['leaves']]:.1f} s for a whole `rf` build "
+          "at two threads: the same work, from the worker's log and from the wall clock. Over the "
+          f"{len(top_shared)} metric sets the shared work, the same each time, took "
+          f"{min(top_shared):.1f}-{max(top_shared):.1f} s, so the column above, read from the "
+          "widest set, carries that much run-to-run spread.*\n")
 
     # The cross-check, which matters more than either timing.
     build_rows = metric_builds.get("rows", [])

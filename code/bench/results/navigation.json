@@ -1,5 +1,5 @@
 {
-  "browser": "Chrome 156.0.8078.74",
+  "browser": "Chrome 156.0.8078.80",
   "viewport": {
     "width": 1440,
     "height": 900
@@ -15,13 +15,13 @@
   "rows": [
     {
       "leaves": 1000,
-      "pair": "d4851293df73__db4d2f5440a6",
+      "pair": "c28a8aeaec6d__e938da17d14c",
       "phyloio": {
         "ok": true,
         "drawn": {
-          "paths": 645,
-          "texts": 1025,
-          "circles": 211
+          "paths": 1172,
+          "texts": 1814,
+          "circles": 325
         },
         "sizes": [
           1000,
@@ -35,68 +35,25 @@
         ],
         "with_bcn": 23,
         "truncated": false,
-        "failures": [
-          {
-            "op": "jump",
-            "leaves": 996,
-            "error": "Cannot read properties of null (reading '_children')",
-            "reachable": false,
-            "targetHasParent": false
-          },
-          {
-            "op": "jump",
-            "leaves": 953,
-            "error": "Cannot read properties of null (reading '_children')",
-            "reachable": false,
-            "targetHasParent": false
-          },
-          {
-            "op": "jump",
-            "leaves": 936,
-            "error": "Cannot read properties of null (reading '_children')",
-            "reachable": false,
-            "targetHasParent": false
-          },
-          {
-            "op": "jump",
-            "leaves": 930,
-            "error": "Cannot read properties of null (reading '_children')",
-            "reachable": false,
-            "targetHasParent": false
-          },
-          {
-            "op": "jump",
-            "leaves": 927,
-            "error": "Cannot read properties of null (reading '_children')",
-            "reachable": false,
-            "targetHasParent": false
-          },
-          {
-            "op": "jump",
-            "leaves": 925,
-            "error": "Cannot read properties of null (reading '_children')",
-            "reachable": false,
-            "targetHasParent": false
-          }
-        ],
-        "failure_count": 8,
+        "failures": [],
+        "failure_count": 0,
         "expand": {
           "n": 8,
           "median_ms": 31.3,
-          "min_ms": 29.7,
-          "max_ms": 31.5
+          "min_ms": 29.6,
+          "max_ms": 32.9
         },
         "back": {
           "n": 8,
-          "median_ms": 31.5,
-          "min_ms": 31.1,
-          "max_ms": 32.2
+          "median_ms": 31.6,
+          "min_ms": 30.1,
+          "max_ms": 33.1
         },
         "jump": {
-          "n": 0,
-          "median_ms": null,
-          "min_ms": null,
-          "max_ms": null
+          "n": 8,
+          "median_ms": 135.8,
+          "min_ms": 88,
+          "max_ms": 211.4
         }
       },
       "phylodelta": {
@@ -130,9 +87,9 @@
         "fetch_ms": {
           "expand": {
             "n": 8,
-            "median_ms": 3.2,
+            "median_ms": 3.3,
             "min_ms": 3.1,
-            "max_ms": 3.4
+            "max_ms": 4.1
           },
           "back": {
             "n": 8,
@@ -144,19 +101,19 @@
             "n": 7,
             "median_ms": 3,
             "min_ms": 2.8,
-            "max_ms": 8.6
+            "max_ms": 8.7
           },
           "cold_expand": {
             "n": 8,
-            "median_ms": 3.3,
-            "min_ms": 3.1,
-            "max_ms": 3.5
+            "median_ms": 3.4,
+            "min_ms": 3.3,
+            "max_ms": 3.6
           },
           "cold_back": {
             "n": 8,
-            "median_ms": 3.2,
-            "min_ms": 3.1,
-            "max_ms": 3.7
+            "median_ms": 3.4,
+            "min_ms": 3.2,
+            "max_ms": 3.6
           }
         },
         "skipped": [],
@@ -165,40 +122,40 @@
         "expand": {
           "n": 8,
           "median_ms": 49.3,
-          "min_ms": 48.4,
-          "max_ms": 49.9
+          "min_ms": 47.9,
+          "max_ms": 49.4
         },
         "back": {
           "n": 8,
           "median_ms": 49.3,
-          "min_ms": 48.9,
-          "max_ms": 50.1
+          "min_ms": 47.4,
+          "max_ms": 51
         },
         "jump": {
           "n": 7,
-          "median_ms": 48.8,
-          "min_ms": 47.8,
-          "max_ms": 49.5
+          "median_ms": 49.2,
+          "min_ms": 30.7,
+          "max_ms": 49.7
         },
         "uncached": {
           "expand": {
             "n": 8,
-            "median_ms": 47.9,
-            "min_ms": 47.4,
-            "max_ms": 48.1
+            "median_ms": 47.8,
+            "min_ms": 46,
+            "max_ms": 49.2
           },
           "back": {
             "n": 8,
-            "median_ms": 48.9,
-            "min_ms": 48.8,
-            "max_ms": 49.1
+            "median_ms": 49,
+            "min_ms": 47.3,
+            "max_ms": 50.5
           }
         }
       }
     },
     {
       "leaves": 2500,
-      "pair": "1aefae7bf0e8__0e70d318a0e0",
+      "pair": "688a47f5656d__26d9ee287ce4",
       "phyloio": {
         "ok": true,
         "drawn": {
@@ -265,15 +222,15 @@
         "failure_count": 8,
         "expand": {
           "n": 8,
-          "median_ms": 31.2,
-          "min_ms": 31,
-          "max_ms": 31.9
+          "median_ms": 31.3,
+          "min_ms": 30.8,
+          "max_ms": 33.1
         },
         "back": {
           "n": 8,
-          "median_ms": 31.1,
-          "min_ms": 28.7,
-          "max_ms": 31.3
+          "median_ms": 30.9,
+          "min_ms": 26.7,
+          "max_ms": 31.2
         },
         "jump": {
           "n": 0,
@@ -314,8 +271,8 @@
           "expand": {
             "n": 8,
             "median_ms": 3.5,
-            "min_ms": 3.2,
-            "max_ms": 4
+            "min_ms": 3.3,
+            "max_ms": 3.6
           },
           "back": {
             "n": 8,
@@ -327,19 +284,19 @@
             "n": 8,
             "median_ms": 3,
             "min_ms": 2.9,
-            "max_ms": 8.4
+            "max_ms": 7.8
           },
           "cold_expand": {
             "n": 8,
-            "median_ms": 3.4,
-            "min_ms": 3.2,
-            "max_ms": 3.6
+            "median_ms": 3.6,
+            "min_ms": 3.4,
+            "max_ms": 3.9
           },
           "cold_back": {
             "n": 8,
             "median_ms": 3.5,
-            "min_ms": 3.2,
-            "max_ms": 3.9
+            "min_ms": 3.3,
+            "max_ms": 4.3
           }
         },
         "skipped": [],
@@ -347,41 +304,41 @@
         "truncated": false,
         "expand": {
           "n": 8,
-          "median_ms": 49.2,
-          "min_ms": 49.2,
-          "max_ms": 49.4
+          "median_ms": 49.3,
+          "min_ms": 49.3,
+          "max_ms": 50.8
         },
         "back": {
           "n": 8,
           "median_ms": 49.3,
-          "min_ms": 49.1,
+          "min_ms": 47.7,
           "max_ms": 49.4
         },
         "jump": {
           "n": 8,
-          "median_ms": 49.2,
-          "min_ms": 32,
-          "max_ms": 50.1
+          "median_ms": 49.4,
+          "min_ms": 48.7,
+          "max_ms": 49.6
         },
         "uncached": {
           "expand": {
             "n": 8,
-            "median_ms": 48,
-            "min_ms": 47.6,
-            "max_ms": 48.3
+            "median_ms": 48.1,
+            "min_ms": 46,
+            "max_ms": 49.8
           },
           "back": {
             "n": 8,
-            "median_ms": 48.9,
-            "min_ms": 48.9,
-            "max_ms": 49.3
+            "median_ms": 49,
+            "min_ms": 47.5,
+            "max_ms": 50.8
           }
         }
       }
     },
     {
       "leaves": 5000,
-      "pair": "6cf8ead2c6d6__112aa9c834ce",
+      "pair": "cc96723b0db9__622fe80dd777",
       "phyloio": {
         "ok": true,
         "drawn": {
@@ -448,15 +405,15 @@
         "failure_count": 8,
         "expand": {
           "n": 8,
-          "median_ms": 31.6,
-          "min_ms": 31.2,
-          "max_ms": 32
+          "median_ms": 31.5,
+          "min_ms": 29.6,
+          "max_ms": 31.9
         },
         "back": {
           "n": 8,
-          "median_ms": 31.7,
-          "min_ms": 30.1,
-          "max_ms": 31.8
+          "median_ms": 31.6,
+          "min_ms": 31.5,
+          "max_ms": 32.8
         },
         "jump": {
           "n": 0,
@@ -497,8 +454,8 @@
           "expand": {
             "n": 8,
             "median_ms": 3.5,
-            "min_ms": 3.2,
-            "max_ms": 3.9
+            "min_ms": 3.3,
+            "max_ms": 3.6
           },
           "back": {
             "n": 8,
@@ -514,15 +471,15 @@
           },
           "cold_expand": {
             "n": 8,
-            "median_ms": 3.6,
-            "min_ms": 3.5,
-            "max_ms": 4.5
+            "median_ms": 3.5,
+            "min_ms": 3.3,
+            "max_ms": 4.2
           },
           "cold_back": {
             "n": 8,
-            "median_ms": 3.3,
+            "median_ms": 3.5,
             "min_ms": 3.2,
-            "max_ms": 3.6
+            "max_ms": 4.1
           }
         },
         "skipped": [],
@@ -530,41 +487,41 @@
         "truncated": false,
         "expand": {
           "n": 8,
-          "median_ms": 49.3,
-          "min_ms": 48.4,
-          "max_ms": 50.2
+          "median_ms": 49.4,
+          "min_ms": 49.2,
+          "max_ms": 50.6
         },
         "back": {
           "n": 8,
           "median_ms": 49.3,
-          "min_ms": 48.2,
-          "max_ms": 50.1
+          "min_ms": 49.2,
+          "max_ms": 49.5
         },
         "jump": {
           "n": 8,
-          "median_ms": 49.2,
-          "min_ms": 32.6,
-          "max_ms": 49.3
+          "median_ms": 47.9,
+          "min_ms": 32.2,
+          "max_ms": 50.9
         },
         "uncached": {
           "expand": {
             "n": 8,
             "median_ms": 48.1,
-            "min_ms": 47.2,
-            "max_ms": 49.1
+            "min_ms": 46.7,
+            "max_ms": 48.1
           },
           "back": {
             "n": 8,
-            "median_ms": 49,
-            "min_ms": 48.8,
-            "max_ms": 49.3
+            "median_ms": 48.8,
+            "min_ms": 47.8,
+            "max_ms": 50.4
           }
         }
       }
     },
     {
       "leaves": 10000,
-      "pair": "de9ea996bdc7__8cc89cfa4b2a",
+      "pair": "382051785d9d__33adc3ea587a",
       "phyloio": {
         "ok": true,
         "drawn": {
@@ -631,15 +588,15 @@
         "failure_count": 8,
         "expand": {
           "n": 8,
-          "median_ms": 30.6,
-          "min_ms": 30.4,
+          "median_ms": 31.6,
+          "min_ms": 31.2,
           "max_ms": 31.7
         },
         "back": {
           "n": 8,
-          "median_ms": 32.8,
-          "min_ms": 31.8,
-          "max_ms": 33.1
+          "median_ms": 31.6,
+          "min_ms": 29.7,
+          "max_ms": 32.1
         },
         "jump": {
           "n": 0,
@@ -679,9 +636,9 @@
         "fetch_ms": {
           "expand": {
             "n": 8,
-            "median_ms": 3.4,
-            "min_ms": 3.3,
-            "max_ms": 4
+            "median_ms": 3.6,
+            "min_ms": 3.4,
+            "max_ms": 4.3
           },
           "back": {
             "n": 8,
@@ -692,20 +649,20 @@
           "jump": {
             "n": 8,
             "median_ms": 3,
-            "min_ms": 2.6,
-            "max_ms": 9.8
+            "min_ms": 2.7,
+            "max_ms": 9.5
           },
           "cold_expand": {
             "n": 8,
-            "median_ms": 3.4,
-            "min_ms": 3.3,
-            "max_ms": 3.5
+            "median_ms": 3.5,
+            "min_ms": 3.2,
+            "max_ms": 3.8
           },
           "cold_back": {
             "n": 8,
-            "median_ms": 3.5,
+            "median_ms": 3.7,
             "min_ms": 3.3,
-            "max_ms": 3.8
+            "max_ms": 4
           }
         },
         "skipped": [],
@@ -714,40 +671,40 @@
         "expand": {
           "n": 8,
           "median_ms": 49.3,
-          "min_ms": 47.5,
-          "max_ms": 51.2
+          "min_ms": 49.2,
+          "max_ms": 49.9
         },
         "back": {
           "n": 8,
           "median_ms": 49.3,
-          "min_ms": 48,
-          "max_ms": 51.1
+          "min_ms": 49.2,
+          "max_ms": 49.7
         },
         "jump": {
           "n": 8,
-          "median_ms": 49.2,
-          "min_ms": 48.6,
-          "max_ms": 50.5
+          "median_ms": 49.3,
+          "min_ms": 48.5,
+          "max_ms": 49.4
         },
         "uncached": {
           "expand": {
             "n": 8,
-            "median_ms": 48,
-            "min_ms": 47.7,
-            "max_ms": 49.7
+            "median_ms": 47.9,
+            "min_ms": 46.5,
+            "max_ms": 48.2
           },
           "back": {
             "n": 8,
-            "median_ms": 48.9,
-            "min_ms": 47.3,
-            "max_ms": 49.1
+            "median_ms": 49.1,
+            "min_ms": 47.6,
+            "max_ms": 50.1
           }
         }
       }
     },
     {
       "leaves": 17645,
-      "pair": "63c2a1b9287c__fa8148b21b94",
+      "pair": "62fe84128ad4__948f6aec7d7d",
       "phyloio": {
         "ok": false,
         "failed": "comparison never completed"
@@ -783,9 +740,9 @@
         "fetch_ms": {
           "expand": {
             "n": 8,
-            "median_ms": 3.5,
-            "min_ms": 3.2,
-            "max_ms": 15.3
+            "median_ms": 3.3,
+            "min_ms": 3.1,
+            "max_ms": 3.6
           },
           "back": {
             "n": 8,
@@ -796,20 +753,20 @@
           "jump": {
             "n": 8,
             "median_ms": 3,
-            "min_ms": 2.7,
-            "max_ms": 10.7
+            "min_ms": 2.6,
+            "max_ms": 10.4
           },
           "cold_expand": {
             "n": 8,
-            "median_ms": 3.4,
-            "min_ms": 3.2,
-            "max_ms": 3.9
+            "median_ms": 3.5,
+            "min_ms": 3.3,
+            "max_ms": 14.9
           },
           "cold_back": {
             "n": 8,
-            "median_ms": 3.5,
-            "min_ms": 3.2,
-            "max_ms": 3.6
+            "median_ms": 3.3,
+            "min_ms": 3.1,
+            "max_ms": 3.7
           }
         },
         "skipped": [],
@@ -818,33 +775,33 @@
         "expand": {
           "n": 8,
           "median_ms": 49.3,
-          "min_ms": 47.6,
-          "max_ms": 66.1
+          "min_ms": 47.8,
+          "max_ms": 50.6
         },
         "back": {
           "n": 8,
-          "median_ms": 49.2,
-          "min_ms": 48.8,
-          "max_ms": 51
+          "median_ms": 49.3,
+          "min_ms": 49,
+          "max_ms": 50.2
         },
         "jump": {
           "n": 8,
-          "median_ms": 49.5,
-          "min_ms": 47.5,
-          "max_ms": 50.9
+          "median_ms": 49.3,
+          "min_ms": 48.5,
+          "max_ms": 50.3
         },
         "uncached": {
           "expand": {
             "n": 8,
-            "median_ms": 48.2,
-            "min_ms": 46.4,
-            "max_ms": 48.4
+            "median_ms": 47.9,
+            "min_ms": 47.6,
+            "max_ms": 64.7
           },
           "back": {
             "n": 8,
-            "median_ms": 49,
-            "min_ms": 48.9,
-            "max_ms": 50.5
+            "median_ms": 48.9,
+            "min_ms": 47.7,
+            "max_ms": 50
           }
         }
       }

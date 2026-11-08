@@ -1,5 +1,5 @@
 {
-  "browser": "Chrome 156.0.8078.74",
+  "browser": "Chrome 156.0.8078.80",
   "viewport": {
     "width": 1440,
     "height": 900
@@ -8,7 +8,7 @@
   "rows": [
     {
       "leaves": 1000,
-      "pair": "d4851293df73__db4d2f5440a6",
+      "pair": "c28a8aeaec6d__e938da17d14c",
       "phyloio": {
         "ok": true,
         "received": {
@@ -59,49 +59,49 @@
           "showing 50 of 1,000 leaves · 993 behind wedges",
           "showing 50 of 1,000 leaves · 976 behind wedges"
         ],
-        "app": 147955,
-        "data": 8909,
+        "app": 149139,
+        "data": 10453,
         "other": 0,
         "requests": 10,
         "byUrl": [
           {
-            "url": "/assets/index-6p2Jk_hM.js",
-            "bytes": 143744,
-            "kind": "app"
-          },
-          {
-            "url": "/assets/index-DpWz6CPx.css",
-            "bytes": 3685,
+            "url": "/assets/index--ug2Hb1b.js",
+            "bytes": 144991,
             "kind": "app"
           },
           {
             "url": "/api/v1/metrics",
-            "bytes": 2637,
+            "bytes": 4132,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/d4851293df73/slice",
-            "bytes": 1791,
+            "url": "/assets/index-Cy_bcP-c.css",
+            "bytes": 3628,
+            "kind": "app"
+          },
+          {
+            "url": "/api/v1/trees/c28a8aeaec6d/slice",
+            "bytes": 1807,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/db4d2f5440a6/slice",
-            "bytes": 1753,
+            "url": "/api/v1/trees/e938da17d14c/slice",
+            "bytes": 1768,
             "kind": "data"
           },
           {
             "url": "/api/v1/datasets",
-            "bytes": 1334,
+            "bytes": 1358,
             "kind": "data"
           },
           {
-            "url": "/api/v1/comparisons/d4851293df73__db4d2f5440a6",
-            "bytes": 598,
+            "url": "/api/v1/comparisons/c28a8aeaec6d__e938da17d14c",
+            "bytes": 596,
             "kind": "data"
           },
           {
             "url": "/",
-            "bytes": 526,
+            "bytes": 520,
             "kind": "app"
           }
         ],
@@ -112,34 +112,34 @@
           },
           {
             "url": "/api/v1/metrics",
-            "bytes": 2637
+            "bytes": 4132
           },
           {
             "url": "/api/v1/datasets",
-            "bytes": 1334
+            "bytes": 1358
           },
           {
-            "url": "/api/v1/comparisons/d4851293df73__db4d2f5440a6/status",
-            "bytes": 436
+            "url": "/api/v1/comparisons/c28a8aeaec6d__e938da17d14c/status",
+            "bytes": 432
           },
           {
-            "url": "/api/v1/comparisons/d4851293df73__db4d2f5440a6?metric=rf",
-            "bytes": 598
+            "url": "/api/v1/comparisons/c28a8aeaec6d__e938da17d14c?metric=rf",
+            "bytes": 596
           },
           {
-            "url": "/api/v1/trees/d4851293df73/slice?budget=50&compare=d4851293df73__db4d2f5440a6&metric=rf",
-            "bytes": 1791
+            "url": "/api/v1/trees/c28a8aeaec6d/slice?budget=50&compare=c28a8aeaec6d__e938da17d14c&metric=rf&correspondence=metric",
+            "bytes": 1807
           },
           {
-            "url": "/api/v1/trees/db4d2f5440a6/slice?budget=50&compare=d4851293df73__db4d2f5440a6&metric=rf",
-            "bytes": 1753
+            "url": "/api/v1/trees/e938da17d14c/slice?budget=50&compare=c28a8aeaec6d__e938da17d14c&metric=rf&correspondence=metric",
+            "bytes": 1768
           }
         ]
       }
     },
     {
       "leaves": 2500,
-      "pair": "1aefae7bf0e8__0e70d318a0e0",
+      "pair": "688a47f5656d__26d9ee287ce4",
       "phyloio": {
         "ok": true,
         "received": {
@@ -190,49 +190,49 @@
           "showing 50 of 2,500 leaves · 2,489 behind wedges",
           "showing 50 of 2,500 leaves · 2,469 behind wedges"
         ],
-        "app": 147955,
-        "data": 9000,
+        "app": 149139,
+        "data": 10551,
         "other": 0,
         "requests": 10,
         "byUrl": [
           {
-            "url": "/assets/index-6p2Jk_hM.js",
-            "bytes": 143744,
-            "kind": "app"
-          },
-          {
-            "url": "/assets/index-DpWz6CPx.css",
-            "bytes": 3685,
+            "url": "/assets/index--ug2Hb1b.js",
+            "bytes": 144991,
             "kind": "app"
           },
           {
             "url": "/api/v1/metrics",
-            "bytes": 2637,
+            "bytes": 4132,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/1aefae7bf0e8/slice",
-            "bytes": 1867,
+            "url": "/assets/index-Cy_bcP-c.css",
+            "bytes": 3628,
+            "kind": "app"
+          },
+          {
+            "url": "/api/v1/trees/688a47f5656d/slice",
+            "bytes": 1880,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/0e70d318a0e0/slice",
-            "bytes": 1773,
+            "url": "/api/v1/trees/26d9ee287ce4/slice",
+            "bytes": 1789,
             "kind": "data"
           },
           {
             "url": "/api/v1/datasets",
-            "bytes": 1334,
+            "bytes": 1358,
             "kind": "data"
           },
           {
-            "url": "/api/v1/comparisons/1aefae7bf0e8__0e70d318a0e0",
-            "bytes": 597,
+            "url": "/api/v1/comparisons/688a47f5656d__26d9ee287ce4",
+            "bytes": 599,
             "kind": "data"
           },
           {
             "url": "/",
-            "bytes": 526,
+            "bytes": 520,
             "kind": "app"
           }
         ],
@@ -243,34 +243,34 @@
           },
           {
             "url": "/api/v1/metrics",
-            "bytes": 2637
+            "bytes": 4132
           },
           {
             "url": "/api/v1/datasets",
-            "bytes": 1334
+            "bytes": 1358
           },
           {
-            "url": "/api/v1/comparisons/1aefae7bf0e8__0e70d318a0e0/status",
-            "bytes": 432
+            "url": "/api/v1/comparisons/688a47f5656d__26d9ee287ce4?metric=rf",
+            "bytes": 599
           },
           {
-            "url": "/api/v1/comparisons/1aefae7bf0e8__0e70d318a0e0?metric=rf",
-            "bytes": 597
+            "url": "/api/v1/comparisons/688a47f5656d__26d9ee287ce4/status",
+            "bytes": 433
           },
           {
-            "url": "/api/v1/trees/0e70d318a0e0/slice?budget=50&compare=1aefae7bf0e8__0e70d318a0e0&metric=rf",
-            "bytes": 1773
+            "url": "/api/v1/trees/688a47f5656d/slice?budget=50&compare=688a47f5656d__26d9ee287ce4&metric=rf&correspondence=metric",
+            "bytes": 1880
           },
           {
-            "url": "/api/v1/trees/1aefae7bf0e8/slice?budget=50&compare=1aefae7bf0e8__0e70d318a0e0&metric=rf",
-            "bytes": 1867
+            "url": "/api/v1/trees/26d9ee287ce4/slice?budget=50&compare=688a47f5656d__26d9ee287ce4&metric=rf&correspondence=metric",
+            "bytes": 1789
           }
         ]
       }
     },
     {
       "leaves": 5000,
-      "pair": "6cf8ead2c6d6__112aa9c834ce",
+      "pair": "cc96723b0db9__622fe80dd777",
       "phyloio": {
         "ok": true,
         "received": {
@@ -321,49 +321,49 @@
           "showing 50 of 5,000 leaves · 4,983 behind wedges",
           "showing 50 of 5,000 leaves · 4,993 behind wedges"
         ],
-        "app": 147955,
-        "data": 9232,
+        "app": 149139,
+        "data": 10786,
         "other": 0,
         "requests": 10,
         "byUrl": [
           {
-            "url": "/assets/index-6p2Jk_hM.js",
-            "bytes": 143744,
-            "kind": "app"
-          },
-          {
-            "url": "/assets/index-DpWz6CPx.css",
-            "bytes": 3685,
+            "url": "/assets/index--ug2Hb1b.js",
+            "bytes": 144991,
             "kind": "app"
           },
           {
             "url": "/api/v1/metrics",
-            "bytes": 2637,
+            "bytes": 4132,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/6cf8ead2c6d6/slice",
+            "url": "/assets/index-Cy_bcP-c.css",
+            "bytes": 3628,
+            "kind": "app"
+          },
+          {
+            "url": "/api/v1/trees/cc96723b0db9/slice",
+            "bytes": 1961,
+            "kind": "data"
+          },
+          {
+            "url": "/api/v1/trees/622fe80dd777/slice",
             "bytes": 1944,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/112aa9c834ce/slice",
-            "bytes": 1927,
-            "kind": "data"
-          },
-          {
             "url": "/api/v1/datasets",
-            "bytes": 1334,
+            "bytes": 1358,
             "kind": "data"
           },
           {
-            "url": "/api/v1/comparisons/6cf8ead2c6d6__112aa9c834ce",
+            "url": "/api/v1/comparisons/cc96723b0db9__622fe80dd777",
             "bytes": 597,
             "kind": "data"
           },
           {
             "url": "/",
-            "bytes": 526,
+            "bytes": 520,
             "kind": "app"
           }
         ],
@@ -374,34 +374,34 @@
           },
           {
             "url": "/api/v1/metrics",
-            "bytes": 2637
+            "bytes": 4132
           },
           {
             "url": "/api/v1/datasets",
-            "bytes": 1334
+            "bytes": 1358
           },
           {
-            "url": "/api/v1/comparisons/6cf8ead2c6d6__112aa9c834ce?metric=rf",
+            "url": "/api/v1/comparisons/cc96723b0db9__622fe80dd777/status",
+            "bytes": 434
+          },
+          {
+            "url": "/api/v1/comparisons/cc96723b0db9__622fe80dd777?metric=rf",
             "bytes": 597
           },
           {
-            "url": "/api/v1/comparisons/6cf8ead2c6d6__112aa9c834ce/status",
-            "bytes": 433
-          },
-          {
-            "url": "/api/v1/trees/6cf8ead2c6d6/slice?budget=50&compare=6cf8ead2c6d6__112aa9c834ce&metric=rf",
+            "url": "/api/v1/trees/622fe80dd777/slice?budget=50&compare=cc96723b0db9__622fe80dd777&metric=rf&correspondence=metric",
             "bytes": 1944
           },
           {
-            "url": "/api/v1/trees/112aa9c834ce/slice?budget=50&compare=6cf8ead2c6d6__112aa9c834ce&metric=rf",
-            "bytes": 1927
+            "url": "/api/v1/trees/cc96723b0db9/slice?budget=50&compare=cc96723b0db9__622fe80dd777&metric=rf&correspondence=metric",
+            "bytes": 1961
           }
         ]
       }
     },
     {
       "leaves": 10000,
-      "pair": "de9ea996bdc7__8cc89cfa4b2a",
+      "pair": "382051785d9d__33adc3ea587a",
       "phyloio": {
         "ok": true,
         "received": {
@@ -452,49 +452,49 @@
           "showing 50 of 10,000 leaves · 9,982 behind wedges",
           "showing 50 of 10,000 leaves · 9,996 behind wedges"
         ],
-        "app": 147955,
-        "data": 9277,
+        "app": 149139,
+        "data": 10827,
         "other": 0,
         "requests": 10,
         "byUrl": [
           {
-            "url": "/assets/index-6p2Jk_hM.js",
-            "bytes": 143744,
-            "kind": "app"
-          },
-          {
-            "url": "/assets/index-DpWz6CPx.css",
-            "bytes": 3685,
+            "url": "/assets/index--ug2Hb1b.js",
+            "bytes": 144991,
             "kind": "app"
           },
           {
             "url": "/api/v1/metrics",
-            "bytes": 2637,
+            "bytes": 4132,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/8cc89cfa4b2a/slice",
-            "bytes": 1974,
+            "url": "/assets/index-Cy_bcP-c.css",
+            "bytes": 3628,
+            "kind": "app"
+          },
+          {
+            "url": "/api/v1/trees/33adc3ea587a/slice",
+            "bytes": 1992,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/de9ea996bdc7/slice",
-            "bytes": 1941,
+            "url": "/api/v1/trees/382051785d9d/slice",
+            "bytes": 1954,
             "kind": "data"
           },
           {
             "url": "/api/v1/datasets",
-            "bytes": 1334,
+            "bytes": 1358,
             "kind": "data"
           },
           {
-            "url": "/api/v1/comparisons/de9ea996bdc7__8cc89cfa4b2a",
-            "bytes": 597,
+            "url": "/api/v1/comparisons/382051785d9d__33adc3ea587a",
+            "bytes": 598,
             "kind": "data"
           },
           {
             "url": "/",
-            "bytes": 526,
+            "bytes": 520,
             "kind": "app"
           }
         ],
@@ -505,34 +505,34 @@
           },
           {
             "url": "/api/v1/metrics",
-            "bytes": 2637
+            "bytes": 4132
           },
           {
             "url": "/api/v1/datasets",
-            "bytes": 1334
+            "bytes": 1358
           },
           {
-            "url": "/api/v1/comparisons/de9ea996bdc7__8cc89cfa4b2a/status",
-            "bytes": 434
+            "url": "/api/v1/comparisons/382051785d9d__33adc3ea587a/status",
+            "bytes": 433
           },
           {
-            "url": "/api/v1/comparisons/de9ea996bdc7__8cc89cfa4b2a?metric=rf",
-            "bytes": 597
+            "url": "/api/v1/comparisons/382051785d9d__33adc3ea587a?metric=rf",
+            "bytes": 598
           },
           {
-            "url": "/api/v1/trees/8cc89cfa4b2a/slice?budget=50&compare=de9ea996bdc7__8cc89cfa4b2a&metric=rf",
-            "bytes": 1974
+            "url": "/api/v1/trees/382051785d9d/slice?budget=50&compare=382051785d9d__33adc3ea587a&metric=rf&correspondence=metric",
+            "bytes": 1954
           },
           {
-            "url": "/api/v1/trees/de9ea996bdc7/slice?budget=50&compare=de9ea996bdc7__8cc89cfa4b2a&metric=rf",
-            "bytes": 1941
+            "url": "/api/v1/trees/33adc3ea587a/slice?budget=50&compare=382051785d9d__33adc3ea587a&metric=rf&correspondence=metric",
+            "bytes": 1992
           }
         ]
       }
     },
     {
       "leaves": 17645,
-      "pair": "63c2a1b9287c__fa8148b21b94",
+      "pair": "62fe84128ad4__948f6aec7d7d",
       "phyloio": {
         "ok": true,
         "received": {
@@ -583,49 +583,49 @@
           "showing 50 of 17,645 leaves · 17,626 behind wedges",
           "showing 50 of 17,646 leaves · 17,643 behind wedges"
         ],
-        "app": 147955,
-        "data": 11318,
+        "app": 149139,
+        "data": 12871,
         "other": 0,
         "requests": 10,
         "byUrl": [
           {
-            "url": "/assets/index-6p2Jk_hM.js",
-            "bytes": 143744,
+            "url": "/assets/index--ug2Hb1b.js",
+            "bytes": 144991,
             "kind": "app"
-          },
-          {
-            "url": "/assets/index-DpWz6CPx.css",
-            "bytes": 3685,
-            "kind": "app"
-          },
-          {
-            "url": "/api/v1/trees/fa8148b21b94/slice",
-            "bytes": 2999,
-            "kind": "data"
-          },
-          {
-            "url": "/api/v1/trees/63c2a1b9287c/slice",
-            "bytes": 2948,
-            "kind": "data"
           },
           {
             "url": "/api/v1/metrics",
-            "bytes": 2637,
+            "bytes": 4132,
+            "kind": "data"
+          },
+          {
+            "url": "/assets/index-Cy_bcP-c.css",
+            "bytes": 3628,
+            "kind": "app"
+          },
+          {
+            "url": "/api/v1/trees/948f6aec7d7d/slice",
+            "bytes": 3015,
+            "kind": "data"
+          },
+          {
+            "url": "/api/v1/trees/62fe84128ad4/slice",
+            "bytes": 2966,
             "kind": "data"
           },
           {
             "url": "/api/v1/datasets",
-            "bytes": 1334,
+            "bytes": 1358,
             "kind": "data"
           },
           {
-            "url": "/api/v1/comparisons/63c2a1b9287c__fa8148b21b94",
+            "url": "/api/v1/comparisons/62fe84128ad4__948f6aec7d7d",
             "bytes": 604,
             "kind": "data"
           },
           {
             "url": "/",
-            "bytes": 526,
+            "bytes": 520,
             "kind": "app"
           }
         ],
@@ -635,35 +635,35 @@
             "bytes": 360
           },
           {
-            "url": "/api/v1/metrics",
-            "bytes": 2637
-          },
-          {
             "url": "/api/v1/datasets",
-            "bytes": 1334
+            "bytes": 1358
           },
           {
-            "url": "/api/v1/comparisons/63c2a1b9287c__fa8148b21b94/status",
+            "url": "/api/v1/metrics",
+            "bytes": 4132
+          },
+          {
+            "url": "/api/v1/comparisons/62fe84128ad4__948f6aec7d7d/status",
             "bytes": 436
           },
           {
-            "url": "/api/v1/comparisons/63c2a1b9287c__fa8148b21b94?metric=rf",
+            "url": "/api/v1/comparisons/62fe84128ad4__948f6aec7d7d?metric=rf",
             "bytes": 604
           },
           {
-            "url": "/api/v1/trees/fa8148b21b94/slice?budget=50&compare=63c2a1b9287c__fa8148b21b94&metric=rf",
-            "bytes": 2999
+            "url": "/api/v1/trees/948f6aec7d7d/slice?budget=50&compare=62fe84128ad4__948f6aec7d7d&metric=rf&correspondence=metric",
+            "bytes": 3015
           },
           {
-            "url": "/api/v1/trees/63c2a1b9287c/slice?budget=50&compare=63c2a1b9287c__fa8148b21b94&metric=rf",
-            "bytes": 2948
+            "url": "/api/v1/trees/62fe84128ad4/slice?budget=50&compare=62fe84128ad4__948f6aec7d7d&metric=rf&correspondence=metric",
+            "bytes": 2966
           }
         ]
       }
     },
     {
       "leaves": 35290,
-      "pair": "51786711ea74__9e113678dcd2",
+      "pair": "059afefe2f5f__846490569034",
       "phyloio": {
         "ok": true,
         "received": {
@@ -714,49 +714,49 @@
           "showing 50 of 35,290 leaves · 35,272 behind wedges",
           "showing 50 of 35,292 leaves · 35,289 behind wedges"
         ],
-        "app": 147955,
-        "data": 11251,
+        "app": 149139,
+        "data": 12804,
         "other": 0,
         "requests": 10,
         "byUrl": [
           {
-            "url": "/assets/index-6p2Jk_hM.js",
-            "bytes": 143744,
+            "url": "/assets/index--ug2Hb1b.js",
+            "bytes": 144991,
             "kind": "app"
-          },
-          {
-            "url": "/assets/index-DpWz6CPx.css",
-            "bytes": 3685,
-            "kind": "app"
-          },
-          {
-            "url": "/api/v1/trees/9e113678dcd2/slice",
-            "bytes": 2965,
-            "kind": "data"
-          },
-          {
-            "url": "/api/v1/trees/51786711ea74/slice",
-            "bytes": 2910,
-            "kind": "data"
           },
           {
             "url": "/api/v1/metrics",
-            "bytes": 2637,
+            "bytes": 4132,
+            "kind": "data"
+          },
+          {
+            "url": "/assets/index-Cy_bcP-c.css",
+            "bytes": 3628,
+            "kind": "app"
+          },
+          {
+            "url": "/api/v1/trees/846490569034/slice",
+            "bytes": 2981,
+            "kind": "data"
+          },
+          {
+            "url": "/api/v1/trees/059afefe2f5f/slice",
+            "bytes": 2928,
             "kind": "data"
           },
           {
             "url": "/api/v1/datasets",
-            "bytes": 1334,
+            "bytes": 1358,
             "kind": "data"
           },
           {
-            "url": "/api/v1/comparisons/51786711ea74__9e113678dcd2",
+            "url": "/api/v1/comparisons/059afefe2f5f__846490569034",
             "bytes": 610,
             "kind": "data"
           },
           {
             "url": "/",
-            "bytes": 526,
+            "bytes": 520,
             "kind": "app"
           }
         ],
@@ -767,34 +767,34 @@
           },
           {
             "url": "/api/v1/metrics",
-            "bytes": 2637
+            "bytes": 4132
           },
           {
             "url": "/api/v1/datasets",
-            "bytes": 1334
+            "bytes": 1358
           },
           {
-            "url": "/api/v1/comparisons/51786711ea74__9e113678dcd2/status",
+            "url": "/api/v1/comparisons/059afefe2f5f__846490569034/status",
             "bytes": 435
           },
           {
-            "url": "/api/v1/comparisons/51786711ea74__9e113678dcd2?metric=rf",
+            "url": "/api/v1/comparisons/059afefe2f5f__846490569034?metric=rf",
             "bytes": 610
           },
           {
-            "url": "/api/v1/trees/9e113678dcd2/slice?budget=50&compare=51786711ea74__9e113678dcd2&metric=rf",
-            "bytes": 2965
+            "url": "/api/v1/trees/059afefe2f5f/slice?budget=50&compare=059afefe2f5f__846490569034&metric=rf&correspondence=metric",
+            "bytes": 2928
           },
           {
-            "url": "/api/v1/trees/51786711ea74/slice?budget=50&compare=51786711ea74__9e113678dcd2&metric=rf",
-            "bytes": 2910
+            "url": "/api/v1/trees/846490569034/slice?budget=50&compare=059afefe2f5f__846490569034&metric=rf&correspondence=metric",
+            "bytes": 2981
           }
         ]
       }
     },
     {
       "leaves": 70580,
-      "pair": "13fe3678de7c__2d6fd322f5e3",
+      "pair": "4817389742d4__c663055ad266",
       "phyloio": {
         "ok": true,
         "received": {
@@ -845,49 +845,49 @@
           "showing 50 of 70,580 leaves · 70,562 behind wedges",
           "showing 50 of 70,584 leaves · 70,581 behind wedges"
         ],
-        "app": 147955,
-        "data": 11120,
+        "app": 149139,
+        "data": 12673,
         "other": 0,
         "requests": 10,
         "byUrl": [
           {
-            "url": "/assets/index-6p2Jk_hM.js",
-            "bytes": 143744,
+            "url": "/assets/index--ug2Hb1b.js",
+            "bytes": 144991,
             "kind": "app"
-          },
-          {
-            "url": "/assets/index-DpWz6CPx.css",
-            "bytes": 3685,
-            "kind": "app"
-          },
-          {
-            "url": "/api/v1/trees/2d6fd322f5e3/slice",
-            "bytes": 2894,
-            "kind": "data"
-          },
-          {
-            "url": "/api/v1/trees/13fe3678de7c/slice",
-            "bytes": 2849,
-            "kind": "data"
           },
           {
             "url": "/api/v1/metrics",
-            "bytes": 2637,
+            "bytes": 4132,
+            "kind": "data"
+          },
+          {
+            "url": "/assets/index-Cy_bcP-c.css",
+            "bytes": 3628,
+            "kind": "app"
+          },
+          {
+            "url": "/api/v1/trees/c663055ad266/slice",
+            "bytes": 2909,
+            "kind": "data"
+          },
+          {
+            "url": "/api/v1/trees/4817389742d4/slice",
+            "bytes": 2865,
             "kind": "data"
           },
           {
             "url": "/api/v1/datasets",
-            "bytes": 1334,
+            "bytes": 1358,
             "kind": "data"
           },
           {
-            "url": "/api/v1/comparisons/13fe3678de7c__2d6fd322f5e3",
-            "bytes": 613,
+            "url": "/api/v1/comparisons/4817389742d4__c663055ad266",
+            "bytes": 614,
             "kind": "data"
           },
           {
             "url": "/",
-            "bytes": 526,
+            "bytes": 520,
             "kind": "app"
           }
         ],
@@ -898,34 +898,34 @@
           },
           {
             "url": "/api/v1/metrics",
-            "bytes": 2637
+            "bytes": 4132
           },
           {
             "url": "/api/v1/datasets",
-            "bytes": 1334
+            "bytes": 1358
           },
           {
-            "url": "/api/v1/comparisons/13fe3678de7c__2d6fd322f5e3/status",
-            "bytes": 433
+            "url": "/api/v1/comparisons/4817389742d4__c663055ad266/status",
+            "bytes": 435
           },
           {
-            "url": "/api/v1/comparisons/13fe3678de7c__2d6fd322f5e3?metric=rf",
-            "bytes": 613
+            "url": "/api/v1/comparisons/4817389742d4__c663055ad266?metric=rf",
+            "bytes": 614
           },
           {
-            "url": "/api/v1/trees/2d6fd322f5e3/slice?budget=50&compare=13fe3678de7c__2d6fd322f5e3&metric=rf",
-            "bytes": 2894
+            "url": "/api/v1/trees/4817389742d4/slice?budget=50&compare=4817389742d4__c663055ad266&metric=rf&correspondence=metric",
+            "bytes": 2865
           },
           {
-            "url": "/api/v1/trees/13fe3678de7c/slice?budget=50&compare=13fe3678de7c__2d6fd322f5e3&metric=rf",
-            "bytes": 2849
+            "url": "/api/v1/trees/c663055ad266/slice?budget=50&compare=4817389742d4__c663055ad266&metric=rf&correspondence=metric",
+            "bytes": 2909
           }
         ]
       }
     },
     {
       "leaves": 141160,
-      "pair": "b9d27b8dab3b__f144c3829f9b",
+      "pair": "0bcbf7fc3197__8ae8aa268a0c",
       "phyloio": {
         "ok": true,
         "received": {
@@ -976,49 +976,49 @@
           "showing 50 of 141,160 leaves · 141,144 behind wedges",
           "showing 50 of 141,168 leaves · 141,165 behind wedges"
         ],
-        "app": 147955,
-        "data": 10880,
+        "app": 149139,
+        "data": 12431,
         "other": 0,
         "requests": 10,
         "byUrl": [
           {
-            "url": "/assets/index-6p2Jk_hM.js",
-            "bytes": 143744,
+            "url": "/assets/index--ug2Hb1b.js",
+            "bytes": 144991,
             "kind": "app"
-          },
-          {
-            "url": "/assets/index-DpWz6CPx.css",
-            "bytes": 3685,
-            "kind": "app"
-          },
-          {
-            "url": "/api/v1/trees/f144c3829f9b/slice",
-            "bytes": 2759,
-            "kind": "data"
-          },
-          {
-            "url": "/api/v1/trees/b9d27b8dab3b/slice",
-            "bytes": 2723,
-            "kind": "data"
           },
           {
             "url": "/api/v1/metrics",
-            "bytes": 2637,
+            "bytes": 4132,
+            "kind": "data"
+          },
+          {
+            "url": "/assets/index-Cy_bcP-c.css",
+            "bytes": 3628,
+            "kind": "app"
+          },
+          {
+            "url": "/api/v1/trees/8ae8aa268a0c/slice",
+            "bytes": 2776,
+            "kind": "data"
+          },
+          {
+            "url": "/api/v1/trees/0bcbf7fc3197/slice",
+            "bytes": 2740,
             "kind": "data"
           },
           {
             "url": "/api/v1/datasets",
-            "bytes": 1334,
+            "bytes": 1358,
             "kind": "data"
           },
           {
-            "url": "/api/v1/comparisons/b9d27b8dab3b__f144c3829f9b",
-            "bytes": 629,
+            "url": "/api/v1/comparisons/0bcbf7fc3197__8ae8aa268a0c",
+            "bytes": 627,
             "kind": "data"
           },
           {
             "url": "/",
-            "bytes": 526,
+            "bytes": 520,
             "kind": "app"
           }
         ],
@@ -1029,34 +1029,34 @@
           },
           {
             "url": "/api/v1/metrics",
-            "bytes": 2637
+            "bytes": 4132
           },
           {
             "url": "/api/v1/datasets",
-            "bytes": 1334
+            "bytes": 1358
           },
           {
-            "url": "/api/v1/comparisons/b9d27b8dab3b__f144c3829f9b/status",
+            "url": "/api/v1/comparisons/0bcbf7fc3197__8ae8aa268a0c/status",
             "bytes": 438
           },
           {
-            "url": "/api/v1/comparisons/b9d27b8dab3b__f144c3829f9b?metric=rf",
-            "bytes": 629
+            "url": "/api/v1/comparisons/0bcbf7fc3197__8ae8aa268a0c?metric=rf",
+            "bytes": 627
           },
           {
-            "url": "/api/v1/trees/f144c3829f9b/slice?budget=50&compare=b9d27b8dab3b__f144c3829f9b&metric=rf",
-            "bytes": 2759
+            "url": "/api/v1/trees/0bcbf7fc3197/slice?budget=50&compare=0bcbf7fc3197__8ae8aa268a0c&metric=rf&correspondence=metric",
+            "bytes": 2740
           },
           {
-            "url": "/api/v1/trees/b9d27b8dab3b/slice?budget=50&compare=b9d27b8dab3b__f144c3829f9b&metric=rf",
-            "bytes": 2723
+            "url": "/api/v1/trees/8ae8aa268a0c/slice?budget=50&compare=0bcbf7fc3197__8ae8aa268a0c&metric=rf&correspondence=metric",
+            "bytes": 2776
           }
         ]
       }
     },
     {
       "leaves": 282320,
-      "pair": "3219107f4c49__88198de03c57",
+      "pair": "20f11c91e1f8__1730e2f3663c",
       "phyloio": {
         "ok": true,
         "received": {
@@ -1107,49 +1107,49 @@
           "showing 50 of 282,320 leaves · 282,306 behind wedges",
           "showing 50 of 282,336 leaves · 282,333 behind wedges"
         ],
-        "app": 147955,
-        "data": 10308,
+        "app": 149139,
+        "data": 11858,
         "other": 0,
         "requests": 10,
         "byUrl": [
           {
-            "url": "/assets/index-6p2Jk_hM.js",
-            "bytes": 143744,
-            "kind": "app"
-          },
-          {
-            "url": "/assets/index-DpWz6CPx.css",
-            "bytes": 3685,
+            "url": "/assets/index--ug2Hb1b.js",
+            "bytes": 144991,
             "kind": "app"
           },
           {
             "url": "/api/v1/metrics",
-            "bytes": 2637,
+            "bytes": 4132,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/88198de03c57/slice",
-            "bytes": 2453,
+            "url": "/assets/index-Cy_bcP-c.css",
+            "bytes": 3628,
+            "kind": "app"
+          },
+          {
+            "url": "/api/v1/trees/1730e2f3663c/slice",
+            "bytes": 2470,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/3219107f4c49/slice",
-            "bytes": 2443,
+            "url": "/api/v1/trees/20f11c91e1f8/slice",
+            "bytes": 2460,
             "kind": "data"
           },
           {
             "url": "/api/v1/datasets",
-            "bytes": 1334,
+            "bytes": 1358,
             "kind": "data"
           },
           {
-            "url": "/api/v1/comparisons/3219107f4c49__88198de03c57",
-            "bytes": 644,
+            "url": "/api/v1/comparisons/20f11c91e1f8__1730e2f3663c",
+            "bytes": 642,
             "kind": "data"
           },
           {
             "url": "/",
-            "bytes": 526,
+            "bytes": 520,
             "kind": "app"
           }
         ],
@@ -1160,34 +1160,34 @@
           },
           {
             "url": "/api/v1/metrics",
-            "bytes": 2637
+            "bytes": 4132
           },
           {
             "url": "/api/v1/datasets",
-            "bytes": 1334
+            "bytes": 1358
           },
           {
-            "url": "/api/v1/comparisons/3219107f4c49__88198de03c57?metric=rf",
-            "bytes": 644
+            "url": "/api/v1/comparisons/20f11c91e1f8__1730e2f3663c/status",
+            "bytes": 436
           },
           {
-            "url": "/api/v1/comparisons/3219107f4c49__88198de03c57/status",
-            "bytes": 437
+            "url": "/api/v1/comparisons/20f11c91e1f8__1730e2f3663c?metric=rf",
+            "bytes": 642
           },
           {
-            "url": "/api/v1/trees/3219107f4c49/slice?budget=50&compare=3219107f4c49__88198de03c57&metric=rf",
-            "bytes": 2443
+            "url": "/api/v1/trees/1730e2f3663c/slice?budget=50&compare=20f11c91e1f8__1730e2f3663c&metric=rf&correspondence=metric",
+            "bytes": 2470
           },
           {
-            "url": "/api/v1/trees/88198de03c57/slice?budget=50&compare=3219107f4c49__88198de03c57&metric=rf",
-            "bytes": 2453
+            "url": "/api/v1/trees/20f11c91e1f8/slice?budget=50&compare=20f11c91e1f8__1730e2f3663c&metric=rf&correspondence=metric",
+            "bytes": 2460
           }
         ]
       }
     },
     {
       "leaves": 564640,
-      "pair": "f07d7149d60b__fcaef373f595",
+      "pair": "4e0a46b0609d__3905c7229783",
       "phyloio": {
         "ok": true,
         "received": {
@@ -1238,49 +1238,49 @@
           "showing 50 of 564,640 leaves · 564,630 behind wedges",
           "showing 50 of 564,672 leaves · 564,669 behind wedges"
         ],
-        "app": 147955,
-        "data": 9197,
+        "app": 149139,
+        "data": 10742,
         "other": 0,
         "requests": 10,
         "byUrl": [
           {
-            "url": "/assets/index-6p2Jk_hM.js",
-            "bytes": 143744,
-            "kind": "app"
-          },
-          {
-            "url": "/assets/index-DpWz6CPx.css",
-            "bytes": 3685,
+            "url": "/assets/index--ug2Hb1b.js",
+            "bytes": 144991,
             "kind": "app"
           },
           {
             "url": "/api/v1/metrics",
-            "bytes": 2637,
+            "bytes": 4132,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/fcaef373f595/slice",
-            "bytes": 1873,
+            "url": "/assets/index-Cy_bcP-c.css",
+            "bytes": 3628,
+            "kind": "app"
+          },
+          {
+            "url": "/api/v1/trees/4e0a46b0609d/slice",
+            "bytes": 1888,
             "kind": "data"
           },
           {
-            "url": "/api/v1/trees/f07d7149d60b/slice",
-            "bytes": 1872,
+            "url": "/api/v1/trees/3905c7229783/slice",
+            "bytes": 1886,
             "kind": "data"
           },
           {
             "url": "/api/v1/datasets",
-            "bytes": 1334,
+            "bytes": 1358,
             "kind": "data"
           },
           {
-            "url": "/api/v1/comparisons/f07d7149d60b__fcaef373f595",
+            "url": "/api/v1/comparisons/4e0a46b0609d__3905c7229783",
             "bytes": 681,
             "kind": "data"
           },
           {
             "url": "/",
-            "bytes": 526,
+            "bytes": 520,
             "kind": "app"
           }
         ],
@@ -1291,27 +1291,27 @@
           },
           {
             "url": "/api/v1/metrics",
-            "bytes": 2637
+            "bytes": 4132
           },
           {
             "url": "/api/v1/datasets",
-            "bytes": 1334
+            "bytes": 1358
           },
           {
-            "url": "/api/v1/comparisons/f07d7149d60b__fcaef373f595/status",
-            "bytes": 440
+            "url": "/api/v1/comparisons/4e0a46b0609d__3905c7229783/status",
+            "bytes": 437
           },
           {
-            "url": "/api/v1/comparisons/f07d7149d60b__fcaef373f595?metric=rf",
+            "url": "/api/v1/comparisons/4e0a46b0609d__3905c7229783?metric=rf",
             "bytes": 681
           },
           {
-            "url": "/api/v1/trees/fcaef373f595/slice?budget=50&compare=f07d7149d60b__fcaef373f595&metric=rf",
-            "bytes": 1873
+            "url": "/api/v1/trees/4e0a46b0609d/slice?budget=50&compare=4e0a46b0609d__3905c7229783&metric=rf&correspondence=metric",
+            "bytes": 1888
           },
           {
-            "url": "/api/v1/trees/f07d7149d60b/slice?budget=50&compare=f07d7149d60b__fcaef373f595&metric=rf",
-            "bytes": 1872
+            "url": "/api/v1/trees/3905c7229783/slice?budget=50&compare=4e0a46b0609d__3905c7229783&metric=rf&correspondence=metric",
+            "bytes": 1886
           }
         ]
       }

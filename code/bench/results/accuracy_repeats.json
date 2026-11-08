@@ -1,54 +1,54 @@
 {
- "commit": "015f70b",
+ "commit": "3084237",
  "leaves": 2500,
- "pair": "1aefae7bf0e8__0e70d318a0e0",
+ "pair": "688a47f5656d__26d9ee287ce4",
+ "clades": 2499,
  "runs": [
   {
    "comparable": 2498,
-   "exact_match": 2384,
-   "worse": 114,
-   "gap_median": 0.1666666865348816,
-   "gap_worst": 0.7638888955116272,
-   "compare_ms": 17956.5
-  },
-  {
-   "comparable": 2497,
-   "exact_match": 2392,
-   "worse": 105,
-   "gap_median": 0.1026785671710968,
-   "gap_worst": 0.532258060670668,
-   "compare_ms": 18370.600000023842
+   "exact_match": 2390,
+   "worse": 108,
+   "gap_median": 0.12409420808156332,
+   "gap_worst": 0.6666666799121432,
+   "compare_ms": 18279.699999928474
   },
   {
    "comparable": 2498,
-   "exact_match": 2354,
-   "worse": 144,
-   "gap_median": 0.13132618910582491,
-   "gap_worst": 0.8546531918014127,
-   "compare_ms": 18361.200000047684
+   "exact_match": 2342,
+   "worse": 156,
+   "gap_median": 0.13442931264296348,
+   "gap_worst": 0.75,
+   "compare_ms": 18281.199999928474
+  },
+  {
+   "comparable": 2496,
+   "exact_match": 2376,
+   "worse": 120,
+   "gap_median": 0.07856163967025373,
+   "gap_worst": 0.6666666467984518,
+   "compare_ms": 18452.100000023842
   },
   {
    "comparable": 2498,
-   "exact_match": 2385,
-   "worse": 113,
-   "gap_median": 0.16346153846153844,
-   "gap_worst": 0.9945054945054945,
-   "compare_ms": 18217.5
+   "exact_match": 2383,
+   "worse": 115,
+   "gap_median": 0.08000000119209288,
+   "gap_worst": 0.5354691179175126,
+   "compare_ms": 18245.600000023842
   },
   {
    "comparable": 2498,
-   "exact_match": 2335,
-   "worse": 163,
-   "gap_median": 0.11764708687277403,
-   "gap_worst": 0.7365714667943478,
-   "compare_ms": 18210.600000023842
+   "exact_match": 2394,
+   "worse": 104,
+   "gap_median": 0.097387558332196,
+   "gap_worst": 0.8112988195601543,
+   "compare_ms": 18431.799999952316
   }
  ],
  "scores_identical_to_first_run": [
-  2313,
-  2308,
-  2324,
-  2285
- ],
- "summary": "**The same pair, five times.** At 2,500 leaves phylo.io was run five times on one input, with the same code: the campaign's run and four more after it. It missed 114, 105, 144, 113, 163 clades, so **4.2% to 6.5%**, and its worst gap ranged from 0.532 to 0.995. Between the first run and each later one only 2,285 to 2,324 of the 2,499 clade scores were identical. Its comparison is not deterministic, so every row above is one draw. The clade count moves with it: it scored 2,497 to 2,498 of the 2,499 clades, the root being unscored in every run, which is the 2,498 here against the 2,493 of the earlier run."
+  2273,
+  2303,
+  2322,
+  2326
+ ]
 }

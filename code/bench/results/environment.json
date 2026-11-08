@@ -1,7 +1,7 @@
 {
- "commit": "015f70bb262fe542da7e7743504516d503f664ad",
- "commit_short": "015f70b",
- "tag": "v0.1.0",
+ "commit": "3084237710337581edce8bddbb4ba63e784a26b2",
+ "commit_short": "3084237",
+ "tag": "v0.2.1",
  "machine": {
   "chip": "Apple M4",
   "memory_gib": 24,
@@ -13,7 +13,7 @@
   "build": "26A434",
   "kernel": "27.0.0"
  },
- "browser": "Chrome 156.0.8078.47",
+ "browser": "Chrome 156.0.8078.80",
  "browser_flags": [
   "--js-flags=--max-old-space-size=8192",
   "--disable-dev-shm-usage"
@@ -35,16 +35,14 @@
   "PHYLODELTA_METRIC_MEMORY": "16G"
  },
  "store": {
-  "root": "/private/tmp/claude-501/-Users-danielcarvalho-Documents-masters-Theses-repo-theses/56e62ce4-3f73-4844-b239-6befaa1a5bc2/scratchpad/campaign/root",
+  "root": "/Users/danielcarvalho/Documents/masters/Theses/campaign-v0.2.1.noindex/root",
   "file_system": "APFS",
   "solid_state": "Yes"
  },
  "dry_run": false,
- "started": "2026-11-01T18:21:44+00:00",
+ "started": "2026-11-08T16:24:28+00:00",
  "power_at_start": "Now drawing from 'AC Power'",
- "finished": "2026-11-01T23:25:15+00:00",
+ "finished": "2026-11-08T23:16:44+00:00",
  "power_at_finish": "Now drawing from 'AC Power'",
- "moved_during_run": [
-  "browser"
- ]
+ "moved_during_run": []
 }
