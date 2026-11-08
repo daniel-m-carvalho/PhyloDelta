@@ -12,6 +12,13 @@
       "rf",
       "rf-treediff",
       "triplet"
+    ],
+    [
+      "rf",
+      "rf-treediff",
+      "triplet",
+      "mast",
+      "spr"
     ]
   ],
   "rows": [
@@ -25,7 +32,7 @@
           "build_s": 2.08,
           "status": "ready",
           "error": null,
-          "id": "7441a751e9e5__07313897fcff",
+          "id": "b17d972d50d1__bdf0e68b1cbe",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -46,10 +53,10 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 2.06,
+          "build_s": 2.07,
           "status": "ready",
           "error": null,
-          "id": "59c04eff87b3__8e9c3c35154b",
+          "id": "29c555a749ae__32f61985ad95",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -80,7 +87,7 @@
           "build_s": 2.06,
           "status": "ready",
           "error": null,
-          "id": "c3e603850973__6c70288422a4",
+          "id": "bb57ff5c061b__6bc649e2dec0",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -103,7 +110,70 @@
             "triplet": {
               "ok": true,
               "summary": {
-                "triplet": 81869156
+                "triplet": 81869156,
+                "triplet_normalised": 0.49269202669603473,
+                "n_leaves": 1000
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet",
+            "mast",
+            "spr"
+          ],
+          "build_s": 2.06,
+          "status": "ready",
+          "error": null,
+          "id": "285ed91bcd1a__470bb3446888",
+          "threads_verified": 2,
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 1062,
+                "rf_normalised": 0.5320641282565131,
+                "shared_clusters": 468,
+                "clusters_left": 999,
+                "clusters_right": 999,
+                "n_leaves": 1000
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 531.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 81869156,
+                "triplet_normalised": 0.49269202669603473,
+                "n_leaves": 1000
+              }
+            },
+            "mast": {
+              "ok": true,
+              "summary": {
+                "mast_size": 208,
+                "moved": 792,
+                "moved_fraction": 0.792,
+                "n_leaves": 1000
+              }
+            },
+            "spr": {
+              "ok": true,
+              "summary": {
+                "spr_lower": 147,
+                "spr_upper": 429,
+                "exact": 0.0,
+                "blocks": 430,
+                "moved": 921,
+                "n_leaves": 1000
               }
             }
           }
@@ -120,7 +190,7 @@
           "build_s": 2.57,
           "status": "ready",
           "error": null,
-          "id": "d42a0a58a009__30a1824d0d24",
+          "id": "988a7baa2436__c671d4b4a630",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -144,7 +214,7 @@
           "build_s": 2.06,
           "status": "ready",
           "error": null,
-          "id": "a42eee05d18d__2387cae50785",
+          "id": "798964425231__20aa39cb738a",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -175,7 +245,7 @@
           "build_s": 2.07,
           "status": "ready",
           "error": null,
-          "id": "cf8ecca2c769__b9cf1fbdaf32",
+          "id": "e6020af11239__654c6b6b925f",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -198,7 +268,70 @@
             "triplet": {
               "ok": true,
               "summary": {
-                "triplet": 1250965641
+                "triplet": 1250965641,
+                "triplet_normalised": 0.4809477895882132,
+                "n_leaves": 2500
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet",
+            "mast",
+            "spr"
+          ],
+          "build_s": 2.06,
+          "status": "ready",
+          "error": null,
+          "id": "832e863e9a8d__09f9f5dbeec7",
+          "threads_verified": 2,
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 2438,
+                "rf_normalised": 0.4879903923138511,
+                "shared_clusters": 1280,
+                "clusters_left": 2499,
+                "clusters_right": 2499,
+                "n_leaves": 2500
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 1219.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 1250965641,
+                "triplet_normalised": 0.4809477895882132,
+                "n_leaves": 2500
+              }
+            },
+            "mast": {
+              "ok": true,
+              "summary": {
+                "mast_size": 467,
+                "moved": 2033,
+                "moved_fraction": 0.8132,
+                "n_leaves": 2500
+              }
+            },
+            "spr": {
+              "ok": true,
+              "summary": {
+                "spr_lower": 340,
+                "spr_upper": 1007,
+                "exact": 0.0,
+                "blocks": 1008,
+                "moved": 2402,
+                "n_leaves": 2500
               }
             }
           }
@@ -212,10 +345,10 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 2.06,
+          "build_s": 2.57,
           "status": "ready",
           "error": null,
-          "id": "b6495369190e__d595f1ba5354",
+          "id": "e5369520fed6__99e29e812e6f",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -236,10 +369,10 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 2.07,
+          "build_s": 2.06,
           "status": "ready",
           "error": null,
-          "id": "e93087679c9a__db92a77fea7b",
+          "id": "14b80280ccec__d9e38f4a3fd9",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -267,10 +400,10 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 2.57,
+          "build_s": 2.58,
           "status": "ready",
           "error": null,
-          "id": "50064353e144__cdb141006c6a",
+          "id": "79f5cb6d8ab5__c676c0b0ed71",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -293,7 +426,70 @@
             "triplet": {
               "ok": true,
               "summary": {
-                "triplet": 9632676049
+                "triplet": 9632676049,
+                "triplet_normalised": 0.4626460009408845,
+                "n_leaves": 5000
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet",
+            "mast",
+            "spr"
+          ],
+          "build_s": 2.58,
+          "status": "ready",
+          "error": null,
+          "id": "3a2171534f5a__0b6ba9f7dec2",
+          "threads_verified": 2,
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 4414,
+                "rf_normalised": 0.4415766306522609,
+                "shared_clusters": 2792,
+                "clusters_left": 4999,
+                "clusters_right": 4999,
+                "n_leaves": 5000
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 2207.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 9632676049,
+                "triplet_normalised": 0.4626460009408845,
+                "n_leaves": 5000
+              }
+            },
+            "mast": {
+              "ok": true,
+              "summary": {
+                "mast_size": 904,
+                "moved": 4096,
+                "moved_fraction": 0.8192,
+                "n_leaves": 5000
+              }
+            },
+            "spr": {
+              "ok": true,
+              "summary": {
+                "spr_lower": 617,
+                "spr_upper": 1835,
+                "exact": 0.0,
+                "blocks": 1836,
+                "moved": 4765,
+                "n_leaves": 5000
               }
             }
           }
@@ -307,10 +503,10 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 2.06,
+          "build_s": 2.05,
           "status": "ready",
           "error": null,
-          "id": "244aaefdeae3__fe417e20dc68",
+          "id": "50e05d8a06bf__b16361f7c886",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -331,10 +527,10 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 2.07,
+          "build_s": 2.57,
           "status": "ready",
           "error": null,
-          "id": "1690282e8e51__b5567403b432",
+          "id": "f4c3ed2402d6__df0c10e242ba",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -362,10 +558,10 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 3.07,
+          "build_s": 3.09,
           "status": "ready",
           "error": null,
-          "id": "5a2d85deacc4__c74c9a5fecde",
+          "id": "e57a51fa06c6__fb7a40a9f33e",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -388,7 +584,70 @@
             "triplet": {
               "ok": true,
               "summary": {
-                "triplet": 77907165286
+                "triplet": 77907165286,
+                "triplet_normalised": 0.46758325734153733,
+                "n_leaves": 10000
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet",
+            "mast",
+            "spr"
+          ],
+          "build_s": 4.62,
+          "status": "ready",
+          "error": null,
+          "id": "b2a586b076fd__09304f841cee",
+          "threads_verified": 2,
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 8226,
+                "rf_normalised": 0.4113822764552911,
+                "shared_clusters": 5886,
+                "clusters_left": 9999,
+                "clusters_right": 9999,
+                "n_leaves": 10000
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 4113.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 77907165286,
+                "triplet_normalised": 0.46758325734153733,
+                "n_leaves": 10000
+              }
+            },
+            "mast": {
+              "ok": true,
+              "summary": {
+                "mast_size": 1721,
+                "moved": 8279,
+                "moved_fraction": 0.8279,
+                "n_leaves": 10000
+              }
+            },
+            "spr": {
+              "ok": true,
+              "summary": {
+                "spr_lower": 1151,
+                "spr_upper": 3415,
+                "exact": 0.0,
+                "blocks": 3416,
+                "moved": 9696,
+                "n_leaves": 10000
               }
             }
           }
@@ -402,10 +661,10 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 2.05,
+          "build_s": 2.57,
           "status": "ready",
           "error": null,
-          "id": "54a758570487__f49c0e1ab22b",
+          "id": "5c224cb5a179__b043f50c27c2",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -426,10 +685,10 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 2.56,
+          "build_s": 2.07,
           "status": "ready",
           "error": null,
-          "id": "f026eff6f52d__0b5dc4ee6135",
+          "id": "bedc55e17e59__3cc3ae1240b2",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -457,10 +716,10 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 4.06,
+          "build_s": 5.13,
           "status": "ready",
           "error": null,
-          "id": "4618fba09e48__fe29e7333b66",
+          "id": "423732d39383__2a580a210a0b",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -483,7 +742,70 @@
             "triplet": {
               "ok": true,
               "summary": {
-                "triplet": 427072406574
+                "triplet": 427072406574,
+                "triplet_normalised": 0.46651070801976197,
+                "n_leaves": 17645
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet",
+            "mast",
+            "spr"
+          ],
+          "build_s": 8.69,
+          "status": "ready",
+          "error": null,
+          "id": "3d260de44a8c__7c5ddab0b0db",
+          "threads_verified": 2,
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 13650,
+                "rf_normalised": 0.38683897296378167,
+                "shared_clusters": 10819,
+                "clusters_left": 17644,
+                "clusters_right": 17644,
+                "n_leaves": 17645
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 6825.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 427072406574,
+                "triplet_normalised": 0.46651070801976197,
+                "n_leaves": 17645
+              }
+            },
+            "mast": {
+              "ok": true,
+              "summary": {
+                "mast_size": 2909,
+                "moved": 14736,
+                "moved_fraction": 0.8351374327004817,
+                "n_leaves": 17645
+              }
+            },
+            "spr": {
+              "ok": true,
+              "summary": {
+                "spr_lower": 1905,
+                "spr_upper": 5653,
+                "exact": 0.0,
+                "blocks": 5654,
+                "moved": 17197,
+                "n_leaves": 17645
               }
             }
           }
@@ -497,10 +819,10 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 3.06,
+          "build_s": 3.09,
           "status": "ready",
           "error": null,
-          "id": "7e65e1d4137a__390687ad7442",
+          "id": "81a4b80c45b4__86d0c8601b6f",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -521,10 +843,10 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 3.57,
+          "build_s": 3.61,
           "status": "ready",
           "error": null,
-          "id": "2dd0570a26a7__d054d6561568",
+          "id": "182ef477613e__ebf903fa0f44",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -552,10 +874,10 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 6.11,
+          "build_s": 8.68,
           "status": "ready",
           "error": null,
-          "id": "d8d79f75d241__5584c0c2d726",
+          "id": "c5bd5d94c74c__1ee232533ee4",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -578,7 +900,70 @@
             "triplet": {
               "ok": true,
               "summary": {
-                "triplet": 854144813148
+                "triplet": 854144813148,
+                "triplet_normalised": 0.1166177622147505,
+                "n_leaves": 35290
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet",
+            "mast",
+            "spr"
+          ],
+          "build_s": 23.5,
+          "status": "ready",
+          "error": null,
+          "id": "be6af3f6d2d9__6e6e262cdf2f",
+          "threads_verified": 2,
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 27300,
+                "rf_normalised": 0.38681704828837,
+                "shared_clusters": 21639,
+                "clusters_left": 35289,
+                "clusters_right": 35289,
+                "n_leaves": 35290
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 13650.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 854144813148,
+                "triplet_normalised": 0.1166177622147505,
+                "n_leaves": 35290
+              }
+            },
+            "mast": {
+              "ok": true,
+              "summary": {
+                "mast_size": 5818,
+                "moved": 29472,
+                "moved_fraction": 0.8351374327004817,
+                "n_leaves": 35290
+              }
+            },
+            "spr": {
+              "ok": true,
+              "summary": {
+                "spr_lower": 3810,
+                "spr_upper": 11306,
+                "exact": 0.0,
+                "blocks": 11307,
+                "moved": 34842,
+                "n_leaves": 35290
               }
             }
           }
@@ -592,10 +977,10 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 6.11,
+          "build_s": 6.19,
           "status": "ready",
           "error": null,
-          "id": "bf9165474b9a__afa3906276b3",
+          "id": "6e398c55cec8__416396069dff",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -616,10 +1001,10 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 6.62,
+          "build_s": 6.66,
           "status": "ready",
           "error": null,
-          "id": "a2fb445780c3__a517b49d20b9",
+          "id": "52f87b9a7627__6df97fce2712",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -647,10 +1032,10 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 12.18,
+          "build_s": 17.9,
           "status": "ready",
           "error": null,
-          "id": "68d1f482857b__58a1b1f0f4dc",
+          "id": "c4d9c27aeb89__53c464b580f5",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -673,7 +1058,66 @@
             "triplet": {
               "ok": true,
               "summary": {
-                "triplet": 1708289626296
+                "triplet": 1708289626296,
+                "triplet_normalised": 0.029153201327832043,
+                "n_leaves": 70580
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet",
+            "mast",
+            "spr"
+          ],
+          "build_s": 18.9,
+          "status": "ready",
+          "error": null,
+          "id": "3643f19a7a7c__c5a2e49007aa",
+          "threads_verified": 2,
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 54600,
+                "rf_normalised": 0.386806086882598,
+                "shared_clusters": 43279,
+                "clusters_left": 70579,
+                "clusters_right": 70579,
+                "n_leaves": 70580
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 27300.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 1708289626296,
+                "triplet_normalised": 0.029153201327832043,
+                "n_leaves": 70580
+              }
+            },
+            "mast": {
+              "ok": false,
+              "status": 404,
+              "detail": "No metric 'mast' for pair '3643f19a7a7c__c5a2e49007aa'."
+            },
+            "spr": {
+              "ok": true,
+              "summary": {
+                "spr_lower": 7619,
+                "spr_upper": 22612,
+                "exact": 0.0,
+                "blocks": 22613,
+                "moved": 70132,
+                "n_leaves": 70580
               }
             }
           }
@@ -687,10 +1131,10 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 16.73,
+          "build_s": 16.88,
           "status": "ready",
           "error": null,
-          "id": "499bbe09c8bf__ba7877feab7b",
+          "id": "0f6435175f18__695f97cd50a2",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -711,10 +1155,10 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 17.76,
+          "build_s": 17.89,
           "status": "ready",
           "error": null,
-          "id": "bc476af41bcb__df23500e8b3d",
+          "id": "6bcbeea750c2__da0347b5c260",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -742,10 +1186,10 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 29.47,
+          "build_s": 41.38,
           "status": "ready",
           "error": null,
-          "id": "7f113cd93a87__f745096855b5",
+          "id": "36f77577c6c9__72bbf3c2ba73",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -768,7 +1212,66 @@
             "triplet": {
               "ok": true,
               "summary": {
-                "triplet": 3416579252592
+                "triplet": 3416579252592,
+                "triplet_normalised": 0.0072881454364076325,
+                "n_leaves": 141160
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet",
+            "mast",
+            "spr"
+          ],
+          "build_s": 42.93,
+          "status": "ready",
+          "error": null,
+          "id": "f062752e6bc3__72b797a82941",
+          "threads_verified": 2,
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 109200,
+                "rf_normalised": 0.38680060641267233,
+                "shared_clusters": 86559,
+                "clusters_left": 141159,
+                "clusters_right": 141159,
+                "n_leaves": 141160
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 54600.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 3416579252592,
+                "triplet_normalised": 0.0072881454364076325,
+                "n_leaves": 141160
+              }
+            },
+            "mast": {
+              "ok": false,
+              "status": 404,
+              "detail": "No metric 'mast' for pair 'f062752e6bc3__72b797a82941'."
+            },
+            "spr": {
+              "ok": true,
+              "summary": {
+                "spr_lower": 15238,
+                "spr_upper": 45224,
+                "exact": 0.0,
+                "blocks": 45225,
+                "moved": 140712,
+                "n_leaves": 141160
               }
             }
           }
@@ -782,10 +1285,10 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 59.77,
+          "build_s": 60.18,
           "status": "ready",
           "error": null,
-          "id": "db6682c8af2e__c080e152ae45",
+          "id": "2c03092e107f__14d8114c322a",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -806,10 +1309,10 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 61.28,
+          "build_s": 61.27,
           "status": "ready",
           "error": null,
-          "id": "966fb33c81b5__cb3f7d8cdbea",
+          "id": "769ceb1e4a2f__82a110357ad5",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -837,10 +1340,10 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 86.2,
+          "build_s": 111.23,
           "status": "ready",
           "error": null,
-          "id": "579550400f3b__a96ec366ca34",
+          "id": "9283625de1d5__5982f8d96c98",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -863,7 +1366,66 @@
             "triplet": {
               "ok": true,
               "summary": {
-                "triplet": 6833158505184
+                "triplet": 6833158505184,
+                "triplet_normalised": 0.0018220169976381833,
+                "n_leaves": 282320
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet",
+            "mast",
+            "spr"
+          ],
+          "build_s": 114.31,
+          "status": "ready",
+          "error": null,
+          "id": "84f5957accbc__6835ec68e07b",
+          "threads_verified": 2,
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 218400,
+                "rf_normalised": 0.3867978662359467,
+                "shared_clusters": 173119,
+                "clusters_left": 282319,
+                "clusters_right": 282319,
+                "n_leaves": 282320
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 109200.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 6833158505184,
+                "triplet_normalised": 0.0018220169976381833,
+                "n_leaves": 282320
+              }
+            },
+            "mast": {
+              "ok": false,
+              "status": 404,
+              "detail": "No metric 'mast' for pair '84f5957accbc__6835ec68e07b'."
+            },
+            "spr": {
+              "ok": true,
+              "summary": {
+                "spr_lower": 30475,
+                "spr_upper": 90448,
+                "exact": 0.0,
+                "blocks": 90449,
+                "moved": 281872,
+                "n_leaves": 282320
               }
             }
           }
@@ -877,10 +1439,10 @@
           "metrics": [
             "rf"
           ],
-          "build_s": 243.72,
+          "build_s": 244.14,
           "status": "ready",
           "error": null,
-          "id": "ab41d6f384d2__c843dd62d349",
+          "id": "ca27e770bea7__68c0ea2f1e1b",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -901,10 +1463,10 @@
             "rf",
             "rf-treediff"
           ],
-          "build_s": 247.77,
+          "build_s": 257.0,
           "status": "ready",
           "error": null,
-          "id": "a4d0fc38404c__8aebf1fbd940",
+          "id": "95c70b318b59__6430c700aeb2",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -932,10 +1494,10 @@
             "rf-treediff",
             "triplet"
           ],
-          "build_s": 297.38,
+          "build_s": 360.43,
           "status": "ready",
           "error": null,
-          "id": "e5df7905daa7__c1b4e751e460",
+          "id": "bb13c21c0abf__d58041bbc3d4",
           "threads_verified": 2,
           "values": {
             "rf": {
@@ -958,7 +1520,66 @@
             "triplet": {
               "ok": true,
               "summary": {
-                "triplet": 13666317010368
+                "triplet": 13666317010368,
+                "triplet_normalised": 0.00045550182925658395,
+                "n_leaves": 564640
+              }
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet",
+            "mast",
+            "spr"
+          ],
+          "build_s": 375.66,
+          "status": "ready",
+          "error": null,
+          "id": "babf674ca4d9__35ca9dd0f2cd",
+          "threads_verified": 2,
+          "values": {
+            "rf": {
+              "ok": true,
+              "summary": {
+                "rf": 436800,
+                "rf_normalised": 0.38679649616214284,
+                "shared_clusters": 346239,
+                "clusters_left": 564639,
+                "clusters_right": 564639,
+                "n_leaves": 564640
+              }
+            },
+            "rf-treediff": {
+              "ok": true,
+              "summary": {
+                "rf": 218400.0
+              }
+            },
+            "triplet": {
+              "ok": true,
+              "summary": {
+                "triplet": 13666317010368,
+                "triplet_normalised": 0.00045550182925658395,
+                "n_leaves": 564640
+              }
+            },
+            "mast": {
+              "ok": false,
+              "status": 404,
+              "detail": "No metric 'mast' for pair 'babf674ca4d9__35ca9dd0f2cd'."
+            },
+            "spr": {
+              "ok": true,
+              "summary": {
+                "spr_lower": 60950,
+                "spr_upper": 180896,
+                "exact": 0.0,
+                "blocks": 180897,
+                "moved": 564192,
+                "n_leaves": 564640
               }
             }
           }

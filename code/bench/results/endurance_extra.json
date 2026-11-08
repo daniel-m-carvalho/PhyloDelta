@@ -1,14 +1,58 @@
 [
   {
-    "ok": true,
-    "ms": 674758,
+    "ok": false,
+    "ms": 1808814,
     "phases": {
-      "fetch": 6.700000047683716,
-      "parse": 2036.6999999284744,
-      "layout": 53979.300000071526,
-      "paint": 18496.099999904633,
-      "postFetch": 74512.09999990463,
-      "total": 74518.79999995232,
+      "fetch": 2.399999976158142,
+      "parse": 491.60000002384186,
+      "layout": 4643.899999976158,
+      "paint": 3471.899999976158,
+      "postFetch": 8607.399999976158,
+      "total": 8609.799999952316,
+      "compareComplete": false,
+      "toCompare": null
+    },
+    "drawn": {
+      "paths": 670,
+      "texts": 1061
+    },
+    "why": "comparison unfinished after 30 min",
+    "leaves": 17645,
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 3504
+  },
+  {
+    "ok": false,
+    "ms": 1822821,
+    "phases": {
+      "fetch": 3.5,
+      "parse": 967.8999999761581,
+      "layout": 14560.5,
+      "paint": 6980.200000047684,
+      "postFetch": 22508.600000023842,
+      "total": 22512.100000023842,
+      "compareComplete": false,
+      "toCompare": null
+    },
+    "drawn": {
+      "paths": 640,
+      "texts": 1016
+    },
+    "why": "comparison unfinished after 30 min",
+    "leaves": 35290,
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 6261
+  },
+  {
+    "ok": false,
+    "ms": 1873870,
+    "phases": {
+      "fetch": 6.900000095367432,
+      "parse": 1937.5999999046326,
+      "layout": 53274.5,
+      "paint": 18357,
+      "postFetch": 73569.09999990463,
+      "total": 73576,
       "compareComplete": false,
       "toCompare": null
     },
@@ -16,14 +60,17 @@
       "paths": 1036,
       "texts": 1610
     },
+    "why": "comparison unfinished after 30 min",
     "leaves": 70580,
-    "peak_renderer_mb": 9743
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 9867
   },
   {
     "ok": false,
-    "ms": 1801288,
-    "why": "30 min budget",
+    "ms": 2100351,
+    "why": "35 min limit",
     "leaves": 564640,
-    "peak_renderer_mb": 10657
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 10309
   }
 ]

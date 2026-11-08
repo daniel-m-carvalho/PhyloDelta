@@ -1,5 +1,5 @@
 {
-  "log": "/private/tmp/claude-501/-Users-danielcarvalho-Documents-masters-Theses-repo-theses/56e62ce4-3f73-4844-b239-6befaa1a5bc2/scratchpad/campaign/root/logs/worker-metrics.log",
+  "log": "/Users/danielcarvalho/Documents/masters/Theses/campaign-v0.2.1.noindex/root/logs/worker-metrics.log",
   "rows": [
     {
       "leaves": 1000,
@@ -22,9 +22,9 @@
             "rf",
             "rf-treediff"
           ],
-          "wall_s": 2.06,
+          "wall_s": 2.07,
           "total_s": 0.1,
-          "shared_s": 0.1,
+          "shared_s": 0.0,
           "per_metric": {
             "rf": {
               "seconds": 0.0
@@ -54,6 +54,35 @@
               "seconds": 0.3
             }
           }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet",
+            "mast",
+            "spr"
+          ],
+          "wall_s": 2.06,
+          "total_s": 0.1,
+          "shared_s": 0.0,
+          "per_metric": {
+            "rf": {
+              "seconds": 0.0
+            },
+            "rf-treediff": {
+              "seconds": 0.0
+            },
+            "triplet": {
+              "seconds": 0.0
+            },
+            "mast": {
+              "seconds": 0.0
+            },
+            "spr": {
+              "seconds": 0.0
+            }
+          }
         }
       ]
     },
@@ -66,7 +95,7 @@
           ],
           "wall_s": 2.57,
           "total_s": 0.1,
-          "shared_s": 0.1,
+          "shared_s": 0.0,
           "per_metric": {
             "rf": {
               "seconds": 0.0
@@ -79,8 +108,8 @@
             "rf-treediff"
           ],
           "wall_s": 2.06,
-          "total_s": 0.2,
-          "shared_s": 0.1,
+          "total_s": 0.1,
+          "shared_s": 0.0,
           "per_metric": {
             "rf": {
               "seconds": 0.0
@@ -97,7 +126,30 @@
             "triplet"
           ],
           "wall_s": 2.07,
-          "total_s": 0.1,
+          "total_s": 0.2,
+          "shared_s": 0.0,
+          "per_metric": {
+            "rf": {
+              "seconds": 0.0
+            },
+            "rf-treediff": {
+              "seconds": 0.0
+            },
+            "triplet": {
+              "seconds": 0.1
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet",
+            "mast",
+            "spr"
+          ],
+          "wall_s": 2.06,
+          "total_s": 0.4,
           "shared_s": 0.1,
           "per_metric": {
             "rf": {
@@ -108,6 +160,12 @@
             },
             "triplet": {
               "seconds": 0.1
+            },
+            "mast": {
+              "seconds": 0.1
+            },
+            "spr": {
+              "seconds": 0.0
             }
           }
         }
@@ -120,7 +178,7 @@
           "metrics": [
             "rf"
           ],
-          "wall_s": 2.06,
+          "wall_s": 2.57,
           "total_s": 0.1,
           "shared_s": 0.1,
           "per_metric": {
@@ -134,7 +192,7 @@
             "rf",
             "rf-treediff"
           ],
-          "wall_s": 2.07,
+          "wall_s": 2.06,
           "total_s": 0.1,
           "shared_s": 0.1,
           "per_metric": {
@@ -152,8 +210,8 @@
             "rf-treediff",
             "triplet"
           ],
-          "wall_s": 2.57,
-          "total_s": 0.3,
+          "wall_s": 2.58,
+          "total_s": 0.5,
           "shared_s": 0.1,
           "per_metric": {
             "rf": {
@@ -163,6 +221,35 @@
               "seconds": 0.0
             },
             "triplet": {
+              "seconds": 0.3
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet",
+            "mast",
+            "spr"
+          ],
+          "wall_s": 2.58,
+          "total_s": 0.8,
+          "shared_s": 0.1,
+          "per_metric": {
+            "rf": {
+              "seconds": 0.0
+            },
+            "rf-treediff": {
+              "seconds": 0.0
+            },
+            "triplet": {
+              "seconds": 0.3
+            },
+            "mast": {
+              "seconds": 0.3
+            },
+            "spr": {
               "seconds": 0.1
             }
           }
@@ -176,7 +263,7 @@
           "metrics": [
             "rf"
           ],
-          "wall_s": 2.06,
+          "wall_s": 2.05,
           "total_s": 0.2,
           "shared_s": 0.2,
           "per_metric": {
@@ -190,7 +277,7 @@
             "rf",
             "rf-treediff"
           ],
-          "wall_s": 2.07,
+          "wall_s": 2.57,
           "total_s": 0.2,
           "shared_s": 0.2,
           "per_metric": {
@@ -208,8 +295,8 @@
             "rf-treediff",
             "triplet"
           ],
-          "wall_s": 3.07,
-          "total_s": 0.7,
+          "wall_s": 3.09,
+          "total_s": 1.2,
           "shared_s": 0.2,
           "per_metric": {
             "rf": {
@@ -219,7 +306,36 @@
               "seconds": 0.0
             },
             "triplet": {
-              "seconds": 0.4
+              "seconds": 1.0
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet",
+            "mast",
+            "spr"
+          ],
+          "wall_s": 4.62,
+          "total_s": 2.5,
+          "shared_s": 0.2,
+          "per_metric": {
+            "rf": {
+              "seconds": 0.0
+            },
+            "rf-treediff": {
+              "seconds": 0.0
+            },
+            "triplet": {
+              "seconds": 1.0
+            },
+            "mast": {
+              "seconds": 1.1
+            },
+            "spr": {
+              "seconds": 0.1
             }
           }
         }
@@ -232,8 +348,8 @@
           "metrics": [
             "rf"
           ],
-          "wall_s": 2.05,
-          "total_s": 0.4,
+          "wall_s": 2.57,
+          "total_s": 0.5,
           "shared_s": 0.4,
           "per_metric": {
             "rf": {
@@ -246,7 +362,7 @@
             "rf",
             "rf-treediff"
           ],
-          "wall_s": 2.56,
+          "wall_s": 2.07,
           "total_s": 0.5,
           "shared_s": 0.4,
           "per_metric": {
@@ -264,8 +380,8 @@
             "rf-treediff",
             "triplet"
           ],
-          "wall_s": 4.06,
-          "total_s": 1.7,
+          "wall_s": 5.13,
+          "total_s": 2.8,
           "shared_s": 0.4,
           "per_metric": {
             "rf": {
@@ -275,7 +391,36 @@
               "seconds": 0.1
             },
             "triplet": {
-              "seconds": 1.2
+              "seconds": 2.3
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet",
+            "mast",
+            "spr"
+          ],
+          "wall_s": 8.69,
+          "total_s": 6.6,
+          "shared_s": 0.4,
+          "per_metric": {
+            "rf": {
+              "seconds": 0.0
+            },
+            "rf-treediff": {
+              "seconds": 0.1
+            },
+            "triplet": {
+              "seconds": 2.3
+            },
+            "mast": {
+              "seconds": 3.6
+            },
+            "spr": {
+              "seconds": 0.2
             }
           }
         }
@@ -288,9 +433,9 @@
           "metrics": [
             "rf"
           ],
-          "wall_s": 3.06,
+          "wall_s": 3.09,
           "total_s": 1.3,
-          "shared_s": 1.1,
+          "shared_s": 1.2,
           "per_metric": {
             "rf": {
               "seconds": 0.1
@@ -302,7 +447,7 @@
             "rf",
             "rf-treediff"
           ],
-          "wall_s": 3.57,
+          "wall_s": 3.61,
           "total_s": 1.4,
           "shared_s": 1.2,
           "per_metric": {
@@ -320,8 +465,8 @@
             "rf-treediff",
             "triplet"
           ],
-          "wall_s": 6.11,
-          "total_s": 4.1,
+          "wall_s": 8.68,
+          "total_s": 6.7,
           "shared_s": 1.1,
           "per_metric": {
             "rf": {
@@ -331,7 +476,36 @@
               "seconds": 0.1
             },
             "triplet": {
-              "seconds": 2.7
+              "seconds": 5.3
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet",
+            "mast",
+            "spr"
+          ],
+          "wall_s": 23.5,
+          "total_s": 21.7,
+          "shared_s": 1.2,
+          "per_metric": {
+            "rf": {
+              "seconds": 0.1
+            },
+            "rf-treediff": {
+              "seconds": 0.1
+            },
+            "triplet": {
+              "seconds": 5.3
+            },
+            "mast": {
+              "seconds": 14.6
+            },
+            "spr": {
+              "seconds": 0.4
             }
           }
         }
@@ -344,9 +518,9 @@
           "metrics": [
             "rf"
           ],
-          "wall_s": 6.11,
+          "wall_s": 6.19,
           "total_s": 4.2,
-          "shared_s": 3.9,
+          "shared_s": 4.0,
           "per_metric": {
             "rf": {
               "seconds": 0.1
@@ -358,9 +532,9 @@
             "rf",
             "rf-treediff"
           ],
-          "wall_s": 6.62,
+          "wall_s": 6.66,
           "total_s": 4.4,
-          "shared_s": 3.9,
+          "shared_s": 4.0,
           "per_metric": {
             "rf": {
               "seconds": 0.1
@@ -376,9 +550,9 @@
             "rf-treediff",
             "triplet"
           ],
-          "wall_s": 12.18,
-          "total_s": 10.2,
-          "shared_s": 3.9,
+          "wall_s": 17.9,
+          "total_s": 15.9,
+          "shared_s": 4.0,
           "per_metric": {
             "rf": {
               "seconds": 0.1
@@ -387,7 +561,36 @@
               "seconds": 0.2
             },
             "triplet": {
-              "seconds": 5.8
+              "seconds": 11.5
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet",
+            "mast",
+            "spr"
+          ],
+          "wall_s": 18.9,
+          "total_s": 16.7,
+          "shared_s": 3.9,
+          "per_metric": {
+            "mast": {
+              "failed": "declined: 70,580 shared leaves need about 18.6 GiB of memory, above this server's budget of 16.0 GiB for one metric (PHYLODELTA_METRIC_MEMORY)"
+            },
+            "rf": {
+              "seconds": 0.1
+            },
+            "rf-treediff": {
+              "seconds": 0.2
+            },
+            "triplet": {
+              "seconds": 11.5
+            },
+            "spr": {
+              "seconds": 0.8
             }
           }
         }
@@ -400,9 +603,9 @@
           "metrics": [
             "rf"
           ],
-          "wall_s": 16.73,
-          "total_s": 15.1,
-          "shared_s": 14.6,
+          "wall_s": 16.88,
+          "total_s": 15.2,
+          "shared_s": 14.8,
           "per_metric": {
             "rf": {
               "seconds": 0.2
@@ -414,12 +617,12 @@
             "rf",
             "rf-treediff"
           ],
-          "wall_s": 17.76,
-          "total_s": 15.4,
-          "shared_s": 14.5,
+          "wall_s": 17.89,
+          "total_s": 15.6,
+          "shared_s": 14.6,
           "per_metric": {
             "rf": {
-              "seconds": 0.2
+              "seconds": 0.3
             },
             "rf-treediff": {
               "seconds": 0.5
@@ -432,9 +635,9 @@
             "rf-treediff",
             "triplet"
           ],
-          "wall_s": 29.47,
-          "total_s": 27.7,
-          "shared_s": 14.5,
+          "wall_s": 41.38,
+          "total_s": 39.4,
+          "shared_s": 14.6,
           "per_metric": {
             "rf": {
               "seconds": 0.3
@@ -443,7 +646,36 @@
               "seconds": 0.5
             },
             "triplet": {
-              "seconds": 12.3
+              "seconds": 23.9
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet",
+            "mast",
+            "spr"
+          ],
+          "wall_s": 42.93,
+          "total_s": 41.2,
+          "shared_s": 14.6,
+          "per_metric": {
+            "mast": {
+              "failed": "declined: 141,160 shared leaves need about 74.2 GiB of memory, above this server's budget of 16.0 GiB for one metric (PHYLODELTA_METRIC_MEMORY)"
+            },
+            "rf": {
+              "seconds": 0.2
+            },
+            "rf-treediff": {
+              "seconds": 0.5
+            },
+            "triplet": {
+              "seconds": 23.9
+            },
+            "spr": {
+              "seconds": 1.7
             }
           }
         }
@@ -456,9 +688,9 @@
           "metrics": [
             "rf"
           ],
-          "wall_s": 59.77,
-          "total_s": 57.9,
-          "shared_s": 56.9,
+          "wall_s": 60.18,
+          "total_s": 58.2,
+          "shared_s": 57.2,
           "per_metric": {
             "rf": {
               "seconds": 0.5
@@ -470,15 +702,15 @@
             "rf",
             "rf-treediff"
           ],
-          "wall_s": 61.28,
-          "total_s": 58.9,
-          "shared_s": 56.9,
+          "wall_s": 61.27,
+          "total_s": 59.2,
+          "shared_s": 57.3,
           "per_metric": {
             "rf": {
               "seconds": 0.5
             },
             "rf-treediff": {
-              "seconds": 1.0
+              "seconds": 0.9
             }
           }
         },
@@ -488,18 +720,47 @@
             "rf-treediff",
             "triplet"
           ],
-          "wall_s": 86.2,
-          "total_s": 84.2,
-          "shared_s": 56.9,
+          "wall_s": 111.23,
+          "total_s": 109.0,
+          "shared_s": 57.2,
           "per_metric": {
             "rf": {
               "seconds": 0.5
             },
             "rf-treediff": {
-              "seconds": 0.9
+              "seconds": 1.0
             },
             "triplet": {
-              "seconds": 25.4
+              "seconds": 49.9
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet",
+            "mast",
+            "spr"
+          ],
+          "wall_s": 114.31,
+          "total_s": 112.6,
+          "shared_s": 57.3,
+          "per_metric": {
+            "mast": {
+              "failed": "declined: 282,320 shared leaves need about 296.9 GiB of memory, above this server's budget of 16.0 GiB for one metric (PHYLODELTA_METRIC_MEMORY)"
+            },
+            "rf": {
+              "seconds": 0.5
+            },
+            "rf-treediff": {
+              "seconds": 1.0
+            },
+            "triplet": {
+              "seconds": 49.8
+            },
+            "spr": {
+              "seconds": 3.5
             }
           }
         }
@@ -512,12 +773,12 @@
           "metrics": [
             "rf"
           ],
-          "wall_s": 243.72,
-          "total_s": 242.0,
-          "shared_s": 240.0,
+          "wall_s": 244.14,
+          "total_s": 242.1,
+          "shared_s": 240.2,
           "per_metric": {
             "rf": {
-              "seconds": 1.1
+              "seconds": 1.0
             }
           }
         },
@@ -526,9 +787,9 @@
             "rf",
             "rf-treediff"
           ],
-          "wall_s": 247.77,
-          "total_s": 245.6,
-          "shared_s": 241.7,
+          "wall_s": 257.0,
+          "total_s": 254.7,
+          "shared_s": 250.8,
           "per_metric": {
             "rf": {
               "seconds": 1.0
@@ -544,10 +805,36 @@
             "rf-treediff",
             "triplet"
           ],
-          "wall_s": 297.38,
-          "total_s": 295.3,
-          "shared_s": 238.4,
+          "wall_s": 360.43,
+          "total_s": 358.4,
+          "shared_s": 247.9,
           "per_metric": {
+            "rf": {
+              "seconds": 1.1
+            },
+            "rf-treediff": {
+              "seconds": 2.1
+            },
+            "triplet": {
+              "seconds": 106.4
+            }
+          }
+        },
+        {
+          "metrics": [
+            "rf",
+            "rf-treediff",
+            "triplet",
+            "mast",
+            "spr"
+          ],
+          "wall_s": 375.66,
+          "total_s": 374.1,
+          "shared_s": 258.1,
+          "per_metric": {
+            "mast": {
+              "failed": "declined: 564,640 shared leaves need about 1187.7 GiB of memory, above this server's budget of 16.0 GiB for one metric (PHYLODELTA_METRIC_MEMORY)"
+            },
             "rf": {
               "seconds": 1.0
             },
@@ -555,7 +842,10 @@
               "seconds": 2.0
             },
             "triplet": {
-              "seconds": 53.1
+              "seconds": 104.6
+            },
+            "spr": {
+              "seconds": 7.5
             }
           }
         }

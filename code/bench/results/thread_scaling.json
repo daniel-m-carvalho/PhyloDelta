@@ -1,55 +1,55 @@
 {
-  "pair": "13fe3678de7c__2d6fd322f5e3",
+  "pair": "4817389742d4__c663055ad266",
   "leaves": 70580,
   "repeats": 3,
   "rungs": [
     {
       "threads": 1,
-      "seconds": 6.698347792029381,
+      "seconds": 6.764791457913816,
       "speedup": 1.0,
       "efficiency": 1.0,
       "identical_to_single_thread": true
     },
     {
       "threads": 2,
-      "seconds": 3.6316347919637337,
-      "speedup": 1.844444217477987,
-      "efficiency": 0.9222221087389935,
+      "seconds": 3.6660901670111343,
+      "speedup": 1.845233245703002,
+      "efficiency": 0.922616622851501,
       "identical_to_single_thread": true
     },
     {
       "threads": 3,
-      "seconds": 2.6106321250554174,
-      "speedup": 2.565795359576827,
-      "efficiency": 0.8552651198589424,
+      "seconds": 2.6214603750267997,
+      "speedup": 2.5805430905453446,
+      "efficiency": 0.8601810301817815,
       "identical_to_single_thread": true
     },
     {
       "threads": 4,
-      "seconds": 2.0426389999920502,
-      "speedup": 3.279261676711083,
-      "efficiency": 0.8198154191777708,
+      "seconds": 2.0608975840732455,
+      "speedup": 3.2824491183805433,
+      "efficiency": 0.8206122795951358,
       "identical_to_single_thread": true
     },
     {
       "threads": 6,
-      "seconds": 1.7580744590377435,
-      "speedup": 3.8100478381874816,
-      "efficiency": 0.6350079730312469,
+      "seconds": 1.7686890839831904,
+      "speedup": 3.824748803604935,
+      "efficiency": 0.6374581339341558,
       "identical_to_single_thread": true
     },
     {
       "threads": 8,
-      "seconds": 1.5732497500721365,
-      "speedup": 4.257650631581063,
-      "efficiency": 0.5322063289476329,
+      "seconds": 1.5797517499886453,
+      "speedup": 4.282186399200025,
+      "efficiency": 0.5352732999000032,
       "identical_to_single_thread": true
     },
     {
       "threads": 10,
-      "seconds": 1.4378717090003192,
-      "speedup": 4.6585156033749415,
-      "efficiency": 0.46585156033749414,
+      "seconds": 1.4397234580246732,
+      "speedup": 4.6986741934421445,
+      "efficiency": 0.46986741934421444,
       "identical_to_single_thread": true
     }
   ]

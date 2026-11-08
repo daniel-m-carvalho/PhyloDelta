@@ -1,12 +1,12 @@
 {
   "label": "2.2.5",
-  "browser": "Chrome 156.0.8078.74",
+  "browser": "Chrome 156.0.8078.80",
   "leaves": 1000,
   "loads": 8,
-  "loads_with_any_success": 1,
-  "loads_all_failed": 7,
+  "loads_with_any_success": 3,
+  "loads_all_failed": 5,
   "attempts_total": 120,
-  "attempts_succeeded": 3,
+  "attempts_succeeded": 27,
   "per_load": [
     {
       "completed": true,
@@ -36,17 +36,17 @@
     {
       "completed": true,
       "attempted": 15,
-      "succeeded": 3
+      "succeeded": 4
     },
     {
       "completed": true,
       "attempted": 15,
-      "succeeded": 0
+      "succeeded": 15
     },
     {
       "completed": true,
       "attempted": 15,
-      "succeeded": 0
+      "succeeded": 8
     }
   ]
 }

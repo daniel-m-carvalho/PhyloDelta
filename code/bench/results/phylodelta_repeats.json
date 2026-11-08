@@ -1,152 +1,152 @@
 [
   {
     "leaves": 1000,
-    "median_ms": 208,
-    "min_ms": 203,
-    "max_ms": 225,
+    "median_ms": 209,
+    "min_ms": 195,
+    "max_ms": 211,
     "samples": [
       205,
-      208,
-      203,
-      207,
       210,
-      225
+      209,
+      195,
+      207,
+      211
     ],
-    "heap_bytes": 3808844
+    "heap_bytes": 3820584
   },
   {
     "leaves": 2500,
-    "median_ms": 208,
-    "min_ms": 191,
-    "max_ms": 224,
+    "median_ms": 212,
+    "min_ms": 207,
+    "max_ms": 242,
     "samples": [
-      208,
+      211,
       224,
-      194,
-      191,
+      207,
       209,
-      206
+      242,
+      212
     ],
-    "heap_bytes": 3768384
+    "heap_bytes": 3811108
   },
   {
     "leaves": 5000,
-    "median_ms": 210,
-    "min_ms": 194,
-    "max_ms": 225,
+    "median_ms": 221,
+    "min_ms": 206,
+    "max_ms": 227,
     "samples": [
-      194,
-      209,
-      210,
+      206,
+      223,
+      206,
       211,
-      225,
-      207
+      221,
+      227
     ],
-    "heap_bytes": 3780660
+    "heap_bytes": 3822240
   },
   {
     "leaves": 10000,
-    "median_ms": 208,
-    "min_ms": 193,
-    "max_ms": 225,
+    "median_ms": 209,
+    "min_ms": 207,
+    "max_ms": 224,
     "samples": [
-      225,
-      207,
-      193,
+      212,
       208,
-      211,
-      208
+      209,
+      207,
+      224,
+      207
     ],
-    "heap_bytes": 3774096
+    "heap_bytes": 3816596
   },
   {
     "leaves": 17645,
-    "median_ms": 209,
-    "min_ms": 201,
-    "max_ms": 222,
+    "median_ms": 224,
+    "min_ms": 206,
+    "max_ms": 225,
     "samples": [
+      225,
       206,
-      222,
-      209,
-      222,
-      201,
-      209
+      225,
+      224,
+      208,
+      207
     ],
-    "heap_bytes": 3803872
+    "heap_bytes": 3804080
   },
   {
     "leaves": 35290,
     "median_ms": 208,
-    "min_ms": 206,
-    "max_ms": 225,
+    "min_ms": 205,
+    "max_ms": 210,
     "samples": [
-      206,
+      209,
+      205,
+      210,
       208,
-      208,
-      225,
-      225,
+      207,
       207
     ],
-    "heap_bytes": 3786508
+    "heap_bytes": 3827048
   },
   {
     "leaves": 70580,
-    "median_ms": 221,
-    "min_ms": 190,
-    "max_ms": 223,
+    "median_ms": 211,
+    "min_ms": 208,
+    "max_ms": 224,
     "samples": [
-      221,
-      222,
-      207,
-      223,
-      190,
-      206
+      211,
+      209,
+      210,
+      208,
+      224,
+      224
     ],
-    "heap_bytes": 3787188
+    "heap_bytes": 3837776
   },
   {
     "leaves": 141160,
-    "median_ms": 193,
-    "min_ms": 189,
-    "max_ms": 207,
+    "median_ms": 207,
+    "min_ms": 206,
+    "max_ms": 208,
     "samples": [
-      193,
       206,
-      193,
-      189,
+      208,
       207,
-      190
+      207,
+      207,
+      207
     ],
-    "heap_bytes": 3787956
+    "heap_bytes": 3787072
   },
   {
     "leaves": 282320,
-    "median_ms": 210,
-    "min_ms": 189,
+    "median_ms": 208,
+    "min_ms": 205,
     "max_ms": 224,
     "samples": [
-      210,
-      189,
-      210,
+      205,
       224,
-      224,
-      205
+      207,
+      208,
+      209,
+      206
     ],
-    "heap_bytes": 3791496
+    "heap_bytes": 3802712
   },
   {
     "leaves": 564640,
-    "median_ms": 209,
-    "min_ms": 189,
-    "max_ms": 221,
+    "median_ms": 207,
+    "min_ms": 204,
+    "max_ms": 225,
     "samples": [
-      212,
-      221,
-      209,
+      205,
       207,
-      190,
-      189
+      225,
+      224,
+      204,
+      207
     ],
-    "heap_bytes": 3782032
+    "heap_bytes": 3784148
   }
 ]

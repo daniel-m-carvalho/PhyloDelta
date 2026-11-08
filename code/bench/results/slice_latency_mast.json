@@ -1,84 +1,84 @@
 [
   {
     "leaves": 1000,
-    "median_ms": 1.7180000431835651,
-    "min_ms": 1.6071659047156572,
-    "max_ms": 1.8661660142242908,
-    "bytes": 5446,
-    "gzip_bytes": 1709,
+    "median_ms": 1.6112920129671693,
+    "min_ms": 1.56879099085927,
+    "max_ms": 1.8749579321593046,
+    "bytes": 5234,
+    "gzip_bytes": 1638,
     "metric": "mast",
     "displayed_leaves": 50,
     "total_leaves": 1000
   },
   {
     "leaves": 2500,
-    "median_ms": 1.5850829659029841,
-    "min_ms": 1.5306250425055623,
-    "max_ms": 1.6375830164179206,
-    "bytes": 5662,
-    "gzip_bytes": 1800,
+    "median_ms": 1.609708066098392,
+    "min_ms": 1.5507920179516077,
+    "max_ms": 1.854332978837192,
+    "bytes": 5408,
+    "gzip_bytes": 1672,
     "metric": "mast",
     "displayed_leaves": 50,
     "total_leaves": 2500
   },
   {
     "leaves": 5000,
-    "median_ms": 1.6581249656155705,
-    "min_ms": 1.601708005182445,
-    "max_ms": 1.7340000486001372,
-    "bytes": 5803,
-    "gzip_bytes": 1872,
+    "median_ms": 1.5267919516190886,
+    "min_ms": 1.482957974076271,
+    "max_ms": 1.5844579320400953,
+    "bytes": 5491,
+    "gzip_bytes": 1701,
     "metric": "mast",
     "displayed_leaves": 50,
     "total_leaves": 5000
   },
   {
     "leaves": 10000,
-    "median_ms": 1.6007079975679517,
-    "min_ms": 1.5388339525088668,
-    "max_ms": 1.6572499880567193,
-    "bytes": 5802,
-    "gzip_bytes": 1874,
+    "median_ms": 1.5660410281270742,
+    "min_ms": 1.5167079400271177,
+    "max_ms": 1.651874976232648,
+    "bytes": 5480,
+    "gzip_bytes": 1685,
     "metric": "mast",
     "displayed_leaves": 50,
     "total_leaves": 10000
   },
   {
     "leaves": 17645,
-    "median_ms": 1.5684999525547028,
-    "min_ms": 1.5380829572677612,
-    "max_ms": 1.664959010668099,
-    "bytes": 7162,
-    "gzip_bytes": 2885,
+    "median_ms": 1.5378330135717988,
+    "min_ms": 1.5231670113280416,
+    "max_ms": 1.6627500299364328,
+    "bytes": 6927,
+    "gzip_bytes": 2705,
     "metric": "mast",
     "displayed_leaves": 50,
     "total_leaves": 17645
   },
   {
     "leaves": 35290,
-    "median_ms": 1.6070830170065165,
-    "min_ms": 1.5916250413283706,
-    "max_ms": 1.7384160310029984,
-    "bytes": 7124,
-    "gzip_bytes": 2852,
+    "median_ms": 1.5279999934136868,
+    "min_ms": 1.4906669966876507,
+    "max_ms": 1.6970420256257057,
+    "bytes": 6920,
+    "gzip_bytes": 2675,
     "metric": "mast",
     "displayed_leaves": 50,
     "total_leaves": 35290
   },
   {
     "leaves": 70580,
-    "absent": "No metric 'mast' for pair '1ca4fe0d6c68__7aca914e3c61'."
+    "absent": "No metric 'mast' for pair '434120d2a773__f6ccc9a45abf'."
   },
   {
     "leaves": 141160,
-    "absent": "No metric 'mast' for pair '22898c305381__071444953df2'."
+    "absent": "No metric 'mast' for pair '95478c74b2f6__6d7f91ae926e'."
   },
   {
     "leaves": 282320,
-    "absent": "No metric 'mast' for pair 'a9b9e316d8a9__68845f10dc10'."
+    "absent": "No metric 'mast' for pair '392684003213__b99749d3f7fc'."
   },
   {
     "leaves": 564640,
-    "absent": "No metric 'mast' for pair '137d574281a2__61cfd1d2d25b'."
+    "absent": "No metric 'mast' for pair 'e0b847c2dd07__0eaf9e1927bb'."
   }
 ]

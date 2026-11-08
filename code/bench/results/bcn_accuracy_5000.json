@@ -1,15 +1,15 @@
 {
-  "pair": "6cf8ead2c6d6__112aa9c834ce",
+  "pair": "cc96723b0db9__622fe80dd777",
   "leaves": 5000,
-  "compare_ms": 51770.39999997616,
+  "compare_ms": 51960.5,
   "clades_phyloio": 4999,
   "clades_exact": 4999,
   "joined": 4999,
   "unjoinable": 0,
   "comparable": 4998,
-  "exact_match": 4772,
-  "worse": 226,
+  "exact_match": 4712,
+  "worse": 286,
   "higher_than_exact": 0,
-  "gap_median": 0.1666666865348816,
-  "gap_worst": 0.5840000114440917
+  "gap_median": 0.14546237027345066,
+  "gap_worst": 0.875
 }

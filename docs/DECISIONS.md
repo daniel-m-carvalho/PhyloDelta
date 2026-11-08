@@ -4419,6 +4419,44 @@ per-metric change (§52) added a fetch in `App`, beside the upload panel's own, 
 doubled with the new manifest fields. Table 19's data for opening a comparison rose from 26 to 47 KiB.
 The panel now takes the app's list. On the production build that is 31.7 KB, against 45.2 KB.
 
+### 34.23 The v0.2.1 re-run: what moved, and why
+
+**What was run.** The whole campaign from a clean clone of `v0.2.1` (`3084237`), 2026-11-08 17:24 to
+2026-11-09 00:16, all 34 steps in one command, Chrome unchanged throughout. `RERUN_REPORT.md` holds
+the claims and the table-by-table figures, and `RERUN_LEDGER.md` every changed cell against the v0.1.0
+re-run, which is the baseline because v0.2.0's results were never committed (§34.22).
+
+**Most cells are noise**: Tables 1, 3, 6–11, 13, 16 and 21 move by a few percent, and the claims that
+held in §34.21 still hold. What moved for a reason:
+
+* **Phylo.io's budgets, not its behaviour.** 564,640 reads "over 840 s" where it read 660 s, the
+  ceiling's deadline since #24. Table 4 is one table of six sizes from `endurance_extra` (§34.22), and
+  no comparison finished in 30 minutes at any of them, as before.
+* **Triplet costs twice what it did** (Table 17: 53.1 to 104.6 s at 564,640), because it runs
+  `trip_sht_nodes` once per tree to colour both (§54). Table 17 gained the `mast` and `spr` columns:
+  SPR 7.5 s at the top, MAST to 35,290 and refused by name above it (§50).
+* **Opening a comparison costs about 7 KiB more**, raw, 1.5 KiB gzip (Tables 19 and 20). `/metrics`
+  went from 6.7 to 13.7 KB and `/datasets` from 7.6 to 13.6 KB, describing five metrics, their
+  colourings and references (§52), with a comparison per metric. It is a constant, the same at every
+  size, but it puts every rung over 10 KiB gzip; the two slices stay at 3.5–6.0 KiB. Ratios fall with
+  it, 1,252x to 994x raw at the top.
+* **Phylo.io's single loads.** Its jump worked in Table 15's one load at 1,000 leaves, and in 3 of 8
+  loads of the probe (27 of 120 attempts) where v0.1.0 saw 1. Its DOM count at 10,000 fell from
+  10,166 to 7,891 with the paths unchanged. Both are its own variance; nothing in PhyloDelta touches
+  them.
+
+**Two generated sentences were wrong for the new numbers**, and were fixed in `make_tables.py` rather
+than in the markdown:
+
+* Table 17 set the widest metric set's shared work beside Table 9's `rf` build as "the same work". In
+  v0.1.0 that held (238.4 s against 242.4 s); now the widest set's 258.1 s exceeds the whole `rf` build's
+  245.7 s. The shared work is unchanged in scope (parse, reconcile, Jaccard correspondence, store;
+  `pipeline.py` stops its clock before any metric), but over the four sets at 564,640 it took
+  240.2–258.1 s, a spread v0.1.0's three sets (238.4–241.7 s) did not show. The sentence now compares
+  the `rf` set and states the spread.
+* The jump probe's note said Table 15 "shows only the common outcome". It now says which outcome each
+  rung's load had.
+
 ## 35. The frontend holds what it has already seen
 
 The library shipped a two-tier LRU — `CacheManager`, with warm and rendered queues, an eviction
