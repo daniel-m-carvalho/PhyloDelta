@@ -44,6 +44,40 @@
       const painted = () =>
         new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
 
+      /**
+       * `limit` candidates spread across clade sizes: one size class (a power of
+       * two) at a time, largest first, round-robin, so a sample of eight is not
+       * eight clades of one size.
+       *
+       * The first harness took the largest N. On the pruned rungs those are
+       * exactly the clades whose counterpart is the other tree's root — the
+       * eight largest at 1,000 leaves, 922 to 997 leaves each — which is the one
+       * case where phylo.io's jump throws, so it measured that case eight times
+       * and reported the jump as failing in most loads (§34.24).
+       */
+      function acrossSizes(nodes, limit) {
+        const classes = new Map();
+        for (const node of [...nodes].sort((x, y) => y.leaves - x.leaves || x.at - y.at)) {
+          const k = Math.floor(Math.log2(node.leaves));
+          if (!classes.has(k)) classes.set(k, []);
+          classes.get(k).push(node);
+        }
+        const order = [...classes.keys()].sort((x, y) => y - x);
+        const picked = [];
+        for (let round = 0; picked.length < limit; round += 1) {
+          let any = false;
+          for (const k of order) {
+            const node = classes.get(k)[round];
+            if (node && picked.length < limit) {
+              picked.push(node);
+              any = true;
+            }
+          }
+          if (!any) break;
+        }
+        return picked;
+      }
+
       window.__nav = {
         async load(leftUrl, rightUrl, compareBudgetMs) {
           const [a, b] = await Promise.all([
@@ -75,7 +109,7 @@
         },
 
         /**
-         * Candidate nodes to navigate on, newest layout first.
+         * Candidate nodes to navigate on.
          *
          * `_children` present means d3 is holding the subtree back — the node
          * is collapsed, so expanding it is real work. `children` present means
@@ -84,9 +118,20 @@
          * size, which is the only basis the two have in common: a phylo.io
          * node is identified by its leaf set and a PhyloDelta node by a stored
          * index.
+         *
+         * Each candidate also says whether its best corresponding node is the
+         * **other tree's root** (`bcnIsRoot`). That is the one case in which
+         * phylo.io 2.2.5's "Highlight BCN" throws (§34.24): `elementBCN` then
+         * points at a detached copy of the root, `getHierarchyNodeFromModelNode`
+         * returns null, and the action reads `_children` of null. The root is
+         * recognised by its leaf count — every leaf of the other tree — because
+         * the detached copy is not the root object the panel holds.
          */
         candidates(limit) {
           const out = [];
+          const uid = c2.viewer.model.uid;
+          const otherRoot = c2.viewer.hierarchy;
+          const otherLeaves = Array.isArray(otherRoot.data.leaves) ? otherRoot.data.leaves.length : 0;
           const walk = (d) => {
             const kids = d.children || d._children;
             if (!kids) return;
@@ -96,27 +141,39 @@
             // would have compared two different quantities under one heading.
             const leaves = Array.isArray(d.data.leaves) ? d.data.leaves.length : 0;
             if (leaves > 1) {
+              const target = d.data.elementBCN ? d.data.elementBCN[uid] : undefined;
+              const targetLeaves =
+                target && Array.isArray(target.leaves) ? target.leaves.length : null;
               // `at` indexes __navNodes, which is how the driver names a node
               // back to this page: a d3 node cannot cross into Playwright.
               out.push({
                 at: window.__navNodes.push(d) - 1,
                 leaves,
                 collapsed: Boolean(d.data.collapse),
-                hasBcn: Boolean(
-                  d.data.elementBCN && d.data.elementBCN[c2.viewer.model.uid],
-                ),
+                hasBcn: Boolean(target),
+                bcnLeaves: targetLeaves,
+                bcnIsRoot: Boolean(target) && (target === otherRoot.data || targetLeaves === otherLeaves),
               });
             }
             for (const k of kids) walk(k);
           };
           window.__navNodes = [];
           walk(c1.viewer.hierarchy);
-          // Largest first: the expensive end, and the one a user actually
-          // opens. Taking the first N in traversal order would mostly sample
-          // two-leaf cherries and report them as navigation cost.
-          return out.sort((x, y) => y.leaves - x.leaves).slice(0, limit || 12);
+          const jumpable = out.filter((c) => c.hasBcn && !c.bcnIsRoot);
+          const rootward = out.filter((c) => c.bcnIsRoot);
+          return {
+            all: out.length,
+            // Expand and back: across sizes, any clade.
+            sampled: acrossSizes(out, limit || 12),
+            // The jump: across sizes, among the clades it can work on.
+            jump: acrossSizes(jumpable, limit || 12),
+            // The case it cannot: every clade whose counterpart is the root,
+            // counted, and tried separately so the failure is confirmed rather
+            // than assumed.
+            rootward,
+            with_bcn: out.filter((c) => c.hasBcn).length,
+          };
         },
-
         /** Collapse or expand one node, exactly as the menu item does. */
         async toggle(at) {
           const node = window.__navNodes[at];
@@ -138,16 +195,14 @@
          * cross into the driver would cost the expand and back measurements
          * their cell too.
          *
-         * **Why it fails.** `api.js` rebuilds BOTH models from the worker's
-         * reply — `new Model(e.data[0].data, …)` and `new Model(e.data[1].data,
-         * …)` — but the `elementBCN` references inside the first reply point at
-         * that reply's own embedded copy of the second tree, not at the model
-         * built from the second. So `getHierarchyNodeFromModelNode` compares
-         * `d.data === modelNode` against an object graph neither container
-         * owns, returns null, and `expandToRoot` hands that null to
-         * `apply_collapse_from_data_to_d3`, which reads `d._children`. The
-         * target objects are parentless, which is the visible symptom of being
-         * detached.
+         * **Where it fails.** Only on a clade whose best corresponding node is
+         * the other tree's root (`bcnIsRoot` above): `elementBCN` then points at
+         * a detached copy of the root, `getHierarchyNodeFromModelNode` returns
+         * null, and `expandToRoot` hands that null to
+         * `apply_collapse_from_data_to_d3`, which reads `d._children`. Every
+         * other clade's jump works, in every load (§34.24). The first harness
+         * read this as a general failure because it sampled only the largest
+         * clades, which are the root's counterparts.
          */
         async bcn(at) {
           const node = window.__navNodes[at];
@@ -175,6 +230,50 @@
               targetHasParent: Boolean(target.parent),
             };
           }
+        },
+
+        /**
+         * Re-root the left tree above the clade with exactly these leaves, as the
+         * context menu's "Reroot" does, and time it until the comparison has been
+         * recomputed and painted (§34.24).
+         *
+         * `trigger_("reroot", …)` re-roots the model and calls
+         * `compute_topology_and_render_bounded_viewer(true)`, which starts the
+         * similarity worker again over both trees and sets `message_loader`
+         * synchronously. The clock stops when the worker clears it — as the
+         * first comparison is timed — and two frames later.
+         */
+        async reroot(labels, budgetMs) {
+          const want = new Set(labels.map(String));
+          let found = null;
+          const seek = (d) => {
+            if (found) return;
+            const leaves = Array.isArray(d.data.leaves) ? d.data.leaves : [];
+            if (leaves.length === want.size && leaves.every((leaf) => want.has(String(leaf.name)))) {
+              found = d;
+              return;
+            }
+            if (leaves.length < want.size) return;
+            for (const k of d.children || d._children || []) seek(k);
+          };
+          seek(c1.viewer.hierarchy);
+          if (!found) return { error: `no clade with these ${want.size} leaves` };
+          const t0 = performance.now();
+          try {
+            c1.trigger_("reroot", found.data, found);
+          } catch (failed) {
+            return { error: String((failed && failed.message) || failed) };
+          }
+          const started = c1.message_loader !== null && c1.message_loader !== undefined;
+          const deadline = t0 + (budgetMs || 600000);
+          while (performance.now() < deadline) {
+            if (c1.message_loader === null || c1.message_loader === undefined) {
+              await painted();
+              return { ms: performance.now() - t0, recomputed: started, finished: true };
+            }
+            await new Promise((r) => setTimeout(r, 50));
+          }
+          return { ms: performance.now() - t0, recomputed: started, finished: false };
         },
 
         /** What is on screen, so a row can say what was actually drawn. */

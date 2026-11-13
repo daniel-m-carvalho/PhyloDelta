@@ -9,7 +9,7 @@
  * clicked.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 export function Notice({
   title,
@@ -17,6 +17,7 @@ export function Notice({
   confirm,
   busy = false,
   onDismiss,
+  children,
 }: {
   title: string;
   detail?: string | null;
@@ -28,9 +29,11 @@ export function Notice({
    * default action — Escape and the backdrop both dismiss, so the destructive
    * one is never what a stray keypress reaches.
    */
-  confirm?: { label: string; onConfirm: () => void };
+  confirm?: { label: string; onConfirm: () => void; busyLabel?: string };
   busy?: boolean;
   onDismiss: () => void;
+  /** More to choose before confirming — an option the question depends on. */
+  children?: ReactNode;
 }) {
   const close = useRef<HTMLButtonElement>(null);
 
@@ -57,6 +60,7 @@ export function Notice({
       >
         <p className="notice-title">{title}</p>
         {detail ? <p className="notice-detail">{detail}</p> : null}
+        {children}
         <div className="notice-actions">
           <button
             type="button"
@@ -74,7 +78,7 @@ export function Notice({
               onClick={confirm.onConfirm}
               disabled={busy}
             >
-              {busy ? "Removing…" : confirm.label}
+              {busy ? (confirm.busyLabel ?? "Removing…") : confirm.label}
             </button>
           ) : null}
         </div>

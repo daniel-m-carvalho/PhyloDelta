@@ -5,6 +5,7 @@ import {
   countLeaves,
   maxDepth,
   orderByName,
+  orderByKey,
   prepareTree,
   rerootTree,
   subtreeSize,
@@ -182,6 +183,27 @@ describe("prepareTree — ordering", () => {
     const prepared = prepareTree(tree, never, 100, orderByName)!;
     expect(prepared.branchset!.map((n) => n.name)).toEqual(["a", "m", "z"]);
     expect(countLeaves(prepared)).toBe(3); // same leaves, only rotated
+  });
+});
+
+describe("orderByKey", () => {
+  const keys: Record<string, number> = { a: 3, b: 1, c: 2 };
+  const byKey = orderByKey((node) => keys[node.name ?? ""]);
+
+  it("orders keyed siblings by key, and puts the unkeyed after them in name order", () => {
+    const tree: NewickNode = {
+      name: "root",
+      branchset: [{ name: "y" }, { name: "a" }, { name: "x" }, { name: "c" }, { name: "b" }],
+    };
+    const prepared = prepareTree(tree, never, 100, byKey)!;
+    expect(prepared.branchset!.map((n) => n.name)).toEqual(["b", "c", "a", "x", "y"]);
+    expect(countLeaves(prepared)).toBe(5);
+  });
+
+  it("treats a NaN key as no key, rather than as a position", () => {
+    const order = orderByKey((node) => (node.name === "n" ? Number.NaN : keys[node.name ?? ""]));
+    const tree: NewickNode = { name: "r", branchset: [{ name: "n" }, { name: "a" }] };
+    expect(prepareTree(tree, never, 100, order)!.branchset!.map((n) => n.name)).toEqual(["a", "n"]);
   });
 });
 

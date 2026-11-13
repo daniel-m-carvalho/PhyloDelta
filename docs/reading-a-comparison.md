@@ -126,7 +126,7 @@ identically, where every block but one is a move. Leaves that moved together sha
 
 | You see | It means |
 |---|---|
-| **Black triangle** | A **collapsed clade**: a group of leaves folded up to fit the screen. Its height grows with the number of leaves it holds; hover to see the count. Right-click → **Expand this clade** to open it. |
+| **Black triangle** | A **collapsed clade**: a group of leaves folded up to fit the screen. Its height is in proportion to the number of leaves it holds, against the largest triangle on screen (or by log₂ of the count, under **Wedge size → Logarithmic**); hover to see the count. Right-click → **Expand this clade** to open it. |
 | **"N leaves"** beside triangles | Clade sizes, when **View options → Clade sizes** is on. |
 | **Small dot with a name** | A **leaf**, with its name (in the demo trees, a sequence type). Not every name is printed when they would overlap; zoom in to see more. |
 | **Light grey line to the tips** | *Phylogram only.* Branches end at their real length; the light line only carries the leaf across to the aligned column of names. It is layout, not distance. |

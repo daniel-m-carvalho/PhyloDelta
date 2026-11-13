@@ -355,6 +355,11 @@ class Presentation:
     categories: tuple[str, ...] = ()
     #: ``gradient`` only: clades with fewer leaves have nothing to score, and are grey.
     min_leaves: int = 1
+    #: ``gradient`` only: the colour bar's two end labels, low then high, in the
+    #: metric's own words. Empty means the client's own ("Identical" /
+    #: "Diverged"), which describe the shared correspondence and may not fit a
+    #: metric scoring something else.
+    legend: tuple[str, ...] = ()
 
     @staticmethod
     def from_json(raw: object, metric: str, columns: dict) -> "Presentation":
@@ -373,9 +378,18 @@ class Presentation:
                     f"metric {metric!r}: presentation {raw['name']!r} has min_leaves "
                     f"{min_leaves!r}; it must be a whole number of leaves, at least 1"
                 )
+            legend = raw.get("legend", [])
+            if not isinstance(legend, list) or (
+                legend and (len(legend) != 2 or not all(isinstance(t, str) and t for t in legend))
+            ):
+                raise ValueError(
+                    f"metric {metric!r}: presentation {raw['name']!r} has legend "
+                    f"{legend!r}; it must be two labels, the low end of the scale first"
+                )
             return Presentation(
                 name=raw["name"], label=raw["label"], kind=kind,
                 description=raw.get("description", ""), min_leaves=min_leaves,
+                legend=tuple(legend),
             )
         named = raw.get("columns", [raw["column"]] if "column" in raw else None)
         if not isinstance(named, list) or not named:
@@ -487,6 +501,16 @@ class MetricManifest:
                 f"metric {raw['name']!r} is kind 'subprocess' and needs 'command'"
             )
         outputs = MetricOutputs.from_json(raw.get("outputs", {}))
+        if kind == "subprocess" and outputs.columns:
+            # A program's stdout is parsed for scalars and nothing else
+            # (`runners._parse_stdout`, §11.5). Declaring columns would promise
+            # values the runner can never return; `validate_result` would then
+            # refuse every result, minutes into a build, instead of here.
+            raise ValueError(
+                f"metric {raw['name']!r} is kind 'subprocess', which returns numbers only; "
+                f"it declares per-node columns {[c.name for c in outputs.columns]}. "
+                "A metric with per-clade output is kind 'python' (it may run a program itself)"
+            )
         correspondence = _correspondence_from(raw, outputs)
         presentations = _presentations_from(raw, outputs, correspondence)
         headline = None

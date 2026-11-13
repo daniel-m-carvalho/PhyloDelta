@@ -275,6 +275,7 @@ export class ComparisonOperator implements TreeOperator {
   private categoryTitle?: string;
   private showLegend: boolean;
   private legendLabels: [string, string];
+  private readonly defaultLegendLabels: [string, string];
   private correspondence?: CorrespondenceMap;
   private enabled: boolean;
 
@@ -343,6 +344,7 @@ export class ComparisonOperator implements TreeOperator {
     this.categoryTitle = options.categoryTitle;
     this.showLegend = options.legend ?? true;
     this.legendLabels = options.legendLabels ?? ["Different", "Similar"];
+    this.defaultLegendLabels = this.legendLabels;
     this.correspondence = options.correspondence;
     this.enabled = options.enabled ?? true;
 
@@ -446,6 +448,17 @@ export class ComparisonOperator implements TreeOperator {
     this.categoryTitle = title;
     this.renderLegend();
     this.refresh();
+  }
+
+  /**
+   * Replace the gradient legend's end labels, [low, high], and redraw the
+   * legend. Omitted, they go back to the ones the operator was built with: a
+   * consumer switching between metrics passes each metric's own words and
+   * nothing for one that declares none.
+   */
+  setLegendLabels(labels?: [string, string]): void {
+    this.legendLabels = labels ?? this.defaultLegendLabels;
+    this.renderLegend();
   }
 
   /**
@@ -918,8 +931,13 @@ export class ComparisonOperator implements TreeOperator {
       justifyContent: "space-between",
       marginTop: "2px",
     } as CSSStyleDeclaration);
-    const [lo, hi] = this.legendLabels;
-    labels.innerHTML = `<span>${lo}</span><span>${hi}</span>`;
+    // As text, not markup: the labels may now come from a metric's manifest,
+    // which is configuration the library has never seen.
+    for (const text of this.legendLabels) {
+      const span = document.createElement("span");
+      span.textContent = text;
+      labels.appendChild(span);
+    }
 
     this.legendEl.appendChild(gradient);
     this.legendEl.appendChild(labels);

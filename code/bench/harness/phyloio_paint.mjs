@@ -45,11 +45,10 @@ const RUNGS = (process.env.BENCH_RUNGS ?? "17645 35290").split(" ").map(Number);
 //: The campaign's `paint_extra` step writes 70,580 to its own file (§34.22).
 const OUT = process.env.BENCH_OUT ?? "phyloio_paint_2.2.5.json";
 
-//: Three loads per rung. The jump probe found phylo.io failures to be
-//: all-or-nothing *per page load* rather than per operation (§34.14), so a
-//: single load cannot distinguish "cannot do this size" from "did not this
-//: time" — which is the whole question here.
-const LOADS = 3;
+//: Five loads per rung (§34.24), the count asked of every browser figure; was
+//: three. One load cannot distinguish "cannot do this size" from "did not this
+//: time", which is the whole question here.
+const LOADS = Number(process.env.BENCH_LOADS || 5);
 
 //: Page load and harness readiness only — not the measurement.
 const PAINT_MS = 300_000;

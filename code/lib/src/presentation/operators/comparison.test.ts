@@ -241,6 +241,33 @@ describe("ComparisonOperator — legend placement", () => {
   });
 });
 
+describe("ComparisonOperator — legend labels", () => {
+  const text = (h: ReturnType<typeof makeHarness>) => h.viewer.getContainer().textContent ?? "";
+
+  it("takes new end labels, and goes back to its own when given none", () => {
+    const h = makeHarness(namedTree());
+    const cmp = new ComparisonOperator({ enabled: true, legendLabels: ["Identical", "Diverged"] });
+    cmp.attach(h.viewer);
+    h.render();
+    cmp.setLegendLabels(["Same score", "Far apart"]);
+    expect(text(h)).toContain("Same score");
+    expect(text(h)).not.toContain("Identical");
+    cmp.setLegendLabels(undefined);
+    expect(text(h)).toContain("Identical");
+    expect(text(h)).toContain("Diverged");
+  });
+
+  it("writes a label as text, never as markup", () => {
+    const h = makeHarness(namedTree());
+    const cmp = new ComparisonOperator({ enabled: true });
+    cmp.attach(h.viewer);
+    h.render();
+    cmp.setLegendLabels(["<b>low</b>", "high"]);
+    expect(h.viewer.getContainer().querySelector("b")).toBeNull();
+    expect(text(h)).toContain("<b>low</b>");
+  });
+});
+
 describe("ComparisonOperator — categories mode", () => {
   const KEPT = { color: "#0000ff", label: "Kept" };
   const MOVED = { color: "#ffff00", label: "Moved" };

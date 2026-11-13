@@ -17,6 +17,8 @@ import type {
   MetricSummary,
   NodeContext,
   NodeSearch,
+  RerootAccepted,
+  RerootRequest,
   TreeSlice,
   UploadAccepted,
   WhoAmI,
@@ -28,6 +30,8 @@ export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
   readonly hint: string | null;
+  /** 410 `comparison_rerooted`: the comparison that replaced this one (§56). */
+  readonly movedTo: string | null;
 
   constructor(status: number, body: Partial<ApiErrorBody>) {
     super(body.detail ?? `Request failed (${status})`);
@@ -35,6 +39,7 @@ export class ApiError extends Error {
     this.status = status;
     this.code = body.code ?? "unknown";
     this.hint = body.hint ?? null;
+    this.movedTo = body.moved_to ?? null;
   }
 }
 
@@ -92,6 +97,19 @@ export const api = {
     request<ComparisonStatus>(
       `/comparisons/${encodeURIComponent(comparisonId)}/status`,
     ),
+
+  /**
+   * Re-root one tree, as a new comparison the worker builds like an upload
+   * (§56). Returns at once with the new id to poll; the original is kept,
+   * marked superseded, unless `replace` asks for it to be deleted once the new
+   * one is ready.
+   */
+  reroot: (comparisonId: string, body: RerootRequest) =>
+    request<RerootAccepted>(`/comparisons/${encodeURIComponent(comparisonId)}/reroot`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
 
   /**
    * A budget-limited view of a subtree, with comparison values in the same

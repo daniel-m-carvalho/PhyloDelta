@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import delete, select, update
 
 from .models import (
     Comparison,
@@ -12,6 +12,7 @@ from .models import (
     Dataset,
     DatasetKind,
     DatasetStatus,
+    RerootedAway,
 )
 from .session import session
 
@@ -93,6 +94,8 @@ def record_upload(
     right_source: str,
     store_path: str,
     metrics: str = "rf",
+    rerooted_from: str | None = None,
+    reroot: str | None = None,
 ) -> None:
     """Record an accepted bundle: two pending trees and a pending comparison.
 
@@ -132,6 +135,8 @@ def record_upload(
                 status=ComparisonStatus.PENDING,
                 store_path=store_path,
                 metrics=metrics,
+                rerooted_from=rerooted_from,
+                reroot=reroot,
             )
         )
 
@@ -305,3 +310,59 @@ def delete_datasets(dataset_ids: list[str]) -> None:
             select(Dataset).where(Dataset.id.in_(dataset_ids + derived))
         ):
             active.delete(found)
+
+
+# --- re-rooting (§56) ---------------------------------------------------------
+
+def mark_superseded(old_id: str, new_id: str) -> None:
+    """A kept original now has a re-rooted successor."""
+    with session() as active:
+        active.execute(
+            update(Comparison).where(Comparison.id == old_id).values(superseded_by=new_id)
+        )
+
+
+def repoint_rerooted(owner_id: str, old_id: str, new_id: str) -> None:
+    """Links that led to ``old_id`` lead to ``new_id`` instead."""
+    with session() as active:
+        active.execute(
+            update(RerootedAway)
+            .where(RerootedAway.new_id == old_id, RerootedAway.owner_id == owner_id)
+            .values(new_id=new_id)
+        )
+
+
+def record_rerooted_away(owner_id: str, old_id: str, new_id: str) -> None:
+    """``old_id`` was deleted by a re-root that made ``new_id``.
+
+    Links that pointed at the deleted one's predecessors now point at
+    ``new_id`` too, so a chain of replacements leads to the one that exists.
+    """
+    with session() as active:
+        active.execute(
+            update(RerootedAway)
+            .where(RerootedAway.new_id == old_id, RerootedAway.owner_id == owner_id)
+            .values(new_id=new_id)
+        )
+        active.merge(RerootedAway(old_id=old_id, new_id=new_id, owner_id=owner_id))
+
+
+def rerooted_away_to(owner_id: str, old_id: str) -> str | None:
+    """Where a comparison this owner replaced by re-rooting went, or None."""
+    with session() as active:
+        found = active.get(RerootedAway, old_id)
+        if found is None or found.owner_id != owner_id:
+            return None
+        return found.new_id
+
+
+def forget_successor(comparison_id: str) -> None:
+    """``comparison_id`` is being deleted: nothing may go on pointing at it."""
+    with session() as active:
+        active.execute(delete(RerootedAway).where(RerootedAway.new_id == comparison_id))
+        active.execute(delete(RerootedAway).where(RerootedAway.old_id == comparison_id))
+        active.execute(
+            update(Comparison)
+            .where(Comparison.superseded_by == comparison_id)
+            .values(superseded_by=None)
+        )

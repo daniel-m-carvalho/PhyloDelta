@@ -287,3 +287,61 @@ describe("going back", () => {
     expect(by(items, "Reset to the whole tree").disabledBecause).toBeUndefined();
   });
 });
+
+describe("re-rooting from the menu (§56)", () => {
+  const reroot = () => {
+    const calls: string[] = [];
+    return {
+      calls,
+      onReroot: vi.fn((side: 0 | 1, storedId: number) => calls.push(`${side}:${storedId}`)),
+    };
+  };
+  /** A node deep enough to re-root above: in the slice, neither the root nor its child. */
+  function deep(state: SideState): number {
+    const parents = state.tree!.parentOfStoredId;
+    for (const [id, parent] of parents) if (id !== 0 && parent !== 0) return id;
+    throw new Error("no deep node in the fixture");
+  }
+
+  it("is not offered when the view cannot re-root", () => {
+    const left = sideOf();
+    const items = buildMenu({ side: 0, at, storedId: deep(left) }, [left, sideOf()], [actions(), actions()]);
+    expect(items.some((item) => item.label.startsWith("Re-root"))).toBe(false);
+  });
+
+  it("re-roots above the node clicked, and says what that costs", () => {
+    const left = sideOf();
+    const r = reroot();
+    const node = deep(left);
+    const items = buildMenu({ side: 0, at, storedId: node }, [left, sideOf()], [actions(), actions()], undefined, r);
+    const here = by(items, "Re-root here");
+    expect(here.detail).toMatch(/new comparison and recomputes every metric/);
+    here.onSelect!();
+    expect(r.calls).toEqual([`0:${node}`]);
+  });
+
+  it("is disabled with the server's reason on the root and on a child of the root", () => {
+    const left = sideOf();
+    const r = reroot();
+    const root = by(buildMenu({ side: 0, at, storedId: 0 }, [left, sideOf()], [actions(), actions()], undefined, r), "Re-root here");
+    expect(root.disabledBecause).toMatch(/This is the root/);
+    expect(root.onSelect).toBeUndefined();
+    const child = [...left.tree!.parentOfStoredId].find(([, parent]) => parent === 0)![0];
+    const item = by(buildMenu({ side: 0, at, storedId: child }, [left, sideOf()], [actions(), actions()], undefined, r), "Re-root here");
+    expect(item.disabledBecause).toMatch(/child of the root/);
+  });
+
+  it("offers only re-rooting above a node, never on empty canvas", () => {
+    const left = sideOf();
+    const items = buildMenu({ side: 0, at }, [left, sideOf()], [actions(), actions()], undefined, reroot());
+    expect(items.some((item) => item.label.startsWith("Re-root"))).toBe(false);
+  });
+
+  it("is disabled, saying why, while another re-root is being built", () => {
+    const left = sideOf();
+    const r = { ...reroot(), busy: "A re-root is already being built" };
+    const items = buildMenu({ side: 0, at, storedId: deep(left) }, [left, sideOf()], [actions(), actions()], undefined, r);
+    expect(by(items, "Re-root here").disabledBecause).toBe("A re-root is already being built");
+    expect(by(items, "Re-root here").onSelect).toBeUndefined();
+  });
+});

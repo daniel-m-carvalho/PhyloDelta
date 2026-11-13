@@ -259,6 +259,10 @@ Pure, side-effect-free functions over `NewickNode`. Independent of Sigma/DOM.
   in its subtree. Non-numeric names sort last (fall back to +Infinity). Prefer
   `orderByName` unless labels are guaranteed numeric.
 - `orderBySizeDesc` — largest-subtree-first (the pre-ordering default).
+- `orderByKey(key, fallback = orderByName)` — siblings by a numeric key, ascending;
+  siblings with no key (undefined or NaN) after them, in `fallback` order. The
+  building block for ordering one tree to follow another: key each node by its
+  counterpart's position in the other tree.
 
 ---
 
@@ -633,11 +637,21 @@ tip carries a sense of how much tree is behind it.
   whatever else drives collapse (a bare `setCollapseFn` works). Attach it or don't;
   nothing else changes. A good illustration of the operator contract (§2, §3.3):
   two operators cooperating on the same nodes with zero knowledge of each other.
-- **Size ∝ log2(leaves).** Half-height ramps `minHalfHeight` → `maxHalfHeight` as
-  log2(leaves)/log2(`saturateAt`), so a clade of 8 and one of 4,000 stay visually
-  distinct instead of both pinning to the maximum. Leaf counts come from the
-  clade's `origin` (§4), i.e. the *true* subtree, not the pruned one. Hovering a
-  wedge shows the count.
+- **Size: `scale: "log"` (default) or `"linear"`.** Log: half-height ramps
+  `minHalfHeight` → `maxHalfHeight` as log2(leaves)/log2(`saturateAt`), so a clade
+  of 8 and one of 4,000 stay visually distinct. Linear: `min + (leaves ÷ reference)
+  × (max − min)`, so twice the leaves is twice the height above the minimum. Leaf
+  counts come from the clade's `origin` (§4), i.e. the *true* subtree, not the
+  pruned one. `setScale(scale, reference)` switches on a live panel.
+- **Reference: `reference: "view"` (default) or `"largest-drawn"`.** "view" is the
+  self-calibrating `saturateAt` below. "largest-drawn" makes the top of the scale
+  the largest wedge currently drawn, which then always gets the full height —
+  heights comparable within one view, not across views.
+- **`fitRows`** (default false): where the rows on screen are closer than two
+  maximum half-heights, every wedge shrinks by one factor so neighbours never
+  overlap and proportions survive.
+- **`hoverCount`** (default false): a tooltip with the wedge's leaf count on hover.
+  A `title` cannot do it: this overlay is `pointer-events: none`.
 - **The scale calibrates itself.** `saturateAt` is the top of the scale — the leaf
   count that draws at max height, above which everything saturates. It **defaults
   to the leaf count of the tree in view**, so the biggest possible clade maps to
@@ -662,7 +676,7 @@ tip carries a sense of how much tree is behind it.
   program: far less code, and it composes with the other overlays. Constant
   screen size while zooming.
 - Options: `towardRoot`, `length`, `minHalfHeight`, `maxHalfHeight`, `saturateAt`,
-  `color`, `hideMarker`.
+  `scale`, `reference`, `fitRows`, `hoverCount`, `color`, `hideMarker`.
 
 ### 9.3 SelectionOperator (`operators/selection.ts`)
 
@@ -841,7 +855,7 @@ interface ComparisonOptions {
   enabled?: boolean;                 // default true
 }
 ```
-- API: `setValues(map)`, `setCorrespondence(map)`, `setMode(mode)`, `getMode()`, `setCategories(categoryOf, legend, title)`, `setUnmeasured(isUnmeasured, label)`,
+- API: `setValues(map)`, `setCorrespondence(map)`, `setMode(mode)`, `getMode()`, `setCategories(categoryOf, legend, title)`, `setUnmeasured(isUnmeasured, label)`, `setLegendLabels([low, high])` (omitted: back to the constructor's),
   `setDiffering(keys)`, `setEnabled(on)`, `isEnabled()`, `link(peer)`,
   `highlightByKey(key)`, `highlightByNode(id, { flash? })`, `clearHighlight()`,
   `getHighlightedKey()`.

@@ -36,6 +36,7 @@ from __future__ import annotations
 import os
 import re
 import shlex
+import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -104,6 +105,21 @@ def _substitute(token: str, mapping: dict[str, str]) -> str:
     return os.path.expandvars(token)
 
 
+def resolve_program(token: str) -> str | None:
+    """Where a manifest's program is, or None if it cannot be found.
+
+    A token with a directory in it (``${native}/rspr/rspr``, ``/usr/bin/Rscript``)
+    is a path and must exist as written. A bare name (``Rscript``, ``java``) is a
+    command and is looked up on ``PATH`` the way a shell would, so a metric
+    can use an installed program without hard-coding where the deployment
+    happened to put it. Requiring a full path rejected ``Rscript``, which is
+    installed in a different place on every machine.
+    """
+    if os.sep in token or (os.altsep and os.altsep in token):
+        return token if Path(token).exists() else None
+    return shutil.which(token)
+
+
 def _coerce(text: str, kind: str):
     if kind == "int":
         # Some tools print an integral value in float form.
@@ -156,12 +172,13 @@ def _subprocess_runner(manifest: MetricManifest) -> Runner:
         }
         argv = [_substitute(token, mapping) for token in command]
 
-        executable = Path(argv[0])
-        if not executable.exists():
+        executable = resolve_program(argv[0])
+        if executable is None:
             raise MetricFailed(
-                f"metric {manifest.name!r} needs {executable}, which is not built. "
-                f"See native/ for how to build it."
+                f"metric {manifest.name!r} needs {argv[0]}, which is not built "
+                f"or not on PATH. See native/ for how to build it."
             )
+        argv[0] = executable
         try:
             completed = subprocess.run(
                 argv, capture_output=True, text=True, timeout=timeout, check=False
@@ -255,13 +272,11 @@ def is_available(manifest: MetricManifest) -> bool:
     # A python metric may still run a program — `spr` runs rspr (§53) — and
     # lists it under `requires`, so it is offered only where that program is.
     for needed in manifest.raw.get("requires", []):
-        if not Path(_substitute(needed, places)).exists():
+        if resolve_program(_substitute(needed, places)) is None:
             return False
     if manifest.kind != "subprocess":
         return True
     command = manifest.raw.get("command") or shlex.split(manifest.entrypoint or "")
     if not command:
         return False
-    resolved = _substitute(command[0], {"native": str(config.NATIVE_DIR),
-                                        "plugin": str(manifest.directory or "")})
-    return Path(resolved).exists()
+    return resolve_program(_substitute(command[0], places)) is not None

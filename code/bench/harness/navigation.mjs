@@ -55,6 +55,16 @@ const ATTEMPT_MS = 900_000;
 //: this mistake, n=1 reporting 2.7 s for something that takes 30 ms.
 const SAMPLES = 8;
 
+//: Page loads per rung per tool (§34.24): each is a fresh browser, so a cell's
+//: spread includes what differs between loads — phylo.io's comparison is not
+//: deterministic (§34.4) — and not only between operations in one load.
+const LOADS = Number(process.env.BENCH_LOADS || 5);
+
+//: Clades whose counterpart is the root that are tried, per load, to confirm
+//: the jump throws there. All of them at the pruned rungs, where there are
+//: eight; bounded so a rung with many does not spend the cell on a known case.
+const ROOTWARD_TRIES = 12;
+
 //: Navigations run and thrown away before measuring, per tool. The first one of
 //: a session pays for the server's first touch of the pair and for Chrome
 //: compiling the path; that is a one-off, not steady-state navigation.
@@ -83,6 +93,9 @@ const median = (xs) => {
   const mid = s.length >> 1;
   return +(s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2).toFixed(1);
 };
+// `samples` kept, every one: a rung's median and interquartile range are taken
+// over all its loads' samples together in `make_tables.py`, which cannot be
+// done from per-load summaries.
 const summarise = (xs) =>
   xs.length
     ? {
@@ -90,8 +103,9 @@ const summarise = (xs) =>
         median_ms: median(xs),
         min_ms: +Math.min(...xs).toFixed(1),
         max_ms: +Math.max(...xs).toFixed(1),
+        samples: xs.map((x) => +x.toFixed(1)),
       }
-    : { n: 0, median_ms: null, min_ms: null, max_ms: null };
+    : { n: 0, median_ms: null, min_ms: null, max_ms: null, samples: [] };
 
 function nwk(leaves, side) {
   return `/trees/ladder/ladder-${String(leaves).padStart(6, "0")}-${side}.nwk`;
@@ -112,7 +126,8 @@ async function runPhyloio(launchOwned, leaves) {
     );
     if (!loaded.ready) return { ok: false, failed: "comparison never completed" };
 
-    const candidates = await page.evaluate((n) => window.__nav.candidates(n), SAMPLES * 3);
+    const offered = await page.evaluate((n) => window.__nav.candidates(n), SAMPLES * 3);
+    const candidates = offered.sampled;
     const expand = [];
     const back = [];
     const jump = [];
@@ -151,11 +166,31 @@ async function runPhyloio(launchOwned, leaves) {
       back.push(closed.ms);
     }
 
-    for (const node of candidates.filter((c) => c.hasBcn).slice(0, SAMPLES)) {
+    // The jump, timed on clades it can work on: across sizes, and never one
+    // whose counterpart is the other tree's root (§34.24).
+    const jumpSizes = [];
+    for (const node of offered.jump.slice(0, SAMPLES)) {
       if (Date.now() > until) { truncated = true; break; }
       const got = await page.evaluate((at) => window.__nav.bcn(at), node.at);
+      jumpSizes.push(node.leaves);
       if (got.error) failures.push({ op: "jump", leaves: node.leaves, ...got });
       else jump.push(got.ms);
+    }
+
+    // The case it cannot work on, separately: every clade whose counterpart
+    // is the root, tried, so "it throws there" is an observation per load.
+    const rootward = { clades: offered.rootward.length, tried: 0, threw: 0, worked: 0, sizes: [], errors: [] };
+    for (const node of offered.rootward.slice(0, ROOTWARD_TRIES)) {
+      if (Date.now() > until) { truncated = true; break; }
+      const got = await page.evaluate((at) => window.__nav.bcn(at), node.at);
+      rootward.tried += 1;
+      rootward.sizes.push(node.leaves);
+      if (got.error) {
+        rootward.threw += 1;
+        if (!rootward.errors.includes(got.error)) rootward.errors.push(got.error);
+      } else {
+        rootward.worked += 1;
+      }
     }
 
     const drawn = await page.evaluate(() => window.__nav.drawn());
@@ -163,7 +198,10 @@ async function runPhyloio(launchOwned, leaves) {
       ok: true,
       drawn,
       sizes: candidates.slice(0, SAMPLES).map((c) => c.leaves),
-      with_bcn: candidates.filter((c) => c.hasBcn).length,
+      jump_sizes: jumpSizes,
+      with_bcn: offered.with_bcn,
+      clades: offered.all,
+      rootward,
       truncated,
       // Kept verbatim rather than collapsed to a count: a claim about another
       // tool failing has to carry the message it failed with.
@@ -467,6 +505,39 @@ async function runPhylodelta(launchOwned, pairId) {
 
 /* --------------------------------------------------------------------- run */
 
+/**
+ * One cell from several loads: each load kept as it was, and the operations
+ * pooled so the summary is over every sample of every load. `ok` when any load
+ * completed; `ok_loads` says how many.
+ */
+function pooled(loads) {
+  const ok = loads.filter((l) => l.ok);
+  const pool = (pick) => summarise(ok.flatMap((l) => (pick(l)?.samples ?? [])));
+  const cell = {
+    ok: ok.length > 0,
+    ok_loads: ok.length,
+    loads,
+    expand: pool((l) => l.expand),
+    back: pool((l) => l.back),
+    jump: pool((l) => l.jump),
+  };
+  if (!ok.length) cell.failed = loads.map((l) => l.failed).filter(Boolean)[0] ?? "no load completed";
+  if (ok.some((l) => l.uncached)) {
+    cell.uncached = {
+      expand: pool((l) => l.uncached?.expand),
+      back: pool((l) => l.uncached?.back),
+    };
+    cell.fetch_ms = {
+      expand: pool((l) => l.fetch_ms?.expand),
+      back: pool((l) => l.fetch_ms?.back),
+      jump: pool((l) => l.fetch_ms?.jump),
+      cold_expand: pool((l) => l.fetch_ms?.cold_expand),
+      cold_back: pool((l) => l.fetch_ms?.cold_back),
+    };
+  }
+  return cell;
+}
+
 async function attempt(label, fn) {
   try {
     return await withDeadline(fn, ATTEMPT_MS, label);
@@ -490,7 +561,7 @@ const previous =
   only !== null && existsSync(out) ? JSON.parse(readFileSync(out, "utf8")).rows : [];
 
 const rows = [];
-say(`\n${BROWSER} · viewport ${VIEWPORT.width}x${VIEWPORT.height} · ${SAMPLES} operations per cell`);
+say(`\n${BROWSER} · viewport ${VIEWPORT.width}x${VIEWPORT.height} · ${LOADS} loads x ${SAMPLES} operations per cell`);
 say(`median ms to painted result\n`);
 say(
   `${"leaves".padStart(8)}  ${"phylo.io".padStart(8)} ${"exp".padStart(6)} ${"back".padStart(6)} ${"jump".padStart(6)}` +
@@ -505,10 +576,18 @@ try {
       say(`${leaves.toLocaleString().padStart(8)}  not built — skipped`);
       continue;
     }
-    const phyloio = await attempt("phylo.io", (owned) => runPhyloio(owned, leaves));
-    const phylodelta = await attempt("phylodelta", (owned) => runPhylodelta(owned, rung.id));
+    // Five loads of each, interleaved so neither tool always runs on a
+    // machine the other has just warmed or loaded (§34.24).
+    const phyloioLoads = [];
+    const phylodeltaLoads = [];
+    for (let load = 0; load < LOADS; load += 1) {
+      phyloioLoads.push(await attempt("phylo.io", (owned) => runPhyloio(owned, leaves)));
+      phylodeltaLoads.push(await attempt("phylodelta", (owned) => runPhylodelta(owned, rung.id)));
+    }
+    const phyloio = pooled(phyloioLoads);
+    const phylodelta = pooled(phylodeltaLoads);
 
-    rows.push({ leaves, pair: rung.id, phyloio, phylodelta });
+    rows.push({ leaves, pair: rung.id, loads: LOADS, phyloio, phylodelta });
     // Appended as it goes. The first version wrote only at the end, and the
     // 17,645 rung had Chrome at 9 GB — an OOM there would have discarded four
     // completed rungs to report nothing.
@@ -534,7 +613,7 @@ const merged = [...previous.filter((r) => !rows.some((n) => n.leaves === r.leave
 writeFileSync(
   out,
   JSON.stringify(
-    { browser: BROWSER, viewport: VIEWPORT, samples: SAMPLES, rungs: RUNGS, rows: merged },
+    { browser: BROWSER, viewport: VIEWPORT, samples: SAMPLES, loads: LOADS, rungs: RUNGS, rows: merged },
     null,
     2,
   ),

@@ -57,6 +57,24 @@ export interface ViewOptions {
    * show the colours that were chosen rather than the palette's.
    */
   colors: Record<string, string>;
+  /**
+   * Where the server spends the budget (§6.1, §55.1): the largest clades first,
+   * or the ones the two trees disagree on most. A different slice, so it is
+   * part of the slice cache key as well as the URL.
+   */
+  order: "size" | "difference";
+  /**
+   * How a wedge's height follows the leaves it hides (§55.2): in proportion,
+   * against the largest wedge on screen, or by log2 of the count. Drawing
+   * only, so it is not in the slice cache key.
+   */
+  wedges: "proportional" | "log";
+  /**
+   * Siblings ordered to follow the other tree (§55.3): each node's children by
+   * where their counterparts sit there. Drawing only — no clade, value or id
+   * changes — so it is not in the cache key either.
+   */
+  matchOrder: boolean;
 }
 
 export const DEFAULT_OPTIONS: ViewOptions = {
@@ -71,6 +89,9 @@ export const DEFAULT_OPTIONS: ViewOptions = {
   lengths: false,
   lengthScale: "linear",
   colors: {},
+  order: "size",
+  wedges: "proportional",
+  matchOrder: false,
 };
 
 export interface ViewState {
@@ -134,6 +155,9 @@ function parse(hash: string): ViewState {
       lengths: query.get("bl") === "1",
       lengthScale: query.get("ls") === "log" ? "log" : "linear",
       colors: parseColors(query.getAll("cc")),
+      order: query.get("o") === "difference" ? "difference" : "size",
+      wedges: query.get("ws") === "log" ? "log" : "proportional",
+      matchOrder: query.get("mo") === "1",
     },
   };
 }
@@ -154,6 +178,9 @@ function format(state: ViewState): string {
   if (options.layout !== DEFAULT_OPTIONS.layout) query.set("lm", options.layout);
   if (options.lengths) query.set("bl", "1");
   if (options.lengthScale !== DEFAULT_OPTIONS.lengthScale) query.set("ls", options.lengthScale);
+  if (options.order && options.order !== DEFAULT_OPTIONS.order) query.set("o", options.order);
+  if (options.wedges && options.wedges !== DEFAULT_OPTIONS.wedges) query.set("ws", options.wedges);
+  if (options.matchOrder) query.set("mo", "1");
   // Sorted, so the same choices always write the same link.
   for (const [category, color] of Object.entries(options.colors ?? {}).sort(([a], [b]) => a.localeCompare(b))) {
     query.append("cc", `${color.replace(/^#/, "")}.${category}`);

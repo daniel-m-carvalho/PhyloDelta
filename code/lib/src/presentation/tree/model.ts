@@ -295,6 +295,32 @@ export const orderByNumeric: ChildOrder = (a, b) => {
 /** Largest-subtree-first ordering (the previous default). */
 export const orderBySizeDesc: ChildOrder = (a, b) => subtreeSize(b) - subtreeSize(a);
 
+/**
+ * Siblings by a numeric key, ascending; siblings with no key after them, in
+ * `fallback` order (default {@link orderByName}).
+ *
+ * The building block for ordering one tree to follow another: key each node
+ * by its counterpart's position in the other tree, and the clades both trees
+ * share come out in the same top-to-bottom order. A node with no counterpart
+ * has no position to take, so it is put after the matched ones rather than
+ * given an invented one, and keeps the order it would have had anyway.
+ */
+export function orderByKey(
+  key: (node: NewickNode) => number | undefined,
+  fallback: ChildOrder = orderByName,
+): ChildOrder {
+  return (a, b) => {
+    const ka = key(a);
+    const kb = key(b);
+    const hasA = ka !== undefined && Number.isFinite(ka);
+    const hasB = kb !== undefined && Number.isFinite(kb);
+    if (hasA && hasB) return ka === kb ? fallback(a, b) : (ka as number) - (kb as number);
+    if (hasA) return -1;
+    if (hasB) return 1;
+    return fallback(a, b);
+  };
+}
+
 // --- Pruning / ordering ---
 
 /**

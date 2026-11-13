@@ -3901,6 +3901,10 @@ which is PHYLOViZ's own approach and near-linear with hashing. Recorded as the r
 
 ### 34.14 Navigating, once the comparison is open
 
+*Its finding about Phylo.io's "Highlight BCN" — that it fails in most page loads — was a sampling
+error, corrected in* Corrections *(v0.3.0): the jump throws only where a clade's counterpart is the
+other tree's root.*
+
 Everything above measures getting *to* a comparison. This measures moving around inside one, and it
 is the half where phylo.io has the structural advantage: it holds the whole tree, so navigation is
 local work, while a panel here holds a few hundred nodes and asks the server for the rest. If the
@@ -4462,6 +4466,60 @@ than in the markdown:
   took in 17,645, where no comparison finished and no jump was tried. Both sentences now read each
   rung's outcome from the same function that prints Table 15's cells: worked at 1,000, failed at
   2,500–10,000, no comparison at 17,645.
+
+### 34.24 Five runs a rung, median and interquartile range, for both tools (v0.3.0)
+
+*The supervisor, reviewing the system against Phylo.io 2.2.5: at least five runs per rung for
+both tools, with median and interquartile range. Code: every browser runner, `make_tables.py`,
+`run_campaign.sh`, `tools/measure_thread_builds.py`, `tools/reroot_targets.py`,
+`harness/reroot.mjs`.*
+
+**What was n=1 becomes five.** Phylo.io's figures were one load a rung, three at 17,645–70,580
+(§34.12), and PhyloDelta's six. Now, at every rung where the tool runs:
+
+| figure | runner | per rung |
+|---|---|---|
+| time to open, heap (Tables 1, 3) | `ceiling.mjs` (phylo.io), `repeat_phylodelta.mjs` (PhyloDelta) | 5 loads each, fresh browser for phylo.io, fresh page after a discarded warm-up for PhyloDelta |
+| renderer peak (Table 4) | `endurance.mjs` | 5 loads each; PhyloDelta's renderer read by the same sampler, so Table 4 has a column for it |
+| navigation (Table 15) | `navigation.mjs` | 5 loads each, interleaved; every sample of every load pooled |
+| precompute (Table 8) | `measure_thread_builds.py` at 2 threads | 5 builds, `BENCH_BUILDS=5`; `build_s` is their median |
+| re-root (Table 24, new) | `reroot.mjs` | 5 runs each |
+
+**Outcomes are counted, not reduced.** Where phylo.io's comparison does not finish within its
+budget, five loads are five outcomes and the cell says "did not finish in 5 of 5". A median is over
+the loads that got that far, and the cell says how many did. The count was not lowered to save
+time: the endurance step alone is up to five times 35 minutes at each of its sizes, and the
+campaign's steps are resumable for exactly that reason.
+
+**Median [Q1–Q3], inclusive quartiles** (`quartiles()` in `make_tables.py`): with five samples, Q1
+and Q3 are the second and fourth, real measurements rather than values interpolated outside them.
+Every repeated cell is printed in that one form, and every table's note states the count.
+
+**First opening.** Beside PhyloDelta's load, Table 1 gains "first opening (precompute + load)": the
+median precompute plus the median load. It is what the first person to open a new comparison waits
+for, end to end, and the figure to set beside phylo.io's compare time when the precompute is not
+assumed to have already happened. In `figures/time_to_interactive.csv` its band is the sum of the
+two quartiles, which is said there: the two are measured apart, so there is no measured total to
+take quartiles of.
+
+**One CSV per thesis chart**, in `results/figures/`, written by `make_tables.py` from the same
+results and committed with the results tag: `time_to_interactive.csv`, `browser_memory.csv`,
+`data_transferred.csv`, `reroot.csv`, with a README naming every column. A chart redrawn from these
+cannot drift from the tables.
+
+**Re-rooting, both tools (Table 24).** From the action to the re-rooted comparison on screen with
+its similarity colouring. Phylo.io: `trigger_("reroot", …)` on the clade, which re-roots the model
+and calls `compute_topology_and_render_bounded_viewer(true)`; the clock stops when its similarity
+worker clears `message_loader`, as the first comparison is timed. PhyloDelta: the path the re-root
+dialog's confirm takes (`window.__phylodeltaApp.reroot`), covering the request, the build, the
+app's own polling, and the new comparison's panels drawn. The same clade in both and in every run,
+never the root or a child of the root, chosen once per rung by `tools/reroot_targets.py` — the left
+tree's clade nearest a tenth of its leaves — and found in phylo.io by its leaf set; the node used is
+recorded per rung. Each PhyloDelta run's new comparison is deleted afterwards, so five runs do not
+leave five copies of the largest rung in the store.
+
+**The jump is sampled across sizes** (Table 15), and the clades whose counterpart is the other
+tree's root are counted and tried apart: the correction to §34.14's finding is in *Corrections*.
 
 ## 35. The frontend holds what it has already seen
 
@@ -5624,7 +5682,12 @@ someone adding the next one.
 2. **The manifest** (`MetricManifest.from_json`, `metrics/contract.py`):
    * required: `name`, `title`, and `kind`. `python` needs `entrypoint` (`"module:function"`).
      `subprocess` needs `command`, with `input`, `parse` (regexes for the scalars) and
-     `timeout_s` (§11);
+     `timeout_s` (§11). The program is a path (`${native}/treediff/treediff`) or a bare name
+     looked up on `PATH` (`Rscript`, `java`); a token with a directory in it is never looked up;
+   * **a `subprocess` metric returns numbers only.** Its summary scalars, parsed from stdout, and
+     nothing per clade: no `columns`, no `correspondence: "self"`, no `categories` presentation.
+     It is coloured by the shared correspondence, like every metric that brings none (§11.5);
+     per-clade output needs a `python` metric, which may itself run a program (`spr` runs rspr);
    * `version`: bump it whenever the numbers' meaning changes. A stored result from another
      version is refused with a 409, not served (§34.19);
    * `description`, `capabilities`, and `reference` (one citation, by DOI or link, §42);
@@ -5635,11 +5698,14 @@ someone adding the next one.
      seen from these;
    * `correspondence`: `jaccard` (default) or `self`, with the two reserved columns (this section).
    * `presentations`: how its result may colour the trees, `gradient` or `categories`; the View
-     menu offers exactly these (this section). Optional: without them it gets one gradient.
+     menu offers exactly these (this section). Optional: without them it gets one gradient. A
+     `gradient` may name the two ends of its colour bar, `"legend": ["low end", "high end"]`;
+     without it the legend reads "Identical / Diverged", which describes the shared
+     correspondence (§55.4).
    * `headline`: the summary `key` its comparison's header shows, `of`, what it is out of, and
      `to`, when the number is a range (SPR, §53).
-   * `requires`: programs it runs, as paths (`${native}/rspr/rspr`). Where one is missing it is
-     listed as not installed, whatever its kind (§53).
+   * `requires`: programs it runs, as paths (`${native}/rspr/rspr`) or names on `PATH`. Where one
+     is missing it is listed as not installed, whatever its kind (§53).
 3. **What the code returns:** a `MetricResult` with the summary scalars and, per side, every
    declared column at every node, in **reconciled** indexing. The pipeline projects onto the stored
    trees; the metric never does. `validate_result` refuses a missing, extra or mistyped column
@@ -5836,6 +5902,178 @@ construction, so its branch is drawn grey, not blue (`min_leaves: 3`, §52).
 * the patch script applies to CRLF source and refuses a source it does not recognise.
 
 ---
+
+## 55. The supervisor's review against Phylo.io 2.2.5: what the view gained
+
+*Asked for after the supervisor compared the two tools side by side (v0.3.0). Code: `App.tsx`,
+`useUrlState.ts`, `api/sliceCache.ts`, `comparison/siblingOrder.ts`, the library's
+`clade_shape.ts` and `model.ts`, `metrics/runners.py`, `metrics/contract.py`.*
+
+### 55.1 "Most different first" is offered, not only served
+
+`order=difference` (§6.1) existed in the API and the client and nothing in the app set it. It is
+now a View option, "Open clades: Largest clades first / Most different first", default size. It is
+in the URL (`o=difference`, written only when it is not the default, so an old link opens as it
+always did) and in the slice cache key (`|diff`): the difference order is another node set for the
+same root and budget, and serving one order's slice for the other would be the stale-cache bug §35
+exists to prevent. The jump's one-request `around` slice carries it too, so a jump lands in the
+order the panel is drawn in. Tested on the vibrio pair at a budget of 50, both trees: the node sets
+differ, and the difference order draws a clade with similarity below 1 that the size order leaves
+inside a wedge.
+
+### 55.2 Wedges in proportion, against the largest on screen
+
+**The complaint.** Height grew with log₂ of the leaves, calibrated to the leaves the view stands
+for. At the app's 0.12 and 0.42 of a 14 px row against vibrio's 17,645 leaves, a 2-leaf wedge had a
+half-height of 2.0 px and a 13,349-leaf one 5.8 px: about three times, but six thousand times the
+leaves, and on screen the two read as near enough the same.
+
+**Decision.** The clade-shape operator takes `scale: "linear" | "log"` and `reference: "view" |
+"largest-drawn"`. Linear is `min + (leaves ÷ reference) × (max − min)`; log is the formula as it
+was. "largest-drawn" makes the top of the scale the largest wedge currently drawn, so that wedge is
+always full height. **The library's defaults stay `log` and `view`**, so no other user of the
+library sees a change. The app uses linear with largest-drawn, "Wedge size: proportional", and offers
+"logarithmic" as the other choice, in the URL (`ws=log`, only when not the default) and **not** in
+the slice cache key, because it changes only the drawing.
+
+**Why both scales.** Linear is the one where a clade twice the size is drawn twice as tall, which is
+what the eye assumes; it is also the one where every small clade is near the minimum. Log keeps a
+two-leaf clade visibly different from a one-leaf tip and the eye reads orders of magnitude. Neither
+is wrong; they answer different questions, so both are offered and the one that matches the
+complaint is the default.
+
+**Why largest-drawn for linear, and what it costs.** Against the view, a linear scale draws every
+wedge as a sliver whenever the clades on screen are small beside the whole tree — which is most
+views after a zoom-in. Against the largest drawn, the differences on screen use the full range. The
+cost is stated rather than hidden: **a clade's drawn size depends on the view**. The same clade is
+drawn smaller beside a bigger one, and heights are comparable within one view, not across two. The
+hover says the exact count (below), which is what to read when the number matters.
+
+**The range.** The maximum half-height rises from 0.42 to 0.5 of a row: two full wedges side by side
+exactly fill their two rows. That is safe only because of `fitRows`, a new option the app turns on:
+when the rows on screen are closer than two maximum half-heights — expand all, or zoomed out —
+every wedge is scaled down by one factor, so their proportions survive and the tallest still fits
+its row, with half a pixel between neighbours. Tested with forty wedges at a 40 px maximum, rows far
+closer than that: no two overlap. The length along the branch stays fixed. Phylo.io scales length
+with the clade's mean depth, but a slice does not carry the depths of the leaves it hides, and
+inventing them would draw a value the server never sent.
+
+**The hover count.** The wedge's `title` said "13,349 leaves" and was never shown: the overlay is
+`pointer-events: none` so clicks reach the canvas, and that also stops the browser showing a
+title. The operator now draws its own tooltip on hover (`hoverCount`), above the node, clear of the
+comparison operator's, which goes below it.
+
+**The report** draws the wedges the screen draws by construction: `snapshotViewer` rasterises the
+operators' DOM overlays, the wedges among them, rather than drawing them again, so there is no
+second implementation of the scale to keep in step.
+
+### 55.3 Order one tree to match the other
+
+Phylo.io's "Equalize trees → Reorder" rotates one tree's siblings so the clades both share come out
+in the same order. Here it is a View option, "Siblings: Order to match the other tree", done in the
+browser through the library's `ChildOrder` comparator, `orderByKey`: the right panel sorts each
+node's children by their counterparts' stored ids in the left tree (`corresponds`), and children
+with no counterpart go after the matched ones in their usual order. **The left panel is the
+reference and is drawn in its stored pre-order** while the option is on. Pre-order is the one order
+the right panel can know for counterparts the left panel does not draw — a counterpart folded into a
+wedge still has a stored id — whereas the default order by name would need the left panel's drawn
+rank of every counterpart, which it has only for what it shows. Two siblings whose counterparts
+are in disjoint clades then come out in the order those clades are drawn on the left.
+
+It changes the drawing and nothing else: no clade, value or id, so no slice is fetched and the cache
+key does not change. Tested on the real slice fixture, that every node keeps its parent and its
+value under the order, and that matched children are in their counterparts' order.
+
+### 55.4 Two plug-in fixes
+
+* **A program on the system path.** A `subprocess` metric's command, and any `requires`, had to be a
+  path that exists (`Path.exists`), which rejected `Rscript` or `java`, installed in a different
+  place on every machine. A token with a directory in it is still a path and must exist as written;
+  a bare name is looked up on `PATH` (`shutil.which`), as a shell would. `resolve_program` is the one
+  place both `is_available` and the runner ask.
+* **The legend's words come from the metric.** A `gradient` presentation may declare `"legend":
+  ["low end", "high end"]`; the app and the exported report use it, and fall back to "Identical /
+  Diverged", which describe the shared correspondence, when it does not. The labels are written as
+  text, never as markup, since they now come from configuration the library has never seen.
+* **A `subprocess` metric returns numbers only**, and the manifest reader now refuses one that
+  declares per-node columns, rather than letting `validate_result` refuse every result minutes into a
+  build. Per-clade output is a `python` metric's, which may run a program itself (§52.1, §11.5).
+
+## 56. Re-rooting makes a new comparison
+
+*Asked for by the supervisor, as Phylo.io offers it. Code: `trees/normalise.py` (`reroot`),
+`rerooting.py`, `POST /api/v1/comparisons/{id}/reroot`, `precompute/jobs.py`, `db/models.py`,
+`App.tsx`, `comparison/menuItems.ts`.*
+
+**Every metric here is rooted.** RF counts clades, and a clade is a rooted notion; triplet, MAST and
+SPR all read the root. A tree re-rooted is therefore a different tree to every one of them, and its
+comparison has to be computed again — there is no cheaper update to make, because the correspondence
+and every metric are functions of the rooted clades.
+
+**Decision.** A re-root is a new comparison, built exactly as an upload is. The server reads both
+stored trees back (`TreeReader.to_arrays`), re-roots one, writes both as Newick (`to_newick`), and
+sends them through `uploads.accept` into the queue, with the original's metrics. The worker builds
+it with the same `ingest_tree_file` and `compute_pair`. The unchanged tree is re-ingested from its
+own Newick as well, so it becomes an independent store — identical structure and node ids, since a
+stored tree is already canonical — and the new comparison shares nothing with the original.
+
+**The algorithm** (`reroot(arrays, node)`): a new root at the **midpoint** of the branch above the
+node; every parent pointer on the path from there to the old root reversed, each reversed node
+taking the length of the edge that used to lead down to it; and the old root, now unary, removed
+by `suppress_unary` (§1.4), which adds its two edges together. NaN — "no length given", which the
+pruned ladder rungs are throughout — stays NaN: half of NaN is NaN, and the suppression already
+treats NaN as nothing to add. Every leaf-to-leaf path length is unchanged. It is iterative and
+**linear in the number of nodes** (a test checks that four times the leaves costs well under eight
+times the time), so the cost of the action is the cost of building the comparison, nothing more.
+
+**Refused by name**: the root (there is no branch above it); a child of the root, because rooting on
+its branch splits the root's two edges differently but gives the same rooted topology, so every
+metric would answer as before; an id outside the tree. The menu disables the same items with the
+same reasons, so the round trip that could only fail is not made.
+
+**Only "Re-root here".** Phylo.io also offers "Equalize trees → Reroot", rooting one tree as the
+other is rooted, and it was built here as a second mode. The decision (2026-11-13) was to offer only re-rooting
+above a node the user chooses, so it was removed again: the request takes a `node`, always.
+
+**Ids must stay new.** A re-root renumbers almost every pre-order id, and an id is what everything
+holds: the server keeps a reader and a label index per tree id in every process (`trees/registry.py`),
+the browser's slice cache keys on it, and the URL and every shared link name node ids
+(`#/c/<pair>?l=3,900`). Rebuilding under the old ids would attach the old tree's values to the new
+tree's clades in every process that had read it, until it restarted. So the new comparison has new
+ids, opens at its root with the current budget, and the cache starts clean.
+
+**Typing data is copied by leaf label.** The original's raw tables were discarded when it was built
+(§26), so they cannot be re-joined. They do not need to be: an isolate store is keyed by the leaf
+label, the ST (§7.3), never by a node id, and a re-root changes no label. So the job copies each
+side's `isolates/<old id>` to `isolates/<new id>`, registers it, and copies the join report. A copy,
+never a shared directory, so deleting either comparison cannot take the other's data. A table shared
+by both trees was already stored once per tree (§47), so there is no special case. Tested: the bar
+charts and filters give the same counts for the same STs after a re-root.
+
+**The original.** Kept by default, and marked `superseded_by` once the new one is ready: the list
+says so, the original's view says so with a link, and the new one's header has "Back to the previous
+rooting". With `replace`, which the dialog asks to be confirmed, the original is deleted through the
+same deletion as the delete endpoint, once the new one is ready, and a record of old id, new id,
+owner and date is kept so that **its owner's** old links answer 410 `comparison_rerooted` with where
+it went, and the app shows a notice with a link, not an empty page. Everyone else gets the same 404
+as for an id that never existed (§22): the record is read only under its owner. Deleting the new
+comparison removes the record; replacing it in turn repoints the records that led to it.
+
+**Failure leaves the original untouched.** Nothing about the original changes until the new
+comparison is ready, so a re-root that fails is only a failed new comparison: the user stays on the
+original throughout, sees the build's progress in the header, and gets the reason if it fails.
+
+**The header shows the number before and after.** The original's summary per metric is kept on the
+new comparison's row at the moment of the re-root, so "before re-rooting" is there even when the
+original has been replaced.
+
+**What it costs.** The time of a full build, seconds at a few thousand leaves and minutes near
+500,000 (Table 8), and the disk of a second comparison while the original is kept. Table 24 measures
+it against Phylo.io, which recomputes its whole comparison in the page after a re-root.
+
+**Not used: the library's own re-rooting.** `rerootTree` and `TreeViewer.reroot` re-root a tree the
+browser holds, which the comparison view never does — it holds a slice — so the view does not use
+them, and they remain for consumers that hold whole trees.
 
 ## References and provenance
 
@@ -6063,3 +6301,24 @@ carries branch lengths — from 17,645 leaves up in the generated ladder. The se
 metric's input without lengths, so it never fired; but had it, a weighted distance of 1.23e+06 would
 have been recorded as this pair's RF beside a built-in `rf` of 6,825, with nothing saying which was
 wrong. Anchored to the line start, with a test that asserts the weighted line is refused.
+
+### The jump "fails in most page loads" was a sampling error (v0.3.0)
+
+§34.14 and Table 15's note said Phylo.io 2.2.5's "Highlight BCN" fails in most page loads and is
+intermittent within one. The supervisor's own use found otherwise: it works, except when the
+clade's best corresponding node is the **root of the other tree**. Then `elementBCN` points at a
+detached copy of the root, `getHierarchyNodeFromModelNode` returns null, and the action throws
+`Cannot read properties of null (reading '_children')`. On the 1,000-leaf pruned vibrio pair the
+eight largest clades, 922 to 997 leaves, fail, and every other clade tried works, in every load.
+
+**Why the harness got it wrong.** `navigation.html` offered candidates largest first, and the probe
+took the first fifteen with a counterpart. On these rungs the largest clades are exactly those whose
+counterpart is the root, so every jump measured was the one failing case, and the few successes
+that crept in at the end of the list read as intermittency. The assertion encoded the last
+observation rather than the promise — the lesson this project keeps relearning.
+
+**Fixed** in the harness, not the finding: candidates are taken across sizes, one power-of-two
+size class at a time; the jump is timed only on clades whose counterpart is not the root; and every
+clade whose counterpart is the root is counted and tried separately, so "it throws there" is an
+observation in each load rather than an inference (§34.24). Table 15 and its note are regenerated
+by the v0.3.0 campaign, and the claim of failure in most loads is removed from them.

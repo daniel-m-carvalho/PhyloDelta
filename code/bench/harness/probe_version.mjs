@@ -98,31 +98,45 @@ try {
   out.comparison_completed = loaded.ready;
 
   if (loaded.ready) {
-    const candidates = await page.evaluate(() => window.__nav.candidates(40));
-    out.candidates = candidates.length;
-    out.with_bcn = candidates.filter((c) => c.hasBcn).length;
+    const offered = await page.evaluate(() => window.__nav.candidates(40));
+    out.candidates = offered.all;
+    out.with_bcn = offered.with_bcn;
     /*
-     * Many attempts, not three.
+     * Many attempts, not three, and two kinds of clade kept apart (§34.24).
      *
      * The first run of this tried three and got one success on 2.2.5 against
-     * none on 2.1.1, which reads as "fixed in the new release". Both versions'
-     * crash paths are byte-identical and so is model construction, so a
-     * behavioural difference had to be either non-determinism or a difference in
-     * WHICH nodes got tried. Three attempts cannot tell those apart.
+     * none on 2.1.1, which read as "fixed in the new release". The second tried
+     * fifteen, the largest first, and read as "fails in most loads". Both were
+     * about WHICH clades got tried: the jump throws exactly when a clade's best
+     * corresponding node is the other tree's root, and the largest clades are
+     * those. So clades across sizes whose counterpart is not the root are tried
+     * as one group, and every clade whose counterpart is the root as another.
      */
     const attempts = Number(process.env.BCN_ATTEMPTS ?? 15);
-    const tried = [];
-    for (const node of candidates.filter((c) => c.hasBcn).slice(0, attempts)) {
-      const got = await page.evaluate((at) => window.__nav.bcn(at), node.at);
-      tried.push({ leaves: node.leaves, ...got });
-    }
-    out.attempted = tried.length;
-    out.succeeded = tried.filter((t) => t && t.ms !== undefined).length;
-    out.threw = tried.filter((t) => t && t.error).length;
-    out.reachable = tried.filter((t) => t && t.reachable).length;
+    const tryAll = async (nodes) => {
+      const tried = [];
+      for (const node of nodes.slice(0, attempts)) {
+        const got = await page.evaluate((at) => window.__nav.bcn(at), node.at);
+        tried.push({ leaves: node.leaves, ...got });
+      }
+      return tried;
+    };
+    const elsewhere = await tryAll(offered.jump);
+    const rootward = await tryAll(offered.rootward);
+    out.attempted = elsewhere.length;
+    out.succeeded = elsewhere.filter((t) => t && t.ms !== undefined).length;
+    out.threw = elsewhere.filter((t) => t && t.error).length;
+    out.reachable = elsewhere.filter((t) => t && t.reachable).length;
+    out.rootward = {
+      clades: offered.rootward.length,
+      attempted: rootward.length,
+      threw: rootward.filter((t) => t && t.error).length,
+      sizes: rootward.map((t) => t.leaves),
+      errors: [...new Set(rootward.filter((t) => t && t.error).map((t) => t.error))],
+    };
     out.bcn_throws_always = out.succeeded === 0;
     // Kept so a reader can see which clades worked rather than take a count.
-    out.detail = tried.map((t) => ({
+    out.detail = elsewhere.map((t) => ({
       leaves: t.leaves,
       ok: t.ms !== undefined,
       reachable: t.reachable,
@@ -137,7 +151,8 @@ loads.push(out);
 writeFileSync(
   1,
   `  load ${load + 1}/${LOADS}: completed=${out.comparison_completed} ` +
-    `jump ${out.succeeded ?? 0}/${out.attempted ?? 0}\n`,
+    `jump ${out.succeeded ?? 0}/${out.attempted ?? 0}, ` +
+    `root's counterparts threw ${out.rootward?.threw ?? 0}/${out.rootward?.attempted ?? 0}\n`,
 );
 }
 
@@ -157,7 +172,14 @@ const summary = {
     completed: l.comparison_completed,
     attempted: l.attempted ?? 0,
     succeeded: l.succeeded ?? 0,
+    rootward: l.rootward ?? null,
   })),
+  // The clades whose counterpart is the other tree's root, over every load:
+  // how many there are, how many were tried, and how many threw.
+  rootward_clades: loads.reduce((n, l) => Math.max(n, l.rootward?.clades ?? 0), 0),
+  rootward_attempted: loads.reduce((n, l) => n + (l.rootward?.attempted ?? 0), 0),
+  rootward_threw: loads.reduce((n, l) => n + (l.rootward?.threw ?? 0), 0),
+  rootward_errors: [...new Set(loads.flatMap((l) => l.rootward?.errors ?? []))],
 };
 if (process.env.PROBE_OUT) {
   writeFileSync(process.env.PROBE_OUT, JSON.stringify(summary, null, 2));

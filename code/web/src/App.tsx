@@ -5,8 +5,11 @@
  * navigation, menus, slicing — belongs to the comparison view.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "./api/client";
+import { poll } from "./api/poll";
+import { headlineBefore, rebuildLabel, sideName } from "./comparison/reroot";
+import { REROOT_COST } from "./comparison/menuItems";
 import { ComparisonView } from "./comparison/ComparisonView";
 import { UploadPanel } from "./upload/UploadPanel";
 import { CheckboxMenu } from "./ui/CheckboxMenu";
@@ -31,6 +34,14 @@ import {
 } from "./comparison/metric";
 import { pairName, treeName } from "./names";
 import { describeKey, unusedTables } from "./upload/isolateReport";
+
+declare global {
+  interface Window {
+    __phylodeltaApp?: {
+      reroot: (side: 0 | 1, storedId: number, replace?: boolean) => Promise<void>;
+    };
+  }
+}
 
 export function App() {
   const [me, setMe] = useState<WhoAmI | null>(null);
@@ -61,8 +72,29 @@ export function App() {
   );
   const [chosen, setChosen] = useState<PairSummary | null>(null);
   const [summary, setSummary] = useState<ComparisonSummary | null>(null);
-  /** How each uploaded isolate table met its tree, from /status (§47). */
-  const [isolateJoins, setIsolateJoins] = useState<ComparisonStatus["isolates"]>(undefined);
+  /** The open comparison's /status: its isolate joins (§47) and its re-root relations (§56). */
+  const [chosenStatus, setChosenStatus] = useState<ComparisonStatus | null>(null);
+  const isolateJoins = chosenStatus?.isolates;
+  /**
+   * A re-root being built (§56). Held here, not in the view: the user stays on
+   * the original and keeps using it, and the build outlives anything they open
+   * meanwhile.
+   */
+  const [rebuild, setRebuild] = useState<{
+    from: string;
+    metric: string;
+    what: string;
+    id?: string;
+    status?: ComparisonStatus["status"];
+    error?: string;
+    /** Ready, but the user had moved on: offered rather than opened. */
+    waiting?: PairSummary;
+  } | null>(null);
+  /** The re-root a menu item asked for, until it is confirmed or not. */
+  const [asking, setAsking] = useState<{ side: 0 | 1; storedId: number } | null>(null);
+  const [replaceOriginal, setReplaceOriginal] = useState(false);
+  /** An old link to a comparison its owner replaced by re-rooting: where it went. */
+  const [movedTo, setMovedTo] = useState<{ from: string; to: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   /**
    * What the server can compute, and so how each metric's comparison can be
@@ -140,13 +172,13 @@ export function App() {
   // every opening: an upload switches straight to the comparison, and this is
   // where a table joined on the wrong column can say so.
   useEffect(() => {
-    setIsolateJoins(undefined);
+    setChosenStatus(null);
     if (!chosen || chosen.status !== "ready") return;
     let live = true;
     api
       .status(chosen.id)
       .then((status) => {
-        if (live) setIsolateJoins(status.isolates);
+        if (live) setChosenStatus(status);
       })
       .catch(() => undefined);
     return () => {
@@ -161,6 +193,123 @@ export function App() {
   const top = summary ? headline(summary, manifest) : null;
   const offered = metric ? presentationsOf(metric, metrics) : [];
   const shown = shownPresentation(options.colour, offered);
+  const before = headlineBefore(summary, manifest, chosenStatus?.reroot, metric);
+
+  // --- re-rooting (§56) -------------------------------------------------------
+  // Refs, because a build takes minutes and must act on what the user is
+  // looking at when it ends, not on what they were looking at when it began.
+  const chosenRef = useRef<string | null>(null);
+  chosenRef.current = chosen?.id ?? null;
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+  const treeNames = chosen
+    ? { left: treeName(chosen.left, datasets), right: treeName(chosen.right, datasets) }
+    : undefined;
+
+  const startReroot = useCallback(
+    async (ask: { side: 0 | 1; storedId: number }, replace: boolean) => {
+      if (!chosen) return;
+      const from = chosen.id;
+      const wanted = viewMetric(chosen);
+      const what = sideName(ask.side, treeNames);
+      setAsking(null);
+      setRebuild({ from, metric: wanted, what, status: "pending" });
+      try {
+        const accepted = await api.reroot(from, {
+          side: ask.side === 0 ? "left" : "right",
+          node: ask.storedId,
+          replace,
+        });
+        setRebuild((current) => current && { ...current, id: accepted.id });
+        await poll(accepted.id, (status) =>
+          setRebuild((current) => current && { ...current, status: status.status }),
+        );
+        const listing = await api.datasets();
+        setDatasets(listing);
+        setPairs(listing.pairs);
+        const built =
+          listing.pairs.find((pair) => isEntry(pair, accepted.id, wanted)) ??
+          listing.pairs.find((pair) => pair.id === accepted.id);
+        if (built && chosenRef.current === from) {
+          // Opened at its root with the current budget: new ids, so nothing
+          // the slice cache holds can be served for it.
+          setRebuild(null);
+          setChosen(built);
+          setView({
+            comparison: built.id,
+            left: [],
+            right: [],
+            options: { ...optionsRef.current, metric: viewMetric(built) },
+          });
+        } else {
+          setRebuild((current) => current && { ...current, status: "ready", waiting: built });
+        }
+      } catch (failed) {
+        // The original is untouched: a failed re-root is only a failed new comparison.
+        setRebuild(
+          (current) =>
+            current && {
+              ...current,
+              status: "failed",
+              error: failed instanceof ApiError ? failed.message : String(failed),
+            },
+        );
+        void refresh();
+      }
+    },
+    [chosen, treeNames?.left, treeNames?.right, setView, refresh],
+  );
+  const building = rebuild !== null && !rebuild.error && !rebuild.waiting;
+  // The same path the dialog's confirm takes, for the re-root benchmark
+  // (`bench/harness/reroot.mjs`) to start from: no menu, no dialog, the
+  // build, the polling and the opening all as a user gets them.
+  const startRerootNow = useRef(startReroot);
+  startRerootNow.current = startReroot;
+  useEffect(() => {
+    window.__phylodeltaApp = {
+      reroot: (side, storedId, replace = false) => startRerootNow.current({ side, storedId }, replace),
+    };
+    return () => {
+      delete window.__phylodeltaApp;
+    };
+  }, []);
+  const open = useCallback(
+    (pair: PairSummary) => {
+      setChosen(pair);
+      setView({
+        comparison: pair.id,
+        left: [],
+        right: [],
+        options: { ...optionsRef.current, metric: viewMetric(pair) },
+      });
+    },
+    [setView],
+  );
+  const previous = chosenStatus?.rerooted_from
+    ? pairs.find((pair) => isEntry(pair, chosenStatus.rerooted_from as string, metric))
+    : undefined;
+  const successor = chosenStatus?.superseded_by
+    ? pairs.find((pair) => isEntry(pair, chosenStatus.superseded_by as string, metric))
+    : undefined;
+
+  // An old link to a comparison its owner replaced by re-rooting answers 410
+  // with where it went (§56): said, with a link, rather than an empty page.
+  useEffect(() => {
+    setMovedTo(null);
+    if (!view.comparison || !datasets) return;
+    if (pairs.some((pair) => pair.id === view.comparison)) return;
+    let live = true;
+    const asked = view.comparison;
+    api.status(asked).catch((failed) => {
+      if (live && failed instanceof ApiError && failed.code === "comparison_rerooted" && failed.movedTo) {
+        setMovedTo({ from: asked, to: failed.movedTo });
+      }
+    });
+    return () => {
+      live = false;
+    };
+  }, [view.comparison, pairs, datasets]);
+  const movedPair = movedTo ? pairs.find((pair) => pair.id === movedTo.to) : undefined;
 
   return (
     <div className="app">
@@ -181,7 +330,56 @@ export function App() {
               <em> ({top.normalised.toFixed(3)} normalised)</em>
             ) : null}
             {top.of !== undefined ? <em> of {top.of.toLocaleString()}</em> : null}
+            {before ? (
+              <em className="headline-before" title="The same metric for the comparison this one re-roots (§56)">
+                {" "}
+                (before re-rooting: {before.value.toLocaleString()}
+                {before.to !== undefined ? ` to ${before.to.toLocaleString()}` : ""})
+              </em>
+            ) : null}
           </span>
+        ) : null}
+        {rebuild ? (
+          <span
+            className={`chip rebuild ${rebuild.error ? "warn" : ""}`}
+            role="status"
+            title={rebuild.error ?? `${REROOT_COST}; this comparison stays usable meanwhile`}
+          >
+            Re-rooting {rebuild.what}: {rebuild.error ? `failed — ${rebuild.error}` : rebuildLabel(rebuild.status)}
+            {rebuild.waiting ? (
+              <button
+                type="button"
+                className="chip-action"
+                onClick={() => {
+                  const ready = rebuild.waiting as PairSummary;
+                  setRebuild(null);
+                  open(ready);
+                }}
+              >
+                Open
+              </button>
+            ) : null}
+            {rebuild.error || rebuild.waiting ? (
+              <button
+                type="button"
+                className="chip-action"
+                aria-label="Dismiss"
+                onClick={() => setRebuild(null)}
+              >
+                ×
+              </button>
+            ) : null}
+          </span>
+        ) : null}
+        {chosen && previous ? (
+          <button
+            type="button"
+            className="back-button"
+            title={`Open ${pairName(previous, datasets)}, the comparison this one re-roots`}
+            onClick={() => open(previous)}
+          >
+            Back to the previous rooting
+          </button>
         ) : null}
         {me?.mock ? (
           <span className="chip warn" title="No credentials are being checked">
@@ -275,6 +473,46 @@ export function App() {
                     },
                   ]
                 : []),
+              // Which clades the budget opens (§6.1, §55.1): a request to the
+              // server, so switching fetches new slices.
+              {
+                key: "order:size",
+                label: "Largest clades first",
+                checked: options.order !== "difference",
+                note: "Detail goes to the biggest clades",
+                group: "order",
+                heading: "Open clades",
+              },
+              {
+                key: "order:difference",
+                label: "Most different first",
+                checked: options.order === "difference",
+                note: "Detail goes where the two trees disagree most",
+                group: "order",
+              },
+              // How a wedge's height reads (§55.2). Drawing only.
+              {
+                key: "wedges:proportional",
+                label: "Proportional",
+                checked: options.wedges !== "log",
+                note: "Height in proportion to the leaves hidden; the largest wedge on screen is full height",
+                group: "wedges",
+                heading: "Wedge size",
+              },
+              {
+                key: "wedges:log",
+                label: "Logarithmic",
+                checked: options.wedges === "log",
+                note: "Height by log2 of the leaves hidden: small clades stay visible",
+                group: "wedges",
+              },
+              {
+                key: "match-order",
+                label: "Order to match the other tree",
+                checked: options.matchOrder,
+                heading: "Siblings",
+                note: "Each node's children in the order of their counterparts in the other tree. Only the drawing changes",
+              },
               // Where the gradient lands, not whether it is on — so the choice
               // is offered only while there is one to place.
               ...(shown?.kind === "gradient"
@@ -299,6 +537,13 @@ export function App() {
               if (key.startsWith("layout:")) {
                 setOptions({ layout: key.slice("layout:".length) as ViewOptions["layout"] });
               }
+              if (key.startsWith("order:")) {
+                setOptions({ order: key.slice("order:".length) as ViewOptions["order"] });
+              }
+              if (key.startsWith("wedges:")) {
+                setOptions({ wedges: key.slice("wedges:".length) as ViewOptions["wedges"] });
+              }
+              if (key === "match-order") setOptions({ matchOrder: !options.matchOrder });
               if (key.startsWith("colour:")) {
                 setOptions({
                   colorTarget: key.slice("colour:".length) as ViewOptions["colorTarget"],
@@ -351,9 +596,42 @@ export function App() {
         />
       ) : null}
 
+      {asking && chosen ? (
+        <Notice
+          title={`Re-root ${sideName(asking.side, treeNames)} above this node?`}
+          detail={
+            `${REROOT_COST}, as an upload is: seconds for a few thousand leaves, ` +
+            "minutes near 500,000. This comparison stays open and usable meanwhile; " +
+            "the re-rooted one opens when it is ready."
+          }
+          confirm={{
+            label: replaceOriginal ? "Re-root and replace" : "Re-root",
+            onConfirm: () => void startReroot(asking, replaceOriginal),
+          }}
+          onDismiss={() => setAsking(null)}
+        >
+          <label className="notice-option">
+            <input
+              type="checkbox"
+              checked={replaceOriginal}
+              onChange={(event) => setReplaceOriginal(event.target.checked)}
+            />{" "}
+            Replace this comparison: delete it once the re-rooted one is ready. It cannot be undone.
+          </label>
+        </Notice>
+      ) : null}
+
       {chosen ? (
         <>
           {chosen.caution ? <p className="caution">{chosen.caution}</p> : null}
+          {successor ? (
+            <p className="caution">
+              This comparison was re-rooted as {pairName(successor, datasets)}.{" "}
+              <button type="button" className="link-button" onClick={() => open(successor)}>
+                Open it
+              </button>
+            </p>
+          ) : null}
           {/* A table that matched no leaf was not used (§47). Said above the
               trees, not only in a menu: otherwise its side simply has no bars,
               which looks like a tree without isolate data, not a mistake. */}
@@ -384,10 +662,28 @@ export function App() {
             shown={shown}
             exporting={exporting}
             onExportClose={() => setExporting(false)}
+            reroot={{
+              busy: building ? "A re-root is already being built" : undefined,
+              onReroot: (side, storedId) => {
+                setReplaceOriginal(false);
+                setAsking({ side, storedId });
+              },
+            }}
           />
         </>
       ) : (
         <div className="chooser">
+          {movedTo ? (
+            <p className="caution moved">
+              That comparison was re-rooted and replaced
+              {movedPair ? ` by ${pairName(movedPair, datasets)}` : ""}.{" "}
+              {movedPair ? (
+                <button type="button" className="link-button" onClick={() => open(movedPair)}>
+                  Open it
+                </button>
+              ) : null}
+            </p>
+          ) : null}
           <section className="existing">
             <h2>Your comparisons</h2>
             {pairs.length === 0 ? (
@@ -427,6 +723,16 @@ export function App() {
                         </span>
                       ) : null}
                       {pair.error ? <span className="pair-detail">{pair.error}</span> : null}
+                      {pair.superseded_by ? (
+                        <span className="pair-detail superseded">
+                          superseded by{" "}
+                          {(() => {
+                            const next = pairs.find((other) => other.id === pair.superseded_by);
+                            return next ? pairName(next, datasets) : "a re-rooted comparison";
+                          })()}
+                        </span>
+                      ) : null}
+                      {pair.rerooted_from ? <span className="pair-detail">re-rooted</span> : null}
                     </button>
                     <button
                       type="button"

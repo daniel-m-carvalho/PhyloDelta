@@ -11,7 +11,7 @@
  * rather than the tool. If the cap is reached that is itself the answer, and
  * it is recorded as such.
  */
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
@@ -68,11 +68,33 @@ function peakRendererMb() {
 const server = await start(PORT);
 const results = [];
 
-for (const leaves of RUNGS) {
-  const browser = await chromium.launch({
+//: Page loads per rung per tool (§34.24). A phylo.io load can run for the whole
+//: budget, so this step is long: up to five times 35 minutes a rung. It is a
+//: step of its own in the campaign and resumes from there.
+const LOADS = Number(process.env.BENCH_LOADS || 5);
+
+//: PhyloDelta is held open this long after both panels report a slice, sampled
+//: as often as phylo.io's renderer is, so its peak is read over the same kind
+//: of window rather than at one instant.
+const PHYLODELTA_HOLD_MS = 10_000;
+
+const built = (() => {
+  try {
+    return JSON.parse(readFileSync(join(BENCH, "results", "server_build.json"), "utf8"));
+  } catch {
+    return [];
+  }
+})();
+
+function launchChrome() {
+  return chromium.launch({
     channel: "chrome",
     args: ["--js-flags=--max-old-space-size=16384", "--disable-dev-shm-usage"],
   });
+}
+
+async function runPhyloio(leaves) {
+  const browser = await launchChrome();
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   let peak = 0;
   const watch = setInterval(() => (peak = Math.max(peak, peakRendererMb())), 2000);
@@ -106,19 +128,66 @@ for (const leaves of RUNGS) {
   } finally {
     clearInterval(watch);
   }
-
-  outcome.leaves = leaves;
   outcome.compare_budget_ms = BUDGET_MS;
-  outcome.peak_renderer_mb = peak;
-  results.push(outcome);
-  writeFileSync(join(BENCH, "results", OUT), JSON.stringify(results, null, 2));
-  writeFileSync(
-    1,
-    `${leaves.toLocaleString().padStart(9)}  ${
-      outcome.ok ? `COMPLETED in ${(outcome.ms / 1000).toFixed(0)}s` : `gave up: ${outcome.why}`
-    }  peak renderer ${peak.toLocaleString()} MB\n`,
-  );
+  outcome.peak_renderer_mb = Math.max(peak, peakRendererMb());
   await browser.close().catch(() => {});
+  return outcome;
+}
+
+/** PhyloDelta's renderer over a load and a short hold, by the same sampler. */
+async function runPhylodelta(leaves) {
+  const rung = built.find((r) => r.leaves === leaves && r.status === "ready");
+  if (!rung) return { ok: false, ms: 0, why: "not built", peak_renderer_mb: 0 };
+  const browser = await launchChrome();
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  let peak = 0;
+  const watch = setInterval(() => (peak = Math.max(peak, peakRendererMb())), 200);
+  const t0 = Date.now();
+  let outcome;
+  try {
+    await page.goto(`http://localhost:${PORT}/#/c/${rung.id}`, { timeout: 120_000 });
+    await page.waitForFunction(
+      () =>
+        [...document.querySelectorAll(".side-counts")].filter((n) =>
+          /showing/.test(n.textContent || ""),
+        ).length === 2,
+      undefined,
+      { timeout: 120_000 },
+    );
+    const ms = Date.now() - t0;
+    await new Promise((resume) => setTimeout(resume, PHYLODELTA_HOLD_MS));
+    outcome = { ok: true, ms };
+  } catch (failed) {
+    outcome = { ok: false, ms: Date.now() - t0, why: String(failed.message || failed).split("\n")[0] };
+  } finally {
+    clearInterval(watch);
+  }
+  outcome.peak_renderer_mb = Math.max(peak, peakRendererMb());
+  await browser.close().catch(() => {});
+  return outcome;
+}
+
+function save() {
+  writeFileSync(join(BENCH, "results", OUT), JSON.stringify(results, null, 2));
+}
+
+for (const leaves of RUNGS) {
+  for (let load = 0; load < LOADS; load += 1) {
+    for (const [tool, run] of [["phylodelta", runPhylodelta], ["phyloio", runPhyloio]]) {
+      const outcome = await run(leaves);
+      outcome.leaves = leaves;
+      outcome.tool = tool;
+      outcome.load = load;
+      results.push(outcome);
+      save();
+      writeFileSync(
+        1,
+        `${leaves.toLocaleString().padStart(9)} ${tool.padEnd(10)} load ${load + 1}/${LOADS}  ${
+          outcome.ok ? `ok in ${(outcome.ms / 1000).toFixed(0)}s` : `gave up: ${outcome.why}`
+        }  peak renderer ${outcome.peak_renderer_mb.toLocaleString()} MB\n`,
+      );
+    }
+  }
 }
 server.close();
 // The limit's timer outlives a run that ends early, and would hold the process

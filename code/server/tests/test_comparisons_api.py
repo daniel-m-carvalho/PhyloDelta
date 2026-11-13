@@ -401,3 +401,31 @@ def test_a_result_from_an_older_metric_version_is_refused_by_name(
     finally:
         registry.reset_cache()
         registry_pairs.reset_cache()
+
+
+@pytest.mark.parametrize("tree", ["vibrio-nj", "vibrio-upgma"])
+def test_the_two_orders_the_app_offers_give_different_slices_at_50(client, tree):
+    """The web app's two choices (§55.1), asked as the app asks, on the vibrio pair.
+
+    At the app's smallest useful budget the difference order must draw a clade
+    the size order leaves inside a wedge — and one the trees actually disagree
+    on, or the option would only reshuffle detail.
+    """
+    def ask(order):
+        params = {"budget": 50, "compare": PAIR, "metric": "rf", "correspondence": "metric"}
+        if order != "size":
+            params["order"] = order
+        return client.get(f"/api/v1/trees/{tree}/slice", params=params).json()
+
+    by_size, by_difference = ask("size"), ask("difference")
+    assert by_size["nodes"]["id"] != by_difference["nodes"]["id"]
+
+    drawn_by_size = set(by_size["nodes"]["id"])
+    similarity = dict(
+        zip(by_difference["nodes"]["id"], by_difference["comparison"]["similarity"], strict=True)
+    )
+    surfaced = [
+        node for node, value in similarity.items()
+        if node not in drawn_by_size and value is not None and value < 1.0
+    ]
+    assert surfaced, "the difference order drew no divergent clade the size order hid"

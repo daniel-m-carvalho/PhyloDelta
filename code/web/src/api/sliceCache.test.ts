@@ -56,8 +56,15 @@ describe("the key is the request", () => {
       sliceKey({ ...base, metric: "jaccard" }),
       sliceKey({ ...base, keep: 3296 }),
       sliceKey({ ...base, correspondence: "metric" }),
+      sliceKey({ ...base, order: "difference" }),
     ]);
-    expect(keys.size).toBe(7);
+    expect(keys.size).toBe(8);
+  });
+
+  it("keys the size order as a request that names none", () => {
+    // The default, so a cache filled before the order was offered still hits.
+    expect(sliceKey(parts({ order: "size" }))).toBe(sliceKey(parts()));
+    expect(sliceKey(parts({ order: "difference" }))).not.toBe(sliceKey(parts()));
   });
 
   it("keys the shared correspondence as a request that names none", () => {

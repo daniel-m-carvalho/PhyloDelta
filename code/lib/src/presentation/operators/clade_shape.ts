@@ -14,6 +14,7 @@ function hiddenLeaves(node: Parameters<typeof countLeaves>[0]): number {
   return node.trueLeafCount ?? countLeaves(node);
 }
 import type { TreeOperator } from "./operator";
+import type { LayoutNode } from "../tree/layout";
 
 export interface CladeShapeOptions {
   /**
@@ -42,6 +43,46 @@ export interface CladeShapeOptions {
    */
   saturateAt?: number;
   /**
+   * How height follows the leaves hidden (default `"log"`).
+   *
+   * - `"log"`: by log2 of the count, so a clade of 2 and one of 10,000 are both
+   *   visible and the eye reads orders of magnitude.
+   * - `"linear"`: in proportion, `min + (leaves / reference) × (max − min)`, so
+   *   a clade twice the size is drawn twice as tall above the minimum. Small
+   *   clades sit near the minimum; that is the point, and the price.
+   */
+  scale?: "log" | "linear";
+  /**
+   * What the top of the scale is (default `"view"`).
+   *
+   * - `"view"`: the leaves the tree in view stands for (see `saturateAt`), so
+   *   a wedge's height is comparable across views of the same tree.
+   * - `"largest-drawn"`: the largest wedge currently drawn, which then always
+   *   gets the full height. Heights are comparable only within one view —
+   *   the same clade is drawn smaller beside a bigger one — but under a
+   *   linear scale it is what keeps the wedges from all being slivers when
+   *   every clade on screen is small next to the whole tree.
+   *
+   * An explicit `saturateAt` wins over either.
+   */
+  reference?: "view" | "largest-drawn";
+  /**
+   * Never let neighbouring wedges overlap (default false): when the rows on
+   * screen are closer than two maximum half-heights, every wedge is scaled
+   * down by the same factor, so their proportions survive and the tallest just
+   * fits its row. Rows close up when a view holds many tips (expand all) or
+   * is zoomed out; zooming in lets the wedges grow back to their set size.
+   */
+  fitRows?: boolean;
+  /**
+   * On hover, say how many leaves the wedge hides (default false). Drawn
+   * **above** the node, so it sits clear of the comparison operator's tooltip,
+   * which goes below it. A wedge's `title` cannot do this: the overlay is
+   * `pointer-events: none` so clicks reach the canvas, which also means the
+   * browser never shows a title on it.
+   */
+  hoverCount?: boolean;
+  /**
    * Override the wedge color. Default: the node's own color from the graph.
    *
    * A **function** is called once per wedge with the clade it stands for (the
@@ -57,6 +98,8 @@ export interface CladeShapeOptions {
 interface Wedge {
   el: HTMLDivElement;
   halfHeight: number;
+  /** The leaves it hides, for the hover count. */
+  leaves: number;
   /** Its own colour, to go back to when a mark leaves it. */
   color: string;
 }
@@ -101,6 +144,15 @@ export class CladeShapePresenter implements TreeOperator {
   private saturateAt?: number;
   /** Memoized auto-calibration, keyed on the tree it was computed from. */
   private autoSaturate: { tree: NewickNode; value: number } | null = null;
+  private scale: "log" | "linear";
+  private reference: "view" | "largest-drawn";
+  private fitRows: boolean;
+  private hoverCount: boolean;
+  private tooltip: HTMLDivElement | null = null;
+  /** Smallest vertical gap between neighbouring tips, in graph units; see {@link fitFactor}. */
+  private rowGap = Infinity;
+  /** The factor the wedges were last drawn at, so a frame that changes nothing touches no style. */
+  private drawnFactor = 1;
   private color?: string | ((node: NewickNode) => string | undefined);
   private hideMarker: boolean;
   /** The wedge carrying a located node's mark, and in what colour; see {@link mark}. */
@@ -112,6 +164,10 @@ export class CladeShapePresenter implements TreeOperator {
     this.minHalfHeight = options.minHalfHeight ?? 4;
     this.maxHalfHeight = options.maxHalfHeight ?? 13;
     this.saturateAt = options.saturateAt != null ? Math.max(2, options.saturateAt) : undefined;
+    this.scale = options.scale ?? "log";
+    this.reference = options.reference ?? "view";
+    this.fitRows = options.fitRows ?? false;
+    this.hoverCount = options.hoverCount ?? false;
     this.color = options.color;
     this.hideMarker = options.hideMarker ?? true;
 
@@ -140,6 +196,55 @@ export class CladeShapePresenter implements TreeOperator {
     }
 
     this.unsubscribe.push(viewer.events.on("render", ({ renderer }) => this.onRender(renderer)));
+    if (this.hoverCount) {
+      this.unsubscribe.push(
+        viewer.events.on("enterNode", ({ node }) => this.showCount(node)),
+        viewer.events.on("leaveNode", () => this.hideCount()),
+      );
+    }
+  }
+
+  /** The leaves a drawn wedge hides, or undefined when `nodeId` is not one. */
+  leavesOf(nodeId: string): number | undefined {
+    return this.wedges.get(nodeId)?.leaves;
+  }
+
+  private showCount(nodeId: string): void {
+    const wedge = this.wedges.get(nodeId);
+    const container = this.viewer?.getContainer();
+    const graph = this.renderer?.getGraph();
+    if (!wedge || !container || !this.renderer || !graph?.hasNode(nodeId)) return;
+    if (!this.tooltip) {
+      this.tooltip = document.createElement("div");
+      Object.assign(this.tooltip.style, {
+        position: "absolute",
+        padding: "2px 6px",
+        background: "rgba(33,37,41,0.92)",
+        color: "#fff",
+        font: "11px sans-serif",
+        borderRadius: "3px",
+        pointerEvents: "none",
+        whiteSpace: "nowrap",
+        zIndex: "16",
+      } as CSSStyleDeclaration);
+    }
+    if (this.tooltip.parentElement !== container) container.appendChild(this.tooltip);
+    this.tooltip.textContent = `${wedge.leaves.toLocaleString()} leaves`;
+    this.tooltip.style.display = "block";
+    const attrs = graph.getNodeAttributes(nodeId) as { x: number; y: number };
+    const pos = this.renderer.graphToViewport({ x: attrs.x, y: attrs.y });
+    const width = this.tooltip.offsetWidth;
+    const height = this.tooltip.offsetHeight;
+    // Inside the panel on both axes: a tooltip past its edge widens the page,
+    // which on Windows brings in a scrollbar that moves everything (§39).
+    const x = Math.max(0, Math.min(pos.x + 8, container.clientWidth - width));
+    const above = pos.y - wedge.halfHeight * this.drawnFactor - 4 - height;
+    this.tooltip.style.left = `${x}px`;
+    this.tooltip.style.top = `${Math.max(0, above)}px`;
+  }
+
+  private hideCount(): void {
+    if (this.tooltip) this.tooltip.style.display = "none";
   }
 
   detach(): void {
@@ -150,6 +255,8 @@ export class CladeShapePresenter implements TreeOperator {
     this.renderer?.off("afterRender", this.afterRenderHandler);
     this.renderer = null;
     this.layer.remove();
+    this.tooltip?.remove();
+    this.tooltip = null;
     this.wedges.clear();
     this.viewer = null;
   }
@@ -163,6 +270,16 @@ export class CladeShapePresenter implements TreeOperator {
    */
   setColor(color: string | ((node: NewickNode) => string | undefined) | undefined): void {
     this.color = color;
+    if (this.renderer) this.rebuild();
+  }
+
+  /**
+   * Change how wedge height follows clade size, and redraw. Either argument
+   * omitted keeps its current value.
+   */
+  setScale(scale?: "log" | "linear", reference?: "view" | "largest-drawn"): void {
+    if (scale) this.scale = scale;
+    if (reference) this.reference = reference;
     if (this.renderer) this.rebuild();
   }
 
@@ -221,16 +338,26 @@ export class CladeShapePresenter implements TreeOperator {
     const graph = this.renderer?.getGraph();
     if (!map || !graph) return;
 
-    const saturateAt = this.resolveSaturateAt();
-
+    // The clades to draw, and their true sizes, first: under "largest-drawn"
+    // the top of the scale is the largest of them.
+    const collapsed: Array<{ node: LayoutNode; leaves: number }> = [];
     for (const node of map.values()) {
       if (!node.isCollapsed) continue;
+      const source = node.source.origin ?? node.source;
+      collapsed.push({ node, leaves: hiddenLeaves(source) });
+    }
+    const saturateAt =
+      this.saturateAt == null && this.reference === "largest-drawn"
+        ? Math.max(2, ...collapsed.map((c) => c.leaves))
+        : this.resolveSaturateAt();
+
+    for (const { node, leaves } of collapsed) {
 
       // The displayed clade is a pruned clone; `origin` (set by prepareTree)
       // leads back to the real subtree, so the wedge reflects the true leaf
       // count rather than the truncated one.
       const source = node.source.origin ?? node.source;
-      const halfHeight = this.heightFor(hiddenLeaves(source), saturateAt);
+      const halfHeight = this.heightFor(leaves, saturateAt);
       const chosen = typeof this.color === "function" ? this.color(source) : this.color;
       const color =
         chosen ??
@@ -240,11 +367,13 @@ export class CladeShapePresenter implements TreeOperator {
 
       const shown = this.marked?.id === node.id ? this.marked.color : color;
       const el = this.makeWedge(halfHeight, shown);
-      el.title = `${hiddenLeaves(source).toLocaleString()} leaves`;
+      el.title = `${leaves.toLocaleString()} leaves`;
       this.layer.appendChild(el);
-      this.wedges.set(node.id, { el, halfHeight, color });
+      this.wedges.set(node.id, { el, halfHeight, leaves, color });
     }
 
+    this.rowGap = this.fitRows ? smallestTipGap(graph, map) : Infinity;
+    this.drawnFactor = 1;
     this.position();
   }
 
@@ -280,8 +409,24 @@ export class CladeShapePresenter implements TreeOperator {
    * clades stay distinguishable across orders of magnitude.
    */
   private heightFor(leaves: number, saturateAt: number): number {
-    const t = Math.min(1, Math.log2(Math.max(1, leaves)) / Math.log2(saturateAt));
+    const t =
+      this.scale === "linear"
+        ? Math.min(1, Math.max(0, leaves) / saturateAt)
+        : Math.min(1, Math.log2(Math.max(1, leaves)) / Math.log2(saturateAt));
     return this.minHalfHeight + t * (this.maxHalfHeight - this.minHalfHeight);
+  }
+
+  /**
+   * The factor every wedge is drawn at this frame: 1, or less when the rows
+   * on screen are too close for two maximum wedges side by side (`fitRows`).
+   * Half a pixel is left between neighbours so two full wedges never touch.
+   */
+  private fitFactor(renderer: Sigma): number {
+    if (!this.fitRows || !Number.isFinite(this.rowGap) || this.maxHalfHeight <= 0) return 1;
+    const a = renderer.graphToViewport({ x: 0, y: 0 });
+    const b = renderer.graphToViewport({ x: 0, y: this.rowGap });
+    const rowPx = Math.hypot(b.x - a.x, b.y - a.y);
+    return Math.min(1, Math.max(0, (rowPx - 0.5) / (2 * this.maxHalfHeight)));
   }
 
   /** A CSS-border triangle: apex on the tree side, base facing the tips. */
@@ -306,17 +451,50 @@ export class CladeShapePresenter implements TreeOperator {
     const renderer = this.renderer;
     const graph = renderer.getGraph();
     const apexLeft = this.towardRoot !== !!this.viewer?.isReflected();
+    const factor = this.fitFactor(renderer);
+    const resized = factor !== this.drawnFactor;
+    this.drawnFactor = factor;
 
     for (const [id, { el, halfHeight }] of this.wedges) {
       if (!graph.hasNode(id)) {
         el.style.display = "none";
         continue;
       }
+      const drawn = halfHeight * factor;
+      if (resized) {
+        el.style.borderTop = `${drawn}px solid transparent`;
+        el.style.borderBottom = `${drawn}px solid transparent`;
+      }
       const attrs = graph.getNodeAttributes(id) as { x: number; y: number };
       const pos = renderer.graphToViewport({ x: attrs.x, y: attrs.y });
       el.style.display = "block";
       el.style.left = `${apexLeft ? pos.x : pos.x - this.length}px`;
-      el.style.top = `${pos.y - halfHeight}px`;
+      el.style.top = `${pos.y - drawn}px`;
     }
   }
+}
+
+/**
+ * The smallest vertical gap between two neighbouring tips — leaves and wedges
+ * alike, since a wedge must not cover the next row whatever is drawn there —
+ * in graph units. Computed once per layout: the camera scales graph units to
+ * pixels uniformly, so this times the current scale is the row height on
+ * screen. Infinity with fewer than two tips.
+ */
+function smallestTipGap(
+  graph: { hasNode(id: string): boolean; getNodeAttributes(id: string): unknown },
+  map: Map<string, LayoutNode>,
+): number {
+  const ys: number[] = [];
+  for (const node of map.values()) {
+    if (!(node.isLeaf || node.isCollapsed) || !graph.hasNode(node.id)) continue;
+    ys.push((graph.getNodeAttributes(node.id) as { y: number }).y);
+  }
+  ys.sort((a, b) => a - b);
+  let gap = Infinity;
+  for (let i = 1; i < ys.length; i++) {
+    const d = ys[i] - ys[i - 1];
+    if (d > 0 && d < gap) gap = d;
+  }
+  return gap;
 }

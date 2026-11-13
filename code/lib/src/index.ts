@@ -28,6 +28,7 @@ export {
   orderByName,
   orderByNumeric,
   orderBySizeDesc,
+  orderByKey,
 } from "./presentation/tree/model";
 export { parseNewick } from "./presentation/tree/newick";
 export { leafNamesOf, mrcaId } from "./presentation/tree/navigation";

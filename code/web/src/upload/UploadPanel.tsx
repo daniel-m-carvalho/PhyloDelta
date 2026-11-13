@@ -18,6 +18,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api/client";
+import { poll } from "../api/poll";
 import type { ComparisonStatus, MetricSummary } from "../api/types";
 import { MetricReferenceLine } from "./MetricReferences";
 import { clearDraft, loadFields, loadFiles, saveFields, saveFile, type Slot } from "./draft";
@@ -445,29 +446,6 @@ export function KeyColumn({
       )}
     </label>
   );
-}
-
-/** Poll until the comparison leaves `pending`/`running`. */
-async function poll(
-  comparisonId: string,
-  report: (status: ComparisonStatus) => void,
-): Promise<void> {
-  // Backs off so a long computation does not become a request every second for
-  // several minutes.
-  let wait = 500;
-  for (;;) {
-    const status = await api.status(comparisonId);
-    report(status);
-    if (status.status === "ready") return;
-    if (status.status === "failed") {
-      throw new ApiError(400, {
-        detail: status.error ?? "The comparison failed.",
-        code: "comparison_failed",
-      });
-    }
-    await new Promise((resume) => setTimeout(resume, wait));
-    wait = Math.min(wait * 1.5, 5_000);
-  }
 }
 
 function DropZone({

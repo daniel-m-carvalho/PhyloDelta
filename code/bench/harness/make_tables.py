@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from statistics import median
+from statistics import median, quantiles
 
 HERE = Path(__file__).resolve().parent
 RESULTS = HERE.parent / "results"
@@ -79,6 +79,12 @@ pinned = {n: load(f"thread_builds_{n}.json") for n in (1, 2, 10)}
 DEPLOY_THREADS = 2
 deploy_build = {
     r["leaves"]: r["build_s"]
+    for r in (pinned.get(DEPLOY_THREADS) or {"rungs": []})["rungs"]
+}
+#: Every build at the deployment setting, per rung: five from v0.3.0 (§34.24),
+#: one before, so `deploy_build` is their median and this their spread.
+deploy_builds = {
+    r["leaves"]: r.get("builds_s") or [r["build_s"]]
     for r in (pinned.get(DEPLOY_THREADS) or {"rungs": []})["rungs"]
 }
 
@@ -169,7 +175,7 @@ TIERS = {
     6: (WORKING, "Diagnostic. Phase-splitting another tool's time compares phase "
                  "names that do not mean the same thing; Table 1's paint/compare "
                  "split is the part that survives."),
-    7: (WORKING, "The six samples behind Table 1's PhyloDelta column, with their "
+    7: (WORKING, "The loads behind Table 1's PhyloDelta column, with their "
                  "spread. Belongs in a sentence about method."),
     8: (PRESENT, "What the design costs. Presenting Table 1 without this is "
                  "claiming the precompute is free."),
@@ -186,7 +192,8 @@ TIERS = {
                   "thesis must say so where the numbers are."),
     15: (PRESENT, "The other half of interaction: loading is not using. Also "
                   "carries the finding that the comparison tool's cross-tree jump "
-                  "fails in most page loads."),
+                  "throws exactly when a clade's counterpart is the other tree's "
+                  "root, and works otherwise."),
     16: (WORKING, "The attribution behind Table 15: the round trip is a few "
                   "milliseconds of a three-frame navigation. One sentence, not a "
                   "table."),
@@ -204,12 +211,16 @@ TIERS = {
     21: (PRESENT, "The other half of \"sized to the viewport\". Every other table "
                   "shows the payload ignoring the tree; only this one shows it "
                   "following the window, which is what earns the word *sized*."),
-    23: (PRESENT, "Paint and compare measured apart, three loads a rung, where "
-                  "phylo.io paints but its comparison does not finish in 600 s. "
-                  "Table 1's three † rows come from here."),
+    23: (PRESENT, "Paint and compare measured apart, five loads a rung, where "
+                  "phylo.io paints but its comparison does not finish in 600 s: "
+                  "a second harness checking Table 1's rows there."),
     22: (PRESENT, "Correctness again, but against implementations that share "
                   "nothing with this one. Table 18's agreement is with the same "
                   "paper's own code; this is the check an examiner will ask for."),
+    24: (PRESENT, "The one interaction where both tools must redo the expensive "
+                  "half: a re-root. phylo.io recomputes in the page; PhyloDelta "
+                  "rebuilds on the server (§56). The cost of the design, measured "
+                  "at the moment it is paid again."),
 }
 
 
@@ -249,17 +260,77 @@ def fmt(value, unit="", nd=1, dash="—"):
     return dash if value is None else f"{value:,.{nd}f}{unit}"
 
 
+def quartiles(values):
+    """(Q1, median, Q3) of the values given, or None for none (§34.24).
+
+    Inclusive quartiles — the ones a spreadsheet's QUARTILE gives — so with five
+    samples Q1 and Q3 are the second and fourth: real samples, not values
+    interpolated outside what was measured.
+    """
+    xs = sorted(v for v in values if v is not None)
+    if not xs:
+        return None
+    if len(xs) == 1:
+        return xs[0], xs[0], xs[0]
+    q1, _, q3 = quantiles(xs, n=4, method="inclusive")
+    return q1, median(xs), q3
+
+
+def miqr(values, unit="", nd=1, scale=1.0, dash="—"):
+    """"median [Q1–Q3]", the form every repeated figure is reported in (§34.24)."""
+    q = quartiles([v * scale for v in values if v is not None])
+    if q is None:
+        return dash
+    lo, mid, hi = q
+    return f"{mid:,.{nd}f}{unit} [{lo:,.{nd}f}–{hi:,.{nd}f}]"
+
+
+def of_loads(count, total, what):
+    """"did not finish in 3 of 5": an outcome counted, never averaged away."""
+    return f"{what} in {count} of {total}"
+
+
 #: The ceiling attempt's limit, as that run recorded it.
 OVER_ATTEMPT = f"over {ceiling.get('attempt_ms', 0) / 1000:.0f} s"
 
 
 def phyloio_reading(row):
-    """phylo.io at one rung, from the runner that measured it best.
+    """phylo.io at one rung, over every load the ceiling run made (§34.24).
 
-    Three loads where `phyloio_paint.mjs` covered the rung (Table 23), the single
-    ceiling attempt elsewhere, so Tables 1, 2, 3 and 23 cannot disagree.
+    Five loads, each its own outcome: painted or not, compared or not. Medians
+    are over the loads that got that far, and the counts say how many did, so a
+    rung where the comparison finished in two loads of five reads as that — not
+    as a median of two presented as one of five. Older results, one attempt a
+    rung with three paint loads beside it, are read as they were.
     """
     leaves, p = row["leaves"], row["phyloio"]
+    loads = p.get("loads")
+    if loads:
+        painted = [load for load in loads if (load.get("phases") or {}).get("postFetch") is not None]
+        compared = [load for load in painted if load["phases"].get("compareComplete")]
+        failures = [load.get("failed", "") for load in loads if not load.get("ok")]
+        why = None
+        if not painted:
+            why = "crashed" if any("crashed" in f for f in failures) else OVER_ATTEMPT
+        paints = [load["phases"]["postFetch"] / 1000 for load in painted]
+        compares = [load["phases"]["toCompare"] / 1000 for load in compared]
+        heaps = [load["heap_bytes"] / MIB for load in painted if load.get("heap_bytes") is not None]
+        paths = [(load.get("drawn") or {}).get("paths") for load in painted]
+        doms = [(load.get("dom") or {}).get("nodes") for load in painted]
+        median_load = (min(painted, key=lambda load: abs(load["phases"]["postFetch"] / 1000 - median(paints)))
+                       if painted else None)
+        return {
+            "ok": bool(painted), "why": why, "n": len(painted), "of": len(loads),
+            "compared_n": len(compared),
+            "paints": paints, "compares": compares, "heaps": heaps,
+            "paint_s": median(paints) if paints else None,
+            # A ratio against a comparison only when every painted load finished it.
+            "compare_s": median(compares) if compares and len(compares) == len(painted) else None,
+            "heap": median(heaps) if heaps else None,
+            "paths": median([x for x in paths if x is not None]) if any(x is not None for x in paths) else None,
+            "dom": median([x for x in doms if x is not None]) if any(x is not None for x in doms) else None,
+            "phases": (median_load or {}).get("phases"),
+        }
     if leaves in paint_by:
         r = paint_by[leaves]
         painted = [load for load in r["per_load"] if load["outcome"] == "painted"]
@@ -267,6 +338,9 @@ def phyloio_reading(row):
         done = [load["phases"]["toCompare"] for load in painted if load["compared"]]
         return {
             "ok": bool(painted), "n": len(painted), "of": r["loads"],
+            "compared_n": len(done),
+            "paints": [load["paint_ms"] / 1000 for load in painted],
+            "compares": [x / 1000 for x in done], "heaps": [x / MIB for x in heaps],
             "paint_s": r["paint_ms_median"] / 1000,
             "compare_s": median(done) / 1000 if len(done) == len(painted) and done else None,
             "heap": median(heaps) / MIB if heaps else None,
@@ -274,11 +348,16 @@ def phyloio_reading(row):
         }
     if not p.get("ok"):
         why = "crashed" if "crashed" in p["failed"] else OVER_ATTEMPT
-        return {"ok": False, "why": why, "n": 0, "of": 1}
+        return {"ok": False, "why": why, "n": 0, "of": 1, "compared_n": 0,
+                "paints": [], "compares": [], "heaps": []}
     ph = p.get("phases") or {}
+    paint_s = ph.get("postFetch", p["ms"]) / 1000
+    compare_s = ph["toCompare"] / 1000 if ph.get("compareComplete") else None
     return {
-        "ok": True, "n": 1, "of": 1, "paint_s": ph.get("postFetch", p["ms"]) / 1000,
-        "compare_s": ph["toCompare"] / 1000 if ph.get("compareComplete") else None,
+        "ok": True, "n": 1, "of": 1, "compared_n": int(compare_s is not None),
+        "paints": [paint_s], "compares": [compare_s] if compare_s else [],
+        "heaps": [heap_mib(p)] if heap_mib(p) is not None else [],
+        "paint_s": paint_s, "compare_s": compare_s,
         "heap": heap_mib(p), "paths": (p.get("drawn") or {}).get("paths"),
         "dom": (p.get("dom") or {}).get("nodes"), "phases": ph,
     }
@@ -397,8 +476,8 @@ for tier, heading, blurb in (
 print("The PRESENT tables answer, in this order: how far each tool gets (1), "
       "on comparable work (2), at what memory (3), sending how many bytes (19), "
       "sized by what (21), how correctly (5), by what mechanism (12), at what "
-      "navigation cost (15), for what precompute (8), giving up what (13), "
-      "measured on what data (14).\n")
+      "navigation cost (15), for what precompute (8), at what cost to re-root (24), "
+      "giving up what (13), measured on what data (14).\n")
 _bytes = transfer["rows"][-1]
 print(f"*If only one table can be shown, it is 19.* It states the claim in the "
       f"quantity the claim is about — {_bytes['phylodelta']['data'] / KIB:,.1f} KiB "
@@ -426,42 +505,66 @@ print("Cold start to an interactive comparison. Phylo.io is split into *paint* "
       "(two trees drawn) and *compare* (its best-corresponding-node worker "
       "finished), because only the second is the same job PhyloDelta is doing: "
       "a slice arrives with its similarity values already in it.\n")
-print("**PhyloDelta's column is the median of six samples** (Table 7), taken before "
-      "any phylo.io load had run, not the one sample `ceiling.mjs` takes after each "
-      "phylo.io attempt. That single sample is not fit to quote: a phylo.io attempt "
-      "that overruns its deadline leaves its renderer working while PhyloDelta is "
-      "measured, and one pass of those rows read up to "
-      f"{max(r['phylodelta']['ms'] for r in load('ceiling_first_pass.json', {'rows': rows})['rows']) / 1000:.2f} s. "
-      f"A second pass, with the same overlap, read at most "
-      f"{max(r['phylodelta']['ms'] for r in rows if r.get('phylodelta', {}).get('ms')) / 1000:.2f} s, so "
-      "the overlap is the setting of those readings and not an isolated cause. phylo.io "
-      "is one load per rung, except 17,645, 35,290 and 70,580 (marked †), which are the "
-      "median of three from Table 23.\n")
+_loads = ceiling.get("loads", 1)
+_repeat_n = max((len(r.get("samples", [])) for r in repeats), default=0)
+_build_n = max((len(v) for v in deploy_builds.values()), default=0)
+print(f"**Every cell is the median, with the interquartile range in brackets**, "
+      f"[Q1–Q3]. phylo.io: {_loads} page loads a rung, each in a fresh browser; a "
+      "rung where not every load got as far says how many did. PhyloDelta: "
+      f"{_repeat_n} loads a rung after a discarded warm-up (Table 7), taken before any "
+      "phylo.io load had run, because a phylo.io attempt that overran its deadline "
+      "leaves its renderer working while PhyloDelta is measured. Server precompute: "
+      f"{_build_n} builds a rung at {DEPLOY_THREADS} threads (Table 8).\n")
+print("**First opening** is what the first person to open a new comparison waits for "
+      "end to end: the median precompute plus the median load. Every later opening "
+      "waits for the load alone.\n")
 print(f"*`{OVER_ATTEMPT}` is the attempt's budget, not a failure of the tool: its renderer "
       "was still working when the attempt ended (Table 4). `crashed` is the "
-      "renderer's own failure. `did not finish in 600 s` is the budget this table "
+      "renderer's own failure. `did not finish` is the 600 s this table "
       "gives the comparison; Table 4 gives it 30 minutes.*\n")
-print("| leaves | phylo.io paint | phylo.io compare | phylo.io main-thread heap | PhyloDelta, median of 6 | PhyloDelta heap | PhyloDelta advantage | server precompute |")
-print("|---:|---:|---:|---:|---:|---:|---:|---:|")
+print("| leaves | phylo.io paint | phylo.io compare | phylo.io main-thread heap | "
+      "PhyloDelta load | first opening (precompute + load) | PhyloDelta heap | "
+      "PhyloDelta advantage | server precompute |")
+print("|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
+
+
+def first_opening_s(leaves):
+    """Median precompute plus median load, in seconds; None without both."""
+    built = deploy_builds.get(leaves)
+    d = repeat_by.get(leaves)
+    if not built or not d:
+        return None
+    return median(built) + d["median_ms"] / 1000
+
+
 for row in rows:
     leaves = row["leaves"]
     p, d = readings[leaves], repeat_by[leaves]
-    mark = " †" if leaves in paint_by else ""
     if p["ok"]:
-        paint_cell = fmt(p["paint_s"], " s")
-        comp = fmt(p["compare_s"], " s", 0) if p["compare_s"] else "**did not finish in 600 s**"
-        heap = fmt(p["heap"], " MiB")
+        paint_cell = miqr(p["paints"], " s")
+        if p["n"] < p["of"]:
+            paint_cell += f" ({of_loads(p['n'], p['of'], 'painted')})"
+        if not p["compared_n"]:
+            comp = f"**{of_loads(p['of'] - p['compared_n'], p['of'], 'did not finish')}**"
+        else:
+            comp = miqr(p["compares"], " s", 0)
+            if p["compared_n"] < p["of"]:
+                comp += f" (**{of_loads(p['of'] - p['compared_n'], p['of'], 'did not finish')}**)"
+        heap = miqr(p["heaps"], " MiB")
     else:
-        paint_cell = comp = heap = f"**{p['why']}**"
+        paint_cell = comp = heap = f"**{p['why']}, {p['of']} of {p['of']}**"
     # Compared against phylo.io's COMPARE time, not its paint: that is the
     # point at which it is doing the same job.
-    ratio = f"**{p['compare_s'] * 1000 / d['median_ms']:,.0f}x**" if p.get("compare_s") else "—"
-    if not p["ok"] or not p.get("compare_s"):
+    if p["ok"] and p.get("compare_s"):
+        ratio = f"**{p['compare_s'] * 1000 / d['median_ms']:,.0f}x**"
+    else:
         ratio = "**only PhyloDelta in budget**"
+    heaps_d = [x / MIB for x in d.get("heap_samples", [])] or [heap_mib(d)]
     print(
-        f"| {leaves:,}{mark} | {paint_cell} | {comp} | {heap} | "
-        f"{d['median_ms'] / 1000:.2f} s | {heap_mib(d):.1f} MiB | {ratio} | "
-        f"{fmt(precompute_s(leaves), ' s')} |"
+        f"| {leaves:,} | {paint_cell} | {comp} | {heap} | "
+        f"{miqr(d.get('samples') or [d['median_ms']], ' s', 2, 1 / 1000)} | "
+        f"{fmt(first_opening_s(leaves), ' s')} | {miqr(heaps_d, ' MiB')} | {ratio} | "
+        f"{miqr(deploy_builds.get(leaves, []), ' s')} |"
     )
 
 # --- 2. fairness ----------------------------------------------------------
@@ -471,8 +574,8 @@ print("The check that makes Table 1 admissible. An earlier comparison in this "
       "rendering 91 and 2,002 nodes. **Both tools draw a roughly constant "
       "amount** — so the difference in Table 1 is not "
       "\"one of them drew less\".\n")
-print("> The 17,645, 35,290 and 70,580 rows show phylo.io's **pre-comparison** render, the "
-      "median of three loads: when the worker finishes it rebuilds and redraws both "
+print("> From 17,645 up the rows show phylo.io's **pre-comparison** render, the "
+      "median over the loads that painted: when the worker finishes it rebuilds and redraws both "
       "panels with the similarity colouring, and where it never finishes that second "
       "render never happens. That is why the counts drop at 17,645. The point "
       "of the table is unaffected — the counts stay in one range, never "
@@ -496,6 +599,8 @@ print("Phylo.io's DOM is flat while its heap climbs steeply: it **models the "
       "with the tree. PhyloDelta never receives the tree at all.\n")
 print("Rows where the comparison did not finish are marked — their figure "
       "excludes the worker entirely and must not be read as a decrease.\n")
+print(f"*Median [Q1–Q3] over {ceiling.get('loads', 1)} phylo.io loads and "
+      f"{_repeat_n} PhyloDelta loads a rung; growth is between the medians.*\n")
 print("| leaves | phylo.io main-thread heap | growth vs previous | PhyloDelta heap |")
 print("|---:|---:|---:|---:|")
 previous = None
@@ -509,7 +614,9 @@ for row in rows:
         note = "" if finished else " *(compare unfinished — worker excluded)*"
     else:
         note = f" *({p['why']})*"
-    print(f"| {leaves:,} | {fmt(heap, ' MiB')}{note} | {growth} | {heap_mib(d):.1f} MiB |")
+    heaps_d = [x / MIB for x in d.get("heap_samples", [])] or [heap_mib(d)]
+    print(f"| {leaves:,} | {miqr(p.get('heaps', []), ' MiB')}{note} | {growth} | "
+          f"{miqr(heaps_d, ' MiB')} |")
     if heap and finished:
         previous = heap
 
@@ -518,60 +625,74 @@ if endurance:
     table(4, "Failure behaviour, given 30 minutes and 16 GiB")
     print("Table 1's limits are against a stated budget. This lifts it: 30 minutes "
           f"with a 16 GiB heap cap on a {machine['memory_gib']} GiB machine.\n")
-    print("| leaves | outcome | time | peak renderer (MiB) |")
-    print("|---:|---|---:|---:|")
-    for r in sorted(endurance + endurance_extra, key=lambda r: r["leaves"]):
+    every = endurance + endurance_extra
+    by_rung: dict[int, dict[str, list]] = {}
+    for r in every:
+        by_rung.setdefault(r["leaves"], {}).setdefault(r.get("tool", "phyloio"), []).append(r)
+
+    def kind(r):
+        """One load's outcome, in the words the table uses."""
         ph = r.get("phases") or {}
         if ph.get("compareComplete"):
-            outcome = "comparison finished"
-        elif ph and "compare_budget_ms" in r:
-            outcome = (f"painted in {ph['postFetch'] / 1000:.0f} s; **comparison unfinished "
-                       f"after {r['compare_budget_ms'] / 60000:.0f} minutes**")
-        elif ph:
-            # Runs at v0.1.0 left the page's load() at its default wait and
-            # called its end `ok`, so these rows carry no budget of their own.
-            outcome = (f"painted in {ph['postFetch'] / 1000:.0f} s; **comparison unfinished "
-                       f"when the page's own 600 s wait ended**")
-        elif "crashed" in r.get("why", ""):
-            outcome = "**renderer process crashed**"
-        else:
-            outcome = "**nothing painted when the 30 minutes ended**"
+            return "comparison finished"
+        if ph:
+            return "painted; **comparison unfinished**"
+        if "crashed" in r.get("why", ""):
+            return "**renderer crashed**"
+        return "**nothing painted**"
+
+    _endurance_loads = max((len(v.get("phyloio", [])) for v in by_rung.values()), default=0)
+    print(f"*phylo.io: {_endurance_loads} loads a rung, each its own outcome, counted. "
+          "Time and peak renderer memory are median [Q1–Q3] over those loads; PhyloDelta's "
+          "renderer is read by the same sampler over its load and 10 s after.*\n")
+    print("| leaves | phylo.io outcome | phylo.io time | phylo.io peak renderer | "
+          "PhyloDelta peak renderer |")
+    print("|---:|---|---:|---:|---:|")
+    for leaves in sorted(by_rung):
+        loads = by_rung[leaves].get("phyloio", [])
+        ours = by_rung[leaves].get("phylodelta", [])
+        counts: dict[str, int] = {}
+        for r in loads:
+            counts[kind(r)] = counts.get(kind(r), 0) + 1
+        outcome = "; ".join(of_loads(n, len(loads), k) for k, n in counts.items()) or "—"
+        mine = miqr([r["peak_renderer_mb"] for r in ours if r.get("ok")], " MiB", 0) if ours else "—"
         print(
-            f"| {r['leaves']:,} | {outcome} | {r['ms'] / 60000:.1f} min | "
-            f"{r['peak_renderer_mb']:,} MiB |"
+            f"| {leaves:,} | {outcome} | {miqr([r['ms'] for r in loads], ' min', 1, 1 / 60000)} | "
+            f"{miqr([r['peak_renderer_mb'] for r in loads], ' MiB', 0)} | {mine} |"
         )
-    print("\n*Peak memory is sampled every 2 s from process RSS, so it is a lower "
-          "bound and the figures should not be read as an ordering.*\n")
-    every = endurance + endurance_extra
-    if any("compare_budget_ms" not in r for r in every):
+    print("\n*Peak memory is sampled every 2 s from process RSS for phylo.io and every "
+          "200 ms for PhyloDelta, so both are lower bounds and should not be read as an "
+          "exact ordering.*\n")
+    phyloio_every = [r for r in every if r.get("tool", "phyloio") == "phyloio"]
+    if any("compare_budget_ms" not in r for r in phyloio_every):
         print("*The tag's `endurance.mjs` lifts the budget for the load as a whole, not for "
               "the comparison inside it: it calls the page's `load()` without a compare "
               "budget, and that defaults to 600 s. Its `ok` therefore does not mean the "
               "comparison finished, which is why this table reads `compareComplete`.*\n")
-    else:
+    elif phyloio_every:
         # Worked out, not written down: the sentence follows the rows (§34.22).
-        def leaves_list(rows):
-            sizes = [f"{r['leaves']:,}" for r in sorted(rows, key=lambda r: r["leaves"])]
-            return sizes[0] if len(sizes) == 1 else ", ".join(sizes[:-1]) + " and " + sizes[-1]
-        done = [r for r in every if (r.get("phases") or {}).get("compareComplete")]
-        slow = [r for r in every if r.get("phases") and r not in done]
-        crashed = [r for r in every if not r.get("phases") and "crashed" in r.get("why", "")]
-        blank = [r for r in every if not r.get("phases") and r not in crashed]
+        def leaves_list(sizes):
+            names = [f"{n:,}" for n in sorted(sizes)]
+            return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+
+        outcome_by = {n: {kind(r) for r in v.get("phyloio", [])} for n, v in by_rung.items()}
+        done = [n for n, k in outcome_by.items() if k == {"comparison finished"}]
         parts = []
-        if slow:
-            parts.append(f"at {leaves_list(slow)} it painted and its comparison was still "
-                         "running when the budget ended")
-        if crashed:
-            parts.append(f"at {leaves_list(crashed)} the renderer crashed")
-        if blank:
-            parts.append(f"at {leaves_list(blank)} nothing was painted in the time")
-        verdict = (f"finished the comparison at {leaves_list(done)}" if done
-                   else "finished the comparison at none of these sizes")
-        budget = max(r["compare_budget_ms"] for r in every) / 60000
+        for label, words in (
+            ("painted; **comparison unfinished**", "it painted and its comparison was still running when the budget ended"),
+            ("**renderer crashed**", "the renderer crashed"),
+            ("**nothing painted**", "nothing was painted in the time"),
+        ):
+            hit = [n for n, k in outcome_by.items() if label in k]
+            if hit:
+                parts.append(f"at {leaves_list(hit)} {words} in at least one load")
+        verdict = (f"finished the comparison in every load at {leaves_list(done)}" if done
+                   else "finished the comparison in no load at any of these sizes")
+        budget = max(r["compare_budget_ms"] for r in phyloio_every) / 60000
         rest = "; ".join(parts)
         rest = (rest[:1].upper() + rest[1:] + ".") if rest else ""
         caveat = (" This cannot tell a very slow comparison from one that never ends; it says "
-                  "that it does not finish in a time a reader waits." if slow or blank else "")
+                  "that it does not finish in a time a reader waits." if parts else "")
         print(f"**Given {budget:.0f} minutes, phylo.io {verdict}.** {rest}{caveat}\n")
     if long_compare:
         print("**The comparison itself, given 30 minutes.** The same page, with `load()` "
@@ -673,14 +794,16 @@ for row in rows:
 repeats = load("phylodelta_repeats.json", [])
 if repeats:
     table(7, "PhyloDelta, repeated")
-    print("Six samples per rung after a discarded warm-up: the source of Table 1's "
-          "PhyloDelta column.\n")
-    print("| leaves | nodes | median | min | max | heap |")
+    print(f"{_repeat_n} loads per rung after a discarded warm-up: the source of Table 1's "
+          "PhyloDelta column. Median [Q1–Q3], with the extremes beside it.\n")
+    print("| leaves | nodes | load | min | max | heap |")
     print("|---:|---:|---:|---:|---:|---:|")
     for r in repeats:
+        heaps_r = [x / MIB for x in r.get("heap_samples", [])] or [heap_mib(r)]
         print(
-            f"| {r['leaves']:,} | {r['leaves'] * 2 - 1:,} | **{r['median_ms'] / 1000:.2f} s** | "
-            f"{r['min_ms'] / 1000:.2f} s | {r['max_ms'] / 1000:.2f} s | {heap_mib(r):.1f} MiB |"
+            f"| {r['leaves']:,} | {r['leaves'] * 2 - 1:,} | "
+            f"**{miqr(r.get('samples') or [r['median_ms']], ' s', 2, 1 / 1000)}** | "
+            f"{r['min_ms'] / 1000:.2f} s | {r['max_ms'] / 1000:.2f} s | {miqr(heaps_r, ' MiB')} |"
         )
 
 # --- 5d. the server side ---------------------------------------------------
@@ -695,6 +818,10 @@ if server:
           "two metrics, which the app lists as two comparisons (§52), with MAST run "
           "where its memory estimate fits the budget and declined where it does not. "
           "Each build's metrics are read back from the pair.\n")
+    _app_n = max((len(r.get("builds_s") or [1]) for r in app_builds), default=1)
+    print(f"*The two-thread columns are the median [Q1–Q3] of {_build_n} builds a rung for "
+          f"(a) and {_app_n} for (b), each a fresh upload of the same pair; ten threads is "
+          "one build, for comparison only.*\n")
     print("| leaves | (a) `rf`, 2 threads | (a) `rf`, 10 threads | (b) `rf,mast`, 2 threads | MAST in (b) | bundle size |")
     print("|---:|---:|---:|---:|---|---:|")
     app_by = {r["leaves"]: r for r in app_builds}
@@ -706,8 +833,10 @@ if server:
             state = f"declined (needs ~{need.group(1)}, an estimate)"
         else:
             state = "computed" if "mast" in app["metrics_ready"] else "**missing**"
-        print(f"| {leaves:,} | **{two_thread[leaves]:.1f} s** | {ten_thread[leaves]:.1f} s | "
-              f"{app['build_s']:.1f} s | {state} | {r['bytes'] / MIB:.1f} MiB |")
+        print(f"| {leaves:,} | **{miqr(deploy_builds.get(leaves) or [two_thread[leaves]], ' s')}** | "
+              f"{ten_thread[leaves]:.1f} s | "
+              f"{miqr(app.get('builds_s') or [app['build_s']], ' s')} | {state} | "
+              f"{r['bytes'] / MIB:.1f} MiB |")
     print("\n*The ~2 s floor at small sizes is the worker's poll interval, not "
           "work.*")
 
@@ -904,7 +1033,8 @@ print("| Precompute before first view | none | up to "
       f"{max(r['build_s'] for r in app_builds):.0f} s as the app uploads it |")
 print("| Whole tree ever visible | yes, in memory | **no, never transferred** |")
 print("| Works offline from a file | yes | no |")
-print("| Comparison recomputed on demand | yes | no, fixed at build |")
+print("| Comparison recomputed on demand | yes, in the page (a re-root recomputes it there) "
+      "| only as a new comparison: a re-root is a full rebuild on the server (§56, Table 24) |")
 
 table(14, "Provenance of the test data")
 print("| rung | origin |")
@@ -938,61 +1068,89 @@ print(f"\n*Pruned rungs share 100% of their leaves. From {_partial[0]['rung']:,}
 # --- 7. navigating, once loaded -------------------------------------------
 if nav_rows:
     table(15, "Navigation responsiveness, once the comparison is open")
-    print("*Median milliseconds from the action to a painted result, with the frame "
-          f"count at {FRAME_MS:.2f} ms beside it, up to {navigation['samples']} operations "
-          "per cell after up to 3 discarded warm-ups, one page load per tool per rung.*\n")
+    _nav_loads = navigation.get("loads", 1)
+    print("*Milliseconds from the action to a painted result: the median, the "
+          "interquartile range in brackets, and the frame count of the median at "
+          f"{FRAME_MS:.2f} ms. {_nav_loads} page loads per tool per rung, up to "
+          f"{navigation['samples']} operations a load after up to 3 discarded warm-ups; "
+          "`n` is every sample of every load, pooled.*\n")
     print("**Every figure here is a frame count.** The clock stops after two nested "
           "`requestAnimationFrame` callbacks, so a sample is quantised to the display, "
           "and a 2 ms difference in real work moves it a whole frame (§34.14). The gap "
           "between the two tools cannot be resolved by this harness. The claim that "
           "survives is that both answer well inside the 100 ms an interaction is "
           "allowed.\n")
+    print("**Which clades the jump is timed on.** Across sizes, and never one whose "
+          "best corresponding node is the other tree's root: on those phylo.io's jump "
+          "throws, every time, so they are counted in the last column and tried "
+          "separately rather than timed (note below, §34.24).\n")
     print("| leaves | phylo.io expand | phylo.io back | phylo.io jump | "
-          "PhyloDelta expand | PhyloDelta back | PhyloDelta jump |")
-    print("|---:|---:|---:|---:|---:|---:|---:|")
+          "PhyloDelta expand | PhyloDelta back | PhyloDelta jump | "
+          "phylo.io clades whose counterpart is the root: jump threw |")
+    print("|---:|---:|---:|---:|---:|---:|---:|---:|")
 
-    #: Rungs where phylo.io never finished computing the comparison, from the
-    #: ceiling run. A tool with no comparison has nothing to navigate, and that
-    #: is a different statement from "navigation was slow" — the first harness
-    #: run reported it as "exceeded 900s", which reads as the second.
-    no_comparison = {
-        r["leaves"]
-        for r in rows
-        if not (r.get("phyloio", {}).get("phases") or {}).get("compareComplete")
-    }
+    def nav_loads(cell):
+        """A cell's loads; an older single-load cell is its own one."""
+        return cell.get("loads") or ([cell] if cell else [])
 
-    def nav(cell, key, leaves=None, tool=None):
-        if tool == "phyloio" and leaves in no_comparison:
+    def no_comparison(cell):
+        loads = nav_loads(cell)
+        return bool(loads) and all(load.get("failed") == "comparison never completed" for load in loads)
+
+    def nav(cell, key, tool=None):
+        if tool == "phyloio" and no_comparison(cell):
             return "*no comparison*"
         if not cell or cell.get("ok") is False:
             return "**fails**"
         got = cell.get(key) or {}
-        ms = got.get("median_ms")
-        if ms is None:
+        samples = got.get("samples") or ([got["median_ms"]] if got.get("median_ms") is not None else [])
+        q = quartiles(samples)
+        if q is None:
             return "**fails**"
-        return f"{ms:.1f} ms ({round(ms / FRAME_MS)} f) n={got['n']}"
+        lo, ms, hi = q
+        return f"{ms:.1f} [{lo:.1f}–{hi:.1f}] ms ({round(ms / FRAME_MS)} f) n={len(samples)}"
+
+    def rootward_of(cell):
+        """The clades whose counterpart is the root, over every load that had a comparison."""
+        seen = [load.get("rootward") for load in nav_loads(cell) if load.get("rootward")]
+        return {
+            "clades": max((r["clades"] for r in seen), default=None),
+            "tried": sum(r["tried"] for r in seen),
+            "threw": sum(r["threw"] for r in seen),
+            "worked": sum(r["worked"] for r in seen),
+            "loads": len(seen),
+            "errors": sorted({e for r in seen for e in r.get("errors", [])}),
+        }
 
     for row in nav_rows:
         pi, pd = row.get("phyloio", {}), row.get("phylodelta", {})
         n = row["leaves"]
-        print(f"| {n:,} | {nav(pi, 'expand', n, 'phyloio')} | {nav(pi, 'back', n, 'phyloio')} "
-              f"| {nav(pi, 'jump', n, 'phyloio')} "
-              f"| {nav(pd, 'expand')} | {nav(pd, 'back')} | {nav(pd, 'jump')} |")
+        rw = rootward_of(pi)
+        rootward_cell = ("*no comparison*" if no_comparison(pi) else
+                         f"{rw['clades']:,} clades: threw {rw['threw']} of {rw['tried']} "
+                         f"over {rw['loads']} loads" if rw["clades"] is not None else "—")
+        print(f"| {n:,} | {nav(pi, 'expand', 'phyloio')} | {nav(pi, 'back', 'phyloio')} "
+              f"| {nav(pi, 'jump', 'phyloio')} "
+              f"| {nav(pd, 'expand')} | {nav(pd, 'back')} | {nav(pd, 'jump')} | {rootward_cell} |")
 
-    last_done = max(n for n in readings if readings[n].get("compare_s"))
-    print(f"\n**\"No comparison\" is not slow navigation.** phylo.io paints both trees at "
-          "17,645 leaves but its best-corresponding-node worker never finishes there "
-          "inside the 600 s budget (Tables 1 and 23), so in compare mode there is nothing "
-          f"to navigate. Its navigation is therefore measurable only to **{last_done:,} "
-          f"leaves**, where the comparison completes in {readings[last_done]['compare_s']:.0f} s. "
-          "PhyloDelta is measured at 17,645 anyway, because holding flat is the claim.\n")
+    _done = [r["leaves"] for r in nav_rows if not no_comparison(r.get("phyloio", {}))]
+    _absent = [r["leaves"] for r in nav_rows if no_comparison(r.get("phyloio", {}))]
+    if _absent and _done:
+        last_done = max(_done)
+        print(f"\n**\"No comparison\" is not slow navigation.** phylo.io paints both trees at "
+              f"{', '.join(f'{n:,}' for n in _absent)} leaves but its best-corresponding-node "
+              f"worker did not finish there in any of the {_nav_loads} loads inside the 600 s "
+              "budget (Tables 1 and 23), so in compare mode there is nothing to navigate. Its "
+              f"navigation is therefore measurable only to **{last_done:,} leaves**. "
+              "PhyloDelta is measured at every one of these sizes anyway, because holding "
+              "flat is the claim.\n")
     print("**Both tools are driven one layer below the click** — phylo.io through "
           "`container.trigger_(action, …)`, which is exactly what its context-menu items call, and "
           "PhyloDelta through the actions its menu items call. Synthesising a click on a WebGL "
           "canvas would have charged hit-testing to one side only. What is excluded is the same for "
           "both: opening a menu and pressing an item.\n")
-    _pi = [n for r in nav_rows for n in r["phyloio"].get("sizes", [])]
-    _pd = [n for r in nav_rows for n in r["phylodelta"].get("sizes", [])]
+    _pi = [n for r in nav_rows for load in nav_loads(r["phyloio"]) for n in load.get("sizes", [])]
+    _pd = [n for r in nav_rows for load in nav_loads(r["phylodelta"]) for n in load.get("sizes", [])]
     print(f"**The operations are not equivalent in what they reveal.** phylo.io holds the "
           f"whole tree, so it collapses and expands clades of {min(_pi):,} to {max(_pi):,} "
           f"leaves and draws all of them. PhyloDelta's targets are the wedges in the "
@@ -1031,82 +1189,73 @@ if nav_rows:
           "Tables 1–14 was measured with no caching at all, so they are a floor rather "
           "than a best case.\n")
 
-    # phylo.io's jump does not survive compare mode.
-    broken = [r for r in nav_rows
-              if (r.get("phyloio", {}).get("failure_count") or 0) > 0]
-    if broken:
-        first = broken[0]["phyloio"]["failures"][0]
-        print("\n### Table 15 note — phylo.io's \"Highlight BCN\" is intermittent\n")
-        tried = sum(r["phyloio"].get("failure_count") or 0 for r in broken)
-        # Each rung's outcome as Table 15 prints it, from the same nav() the
-        # cells come from, so the note cannot disagree with the table: a rung
-        # with no comparison is not a failed jump (v0.2.1 worked at 1,000).
-        jump_cells = {r["leaves"]: nav(r.get("phyloio", {}), "jump", r["leaves"], "phyloio")
-                      for r in nav_rows}
-        jump_failed = [n for n, c in jump_cells.items() if c == "**fails**"]
-        jump_worked = [n for n, c in jump_cells.items() if c not in ("**fails**", "*no comparison*")]
-        jump_absent = [n for n, c in jump_cells.items() if c == "*no comparison*"]
-
-        def rungs(ns):
-            names = [f"{n:,}" for n in ns]
-            return ", ".join(names[:-1]) + " and " + names[-1] if len(names) > 1 else "".join(names)
-
-        worked_too = (f"At {rungs(jump_worked)} leaves, the jump worked in that rung's load."
-                      if jump_worked else "")
-        print(f"All {tried} attempts in the navigation run above failed at "
-              f"{rungs(jump_failed)} leaves, with the same error:\n")
-        print(f"> `{first.get('error')}`\n")
-        if worked_too:
-            print(worked_too + "\n")
-        print("**But that is one page load per rung, and the failure is intermittent.** "
-              "A dedicated probe over repeated loads of the same pair at 1,000 leaves:\n")
-        if bcn_211 or bcn_225:
-            print("| phylo.io | page loads | loads where the jump worked | attempts succeeded |")
-            print("|---|---:|---:|---:|")
-            for d in (bcn_211, bcn_225):
-                if d:
-                    print(f"| {d['label']} | {d['loads']} | {d['loads_with_any_success']} "
-                          f"| {d['attempts_succeeded']}/{d['attempts_total']} |")
-            print()
-        worked = [load for load in bcn_225["per_load"] if load["succeeded"]]
-        # Table 15's one load per rung can land on either outcome; say which it
-        # showed rather than assume the common one.
-        if jump_worked:
-            parts = [f"it worked at {rungs(jump_worked)}"]
-            if jump_failed:
-                parts.append(f"failed at {rungs(jump_failed)}")
-            if jump_absent:
-                parts.append(f"had no comparison to jump in at {rungs(jump_absent)}")
-            outcome_note = ("so it shows whichever outcome that load had: "
-                            + "; ".join(parts[:-1]) + ("; and " if len(parts) > 1 else "")
-                            + parts[-1] + ".")
-        else:
-            outcome_note = "which is why it shows only the common outcome."
-        print(f"The honest claim is that the jump fails in most loads, not that it never "
-              f"works. It is **not** all-or-nothing within a load: in the "
-              f"{len(worked)} of {bcn_225['loads']} loads where it worked at all, "
-              f"{sum(w['succeeded'] for w in worked)} of "
-              f"{sum(w['attempted'] for w in worked)} attempts succeeded. Table 15 reports "
-              f"one load per rung, {outcome_note}\n")
-        print("**The mechanism, and why it is conditional.** It is reached only from the "
-              "context-menu item of that name (`viewer.js` line 1175 is the sole caller). `api.js` "
-              "builds **two separate models** from the BCN worker's reply, and the `elementBCN` "
-              "references inside the first point at that reply's own embedded copy of the second "
-              "tree. `getHierarchyNodeFromModelNode` compares by object identity, so whether it "
-              "finds anything depends on whether structured-clone identity between the two halves "
-              "of one message survives into the rebuilt models — which is evidently not "
-              "guaranteed. When it does not, the lookup returns null and `expandToRoot` hands that "
-              "null to `apply_collapse_from_data_to_d3`, which reads `_children` on it.\n")
+    # phylo.io's jump, where it works and where it does not (§34.24).
+    _rows_rw = [(r["leaves"], rootward_of(r.get("phyloio", {}))) for r in nav_rows
+                if not no_comparison(r.get("phyloio", {}))]
+    if _rows_rw:
+        print("\n### Table 15 note — phylo.io's \"Highlight BCN\" fails only where the "
+              "counterpart is the root\n")
+        jump_tried = jump_failed = 0
+        for r in nav_rows:
+            for one in nav_loads(r.get("phyloio", {})):
+                jump_failed += sum(1 for f in one.get("failures", []) if f.get("op") == "jump")
+                jump_tried += len(one.get("jump_sizes", []))
+        rw_tried = sum(rw["tried"] for _, rw in _rows_rw)
+        rw_threw = sum(rw["threw"] for _, rw in _rows_rw)
+        errors = sorted({e for _, rw in _rows_rw for e in rw["errors"]})
+        print(f"**The jump works on every clade but one kind.** Over the loads above it was "
+              f"timed on {jump_tried} clades across sizes whose best corresponding node is not "
+              f"the other tree's root, and failed on {jump_failed}. On the clades whose "
+              f"counterpart **is** the root it threw {rw_threw} times in {rw_tried} attempts, "
+              "in every load:\n")
+        for error in errors[:2]:
+            print(f"> `{error}`\n")
+        print("| leaves | clades whose counterpart is the root | attempts | threw | "
+              "jumps on other clades | failed |")
+        print("|---:|---:|---:|---:|---:|---:|")
+        for r in nav_rows:
+            cell = r.get("phyloio", {})
+            if no_comparison(cell):
+                continue
+            rw = rootward_of(cell)
+            loads = nav_loads(cell)
+            tried = sum(len(load.get("jump_sizes", [])) for load in loads)
+            failed = sum(1 for load in loads for f in load.get("failures", []) if f.get("op") == "jump")
+            print(f"| {r['leaves']:,} | {rw['clades'] if rw['clades'] is not None else '—'} | "
+                  f"{rw['tried']} | {rw['threw']} | {tried} | {failed} |")
+        print()
+        if bcn_225:
+            print(f"**A dedicated probe over {bcn_225['loads']} loads of the same pair at "
+                  f"{bcn_225['leaves']:,} leaves** says the same: the jump succeeded on "
+                  f"{bcn_225['attempts_succeeded']} of {bcn_225['attempts_total']} clades whose "
+                  f"counterpart is not the root, and threw on "
+                  f"{bcn_225.get('rootward_threw', '—')} of {bcn_225.get('rootward_attempted', '—')} "
+                  f"attempts on the {bcn_225.get('rootward_clades', '—')} that are.\n")
+        if bcn_211:
+            print(f"*History: the {bcn_211['label']} probe, kept from before this release was "
+                  f"the one under test, sampled the largest clades first and recorded "
+                  f"{bcn_211['attempts_succeeded']} of {bcn_211['attempts_total']} attempts "
+                  f"succeeding over {bcn_211['loads']} loads. Its sampling is the error "
+                  "described below, so it says nothing about which clades fail.*\n")
+        print("**The mechanism.** It is reached only from the context-menu item of that "
+              "name (`viewer.js` line 1175 is the sole caller). For a clade whose best "
+              "corresponding node is the other tree's **root**, `elementBCN` points at a "
+              "detached copy of that root — the root object the BCN worker's reply carries, "
+              "not the one the panel's model was rebuilt with — so "
+              "`getHierarchyNodeFromModelNode` returns null, and `expandToRoot` hands that "
+              "null to `apply_collapse_from_data_to_d3`, which reads `_children` on it. Any "
+              "other counterpart is found, and the jump works.\n")
+        print("**Why the earlier tables said \"fails in most page loads\".** The harness "
+              "took the largest clades first, and on these rungs the largest clades are "
+              "exactly those whose counterpart is the root — at 1,000 leaves the eight "
+              "largest, 922 to 997 leaves. It measured the one failing case and reported it "
+              "as the tool's behaviour (DECISIONS, Corrections; §34.24).\n")
         if ceiling_225:
             done = ceiling_225["per_load"][0]["completed"]
             print(f"The ceiling was measured directly on {ceiling_225['label']}: at "
                   f"**{ceiling_225['leaves']:,} leaves** a further load's comparison "
                   f"**{'completed' if done else 'did not complete'}** inside a 600 s budget. "
                   "That is the one claim the whole of Table 1 rests on.\n")
-        print("It still sharpens the comparison rather than softening it: the cross-tree jump is "
-              "the operation PhyloDelta's design is most open to criticism over — it costs "
-              "a slice the panel has never held — and it is the one the comparison tool "
-              "manages only sometimes.\n")
 
 
 # --- 8. does the metric change the cost? ----------------------------------
@@ -1553,8 +1702,9 @@ if paint.get("rows"):
           f"bench commit `{paint['bench_commit']}`. {paint['rows'][0]['loads']} page loads per "
           f"rung, {paint['attempt_budget_ms'] / 1000:.0f} s per load, "
           f"{paint['compare_budget_ms'] / 1000:.0f} s for the comparison.*\n")
-    print("Tables 1, 2 and 3 take these rows from here, because one load cannot "
-          "say whether a paint or a comparison is reliable and three can.\n")
+    print("A second runner over the sizes where phylo.io paints but its comparison does "
+          "not finish, with paint and compare given budgets of their own. Tables 1, 2 and 3 "
+          "read the ceiling run's own loads; this one checks them from another harness.\n")
     print("| leaves | loads | painted | paint (median) | SVG paths | compare finished in 600 s |")
     print("|---:|---:|---:|---:|---:|:---:|")
     for row in paint["rows"] + paint_extra.get("rows", []):
@@ -1580,3 +1730,154 @@ if paint.get("rows"):
                   "default leaves out")
         verb = "was" if "summary" in paint_extra else "comes"
         print(f"*The {extra_rows} row {verb} {source}.*\n")
+
+
+# --- 24. re-rooting -------------------------------------------------------
+reroot = load("reroot.json", {})
+if reroot.get("rows"):
+    table(24, "Re-rooting: from the action to the re-rooted comparison on screen", lead="\n\n")
+    print(f"*Seconds, the median and the interquartile range of {reroot['runs']} runs per "
+          "rung per tool, each in a fresh browser, re-rooting the same clade in both tools "
+          "and every run: never the root or a child of the root, chosen once by "
+          "`tools/reroot_targets.py` (the left tree's clade nearest a tenth of its leaves) "
+          "and matched by its leaf set.*\n")
+    print("**phylo.io** recomputes in the page: its menu's \"Reroot\", "
+          "`trigger_(\"reroot\", …)`, re-roots the model and runs its similarity worker again "
+          "over both trees; the clock stops when that worker finishes, as the first "
+          "comparison is timed. **PhyloDelta** builds a new comparison on the server (§56): "
+          "the clock covers the request, the build, the app's own polling, and opening the "
+          "new comparison until both panels show a slice with its similarity values.\n")
+    print("| leaves | clade re-rooted on (stored id, leaves, depth) | phylo.io | PhyloDelta | "
+          "PhyloDelta build alone (Table 8) |")
+    print("|---:|---|---:|---:|---:|")
+
+    def runs_cell(runs):
+        if runs is None:
+            return "*no comparison to re-root*"
+        done = [r["ms"] / 1000 for r in runs if r.get("ok")]
+        outcomes: dict[str, int] = {}
+        for r in runs:
+            if not r.get("ok"):
+                outcomes[r.get("outcome", "failed")] = outcomes.get(r.get("outcome", "failed"), 0) + 1
+        notes = "; ".join(of_loads(n, len(runs), what) for what, n in outcomes.items())
+        if not done:
+            return f"**{notes}**"
+        return miqr(done, " s", 2) + (f" (**{notes}**)" if notes else "")
+
+    for row in reroot["rows"]:
+        print(f"| {row['leaves']:,} | node {row['node']:,} ({row['clade_leaves']:,} leaves, "
+              f"depth {row['depth']}) | {runs_cell(row.get('phyloio'))} | "
+              f"{runs_cell(row['phylodelta'])} | "
+              f"{miqr(deploy_builds.get(row['leaves'], []), ' s')} |")
+    print("\n*Above 17,645 leaves phylo.io's first comparison does not finish (Table 1), "
+          "so there is nothing for it to re-root and it is not run there.*\n")
+
+
+# --- the thesis charts' data ------------------------------------------------
+#
+# One CSV per chart, written beside the tables from the same results, so a plot
+# in the thesis is redrawn from a file the campaign produced rather than from
+# numbers copied out of this one (§34.24). Medians and quartiles are the same
+# `quartiles()` every table uses; a cell nothing was measured for is empty, not 0.
+import csv  # noqa: E402
+
+FIGURES = RESULTS / "figures"
+FIGURES.mkdir(exist_ok=True)
+
+
+def _q(values, scale=1.0):
+    q = quartiles([v * scale for v in values if v is not None])
+    return ("", "", "") if q is None else tuple(round(x, 4) for x in (q[1], q[0], q[2]))
+
+
+def _write(name, header, body):
+    with (FIGURES / name).open("w", newline="") as out:
+        writer = csv.writer(out)
+        writer.writerow(header)
+        writer.writerows(body)
+
+
+_tti = []
+for row in rows:
+    leaves = row["leaves"]
+    p, d = readings[leaves], repeat_by.get(leaves, {})
+    load_q = _q(d.get("samples") or ([d["median_ms"]] if d else []), 1 / 1000)
+    pre_q = _q(deploy_builds.get(leaves, []))
+    total = tuple(round(a + b, 4) if a != "" and b != "" else "" for a, b in zip(pre_q, load_q, strict=True))
+    _tti.append([
+        leaves,
+        *_q(p.get("paints", [])), p.get("n", 0), p.get("of", 0),
+        *_q(p.get("compares", [])), p.get("compared_n", 0),
+        *load_q, *pre_q, *total,
+    ])
+_write("time_to_interactive.csv", [
+    "leaves",
+    "phyloio_paint_median_s", "phyloio_paint_q1_s", "phyloio_paint_q3_s", "phyloio_painted_loads", "phyloio_loads",
+    "phyloio_compare_median_s", "phyloio_compare_q1_s", "phyloio_compare_q3_s", "phyloio_compared_loads",
+    "phylodelta_load_median_s", "phylodelta_load_q1_s", "phylodelta_load_q3_s",
+    "precompute_median_s", "precompute_q1_s", "precompute_q3_s",
+    "first_opening_median_s", "first_opening_q1_s", "first_opening_q3_s",
+], _tti)
+
+_end = {}
+for r in endurance + endurance_extra:
+    _end.setdefault(r["leaves"], {}).setdefault(r.get("tool", "phyloio"), []).append(r["peak_renderer_mb"])
+_write("browser_memory.csv", [
+    "leaves",
+    "phyloio_heap_median_mib", "phyloio_heap_q1_mib", "phyloio_heap_q3_mib",
+    "phylodelta_heap_median_mib", "phylodelta_heap_q1_mib", "phylodelta_heap_q3_mib",
+    "phyloio_peak_renderer_median_mib", "phyloio_peak_renderer_q1_mib", "phyloio_peak_renderer_q3_mib",
+    "phylodelta_peak_renderer_median_mib", "phylodelta_peak_renderer_q1_mib", "phylodelta_peak_renderer_q3_mib",
+], [
+    [row["leaves"],
+     *_q(readings[row["leaves"]].get("heaps", [])),
+     *_q([x / MIB for x in repeat_by.get(row["leaves"], {}).get("heap_samples", [])]),
+     *_q(_end.get(row["leaves"], {}).get("phyloio", [])),
+     *_q(_end.get(row["leaves"], {}).get("phylodelta", []))]
+    for row in rows
+])
+
+_gz = {r["leaves"]: r for r in transfer_gzip.get("rows", [])}
+_write("data_transferred.csv", [
+    "leaves", "phyloio_data_bytes", "phylodelta_data_bytes",
+    "phyloio_data_gzip_bytes", "phylodelta_data_gzip_bytes",
+], [
+    [r["leaves"], r["phyloio"].get("data", ""), r["phylodelta"].get("data", ""),
+     _gz.get(r["leaves"], {}).get("phyloio", {}).get("data", ""),
+     _gz.get(r["leaves"], {}).get("phylodelta", {}).get("data", "")]
+    for r in transfer.get("rows", [])
+])
+
+if reroot.get("rows"):
+    def _ok(runs):
+        return [r["ms"] / 1000 for r in (runs or []) if r.get("ok")]
+
+    _write("reroot.csv", [
+        "leaves", "node", "clade_leaves",
+        "phyloio_median_s", "phyloio_q1_s", "phyloio_q3_s", "phyloio_completed_runs", "phyloio_runs",
+        "phylodelta_median_s", "phylodelta_q1_s", "phylodelta_q3_s", "phylodelta_completed_runs", "phylodelta_runs",
+    ], [
+        [r["leaves"], r["node"], r["clade_leaves"],
+         *_q(_ok(r.get("phyloio"))), len(_ok(r.get("phyloio"))), len(r.get("phyloio") or []),
+         *_q(_ok(r["phylodelta"])), len(_ok(r["phylodelta"])), len(r["phylodelta"])]
+        for r in reroot["rows"]
+    ])
+
+(FIGURES / "README.md").write_text(
+    "# Data behind the thesis charts\n\n"
+    "Written by `harness/make_tables.py` from `results/*.json`, beside `TABLES.md`; never "
+    "edited by hand. Every `_median`, `_q1`, `_q3` triple is the median and the inclusive "
+    "first and third quartiles of the repeated measurement (§34.24). An empty cell means "
+    "nothing was measured, never zero.\n\n"
+    "- `time_to_interactive.csv` — Table 1. phylo.io paint and compare, PhyloDelta's load, "
+    "the precompute at two threads (Table 8), and the **first opening**: precompute plus "
+    "load, median plus median. Its `q1`/`q3` are the sums of the two quartiles, a band "
+    "around the total rather than quartiles of a measured total, since the two are "
+    "measured separately. `*_loads` columns count the loads that got that far.\n"
+    "- `browser_memory.csv` — Tables 3 and 4: main-thread heap per load, and peak renderer "
+    "RSS where Table 4 measured it (the larger rungs).\n"
+    "- `data_transferred.csv` — Tables 19 and 20: bytes of tree and comparison data per "
+    "page load, uncompressed and gzip.\n"
+    "- `reroot.csv` — Table 24: seconds from a re-root to the re-rooted comparison on "
+    "screen, and the clade re-rooted on.\n"
+)

@@ -27,7 +27,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .. import config, db, retention, uploads
+from .. import config, db, rerooting, retention, uploads
 from ..db import jobs as queue
 from ..isolates.ingest import JoinReport, ingest_table
 from ..isolates.schema import DEFAULT_KEY_COLUMN
@@ -164,6 +164,14 @@ def run_comparison(
     keys = manifest.get("isolate_keys", {})
     shared = manifest.get("shared_isolates", False)
     report: dict[str, dict] = {}
+    derived = manifest.get("derived")
+    if derived:
+        # A re-root (§56): the bundle carries no table — the original's was
+        # discarded once it was built (§26) — but names the isolate stores to
+        # copy. They are keyed by leaf label, which a re-root does not change.
+        report = rerooting.copy_isolates(
+            store, derived, {"left": record.left_id, "right": record.right_id}, owner
+        )
     for side, role, dataset_id in (
         ("left", "left_isolates", record.left_id),
         ("right", "left_isolates" if shared else "right_isolates", record.right_id),
@@ -265,6 +273,16 @@ def process_next(worker: str | None = None, metrics: list[str] | None = None) ->
         # per-metric failure was printed pages earlier, and a reader scanning for
         # the outcome of this comparison would not see it.
         print(f"--- {comparison_id} metric {name} produced nothing: {why}", flush=True)
+    # A re-rooted comparison is ready: only now is its original marked
+    # superseded, or deleted when the re-root was asked to replace it (§56).
+    # A failure before this point has left the original exactly as it was.
+    try:
+        settled = rerooting.settle_original(comparison_id)
+    except Exception as exc:  # the new comparison is good; say what was not done
+        settled = f"could not settle the original: {type(exc).__name__}: {exc}"
+        traceback.print_exc()
+    if settled:
+        print(f"--- {comparison_id} re-root: {settled}", flush=True)
     # The raw bundle is ~69% of a stored comparison and redundant once
     # ingested. Kept only when the job failed, where it is the evidence.
     freed = retention.discard_bundle(comparison_id)

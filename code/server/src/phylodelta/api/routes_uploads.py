@@ -24,13 +24,20 @@ import json
 
 from fastapi import APIRouter, Depends, File, Form, Path, Query, UploadFile, status
 
-from .. import db, retention, uploads
+from .. import db, rerooting, retention, uploads
 from . import errors
+from .access import comparison_missing
 from .identity import current_owner
 from .routes_meta import API_PREFIX
 from ..metrics import registry as metric_registry
 from ..metrics import registry_pairs
-from .schemas import ComparisonRemoved, ComparisonStatusResponse, UploadAccepted
+from .schemas import (
+    ComparisonRemoved,
+    ComparisonStatusResponse,
+    RerootAccepted,
+    RerootRequest,
+    UploadAccepted,
+)
 
 router = APIRouter(prefix=f"{API_PREFIX}/comparisons", tags=["comparisons"])
 
@@ -272,12 +279,9 @@ def comparison_status(
     """
     record = db.comparison_for(owner, comparison_id)
     if record is None:
-        # Same 404 for "not yours" as for "no such id" — see api/access.py.
-        raise errors.not_found(
-            "comparison_not_found",
-            f"No comparison {comparison_id!r}.",
-            "GET /api/v1/datasets lists what you have.",
-        )
+        # Same 404 for "not yours" as for "no such id" — see api/access.py —
+        # unless this owner replaced it by re-rooting (§56).
+        raise comparison_missing(owner, comparison_id, "GET /api/v1/datasets lists what you have.")
     requested = [m for m in (record.metrics or "").split(",") if m]
     # What the store actually holds, not what the row hoped for. A metric that
     # raised left nothing behind, and this is the same source the datasets
@@ -300,6 +304,50 @@ def comparison_status(
         finished_at=_isoformat(record.finished_at),
         error=record.error,
         ready=record.status is db.ComparisonStatus.READY,
+        rerooted_from=record.rerooted_from,
+        reroot=json.loads(record.reroot) if record.reroot else None,
+        superseded_by=record.superseded_by,
+    )
+
+
+@router.post(
+    "/{comparison_id}/reroot",
+    response_model=RerootAccepted,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Re-root one tree, as a new comparison built like an upload.",
+    response_description="Accepted for building; poll the status endpoint.",
+)
+def reroot_comparison(
+    body: RerootRequest,
+    owner: str = Depends(current_owner),
+    comparison_id: str = Path(description="The comparison whose tree to re-root."),
+) -> RerootAccepted:
+    """Re-root the left or right tree and compute the comparison again (§56).
+
+    Every metric here is rooted, so the result is a new comparison with new
+    ids, built by the worker from the two trees written out as Newick, with the
+    original's metrics. Its typing data is the original's, copied by leaf
+    label. The original is untouched until the new one is ready; then it is
+    marked `superseded_by`, or deleted when `replace` is set.
+    """
+    try:
+        bundle, info = rerooting.request(
+            owner, comparison_id, body.side, node=body.node, replace=body.replace,
+        )
+    except LookupError:
+        raise comparison_missing(owner, comparison_id, "GET /api/v1/datasets lists what you have.") from None
+    except (rerooting.RerootNotPossible, rerooting.RerootRefused) as refused:
+        raise errors.bad_request(
+            "reroot_refused",
+            str(refused),
+            "Re-root above a node below the root's children.",
+        ) from None
+    return RerootAccepted(
+        id=bundle.comparison_id,
+        status="pending",
+        rerooted_from=comparison_id,
+        poll=f"{API_PREFIX}/comparisons/{bundle.comparison_id}/status",
+        reroot=info,
     )
 
 

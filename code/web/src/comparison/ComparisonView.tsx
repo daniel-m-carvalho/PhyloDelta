@@ -30,7 +30,7 @@ import { ExportPanel, type ExportChoices } from "../export/ExportPanel";
 import { ContextMenu } from "../menu/ContextMenu";
 import { TypingLegend } from "../typing/TypingLegend";
 import { datumFor, useTypingData } from "../typing/useTypingData";
-import { buildMenu, menuTitle, type PendingMenu } from "./menuItems";
+import { buildMenu, menuTitle, type PendingMenu, type RerootMenu } from "./menuItems";
 import {
   PIXELS_PER_LEAF,
   readableBudget,
@@ -41,8 +41,9 @@ import {
 import { SearchBox } from "./SearchBox";
 import { markAction, type Placed } from "./markPlacement";
 import { PanelNotice } from "./PanelNotice";
+import { siblingOrders } from "./siblingOrder";
 import { absentFrom, type SearchResult, type SearchRow } from "./search";
-import { unmeasuredBy, unmeasuredLabel } from "./metric";
+import { DEFAULT_LEGEND, gradientLegend, unmeasuredBy, unmeasuredLabel } from "./metric";
 
 /**
  * Panels are identical except for their label: the same budget, the same
@@ -95,7 +96,23 @@ const CLADE_SHAPE = {
   // that actually carries a value.
   color: "#000000",
   minHalfHeight: Math.max(1, PIXELS_PER_LEAF * 0.12),
-  maxHalfHeight: PIXELS_PER_LEAF * 0.42,
+  // Half a row (§55.2): two full wedges side by side just fill their two rows.
+  // `fitRows` is what makes that safe — wherever the rows on screen are closer
+  // than 14px (expand all, or zoomed out) every wedge shrinks by one factor —
+  // so the top no longer has to be held below half a row to stay clear of the
+  // neighbours, and the extra height goes to telling sizes apart.
+  maxHalfHeight: PIXELS_PER_LEAF * 0.5,
+  fitRows: true,
+  hoverCount: true,
+  // "Proportional", the app's default; the View menu switches it (§55.2).
+  scale: "linear",
+  reference: "largest-drawn",
+} as const;
+
+/** The two wedge scales the View menu offers, as the clade presenter's options. */
+export const WEDGE_SCALES = {
+  proportional: { scale: "linear", reference: "largest-drawn" },
+  log: { scale: "log", reference: "view" },
 } as const;
 
 /**
@@ -330,7 +347,7 @@ const CONFIG: Config = {
     flashes: ARRIVAL_FLASHES,
     persistHighlight: true,
     legend: true,
-    legendLabels: ["Identical", "Diverged"],
+    legendLabels: DEFAULT_LEGEND,
     /*
      * The third thing on screen. A leaf reconciliation dropped has no
      * counterpart and therefore no similarity, so its branch keeps the tree's
@@ -431,6 +448,7 @@ export function ComparisonView({
   shown,
   exporting = false,
   onExportClose,
+  reroot,
 }: {
   pair: PairSummary;
   initial?: { left: number[]; right: number[] };
@@ -452,6 +470,8 @@ export function ComparisonView({
   /** Opened from the header; the panel lives here because the viewers do. */
   exporting?: boolean;
   onExportClose?: () => void;
+  /** Re-rooting from the menu (§56); absent, it is not offered. */
+  reroot?: RerootMenu;
 }) {
   // Both panels are the same height, so one measurement serves both — and
   // both must ask for the same detail or the two sides stop being comparable
@@ -464,11 +484,12 @@ export function ComparisonView({
   // most metrics the shared one — so the colours and the jump both follow it.
   const gradientOn = shown?.kind === "gradient";
   const movedOn = shown?.kind === "categories";
+  const order = options.order ?? "size";
   const [left, leftActions] = useSide(
-    pair.left, pair.id, metric, initial?.left, autoBudget, options.cladeSizes, "metric",
+    pair.left, pair.id, metric, initial?.left, autoBudget, options.cladeSizes, "metric", order,
   );
   const [right, rightActions] = useSide(
-    pair.right, pair.id, metric, initial?.right, autoBudget, options.cladeSizes, "metric",
+    pair.right, pair.id, metric, initial?.right, autoBudget, options.cladeSizes, "metric", order,
   );
 
   // Which typing columns to show. Several at once is allowed; see
@@ -983,6 +1004,31 @@ export function ComparisonView({
     handle.current?.panels.forEach((panel) => panel.viewer.setLengthScale(options.lengthScale));
   }, [options.lengthScale, bothLoaded]);
 
+  // Wedge size (§55.2). Drawing only: the presenter rebuilds its wedges and no
+  // slice is asked for.
+  useEffect(() => {
+    const { scale, reference } = WEDGE_SCALES[options.wedges ?? "proportional"];
+    handle.current?.panels.forEach((panel) => panel.operators.cladeShape?.setScale(scale, reference));
+  }, [options.wedges, bothLoaded]);
+
+  // Siblings in the other tree's order (§55.3): the right panel follows the
+  // left's counterparts. Drawing only — no request, no change to any value —
+  // so it re-applies whenever a slice brings new counterparts.
+  //
+  // `setChildOrder` redraws, so with the option off it is called only once, to
+  // undo it: otherwise every slice the right panel loaded would draw twice.
+  const rightCounterpart = right.gradient.correspondingTo;
+  const orderApplied = useRef(false);
+  useEffect(() => {
+    const panels = handle.current?.panels;
+    if (!panels) return;
+    const on = options.matchOrder ?? false;
+    if (!on && !orderApplied.current) return;
+    orderApplied.current = on;
+    const orders = siblingOrders(on, rightCounterpart);
+    panels.forEach((panel, index) => panel.viewer.setChildOrder(orders[index] ?? orders[0]));
+  }, [options.matchOrder, rightCounterpart, bothLoaded]);
+
   // Move the gradient between the branches and the wedges. Both operators are
   // involved because the wedge is not a Sigma node marker but an overlay the
   // clade presenter draws, so the comparison operator cannot reach it; the
@@ -1010,6 +1056,7 @@ export function ComparisonView({
         shown ? unmeasuredLabel(shown) : undefined,
       );
       panel.operators.comparison?.setMode("gradient");
+      panel.operators.comparison?.setLegendLabels(gradientLegend(shown));
       panel.operators.comparison?.setColorTargets({
         edges: gradientOn && options.colorTarget === "branches",
       });
@@ -1125,6 +1172,7 @@ export function ComparisonView({
               identical: DIFF_PALETTE[0],
               diverged: DIFF_PALETTE[DIFF_PALETTE.length - 1],
             },
+            gradientLabels: shown?.legend?.length === 2 ? gradientLegend(shown) : undefined,
             // Unconditional, as on screen: a colour key that lists only what
             // this particular view happened to contain cannot be learnt, and
             // the reader of a report cannot navigate to find out.
@@ -1223,7 +1271,7 @@ export function ComparisonView({
     : null;
 
   const items = resolved
-    ? buildMenu(resolved, [left, right], [leftActions, rightActions], [leftName, rightName])
+    ? buildMenu(resolved, [left, right], [leftActions, rightActions], [leftName, rightName], reroot)
     : [];
 
   return (
