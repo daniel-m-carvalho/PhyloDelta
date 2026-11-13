@@ -62,6 +62,20 @@ def isolates_or_404(owner: str, species: str):
         ) from None
 
 
+def comparison_missing(owner: str, comparison_id: str, hint: str) -> errors.ApiError:
+    """What to say about a comparison this owner cannot read.
+
+    A 404, the same as for an id that never existed (§22.1) — except to the
+    owner of one they replaced by re-rooting it, who is told where it went
+    (§56). Nobody else can learn from the 410 that the id was ever used: the
+    record is read only under its owner.
+    """
+    moved_to = db.rerooted_away_to(owner, comparison_id)
+    if moved_to is not None:
+        return errors.rerooted_away(comparison_id, moved_to)
+    return errors.not_found("comparison_not_found", f"No comparison {comparison_id!r}.", hint)
+
+
 def pair_or_404(owner: str, pair_id: str, metric: str):
     """A computed comparison, if this owner has both of its trees.
 
@@ -71,10 +85,8 @@ def pair_or_404(owner: str, pair_id: str, metric: str):
     """
     left, _, right = pair_id.partition("__")
     if not right or not db.owns_all(owner, [left, right]):
-        raise errors.not_found(
-            "comparison_not_found",
-            f"No comparison {pair_id!r}.",
-            "GET /api/v1/datasets lists the pairs available to you.",
+        raise comparison_missing(
+            owner, pair_id, "GET /api/v1/datasets lists the pairs available to you."
         )
     try:
         return registry_pairs.get_pair(pair_id, metric)
@@ -98,10 +110,8 @@ def correspondence_or_404(owner: str, pair_id: str):
     """A pair's shared correspondence, if this owner has both of its trees."""
     left, _, right = pair_id.partition("__")
     if not right or not db.owns_all(owner, [left, right]):
-        raise errors.not_found(
-            "comparison_not_found",
-            f"No comparison {pair_id!r}.",
-            "GET /api/v1/datasets lists the pairs available to you.",
+        raise comparison_missing(
+            owner, pair_id, "GET /api/v1/datasets lists the pairs available to you."
         )
     try:
         return registry_pairs.get_correspondence(pair_id)

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import type { ComparisonSummary, MetricSummary } from "../api/types";
 import {
+  DEFAULT_LEGEND,
+  gradientLegend,
   headline,
   isEntry,
   presentationsOf,
@@ -135,5 +137,18 @@ describe("unmeasuredBy", () => {
     expect(unmeasuredBy({ kind: "gradient" })).toBeUndefined();
     expect(unmeasuredBy({ kind: "categories", min_leaves: 3 })).toBeUndefined();
     expect(unmeasuredBy(null)).toBeUndefined();
+  });
+});
+
+describe("gradientLegend", () => {
+  it("uses the metric's own words for the ends of the bar when it declares two", () => {
+    expect(gradientLegend({ legend: ["Same score", "Far apart"] })).toEqual(["Same score", "Far apart"]);
+  });
+
+  it("falls back to the shared correspondence's words otherwise", () => {
+    expect(gradientLegend(undefined)).toEqual(DEFAULT_LEGEND);
+    expect(gradientLegend({})).toEqual(["Identical", "Diverged"]);
+    expect(gradientLegend({ legend: [] })).toEqual(DEFAULT_LEGEND);
+    expect(gradientLegend({ legend: ["one"] })).toEqual(DEFAULT_LEGEND);
   });
 });

@@ -66,12 +66,44 @@ export function jumpTargetFor(side: SideState, leafStoredId: number): number | u
   return side.gradient.correspondingTo(leafStoredId);
 }
 
+/**
+ * Re-rooting, offered from the menu (§56). Optional: a view that cannot
+ * re-root — a server without the endpoint, or a comparison still building —
+ * passes nothing and the items are not offered.
+ */
+export interface RerootMenu {
+  /** Set while a re-root is building: why another cannot be asked for now. */
+  busy?: string;
+  onReroot: (side: 0 | 1, storedId: number) => void;
+}
+
+/** What every re-root item says it will cost, so nobody starts one by surprise. */
+export const REROOT_COST = "Builds a new comparison and recomputes every metric";
+
+/**
+ * Why re-rooting above this node would be refused, or undefined when it can be
+ * asked for. The server refuses the same nodes for the same reasons; saying so
+ * here, on a disabled item, saves a round trip that could only fail.
+ *
+ * Stored id 0 is the root of every stored tree (§1.1), whatever the panel is
+ * focused on. A child of the root is known from the slice when the root is in
+ * it; when the panel is rooted deeper, it cannot be one.
+ */
+export function rerootRefusal(side: SideState, storedId: number): string | undefined {
+  if (storedId === 0) return "This is the root: a tree is re-rooted on the branch above a node";
+  if (side.tree?.parentOfStoredId.get(storedId) === 0) {
+    return "A child of the root: rooting here gives the same clades, so every metric would answer as before";
+  }
+  return undefined;
+}
+
 export function buildMenu(
   menu: PendingMenu,
   states: [SideState, SideState],
   actions: [SideActions, SideActions],
   /** What to call each tree in a message; the ids otherwise. */
   names?: [string, string],
+  reroot?: RerootMenu,
 ): MenuItem[] {
   const here = states[menu.side];
   const act = actions[menu.side];
@@ -138,6 +170,17 @@ export function buildMenu(
               )
           : () => actThere.focusWithContext(partner),
     });
+
+    if (reroot) {
+      const refused = reroot.busy ?? (node ? rerootRefusal(here, storedId) : "This node is not in the current slice");
+      items.push({
+        label: "Re-root here",
+        separated: true,
+        detail: refused ? undefined : `${REROOT_COST}`,
+        disabledBecause: refused,
+        onSelect: refused ? undefined : () => reroot.onReroot(menu.side, storedId),
+      });
+    }
   }
 
   // Everything below acts on the view rather than on a node, so a menu opened

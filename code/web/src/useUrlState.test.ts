@@ -116,6 +116,29 @@ describe("view state in the URL", () => {
     expect([restored.lengths, restored.lengthScale]).toEqual([true, "log"]);
   });
 
+  it("round-trips the order, the wedge scale and the sibling order, writing only what is not the default", () => {
+    const { result } = renderHook(() => useUrlState());
+    act(() => result.current[1]({ comparison: "a__b", left: [], right: [], options: DEFAULT_OPTIONS }));
+    expect(window.location.hash).not.toMatch(/[?&](o|ws|mo)=/);
+    act(() =>
+      result.current[1]({
+        comparison: "a__b", left: [], right: [],
+        options: { ...DEFAULT_OPTIONS, order: "difference", wedges: "log", matchOrder: true },
+      }),
+    );
+    expect(window.location.hash).toContain("o=difference");
+    expect(window.location.hash).toContain("ws=log");
+    expect(window.location.hash).toContain("mo=1");
+    const restored = renderHook(() => useUrlState()).result.current[0].options;
+    expect([restored.order, restored.wedges, restored.matchOrder]).toEqual(["difference", "log", true]);
+  });
+
+  it("opens an old link, without the new keys, at the defaults", () => {
+    window.history.replaceState(null, "", "#/c/a__b?l=3");
+    const options = renderHook(() => useUrlState()).result.current[0].options;
+    expect([options.order, options.wedges, options.matchOrder]).toEqual(["size", "proportional", false]);
+  });
+
   it("drops a colour entry a browser could not paint", () => {
     window.history.replaceState(null, "", "#/c/a__b?cc=red.Human&cc=12b886.Food&cc=e03131");
     const { result } = renderHook(() => useUrlState());

@@ -49,6 +49,8 @@ export interface SliceKeyParts {
   keep?: number;
   /** Which correspondence the values come from; "shared" when absent (§52). */
   correspondence?: "shared" | "metric";
+  /** Where the server spent the budget; "size" when absent (§6.1, §55.1). */
+  order?: "size" | "difference";
 }
 
 /**
@@ -60,7 +62,7 @@ export interface SliceKeyParts {
  * far worse than a miss.
  */
 export function sliceKey({
-  treeId, root, budget, compare, metric, keep, correspondence,
+  treeId, root, budget, compare, metric, keep, correspondence, order,
 }: SliceKeyParts): string {
   return [
     encodeURIComponent(treeId),
@@ -72,6 +74,9 @@ export function sliceKey({
     // The same nodes with another correspondence's values: a different
     // response, so a different key, or switching would show stale colours.
     correspondence === "metric" ? "own" : "",
+    // Another node set for the same root and budget: the other order's
+    // slice must never be served for this one.
+    order === "difference" ? "diff" : "",
   ].join("|");
 }
 

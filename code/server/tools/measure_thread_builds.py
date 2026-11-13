@@ -20,6 +20,8 @@ from __future__ import annotations
 
 import io
 import json
+import os
+import statistics
 import sys
 import time
 import urllib.request
@@ -35,6 +37,12 @@ THREADS = int(sys.argv[3])
 #: Table 8's two builds can never be read as one.
 METRICS = sys.argv[4] if len(sys.argv) > 4 else "rf"
 SUFFIX = "" if METRICS == "rf" else "_app"
+#: Builds per rung (§34.24). `build_s` is their median, so every table that
+#: read one build reads the median now; `builds_s` keeps each, for the
+#: interquartile range. A build after the first is deleted once timed: the
+#: store would otherwise hold every rung several times over, and nothing reads
+#: those copies.
+BUILDS = int(os.environ.get("BENCH_BUILDS", "1"))
 
 
 def post(left: Path, right: Path, name: str) -> str:
@@ -60,6 +68,24 @@ def post(left: Path, right: Path, name: str) -> str:
         return json.load(response)["id"]
 
 
+def delete(comparison_id: str) -> None:
+    request = urllib.request.Request(f"{BASE}/comparisons/{comparison_id}", method="DELETE")
+    with urllib.request.urlopen(request, timeout=600):
+        pass
+
+
+def build_once(left: Path, right: Path, leaves: int, attempt: int):
+    started = time.perf_counter()
+    comparison_id = post(left, right, f"thr{THREADS}-{leaves}-{attempt}")
+    while True:
+        with urllib.request.urlopen(f"{BASE}/comparisons/{comparison_id}/status", timeout=60) as r:
+            record = json.load(r)
+        if record["status"] in {"ready", "failed"}:
+            break
+        time.sleep(0.5)
+    return comparison_id, time.perf_counter() - started, record
+
+
 def main() -> None:
     rungs = sorted({int(p.name.split("-")[1]) for p in LADDER.glob("ladder-*-a.nwk")})
     out = []
@@ -68,15 +94,16 @@ def main() -> None:
     for leaves in rungs:
         left = LADDER / f"ladder-{leaves:06d}-a.nwk"
         right = LADDER / f"ladder-{leaves:06d}-b.nwk"
-        started = time.perf_counter()
-        comparison_id = post(left, right, f"thr{THREADS}-{leaves}")
-        while True:
-            with urllib.request.urlopen(f"{BASE}/comparisons/{comparison_id}/status", timeout=60) as r:
-                record = json.load(r)
-            if record["status"] in {"ready", "failed"}:
-                break
-            time.sleep(0.5)
-        elapsed = time.perf_counter() - started
+        times, statuses = [], []
+        for attempt in range(BUILDS):
+            built, took, got = build_once(left, right, leaves, attempt)
+            times.append(took)
+            statuses.append(got["status"])
+            if attempt == 0:
+                comparison_id, record = built, got
+            else:
+                delete(built)
+        elapsed = statistics.median(times)
 
         # What the worker ACTUALLY used, read back from the pair it just built.
         # Not a formality: a previous campaign recorded a run as "2 threads"
@@ -93,17 +120,23 @@ def main() -> None:
             {
                 "leaves": leaves,
                 "build_s": elapsed,
-                "status": record["status"],
+                "builds_s": times,
+                "statuses": statuses,
+                "status": record["status"] if all(x == "ready" for x in statuses) else "failed",
                 "threads_verified": actual,
                 "metrics_asked": METRICS.split(","),
                 "metrics_ready": record.get("metrics_ready"),
                 "metrics_failed": record.get("metrics_failed"),
             }
         )
-        print(f"{leaves:>9,} {elapsed:>9.1f}s  {record['status']}")
+        spread = f"  ({', '.join(f'{t:.1f}' for t in times)})" if BUILDS > 1 else ""
+        print(f"{leaves:>9,} {elapsed:>9.1f}s  {record['status']}{spread}")
         target = Path(__file__).resolve().parents[2] / "bench" / "results" / f"thread_builds_{THREADS}{SUFFIX}.json"
         target.write_text(
-            json.dumps({"threads": THREADS, "metrics": METRICS.split(","), "rungs": out}, indent=2)
+            json.dumps(
+                {"threads": THREADS, "metrics": METRICS.split(","), "builds": BUILDS, "rungs": out},
+                indent=2,
+            )
         )
     print(f"\nwritten to thread_builds_{THREADS}{SUFFIX}.json")
 

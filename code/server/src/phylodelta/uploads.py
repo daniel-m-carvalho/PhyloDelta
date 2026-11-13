@@ -114,6 +114,11 @@ class Bundle:
     #: One table for both trees, sent as ``left_isolates``. Explicit because
     #: "only the left tree has a table" is a different and legitimate upload.
     shared_isolates: bool = False
+    #: Set when the bundle was made from stored trees rather than uploaded — a
+    #: re-root (§56): what it was made from, and per side the isolate store to
+    #: copy and the join report that goes with it. The raw tables of the
+    #: original are gone (§26), so typing data travels as a store, not a table.
+    derived: dict | None = None
 
 
 def uploads_dir() -> Path:
@@ -210,6 +215,7 @@ def accept(
     root: Path | None = None,
     isolate_keys: dict[str, str] | None = None,
     shared_isolates: bool = False,
+    derived: dict | None = None,
 ) -> Bundle:
     """Receive a bundle, streaming each file to disk as it arrives.
 
@@ -298,6 +304,7 @@ def accept(
         right_species=right_species.strip(),
         isolate_keys=keys,
         shared_isolates=shared_isolates,
+        derived=derived,
     )
     _write_manifest(bundle)
     return bundle
@@ -326,6 +333,7 @@ def _write_manifest(bundle: Bundle) -> None:
         "right_species": bundle.right_species,
         "isolate_keys": bundle.isolate_keys,
         "shared_isolates": bundle.shared_isolates,
+        **({"derived": bundle.derived} if bundle.derived else {}),
         "files": {
             role: {
                 "path": stored.path.name,

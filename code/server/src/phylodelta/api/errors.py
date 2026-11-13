@@ -39,17 +39,28 @@ class ErrorResponse(BaseModel):
     hint: str | None = Field(
         None, description="Where to look next, or the command that fixes it."
     )
+    moved_to: str | None = Field(
+        None,
+        description=(
+            "Only with 410 `comparison_rerooted`: the comparison that replaced "
+            "this one when it was re-rooted (§56). Shown only to its owner."
+        ),
+    )
 
 
 class ApiError(Exception):
     """Raised by routes. Carries the whole shape rather than only a message."""
 
-    def __init__(self, status: int, code: str, detail: str, hint: str | None = None):
+    def __init__(
+        self, status: int, code: str, detail: str, hint: str | None = None,
+        moved_to: str | None = None,
+    ):
         super().__init__(detail)
         self.status = status
         self.code = code
         self.detail = detail
         self.hint = hint
+        self.moved_to = moved_to
 
 
 def not_found(code: str, detail: str, hint: str | None = None) -> ApiError:
@@ -58,6 +69,17 @@ def not_found(code: str, detail: str, hint: str | None = None) -> ApiError:
 
 def bad_request(code: str, detail: str, hint: str | None = None) -> ApiError:
     return ApiError(400, code, detail, hint)
+
+
+def rerooted_away(comparison_id: str, moved_to: str) -> ApiError:
+    """410: this owner replaced ``comparison_id`` by re-rooting it, and here is where it went (§56)."""
+    return ApiError(
+        410,
+        "comparison_rerooted",
+        f"Comparison {comparison_id!r} was re-rooted and replaced by {moved_to!r}.",
+        f"Open {moved_to!r} instead.",
+        moved_to=moved_to,
+    )
 
 
 def unprocessable(code: str, detail: str, hint: str | None = None) -> ApiError:
@@ -87,9 +109,10 @@ def install(app: FastAPI) -> None:
 
     @app.exception_handler(ApiError)
     async def _api_error(_: Request, exc: ApiError) -> JSONResponse:
-        return JSONResponse(
-            status_code=exc.status, content=_body(exc.detail, exc.code, exc.hint)
-        )
+        body = _body(exc.detail, exc.code, exc.hint)
+        if exc.moved_to:
+            body["moved_to"] = exc.moved_to
+        return JSONResponse(status_code=exc.status, content=body)
 
     from ..metrics.store import MetricVersionMismatch
 

@@ -121,6 +121,12 @@ class PairSummary(BaseModel):
             "metric's when the pair was computed but the metric declined."
         ),
     )
+    rerooted_from: str | None = Field(
+        None, description="The comparison this one re-roots, when a re-root made it (§56)."
+    )
+    superseded_by: str | None = Field(
+        None, description="The re-rooted comparison made from this one, once ready (§56)."
+    )
 
 
 class IsolateSummary(BaseModel):
@@ -207,6 +213,13 @@ class PresentationDescription(BaseModel):
         description=(
             "`gradient` only: a clade of fewer leaves has nothing to score — a leaf "
             "always matches itself — and is drawn as such, not on the ramp."
+        ),
+    )
+    legend: list[str] = Field(
+        default_factory=list,
+        description=(
+            "`gradient` only: the colour bar's two end labels, low end first, in the "
+            "metric's words. Empty means the client chooses its own."
         ),
     )
 
@@ -776,6 +789,50 @@ class ComparisonStatusResponse(BaseModel):
             "status strings."
         )
     )
+    rerooted_from: str | None = Field(
+        None, description="The comparison this one re-roots, when a re-root made it (§56)."
+    )
+    reroot: dict | None = Field(
+        None,
+        description=(
+            "What the re-root was: `side`, `node` (a stored id in the original's "
+            "tree), `label`, `replace`, and `before`, the original's summary per "
+            "metric."
+        ),
+    )
+    superseded_by: str | None = Field(
+        None, description="A re-rooted comparison made from this one, once it is ready (§56)."
+    )
+
+
+class RerootRequest(BaseModel):
+    """Re-root one tree of a comparison, as a new comparison (§56)."""
+
+    side: str = Field(description="`left` or `right`: which tree to re-root.")
+    node: int = Field(
+        description=(
+            "The stored id of the node to root above, at the midpoint of its "
+            "branch. Not the root and not a child of the root."
+        ),
+    )
+    replace: bool = Field(
+        False,
+        description=(
+            "Delete the original once the re-rooted comparison is ready. Kept by "
+            "default, marked `superseded_by`; replaced, its owner's old links "
+            "answer 410 `comparison_rerooted` with where it went."
+        ),
+    )
+
+
+class RerootAccepted(BaseModel):
+    """A re-root accepted for building: poll it like an upload."""
+
+    id: str
+    status: str
+    rerooted_from: str
+    poll: str
+    reroot: dict = Field(description="As in the status response.")
 
 
 class WhoAmI(BaseModel):

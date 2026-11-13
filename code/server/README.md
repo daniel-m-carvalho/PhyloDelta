@@ -404,9 +404,13 @@ uv run phylodelta compute-pairs --metric rf --metric triplet
 
 A metric is a directory under `src/phylodelta/metrics/plugins/` with a `metric.json` manifest and an
 implementation. Two invocation kinds are defined: `python` (imported in-process) and `subprocess`
-(trees in, results out, as JSON on stdio) — the second so a metric can be written in **any**
-language. Every metric returns the same shape, so neither the API nor the frontend knows which
-produced a result. See `metrics/contract.py`.
+(Newick files in, text on stdout parsed by the manifest's patterns) — the second so a metric can
+be written in **any** language. Its `command` is a path or a program name on `PATH`.
+
+**A `subprocess` metric returns numbers only**: its summary scalars, nothing per clade. Its view is
+coloured by the shared correspondence. A metric that needs per-clade columns, its own
+correspondence or a `categories` colouring is a `python` metric, which may run a program itself
+(`spr` runs rspr). See `metrics/contract.py`.
 
 A metric also says what colours its view and links the two panels: `"correspondence": "jaccard"`
 (the default, the shared best-matching-clade search) or `"self"`, when its own computation pairs

@@ -161,6 +161,21 @@ class Comparison(Base):
     isolate_report: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     store_path: Mapped[str] = mapped_column(String(512), default="")
+
+    # --- re-rooting (§56) ---------------------------------------------------
+    #: The comparison this one re-roots, when it was made by a re-root. Not a
+    #: foreign key: the original may be deleted (``replace``), and this row must
+    #: still say where it came from.
+    rerooted_from: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    #: What the re-root was, as JSON: ``side``, ``node`` (a stored id of the
+    #: original's tree), ``label``, ``mode``, ``replace``, and ``before`` — the
+    #: original's summary per metric, so the header can show the number before
+    #: and after even once the original is gone.
+    reroot: Mapped[str | None] = mapped_column(Text, nullable=True)
+    #: Set on a kept original once its re-rooted comparison is ready: the list
+    #: marks it, and an old link to it says where the new one is.
+    superseded_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     finished_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
@@ -203,3 +218,24 @@ class Comparison(Base):
         Index("ix_comparisons_queue", "status", "created_at"),
         Index("ix_comparisons_pair", "left_id", "right_id"),
     )
+
+
+class RerootedAway(Base):
+    """A comparison deleted by a re-root with ``replace`` (§56), and what replaced it.
+
+    The one deletion that leaves something behind. An old link to a comparison
+    the user replaced by re-rooting should say where its replacement is, not
+    404 — the user did not lose it, they moved it. Every other deletion leaves
+    nothing, and every other requester gets the same 404 as for an id that
+    never existed (§22.1): this row is read only for its owner.
+
+    Removed when the replacement is deleted, since then there is nothing left
+    to point at; repointed when the replacement is itself replaced.
+    """
+
+    __tablename__ = "rerooted_away"
+
+    old_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    new_id: Mapped[str] = mapped_column(String(64), index=True)
+    owner_id: Mapped[str] = mapped_column(String(128), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)

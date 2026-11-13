@@ -66,8 +66,13 @@ navigated and the view options. Bookmark it, refresh, or send it to someone, and
 
 [![Navigating a tree](videos/03-navigate.png)](videos/03-navigate.mp4)
 
-A tree too large to draw whole is shown as a summary: the biggest groups of leaves are drawn as
-**triangles** (collapsed clades), sized by how many leaves they hold. You go deeper by opening them.
+A tree too large to draw whole is shown as a summary: groups of leaves are drawn as **triangles**
+(collapsed clades). A triangle's height is in proportion to the leaves it holds, measured against
+the largest triangle on screen, which is always full height, so the same clade can look smaller
+beside a bigger one. Hover over a triangle for its exact number of leaves. **View options → Wedge
+size → Logarithmic** draws the heights by log₂ of the count instead, so small clades stay visible.
+Which groups are opened first is the **Open clades** option: the largest, or the ones the two trees
+disagree on most. You go deeper by opening them.
 
 - **Zoom and move:** scroll to zoom, drag to move, in either panel. This only enlarges what is
   already drawn. Once a panel is zoomed or moved, a small **fit** button (four corners) appears in
@@ -82,6 +87,13 @@ A tree too large to draw whole is shown as a summary: the biggest groups of leav
   fold it to its outline. "Expand all" is offered only when the result is small enough to draw.
 - **Select, then act:** click a node to select it ("node … selected" appears in the header), then
   right-click anywhere in that panel to act on it, which is handy for nodes too small to hit.
+- **Re-root here** (right-click a node): root this tree on the branch above the node, at its
+  midpoint. This **builds a new comparison and recomputes every metric**, as an upload does: seconds
+  for a few thousand leaves, minutes near 500,000. You can keep using the current comparison while
+  it builds; the header shows its progress, and the new one opens when it is ready, with the number
+  before re-rooting beside the new one. The current comparison is kept and marked *superseded*,
+  unless you tick **Replace this comparison** in the dialog. Not offered on the root or on a child
+  of the root, which would give the same clades.
 
 The header above each panel says **showing N of M leaves**: N drawn, M in the part of the tree on
 screen, and how many are folded into triangles.
@@ -134,6 +146,9 @@ The mark stays until you clear it with **×** on the chip, or **Esc**.
 | **Branch lengths** | Write each branch's length beside it, where there is room. Zoom in to see more. |
 | **Draw the trees as: Cladogram / Phylogram** | Cladogram: positions by depth, to read the shape. Phylogram: positions by branch length, to read distance. |
 | **Branch length scale: Linear / Logarithmic** | Phylogram only. Logarithmic draws each branch as log(1 + length), so a few very long branches no longer squash the rest. Labels still show the real length. |
+| **Open clades: Largest clades first / Most different first** | Where the detail goes. Largest first opens the biggest clades. Most different first opens the clades the two trees disagree on most, so a divergent clade the other order leaves folded is drawn. Fetches the trees again. |
+| **Wedge size: Proportional / Logarithmic** | How a triangle's height follows its leaves: in proportion, against the largest triangle on screen, or by log₂ of the count. Only the drawing changes. |
+| **Siblings: Order to match the other tree** | Puts each node's children in the order of their counterparts in the other tree, so shared clades line up across the two panels. The left tree is then drawn in its file's order. Only the drawing changes: no clade or value moves. |
 
 ### Moved leaves
 

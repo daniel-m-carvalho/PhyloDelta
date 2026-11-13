@@ -263,3 +263,144 @@ def assert_rooted_binary(arrays: TreeArrays) -> None:
             f"{arrays.n_nodes} nodes for {arrays.n_leaves} leaves; "
             f"a rooted binary tree has {2 * arrays.n_leaves - 1}"
         )
+
+
+class RerootRefused(ValueError):
+    """A re-root that cannot be done, or would change nothing, said by name (§56)."""
+
+
+def reroot(arrays: TreeArrays, node: int) -> TreeArrays:
+    """The tree rooted on the branch above ``node``, at the branch's midpoint (§56).
+
+    The new root splits the branch above ``node`` in two: ``node`` keeps half
+    its length, and the other half leads to its old parent. Every node on the
+    path from there to the old root has its parent pointer reversed, so each
+    takes, as its new branch, the length of the edge that used to lead down to
+    it. The old root is left with one child and is removed as §1.4 removes any
+    unary node, its two edges joined into one: ``suppress_unary`` adds the
+    lengths, and keeps NaN — "no length given" — as NaN rather than inventing
+    a zero. Half of NaN is NaN, so a tree without lengths gains none.
+
+    Every leaf-to-leaf path length is unchanged: the only edges touched are
+    the one split in two, the old root's two edges joined into one, and the
+    reversed edges, which keep their lengths. Labels stay with their nodes.
+
+    Linear in the number of nodes and iterative: the trees here are hundreds
+    of levels deep, and a recursive rebuild would follow every one.
+
+    Refused by name, never adjusted to something nearby:
+
+    * the root itself has no branch above it;
+    * a child of the root: rooting on its branch splits the root's two edges
+      differently but gives the same rooted topology — the same clades — so
+      every metric would answer as before;
+    * an id outside the tree.
+    """
+    n = arrays.n_nodes
+    if not 0 <= node < n:
+        raise RerootRefused(f"node {node} is not in this tree, which has nodes 0 to {n - 1}")
+    parent = np.asarray(arrays.parent)
+    if parent[node] == NO_PARENT:
+        raise RerootRefused(
+            f"node {node} is the root; a tree is re-rooted on the branch above a node, "
+            "and the root has none"
+        )
+    if parent[parent[node]] == NO_PARENT:
+        raise RerootRefused(
+            f"node {node} is a child of the root. Rooting on its branch gives the same "
+            "rooted topology — the same clades, only the root's two edges split "
+            "differently — so every metric would give the same answer"
+        )
+
+    # Children in their stored order, as CSR: one pass, no Python lists per node.
+    # Pre-order lists every child after its parent and siblings left to right,
+    # so a stable sort of the non-roots by parent keeps that order.
+    non_root = np.flatnonzero(parent != NO_PARENT)
+    by_parent = non_root[np.argsort(parent[non_root], kind="stable")]
+    starts = np.zeros(n + 1, dtype=np.int64)
+    np.add.at(starts, parent[non_root].astype(np.int64) + 1, 1)
+    np.cumsum(starts, out=starts)
+
+    lengths = np.asarray(arrays.branch_len, dtype=np.float64)
+
+    # The path from `node` up to the old root, and what each node's parent is now.
+    path = [node]
+    while parent[path[-1]] != NO_PARENT:
+        path.append(int(parent[path[-1]]))
+    # On the path, p[i+1] becomes a child of p[i] for i >= 1, carrying the
+    # length of the edge that ran p[i] -> p[i+1] the other way: p[i]'s own.
+    came_from = {path[i]: path[i - 1] for i in range(1, len(path))}
+    new_length = {path[i + 1]: float(lengths[path[i]]) for i in range(1, len(path) - 1)}
+    half = float(lengths[node]) / 2.0  # NaN stays NaN
+    new_length[node] = half
+    new_length[path[1]] = half
+
+    root = n  # the new root's id while building; it is renumbered with the rest
+
+    def children(v: int) -> list[int]:
+        if v == root:
+            return [node, path[1]]
+        own = [int(c) for c in by_parent[starts[v]:starts[v + 1]]]
+        if v in came_from:
+            # A node on the path: its old parent becomes its last child, and the
+            # child it was reached from is no longer below it.
+            own = [c for c in own if c != came_from[v]]
+            if parent[v] != NO_PARENT:
+                own.append(int(parent[v]))
+        return own
+
+    # Iterative pre-order over the new shape.
+    order: list[int] = []
+    new_parent: list[int] = []
+    stack: list[tuple[int, int]] = [(root, -1)]
+    while stack:
+        v, up = stack.pop()
+        position = len(order)
+        order.append(v)
+        new_parent.append(up)
+        for child in reversed(children(v)):
+            stack.append((child, position))
+
+    m = len(order)
+    out_parent = np.array([NO_PARENT if p < 0 else p for p in new_parent], dtype=np.uint32)
+    out_len = np.empty(m, dtype=np.float64)
+    labels: list[str] = []
+    for i, v in enumerate(order):
+        if v == root:
+            out_len[i] = np.nan
+            labels.append("")
+        else:
+            out_len[i] = new_length.get(v, float(lengths[v]))
+            labels.append(arrays.labels[v])
+
+    rebuilt = _from_preorder_parents(out_parent, out_len, labels)
+    # The old root now has one child; remove it and join its two edges (§1.4).
+    rebuilt, _ = suppress_unary(rebuilt)
+    return rebuilt
+
+
+def _from_preorder_parents(parent: np.ndarray, lengths: np.ndarray, labels: list[str]) -> TreeArrays:
+    """Rebuild every derived column from parents given in pre-order. Linear."""
+    m = parent.shape[0]
+    depth = np.zeros(m, dtype=np.uint16)
+    for i in range(1, m):
+        depth[i] = depth[parent[i]] + 1
+    subtree_end = np.arange(1, m + 1, dtype=np.int64)
+    is_leaf = np.ones(m, dtype=bool)
+    is_leaf[parent[1:].astype(np.int64)] = False
+    leaf_count = is_leaf.astype(np.int64)
+    # Children follow their parent in pre-order, so a backward sweep finishes
+    # every subtree before its parent reads it.
+    for i in range(m - 1, 0, -1):
+        p = parent[i]
+        leaf_count[p] += leaf_count[i]
+        if subtree_end[i] > subtree_end[p]:
+            subtree_end[p] = subtree_end[i]
+    return TreeArrays(
+        parent=parent.astype(np.uint32),
+        subtree_end=subtree_end.astype(np.uint32),
+        depth=depth,
+        leaf_count=leaf_count.astype(np.uint32),
+        branch_len=lengths.astype(np.float32),
+        labels=labels,
+    )

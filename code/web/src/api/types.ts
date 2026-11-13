@@ -114,6 +114,10 @@ export interface PairSummary {
   /** Why this comparison could not be made, when it could not. */
   error?: string | null;
   status: "pending" | "running" | "ready" | "failed";
+  /** The comparison this one re-roots, when a re-root made it (§56). */
+  rerooted_from?: string | null;
+  /** The re-rooted comparison made from this one, once ready (§56). */
+  superseded_by?: string | null;
 }
 
 export interface IsolateSummary {
@@ -178,6 +182,38 @@ export interface ComparisonStatus {
    * not used — the comparison is still ready.
    */
   isolates?: Partial<Record<"left" | "right", IsolateJoinReport>>;
+  /** The comparison this one re-roots, when a re-root made it (§56). */
+  rerooted_from?: string | null;
+  /** What that re-root was. */
+  reroot?: RerootInfo | null;
+  /** A re-rooted comparison made from this one, once it is ready (§56). */
+  superseded_by?: string | null;
+}
+
+/** A re-root, as the server recorded it (§56). */
+export interface RerootInfo {
+  from: string;
+  side: "left" | "right";
+  /** A stored id in the original's tree: the node the new root is above. */
+  node: number;
+  label: string;
+  replace: boolean;
+  /** The original's summary per metric, so the number before can be shown after. */
+  before: Record<string, Record<string, number>>;
+}
+
+export interface RerootRequest {
+  side: "left" | "right";
+  node: number;
+  replace?: boolean;
+}
+
+export interface RerootAccepted {
+  id: string;
+  status: string;
+  rerooted_from: string;
+  poll: string;
+  reroot: RerootInfo;
 }
 
 export interface IsolateJoinReport {
@@ -201,6 +237,8 @@ export interface ApiErrorBody {
   detail: string;
   code: string;
   hint: string | null;
+  /** 410 `comparison_rerooted` only: what replaced it (§56). */
+  moved_to?: string | null;
 }
 
 
@@ -338,6 +376,8 @@ export interface Presentation {
   categories: string[];
   /** `gradient`: clades with fewer leaves have nothing to score, and are drawn grey. */
   min_leaves?: number;
+  /** `gradient`: the colour bar's end labels, low end first; empty or absent for the app's own. */
+  legend?: string[];
 }
 
 /** One per-node column a metric declares. */

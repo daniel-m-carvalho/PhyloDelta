@@ -66,6 +66,12 @@ export interface ComparisonView {
   /** The two ends of the divergence scale, as drawn. */
   gradientEnds?: { identical: string; diverged: string };
   /**
+   * What the two ends are called, low end first, when the metric names them
+   * itself. Omitted, the report describes the shared correspondence's ends
+   * ("Identical", "Diverged") in full.
+   */
+  gradientLabels?: [string, string];
+  /**
    * Label and colour for branches drawn with no value, when the view had any.
    *
    * Omitting it when the panels contained such branches leaves the reader a
@@ -201,15 +207,13 @@ function viewSetup(view: ComparisonView): Report["sections"][number] {
         ? "Each collapsed clade's wedge is coloured by how much the two trees disagree at that clade. Branch colour carries no meaning here."
         : "Branches are coloured by how much the two trees disagree at the clade they lead into.",
     );
+    const [low, high] = view.gradientLabels ?? [
+      "Identical — the same clade in both trees",
+      "Diverged — shares few leaves with its best match",
+    ];
     swatches.push(
-      {
-        label: "Identical — the same clade in both trees",
-        color: view.gradientEnds?.identical ?? "#1d4ed8",
-      },
-      {
-        label: "Diverged — shares few leaves with its best match",
-        color: view.gradientEnds?.diverged ?? "#ffd400",
-      },
+      { label: low, color: view.gradientEnds?.identical ?? "#1d4ed8" },
+      { label: high, color: view.gradientEnds?.diverged ?? "#ffd400" },
     );
     if (view.absent) {
       body.push(

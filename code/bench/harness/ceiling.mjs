@@ -46,6 +46,11 @@ const COMPARE_MS = 600_000;
 //: comparison, so that rung reported the limit and not the tool (§34.21).
 const ATTEMPT_MS = BUDGET_MS + COMPARE_MS + 60_000;
 
+//: Page loads per rung per tool (§34.24). Each is a fresh browser. Where
+//: phylo.io's comparison does not finish in its budget, five loads are five
+//: outcomes, reported as such ("did not finish in 5 of 5"), not reduced.
+const LOADS = Number(process.env.BENCH_LOADS || 5);
+
 /** Unbuffered: a run this long is useless if its progress is invisible. */
 function say(line) {
   writeFileSync(1, line + "\n");
@@ -173,8 +178,20 @@ try {
       a: `ladder-${String(rung.leaves).padStart(6, "0")}-a.nwk`,
       b: `ladder-${String(rung.leaves).padStart(6, "0")}-b.nwk`,
     };
-    const phyloio = await attempt("phylo.io", (owned) => runPhyloio(owned, spec));
-    const phylodelta = await attempt("phylodelta", (owned) => runPhylodelta(owned, spec));
+    // PhyloDelta's loads first: a phylo.io attempt that overran its deadline
+    // could otherwise leave a renderer working while PhyloDelta is measured.
+    const phylodeltaLoads = [];
+    for (let i = 0; i < LOADS; i += 1) {
+      phylodeltaLoads.push(await attempt("phylodelta", (owned) => runPhylodelta(owned, spec)));
+    }
+    const phyloioLoads = [];
+    for (let i = 0; i < LOADS; i += 1) {
+      phyloioLoads.push(await attempt("phylo.io", (owned) => runPhyloio(owned, spec)));
+    }
+    // The first load of each stands where the single attempt used to, so a
+    // reader of one row sees one load; `loads` holds all of them.
+    const phyloio = { ...phyloioLoads[0], loads: phyloioLoads };
+    const phylodelta = { ...phylodeltaLoads[0], loads: phylodeltaLoads };
 
     const row = { leaves: rung.leaves, server_s: +rung.build_s.toFixed(1), phyloio, phylodelta };
     rows.push(row);
@@ -191,7 +208,11 @@ try {
       const heap = r.heap_bytes == null ? "n/a" : (r.heap_bytes / 2 ** 20).toFixed(1);
       return `${paint}s ${heap.padStart(5)}MiB${cmp}`;
     };
-    say(`${rung.leaves.toLocaleString().padStart(9)}  ${show(phyloio).padEnd(26)}  ${show(phylodelta)}`);
+    for (let i = 0; i < LOADS; i += 1) {
+      say(
+        `${(i ? "" : rung.leaves.toLocaleString()).padStart(9)}  ${show(phyloioLoads[i]).padEnd(26)}  ${show(phylodeltaLoads[i])}`,
+      );
+    }
   }
 } finally {
   server.close();
@@ -203,7 +224,7 @@ const merged = [...previous.filter((r) => !rows.some((n) => n.leaves === r.leave
 writeFileSync(
   join(BENCH, "results", "ceiling.json"),
   JSON.stringify(
-    { browser: BROWSER, viewport: VIEWPORT, budget_ms: BUDGET_MS, attempt_ms: ATTEMPT_MS, rows: merged },
+    { browser: BROWSER, viewport: VIEWPORT, budget_ms: BUDGET_MS, attempt_ms: ATTEMPT_MS, loads: LOADS, rows: merged },
     null,
     2,
   ),

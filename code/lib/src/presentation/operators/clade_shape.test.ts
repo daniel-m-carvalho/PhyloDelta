@@ -4,6 +4,7 @@ import { CladeShapePresenter } from "./clade_shape";
 import { ComparisonOperator } from "./comparison";
 import { ExpandCollapseOperator } from "./expand_collapse";
 import { binaryTree, makeHarness, namedTree } from "./harness";
+import type { NewickNode } from "../tree/types";
 
 /** Wedges are CSS-border triangles: zero-size divs with a border-*. */
 function wedges(container: HTMLElement): HTMLElement[] {
@@ -248,5 +249,119 @@ describe("colouring wedges by value", () => {
       expect(apex(h)).toBe(own);
       expect(h.styleOf("named_a").color).toBe("#d400ff");
     });
+  });
+});
+
+describe("CladeShapePresenter — scale and reference (§55.2)", () => {
+  /** A root with one collapsed child per size, each a caterpillar of that many leaves. */
+  function clades(sizes: number[]): NewickNode {
+    const clade = (n: number, tag: string): NewickNode =>
+      n === 1
+        ? { name: `${tag}_0`, length: 1 }
+        : { name: `${tag}`, length: 1, branchset: Array.from({ length: n }, (_, i) => ({ name: `${tag}_${i}`, length: 1 })) };
+    return { name: "root", branchset: sizes.map((n, i) => clade(n, `c${i}`)) };
+  }
+
+  /** Half-height of each wedge, keyed by the leaves it hides. */
+  function heights(options: ConstructorParameters<typeof CladeShapePresenter>[0], sizes: number[]) {
+    const h = makeHarness(clades(sizes), { maxNodes: 10_000 });
+    new CladeShapePresenter({ minHalfHeight: 2, maxHalfHeight: 12, ...options }).attach(h.viewer);
+    h.viewer.setCollapseFn((n) => !!n.branchset?.length && n !== h.viewer.getTree());
+    h.render();
+    const out = new Map<number, number>();
+    for (const el of wedges(h.container)) {
+      out.set(parseInt(el.title.replace(/,/g, ""), 10), parseFloat(el.style.borderTop));
+    }
+    return out;
+  }
+
+  it("grows linearly with the leaves hidden under the linear scale", () => {
+    const sizes = [2, 4, 8, 16];
+    const got = heights({ scale: "linear", saturateAt: 16 }, sizes);
+    for (const n of sizes) expect(got.get(n)).toBeCloseTo(2 + (n / 16) * 10, 6);
+    // Equal steps in leaves are equal steps in height.
+    expect(got.get(8)! - got.get(4)!).toBeCloseTo((got.get(16)! - got.get(8)!) / 2, 6);
+  });
+
+  it("grows with log2 of the leaves hidden under the log scale, the default", () => {
+    const sizes = [2, 4, 8, 16];
+    for (const options of [{ scale: "log" as const, saturateAt: 16 }, { saturateAt: 16 }]) {
+      const got = heights(options, sizes);
+      for (const n of sizes) expect(got.get(n)).toBeCloseTo(2 + (Math.log2(n) / 4) * 10, 6);
+    }
+  });
+
+  it("gives the largest drawn wedge the full height under largest-drawn", () => {
+    for (const scale of ["linear", "log"] as const) {
+      const got = heights({ scale, reference: "largest-drawn" }, [3, 5, 9]);
+      expect(got.get(9)).toBeCloseTo(12, 6);
+      expect(got.get(3)!).toBeLessThan(12);
+    }
+    // Against the view instead, nothing on screen reaches the top: the tree
+    // stands for 17 leaves and its largest clade hides 9.
+    expect(heights({ scale: "linear", reference: "view" }, [3, 5, 9]).get(9)!).toBeLessThan(12);
+  });
+
+  it("is the library's old behaviour when nothing is asked for", () => {
+    const sizes = [2, 6, 30];
+    expect(heights({}, sizes)).toEqual(heights({ scale: "log", reference: "view" }, sizes));
+  });
+
+  it("switches scale on a live panel", () => {
+    const h = makeHarness(clades([2, 8]), { maxNodes: 10_000 });
+    const shape = new CladeShapePresenter({ minHalfHeight: 2, maxHalfHeight: 12, saturateAt: 8 });
+    shape.attach(h.viewer);
+    h.viewer.setCollapseFn((n) => !!n.branchset?.length && n !== h.viewer.getTree());
+    h.render();
+    const of2 = () => wedges(h.container).find((el) => el.title === "2 leaves")!;
+    const logHeight = parseFloat(of2().style.borderTop);
+    shape.setScale("linear");
+    expect(parseFloat(of2().style.borderTop)).toBeCloseTo(2 + (2 / 8) * 10, 6);
+    expect(parseFloat(of2().style.borderTop)).not.toBeCloseTo(logHeight, 3);
+  });
+
+  it("never lets two neighbouring wedges overlap with fitRows, however close the rows", () => {
+    const sizes = Array.from({ length: 40 }, (_, i) => 2 + ((i * 37) % 200));
+    const h = makeHarness(clades(sizes), { maxNodes: 100_000 });
+    new CladeShapePresenter({
+      minHalfHeight: 2, maxHalfHeight: 40, scale: "linear", reference: "largest-drawn", fitRows: true,
+    }).attach(h.viewer);
+    h.viewer.setCollapseFn((n) => !!n.branchset?.length && n !== h.viewer.getTree());
+    h.render();
+    const spans = wedges(h.container)
+      .map((el) => {
+        const top = parseFloat(el.style.top);
+        return [top, top + 2 * parseFloat(el.style.borderTop)] as const;
+      })
+      .sort((a, b) => a[0] - b[0]);
+    expect(spans).toHaveLength(40);
+    for (let i = 1; i < spans.length; i++) expect(spans[i][0]).toBeGreaterThanOrEqual(spans[i - 1][1]);
+  });
+});
+
+describe("CladeShapePresenter — hover count (§55.2)", () => {
+  it("says how many leaves a hovered wedge hides, and goes away on leaving", () => {
+    const h = makeHarness(binaryTree(5)); // 32 leaves
+    new CladeShapePresenter({ hoverCount: true }).attach(h.viewer);
+    h.viewer.setCollapseFn((n) => n === h.viewer.getTree()!.branchset![0]);
+    h.render();
+    const id = [...h.viewer.getNodeMap().values()].find((n) => n.isCollapsed)!.id;
+    const tooltip = () =>
+      [...h.container.querySelectorAll<HTMLElement>("div")].find((el) => el.textContent === "16 leaves");
+
+    h.viewer.events.emit("enterNode", { node: id });
+    expect(tooltip()?.style.display).toBe("block");
+    h.viewer.events.emit("leaveNode", {});
+    expect(tooltip()?.style.display).toBe("none");
+  });
+
+  it("says nothing over a node that is not a wedge, or when not asked to", () => {
+    const h = makeHarness(binaryTree(3));
+    new CladeShapePresenter().attach(h.viewer);
+    h.viewer.setCollapseFn((n) => n === h.viewer.getTree()!.branchset![0]);
+    h.render();
+    const id = [...h.viewer.getNodeMap().values()].find((n) => n.isCollapsed)!.id;
+    h.viewer.events.emit("enterNode", { node: id });
+    expect(h.container.textContent).not.toContain("leaves");
   });
 });

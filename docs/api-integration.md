@@ -24,6 +24,7 @@ All endpoints are under **`/api/v1`**. Examples assume `BASE=http://localhost:80
 10. [Delete](#10-delete)
 11. [Errors](#11-errors)
 12. [Limits and deployment settings](#12-limits-and-deployment-settings)
+13. [Re-root a tree](#13-re-root-a-tree)
 
 ---
 
@@ -316,7 +317,9 @@ Every error has the same shape, with a stable `code` to branch on and a `hint` s
 |---|---|---|
 | 401 | Missing or invalid credentials | `owner_required`, `token_required`, `token_expired`, `token_invalid` |
 | 404 | Unknown tree, comparison, node | `tree_not_found`, `comparison_not_found`, `node_out_of_range` |
+| 400 | A re-root that cannot be done: the root, a child of the root, a comparison not ready | `reroot_refused` |
 | 409 | A stored result was computed by an older metric version, or before its metric had its own correspondence, and must be recomputed | `metric_version_mismatch`, `correspondence_not_computed` |
+| 410 | Only to its owner: a comparison replaced by re-rooting it, with `moved_to` naming the one that replaced it ([section 13](#13-re-root-a-tree)) | `comparison_rerooted` |
 | 422 | A parameter is invalid or missing | `invalid_request` (with an `errors` list per field), `metric_not_computed`, `empty_query` |
 
 `detail` may be reworded between versions; `code` will not.
@@ -340,3 +343,28 @@ for.
 
 Comparisons are computed by the **worker** (`phylodelta worker`), separately from the API. An upload
 stays `pending` until a worker is running.
+
+## 13. Re-root a tree
+
+Every metric is rooted, so a re-rooted tree is a new comparison, built like an upload, with the
+original's metrics and new ids. It returns at once, and you poll the new id as after an upload:
+
+```bash
+curl -X POST $BASE/comparisons/$ID/reroot -H 'Content-Type: application/json' \
+  -d '{"side": "left", "node": 812}'
+# → {"id":"<new id>","status":"pending","rerooted_from":"<old id>","poll":"/api/v1/comparisons/<new id>/status","reroot":{…}}
+```
+
+- The request roots `side`'s tree on the branch above `node` (a stored id), at its midpoint. Not
+  the root, and not a child of the root, which gives the same clades: both are refused,
+  `reroot_refused`.
+- `replace: true` deletes the original once the new comparison is ready. Without it the original
+  is kept and its status says `superseded_by`.
+
+The new comparison's status carries `rerooted_from` and `reroot`: which side, which node, and
+`before`, the original's summary per metric. Its isolate data is the original's, copied by leaf
+label. Node ids in the new comparison are not the original's: do not reuse them.
+
+After `replace`, the original's id answers its owner with **410** `comparison_rerooted` and
+`moved_to`, the id that replaced it; everyone else gets the usual 404. Nothing about the original
+changes if the build fails.

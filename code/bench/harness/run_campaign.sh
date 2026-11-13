@@ -122,18 +122,20 @@ step_ladder() {
 }
 
 # Thread builds first, from an idle machine, one store each (§34.8).
-thread_build() {  # threads [metrics]
-  local threads="$1" metrics="${2:-}"
+thread_build() {  # threads [metrics] [builds]
+  local threads="$1" metrics="${2:-}" builds="${3:-1}"
   backend_up "$CAMPAIGN_ROOT/stores/thr$threads${metrics:+-app}" "$threads" \
     "$CAMPAIGN_ROOT/logs/worker-thr$threads.log"
-  (cd "$SERVER" && "$PY" tools/measure_thread_builds.py "$LADDER" "$API" "$threads" ${metrics:+"$metrics"})
+  (cd "$SERVER" && BENCH_BUILDS="$builds" \
+    "$PY" tools/measure_thread_builds.py "$LADDER" "$API" "$threads" ${metrics:+"$metrics"})
   backend_down
 }
 step_threads_1() { thread_build 1; }
-step_threads_2() { thread_build 2; }
+#: Table 8 is the deployment setting: five builds a rung, median and IQR (§34.24).
+step_threads_2() { thread_build 2 "" 5; }
 step_threads_10() { thread_build 10; }
 #: Table 8(b): what UploadPanel sends by default, the distance and "also moved".
-step_threads_2_app() { thread_build 2 rf,mast; }
+step_threads_2_app() { thread_build 2 rf,mast 5; }
 
 step_store_rf() {
   backend_up "$CAMPAIGN_ROOT/stores/bench" 2 "$CAMPAIGN_ROOT/logs/worker-bench.log"
@@ -183,8 +185,15 @@ step_latency() { with_bench bash -c "cd '$SERVER' && '$PY' tools/measure_slice_l
 step_repeats() { with_bench bash -c "cd '$BENCH' && node harness/repeat_phylodelta.mjs"; }
 step_ceiling() { with_bench bash -c "cd '$BENCH' && node harness/ceiling.mjs"; }
 step_paint() { (cd "$BENCH" && node harness/phyloio_paint.mjs); }
-step_endurance() { (cd "$BENCH" && node harness/endurance.mjs); }
+#: With the API: PhyloDelta's renderer is measured beside phylo.io's (§34.24).
+step_endurance() { with_bench bash -c "cd '$BENCH' && node harness/endurance.mjs"; }
 step_navigation() { with_bench bash -c "cd '$BENCH' && node harness/navigation.mjs"; }
+#: Re-rooting, both tools, the same clade (§34.24, §56): chosen from the bench
+#: store, then timed through the API and the app.
+step_reroot() {
+  with_bench bash -c "cd '$SERVER' && PHYLODELTA_STORE='$CAMPAIGN_ROOT/stores/bench' \
+    '$PY' tools/reroot_targets.py '$RESULTS' && cd '$BENCH' && node harness/reroot.mjs"
+}
 
 step_accuracy() {
   # Every rung where this campaign's comparison finished, and no others.
@@ -262,8 +271,8 @@ step_endurance_extra() {
   # "long compare" check, which is not repeated.
   local rungs="17645 35290 70580 564640" budget=1800
   if [ "${CAMPAIGN_DRY_RUN:-}" = 1 ]; then rungs="${RUNGS##* }"; budget=60; fi
-  (cd "$BENCH" && BENCH_RUNGS="$rungs" BENCH_BUDGET_S="$budget" BENCH_OUT=endurance_extra.json \
-    node harness/endurance.mjs)
+  with_bench bash -c "cd '$BENCH' && BENCH_RUNGS='$rungs' BENCH_BUDGET_S='$budget' \
+    BENCH_OUT=endurance_extra.json node harness/endurance.mjs"
 }
 
 step_paint_extra() {
@@ -297,7 +306,7 @@ ALL=(
   setup env ladder
   threads_1 threads_2 threads_10 threads_2_app
   store_rf store_app memory_2 memory_10 metric_builds scaling
-  latency repeats ceiling paint endurance accuracy clade_repeats navigation
+  latency repeats ceiling paint endurance accuracy clade_repeats navigation reroot
   bcn_probe ceiling_probe transfer transfer_gzip viewport
   latency_mast transfer_app transfer_app_gzip rf_external
   endurance_extra paint_extra accuracy_repeats finish

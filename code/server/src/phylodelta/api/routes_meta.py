@@ -128,6 +128,7 @@ def _pairs(owner: str, trees: list[TreeSummary]) -> list[PairSummary]:
         summary = PairSummary(
             id=record.id, display_name=record.display_name, left=left, right=right,
             species="", same_species=None, status=status, metrics=[],
+            rerooted_from=record.rerooted_from, superseded_by=record.superseded_by,
         )
 
         left_tree, right_tree = known.get(left), known.get(right)
@@ -297,6 +298,7 @@ def metrics() -> list[MetricSummary]:
                     name=p.name, label=p.label, kind=p.kind, description=p.description,
                     column=p.column, columns=list(p.columns),
                     categories=list(p.categories), min_leaves=p.min_leaves,
+                    legend=list(p.legend),
                 )
                 for p in manifest.presentations
             ],

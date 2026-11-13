@@ -150,3 +150,19 @@ export function unmeasuredLabel(shown: Pick<Presentation, "min_leaves">): string
   const floor = shown.min_leaves ?? 1;
   return floor === 2 ? "A leaf: nothing to measure" : `Under ${floor} leaves: nothing to measure`;
 }
+
+/**
+ * The gradient legend's end labels when nothing better is declared: the words
+ * for the shared correspondence, which every metric without its own uses.
+ */
+export const DEFAULT_LEGEND: [string, string] = ["Identical", "Diverged"];
+
+/**
+ * The gradient legend's end labels for a presentation: the metric's own when
+ * its manifest declares two, ours otherwise. A metric scoring something other
+ * than clade overlap would be misdescribed by "Identical / Diverged".
+ */
+export function gradientLegend(shown: Pick<Presentation, "legend"> | null | undefined): [string, string] {
+  const declared = shown?.legend;
+  return declared && declared.length === 2 ? [declared[0], declared[1]] : DEFAULT_LEGEND;
+}

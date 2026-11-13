@@ -86,6 +86,14 @@ export interface ExpandCollapseConfig {
 export interface CladeShapeConfig {
   /** Attach the clade-shape presenter (default true). */
   enabled?: boolean;
+  /** Height by log2 of the leaves hidden, or in proportion (default "log"). */
+  scale?: "log" | "linear";
+  /** Top of the scale: the tree in view, or the largest wedge drawn (default "view"). */
+  reference?: "view" | "largest-drawn";
+  /** Shrink every wedge alike so neighbours never overlap (default false). */
+  fitRows?: boolean;
+  /** Say how many leaves a wedge hides when it is hovered (default false). */
+  hoverCount?: boolean;
   /** Point the wedge back toward the root (default true; auto-mirrored). */
   towardRoot?: boolean;
   /** Wedge length along the branch axis, px (default 14). */
@@ -374,6 +382,10 @@ function buildPanel(
       minHalfHeight: o.minHalfHeight,
       maxHalfHeight: o.maxHalfHeight,
       saturateAt: o.saturateAt,
+      scale: o.scale,
+      reference: o.reference,
+      fitRows: o.fitRows,
+      hoverCount: o.hoverCount,
       color: o.color,
       hideMarker: o.hideMarker,
     });

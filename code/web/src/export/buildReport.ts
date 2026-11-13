@@ -35,6 +35,8 @@ export interface ReportInput {
   swatches?: ReadonlyMap<string, string>;
   /** The two ends of the divergence scale, as drawn. */
   gradientEnds?: { identical: string; diverged: string };
+  /** The metric's own names for those ends, when its manifest declares them. */
+  gradientLabels?: [string, string];
   /** Set when the panels held branches with no value at all. */
   absent?: { label: string; color: string };
   /** Set when small clades were drawn grey, their value saying nothing. */
@@ -68,6 +70,7 @@ export function toReportInput(input: ReportInput): ComparisonReportInput {
       typing: input.typing ?? null,
       legend: [...(input.swatches ?? [])].map(([label, color]) => ({ label, color })),
       gradientEnds: input.gradientEnds,
+      gradientLabels: input.gradientLabels,
       absent: input.absent,
       unmeasured: input.unmeasured,
       leafCategories: input.leafCategories ?? null,

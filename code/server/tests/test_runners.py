@@ -6,6 +6,7 @@ another language should be adding configuration, not code.**
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -147,6 +148,31 @@ def test_an_unbuilt_metric_is_listed_but_marked_unavailable():
     assert is_available(manifest(command=[sys.executable])) is True
 
 
+def test_a_command_on_path_is_found_without_a_full_path(tmp_path, monkeypatch):
+    """A bare program name is looked up on PATH, as a shell would (Rscript, java)."""
+    tool = tmp_path / "pd-test-tool"
+    tool.write_text("#!/bin/sh\necho 'value is: 5'\n")
+    tool.chmod(0o755)
+    m = manifest(
+        command=["pd-test-tool"],
+        parse={"scalars": [{"key": "value", "pattern": "value is: ([0-9]+)", "type": "int"}]},
+    )
+    monkeypatch.setenv("PATH", "/nonexistent-dir")
+    assert is_available(m) is False
+    with pytest.raises(MetricFailed, match="not on PATH"):
+        make_runner(m)(prepared_pair(tmp_path))
+
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}/usr/bin:/bin")
+    assert is_available(m) is True
+    assert make_runner(m)(prepared_pair(tmp_path)).summary == {"value": 5}
+
+
+def test_a_path_with_a_directory_is_not_looked_up_on_path(tmp_path, monkeypatch):
+    """`./x` or `${native}/x` means that file; finding some other `x` on PATH would run the wrong program."""
+    monkeypatch.setenv("PATH", "/usr/bin:/bin")
+    assert is_available(manifest(command=["no-such-dir/sh"])) is False
+
+
 def test_an_unimplemented_input_format_is_refused(tmp_path):
     m = manifest(input={"format": "nexus"})
     with pytest.raises(MetricFailed, match="only 'newick'"):
@@ -185,3 +211,13 @@ def test_triplet_runs_on_a_small_pair(tmp_path):
     result = registry.load("triplet")(prepared_pair(tmp_path))
     assert result.summary["triplet"] >= 0
     assert set(result.left.columns) == {"similarity", "corresponds"}
+
+
+def test_a_program_metric_returns_numbers_only():
+    """Per-clade columns from a subprocess metric are refused when the manifest is read (§52.1)."""
+    raw = {
+        "name": "x", "title": "X", "kind": "subprocess", "command": ["/bin/true"],
+        "outputs": {"columns": [{"name": "score", "dtype": "float32", "semantics": "ratio"}]},
+    }
+    with pytest.raises(ValueError, match="returns numbers only"):
+        MetricManifest.from_json(raw)

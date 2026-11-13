@@ -457,6 +457,16 @@ def test_a_gradient_says_below_what_size_its_score_says_nothing():
     assert shipped["mast"].presentations[0].min_leaves == 1  # a leaf is kept or moved
 
 
+def test_a_gradient_may_name_the_ends_of_its_legend():
+    """The colour bar's words come from the metric when it has its own (Task 7)."""
+    raw = _manifest(presentations=[
+        {"name": "x", "label": "X", "kind": "gradient", "legend": ["Same", "Far"]},
+    ])
+    assert MetricManifest.from_json(raw).presentations[0].legend == ("Same", "Far")
+    # Declaring none leaves the client's own words, not invented ones.
+    assert MetricManifest.from_json(_manifest()).presentations[0].legend == ()
+
+
 def test_a_metric_that_declares_none_is_drawn_by_its_correspondence():
     assert [p.label for p in MetricManifest.from_json(_manifest()).presentations] == ["Divergence"]
     own = _own()
@@ -479,6 +489,9 @@ def test_a_metric_that_declares_none_is_drawn_by_its_correspondence():
         ({"name": "x", "label": "X", "kind": "categories", "columns": ["moved", "moved"],
           "categories": ["a", "b", "c"]}, "repeats a column"),
         ({"name": "x", "label": "X", "kind": "categories"}, "paints by 'column'"),
+        ({"name": "x", "label": "X", "kind": "gradient", "legend": ["only one"]}, "two labels"),
+        ({"name": "x", "label": "X", "kind": "gradient", "legend": ["a", ""]}, "two labels"),
+        ({"name": "x", "label": "X", "kind": "gradient", "legend": "a, b"}, "two labels"),
     ],
 )
 def test_a_malformed_presentation_is_refused_by_name(presentation, says):

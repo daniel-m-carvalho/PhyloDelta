@@ -18,11 +18,15 @@ import { attach, heapBytes } from "./metrics_cdp.mjs";
 const BENCH = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 const built = JSON.parse(readFileSync(join(BENCH, "results", "server_build.json"), "utf8"));
 const PORT = 8098;
-const REPEATS = 7;
+//: Five measured page loads per rung, after the warm-up below (§34.24): the
+//: count the supervisor asked of both tools, reported as median and
+//: interquartile range. Was seven, six measured.
+const MEASURED = Number(process.env.BENCH_LOADS || 5);
 //: The first sample of a rung is thrown away. A fresh Chrome's first page is
 //: reliably the slowest thing it ever does, and that cost belongs to the
 //: browser rather than to the tree being opened.
 const WARMUP = 1;
+const REPEATS = WARMUP + MEASURED;
 const server = await start(PORT);
 const out = [];
 
@@ -74,6 +78,7 @@ for (const rung of wanted) {
     max_ms: Math.max(...times),
     samples: times,
     heap_bytes: median(heaps),
+    heap_samples: heaps,
   };
   // Merged into what is already there, so measuring one rung does not
   // discard the other nine.

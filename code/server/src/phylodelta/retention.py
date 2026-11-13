@@ -82,6 +82,9 @@ def remove_comparison(owner_id: str, comparison_id: str) -> Removed | None:
     pair = db.delete_comparison_row(owner_id, comparison_id)
     if pair is None:
         return None
+    # Nothing may go on pointing at it: an original marked superseded by it,
+    # or a link to one it replaced (§56).
+    db.forget_successor(comparison_id)
 
     report = Removed(comparison_id=comparison_id)
     store = Path(config.STORE_DIR)
