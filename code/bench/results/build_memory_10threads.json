@@ -1,83 +1,83 @@
 {
-  "idle_rss_mb": 69.6,
+  "idle_rss_mb": 70.0,
   "rungs": [
     {
       "leaves": 1000,
-      "build_s": 1.8842291249893606,
-      "peak_rss_mb": 73.3,
-      "over_idle_mb": 3.8,
+      "build_s": 1.8488173749065027,
+      "peak_rss_mb": 73.6,
+      "over_idle_mb": 3.7,
       "status": "ready",
       "threads_verified": 10
     },
     {
       "leaves": 2500,
-      "build_s": 1.8517240840010345,
-      "peak_rss_mb": 73.3,
-      "over_idle_mb": 3.8,
+      "build_s": 1.8375275420257822,
+      "peak_rss_mb": 73.6,
+      "over_idle_mb": 3.7,
       "status": "ready",
       "threads_verified": 10
     },
     {
       "leaves": 5000,
-      "build_s": 2.1277805409627035,
-      "peak_rss_mb": 80.6,
-      "over_idle_mb": 11.0,
+      "build_s": 2.1057950000977144,
+      "peak_rss_mb": 79.9,
+      "over_idle_mb": 9.9,
       "status": "ready",
       "threads_verified": 10
     },
     {
       "leaves": 10000,
-      "build_s": 2.117667792015709,
-      "peak_rss_mb": 90.5,
-      "over_idle_mb": 20.9,
+      "build_s": 2.1102513329824433,
+      "peak_rss_mb": 88.5,
+      "over_idle_mb": 18.5,
       "status": "ready",
       "threads_verified": 10
     },
     {
       "leaves": 17645,
-      "build_s": 2.3723994579631835,
-      "peak_rss_mb": 111.5,
-      "over_idle_mb": 41.9,
+      "build_s": 2.373147708014585,
+      "peak_rss_mb": 108.7,
+      "over_idle_mb": 38.8,
       "status": "ready",
       "threads_verified": 10
     },
     {
       "leaves": 35290,
-      "build_s": 2.673419374972582,
-      "peak_rss_mb": 157.9,
-      "over_idle_mb": 88.3,
+      "build_s": 2.6230565829901025,
+      "peak_rss_mb": 151.2,
+      "over_idle_mb": 81.3,
       "status": "ready",
       "threads_verified": 10
     },
     {
       "leaves": 70580,
-      "build_s": 3.7828335829544812,
-      "peak_rss_mb": 236.3,
-      "over_idle_mb": 166.8,
+      "build_s": 4.0183350830338895,
+      "peak_rss_mb": 229.8,
+      "over_idle_mb": 159.9,
       "status": "ready",
       "threads_verified": 10
     },
     {
       "leaves": 141160,
-      "build_s": 8.226965999929234,
-      "peak_rss_mb": 412.4,
-      "over_idle_mb": 342.8,
+      "build_s": 8.063923415960744,
+      "peak_rss_mb": 405.9,
+      "over_idle_mb": 336.0,
       "status": "ready",
       "threads_verified": 10
     },
     {
       "leaves": 282320,
-      "build_s": 25.1802064999938,
-      "peak_rss_mb": 711.8,
-      "over_idle_mb": 642.2,
+      "build_s": 25.666112625040114,
+      "peak_rss_mb": 705.4,
+      "over_idle_mb": 635.4,
       "status": "ready",
       "threads_verified": 10
     },
     {
       "leaves": 564640,
-      "build_s": 117.97625287494157,
-      "peak_rss_mb": 1285.5,
-      "over_idle_mb": 1216.0,
+      "build_s": 118.82971258403268,
+      "peak_rss_mb": 1280.3,
+      "over_idle_mb": 1210.3,
       "status": "ready",
       "threads_verified": 10
     }

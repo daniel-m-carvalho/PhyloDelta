@@ -6,38 +6,166 @@
   },
   "budget_ms": 180000,
   "attempt_ms": 840000,
+  "loads": 5,
   "rows": [
     {
       "leaves": 1000,
-      "server_s": 2.1,
+      "server_s": 2,
       "phyloio": {
-        "ms": 4887,
-        "heap_bytes": 27407748,
+        "ms": 4898,
+        "heap_bytes": 27409612,
         "dom": {
           "documents": 1,
           "nodes": 8908,
           "jsEventListeners": 5330
         },
         "phases": {
-          "fetch": 1.5,
-          "parse": 18.200000047683716,
-          "layout": 144.29999995231628,
-          "paint": 184.60000002384186,
-          "postFetch": 347.10000002384186,
-          "total": 348.60000002384186,
+          "fetch": 1.1999999284744263,
+          "parse": 20.100000023841858,
+          "layout": 146.70000004768372,
+          "paint": 187.19999992847443,
+          "postFetch": 354,
+          "total": 355.1999999284744,
           "compareComplete": true,
-          "toCompare": 4883.399999976158
+          "toCompare": 4890.200000047684
         },
         "drawn": {
           "svg": 4,
           "paths": 918,
           "texts": 1436
         },
-        "ok": true
+        "ok": true,
+        "loads": [
+          {
+            "ms": 4898,
+            "heap_bytes": 27409612,
+            "dom": {
+              "documents": 1,
+              "nodes": 8908,
+              "jsEventListeners": 5330
+            },
+            "phases": {
+              "fetch": 1.1999999284744263,
+              "parse": 20.100000023841858,
+              "layout": 146.70000004768372,
+              "paint": 187.19999992847443,
+              "postFetch": 354,
+              "total": 355.1999999284744,
+              "compareComplete": true,
+              "toCompare": 4890.200000047684
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 918,
+              "texts": 1436
+            },
+            "ok": true
+          },
+          {
+            "ms": 4915,
+            "heap_bytes": 27427904,
+            "dom": {
+              "documents": 1,
+              "nodes": 8908,
+              "jsEventListeners": 5330
+            },
+            "phases": {
+              "fetch": 1.2000000476837158,
+              "parse": 17.600000023841858,
+              "layout": 145.59999990463257,
+              "paint": 208.60000002384186,
+              "postFetch": 371.7999999523163,
+              "total": 373,
+              "compareComplete": true,
+              "toCompare": 4909
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 918,
+              "texts": 1436
+            },
+            "ok": true
+          },
+          {
+            "ms": 4882,
+            "heap_bytes": 27415120,
+            "dom": {
+              "documents": 1,
+              "nodes": 8908,
+              "jsEventListeners": 5330
+            },
+            "phases": {
+              "fetch": 1.100000023841858,
+              "parse": 18.199999928474426,
+              "layout": 143.70000004768372,
+              "paint": 182.79999995231628,
+              "postFetch": 344.6999999284744,
+              "total": 345.7999999523163,
+              "compareComplete": true,
+              "toCompare": 4879.600000023842
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 918,
+              "texts": 1436
+            },
+            "ok": true
+          },
+          {
+            "ms": 4885,
+            "heap_bytes": 27418632,
+            "dom": {
+              "documents": 1,
+              "nodes": 8908,
+              "jsEventListeners": 5330
+            },
+            "phases": {
+              "fetch": 1.3000000715255737,
+              "parse": 17.799999952316284,
+              "layout": 143.89999997615814,
+              "paint": 182.70000004768372,
+              "postFetch": 344.39999997615814,
+              "total": 345.7000000476837,
+              "compareComplete": true,
+              "toCompare": 4882.299999952316
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 918,
+              "texts": 1436
+            },
+            "ok": true
+          },
+          {
+            "ms": 4883,
+            "heap_bytes": 27411032,
+            "dom": {
+              "documents": 1,
+              "nodes": 8908,
+              "jsEventListeners": 5330
+            },
+            "phases": {
+              "fetch": 1.100000023841858,
+              "parse": 18.399999976158142,
+              "layout": 143.5,
+              "paint": 184.30000007152557,
+              "postFetch": 346.2000000476837,
+              "total": 347.3000000715256,
+              "compareComplete": true,
+              "toCompare": 4879.899999976158
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 918,
+              "texts": 1436
+            },
+            "ok": true
+          }
+        ]
       },
       "phylodelta": {
-        "ms": 231,
-        "heap_bytes": 3872432,
+        "ms": 251,
+        "heap_bytes": 3913148,
         "dom": {
           "documents": 1,
           "nodes": 294,
@@ -50,40 +178,254 @@
             "showing 50 of 1,000 leaves · 976 behind wedges"
           ]
         },
-        "ok": true
+        "ok": true,
+        "loads": [
+          {
+            "ms": 251,
+            "heap_bytes": 3913148,
+            "dom": {
+              "documents": 1,
+              "nodes": 294,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 1,000 leaves · 993 behind wedges",
+                "showing 50 of 1,000 leaves · 976 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 207,
+            "heap_bytes": 3880572,
+            "dom": {
+              "documents": 1,
+              "nodes": 294,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 1,000 leaves · 993 behind wedges",
+                "showing 50 of 1,000 leaves · 976 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 212,
+            "heap_bytes": 3911936,
+            "dom": {
+              "documents": 1,
+              "nodes": 294,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 1,000 leaves · 993 behind wedges",
+                "showing 50 of 1,000 leaves · 976 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 209,
+            "heap_bytes": 3884008,
+            "dom": {
+              "documents": 1,
+              "nodes": 294,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 1,000 leaves · 993 behind wedges",
+                "showing 50 of 1,000 leaves · 976 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 220,
+            "heap_bytes": 3848876,
+            "dom": {
+              "documents": 1,
+              "nodes": 294,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 1,000 leaves · 993 behind wedges",
+                "showing 50 of 1,000 leaves · 976 behind wedges"
+              ]
+            },
+            "ok": true
+          }
+        ]
       }
     },
     {
       "leaves": 2500,
       "server_s": 2.1,
       "phyloio": {
-        "ms": 18492,
-        "heap_bytes": 100080248,
+        "ms": 18339,
+        "heap_bytes": 100075028,
         "dom": {
           "documents": 1,
           "nodes": 9662,
           "jsEventListeners": 6344
         },
         "phases": {
-          "fetch": 1.399999976158142,
-          "parse": 43,
-          "layout": 313.3000000715256,
-          "paint": 500.39999997615814,
-          "postFetch": 856.7000000476837,
-          "total": 858.1000000238419,
+          "fetch": 1.2000000476837158,
+          "parse": 42,
+          "layout": 313.59999990463257,
+          "paint": 495.5,
+          "postFetch": 851.0999999046326,
+          "total": 852.2999999523163,
           "compareComplete": true,
-          "toCompare": 18488
+          "toCompare": 18329.699999928474
         },
         "drawn": {
           "svg": 4,
           "paths": 1126,
           "texts": 1748
         },
-        "ok": true
+        "ok": true,
+        "loads": [
+          {
+            "ms": 18339,
+            "heap_bytes": 100075028,
+            "dom": {
+              "documents": 1,
+              "nodes": 9662,
+              "jsEventListeners": 6344
+            },
+            "phases": {
+              "fetch": 1.2000000476837158,
+              "parse": 42,
+              "layout": 313.59999990463257,
+              "paint": 495.5,
+              "postFetch": 851.0999999046326,
+              "total": 852.2999999523163,
+              "compareComplete": true,
+              "toCompare": 18329.699999928474
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 1126,
+              "texts": 1748
+            },
+            "ok": true
+          },
+          {
+            "ms": 18373,
+            "heap_bytes": 100055884,
+            "dom": {
+              "documents": 1,
+              "nodes": 9662,
+              "jsEventListeners": 6344
+            },
+            "phases": {
+              "fetch": 1.2999999523162842,
+              "parse": 41,
+              "layout": 315,
+              "paint": 499.5,
+              "postFetch": 855.5,
+              "total": 856.7999999523163,
+              "compareComplete": true,
+              "toCompare": 18364.700000047684
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 1126,
+              "texts": 1748
+            },
+            "ok": true
+          },
+          {
+            "ms": 18513,
+            "heap_bytes": 100124164,
+            "dom": {
+              "documents": 1,
+              "nodes": 9662,
+              "jsEventListeners": 6344
+            },
+            "phases": {
+              "fetch": 1.2000000476837158,
+              "parse": 42.5,
+              "layout": 317.5,
+              "paint": 489.59999990463257,
+              "postFetch": 849.5999999046326,
+              "total": 850.7999999523163,
+              "compareComplete": true,
+              "toCompare": 18504.799999952316
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 1126,
+              "texts": 1748
+            },
+            "ok": true
+          },
+          {
+            "ms": 18346,
+            "heap_bytes": 100106112,
+            "dom": {
+              "documents": 1,
+              "nodes": 9662,
+              "jsEventListeners": 6344
+            },
+            "phases": {
+              "fetch": 1.2999999523162842,
+              "parse": 42.5,
+              "layout": 314.60000002384186,
+              "paint": 496.60000002384186,
+              "postFetch": 853.7000000476837,
+              "total": 855,
+              "compareComplete": true,
+              "toCompare": 18336.100000023842
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 1126,
+              "texts": 1748
+            },
+            "ok": true
+          },
+          {
+            "ms": 18307,
+            "heap_bytes": 100059332,
+            "dom": {
+              "documents": 1,
+              "nodes": 9662,
+              "jsEventListeners": 6344
+            },
+            "phases": {
+              "fetch": 1.2999999523162842,
+              "parse": 42.5,
+              "layout": 314,
+              "paint": 498.10000002384186,
+              "postFetch": 854.6000000238419,
+              "total": 855.8999999761581,
+              "compareComplete": true,
+              "toCompare": 18298
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 1126,
+              "texts": 1748
+            },
+            "ok": true
+          }
+        ]
       },
       "phylodelta": {
-        "ms": 216,
-        "heap_bytes": 3830972,
+        "ms": 238,
+        "heap_bytes": 3839540,
         "dom": {
           "documents": 1,
           "nodes": 305,
@@ -96,40 +438,254 @@
             "showing 50 of 2,500 leaves · 2,469 behind wedges"
           ]
         },
-        "ok": true
+        "ok": true,
+        "loads": [
+          {
+            "ms": 238,
+            "heap_bytes": 3839540,
+            "dom": {
+              "documents": 1,
+              "nodes": 305,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 2,500 leaves · 2,489 behind wedges",
+                "showing 50 of 2,500 leaves · 2,469 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 223,
+            "heap_bytes": 3854328,
+            "dom": {
+              "documents": 1,
+              "nodes": 305,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 2,500 leaves · 2,489 behind wedges",
+                "showing 50 of 2,500 leaves · 2,469 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 214,
+            "heap_bytes": 3847616,
+            "dom": {
+              "documents": 1,
+              "nodes": 305,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 2,500 leaves · 2,489 behind wedges",
+                "showing 50 of 2,500 leaves · 2,469 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 219,
+            "heap_bytes": 3893700,
+            "dom": {
+              "documents": 1,
+              "nodes": 305,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 2,500 leaves · 2,489 behind wedges",
+                "showing 50 of 2,500 leaves · 2,469 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 203,
+            "heap_bytes": 3880028,
+            "dom": {
+              "documents": 1,
+              "nodes": 305,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 2,500 leaves · 2,489 behind wedges",
+                "showing 50 of 2,500 leaves · 2,469 behind wedges"
+              ]
+            },
+            "ok": true
+          }
+        ]
       }
     },
     {
       "leaves": 5000,
-      "server_s": 2.1,
+      "server_s": 2,
       "phyloio": {
-        "ms": 51874,
-        "heap_bytes": 291075820,
+        "ms": 51971,
+        "heap_bytes": 291048116,
         "dom": {
           "documents": 1,
           "nodes": 9836,
           "jsEventListeners": 6568
         },
         "phases": {
-          "fetch": 1.7000000476837158,
-          "parse": 89.19999992847443,
-          "layout": 712.2000000476837,
-          "paint": 946.6999999284744,
-          "postFetch": 1748.0999999046326,
-          "total": 1749.7999999523163,
+          "fetch": 1.3000000715255737,
+          "parse": 90.09999990463257,
+          "layout": 713,
+          "paint": 951.9000000953674,
+          "postFetch": 1755,
+          "total": 1756.3000000715256,
           "compareComplete": true,
-          "toCompare": 51863
+          "toCompare": 51960.799999952316
         },
         "drawn": {
           "svg": 4,
           "paths": 1166,
           "texts": 1808
         },
-        "ok": true
+        "ok": true,
+        "loads": [
+          {
+            "ms": 51971,
+            "heap_bytes": 291048116,
+            "dom": {
+              "documents": 1,
+              "nodes": 9836,
+              "jsEventListeners": 6568
+            },
+            "phases": {
+              "fetch": 1.3000000715255737,
+              "parse": 90.09999990463257,
+              "layout": 713,
+              "paint": 951.9000000953674,
+              "postFetch": 1755,
+              "total": 1756.3000000715256,
+              "compareComplete": true,
+              "toCompare": 51960.799999952316
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 1166,
+              "texts": 1808
+            },
+            "ok": true
+          },
+          {
+            "ms": 52059,
+            "heap_bytes": 291068040,
+            "dom": {
+              "documents": 1,
+              "nodes": 9836,
+              "jsEventListeners": 6568
+            },
+            "phases": {
+              "fetch": 1.3000000715255737,
+              "parse": 91.69999992847443,
+              "layout": 718.6000000238419,
+              "paint": 957.5,
+              "postFetch": 1767.7999999523163,
+              "total": 1769.1000000238419,
+              "compareComplete": true,
+              "toCompare": 52048.89999997616
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 1166,
+              "texts": 1808
+            },
+            "ok": true
+          },
+          {
+            "ms": 52250,
+            "heap_bytes": 291033192,
+            "dom": {
+              "documents": 1,
+              "nodes": 9836,
+              "jsEventListeners": 6568
+            },
+            "phases": {
+              "fetch": 1.2000000476837158,
+              "parse": 90.70000004768372,
+              "layout": 707.3999999761581,
+              "paint": 949.2999999523163,
+              "postFetch": 1747.3999999761581,
+              "total": 1748.6000000238419,
+              "compareComplete": true,
+              "toCompare": 52240.799999952316
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 1166,
+              "texts": 1808
+            },
+            "ok": true
+          },
+          {
+            "ms": 52018,
+            "heap_bytes": 291070884,
+            "dom": {
+              "documents": 1,
+              "nodes": 9836,
+              "jsEventListeners": 6568
+            },
+            "phases": {
+              "fetch": 1.2999999523162842,
+              "parse": 88.20000004768372,
+              "layout": 710.6000000238419,
+              "paint": 942.8999999761581,
+              "postFetch": 1741.7000000476837,
+              "total": 1743,
+              "compareComplete": true,
+              "toCompare": 52008.5
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 1166,
+              "texts": 1808
+            },
+            "ok": true
+          },
+          {
+            "ms": 51724,
+            "heap_bytes": 291069652,
+            "dom": {
+              "documents": 1,
+              "nodes": 9836,
+              "jsEventListeners": 6568
+            },
+            "phases": {
+              "fetch": 1.2000000476837158,
+              "parse": 88.69999992847443,
+              "layout": 719.4000000953674,
+              "paint": 967.8999999761581,
+              "postFetch": 1776,
+              "total": 1777.2000000476837,
+              "compareComplete": true,
+              "toCompare": 51716.699999928474
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 1166,
+              "texts": 1808
+            },
+            "ok": true
+          }
+        ]
       },
       "phylodelta": {
-        "ms": 227,
-        "heap_bytes": 3871832,
+        "ms": 236,
+        "heap_bytes": 3852396,
         "dom": {
           "documents": 1,
           "nodes": 287,
@@ -142,40 +698,254 @@
             "showing 50 of 5,000 leaves · 4,993 behind wedges"
           ]
         },
-        "ok": true
+        "ok": true,
+        "loads": [
+          {
+            "ms": 236,
+            "heap_bytes": 3852396,
+            "dom": {
+              "documents": 1,
+              "nodes": 287,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 5,000 leaves · 4,983 behind wedges",
+                "showing 50 of 5,000 leaves · 4,993 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 217,
+            "heap_bytes": 3880120,
+            "dom": {
+              "documents": 1,
+              "nodes": 287,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 5,000 leaves · 4,983 behind wedges",
+                "showing 50 of 5,000 leaves · 4,993 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 207,
+            "heap_bytes": 3912468,
+            "dom": {
+              "documents": 1,
+              "nodes": 287,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 5,000 leaves · 4,983 behind wedges",
+                "showing 50 of 5,000 leaves · 4,993 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 203,
+            "heap_bytes": 3839672,
+            "dom": {
+              "documents": 1,
+              "nodes": 287,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 5,000 leaves · 4,983 behind wedges",
+                "showing 50 of 5,000 leaves · 4,993 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 229,
+            "heap_bytes": 3898204,
+            "dom": {
+              "documents": 1,
+              "nodes": 287,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 5,000 leaves · 4,983 behind wedges",
+                "showing 50 of 5,000 leaves · 4,993 behind wedges"
+              ]
+            },
+            "ok": true
+          }
+        ]
       }
     },
     {
       "leaves": 10000,
-      "server_s": 2.1,
+      "server_s": 2,
       "phyloio": {
-        "ms": 197711,
-        "heap_bytes": 1151243712,
+        "ms": 198809,
+        "heap_bytes": 1181341612,
         "dom": {
           "documents": 1,
-          "nodes": 7891,
-          "jsEventListeners": 3949
+          "nodes": 10166,
+          "jsEventListeners": 7008
         },
         "phases": {
-          "fetch": 1.5,
-          "parse": 240,
-          "layout": 1945.3999999761581,
-          "paint": 1859.7000000476837,
-          "postFetch": 4045.100000023842,
-          "total": 4046.600000023842,
+          "fetch": 1.2999999523162842,
+          "parse": 240.5,
+          "layout": 1940.5,
+          "paint": 1841.8999999761581,
+          "postFetch": 4022.899999976158,
+          "total": 4024.1999999284744,
           "compareComplete": true,
-          "toCompare": 197699.60000002384
+          "toCompare": 198797.39999997616
         },
         "drawn": {
           "svg": 4,
           "paths": 1254,
           "texts": 1940
         },
-        "ok": true
+        "ok": true,
+        "loads": [
+          {
+            "ms": 198809,
+            "heap_bytes": 1181341612,
+            "dom": {
+              "documents": 1,
+              "nodes": 10166,
+              "jsEventListeners": 7008
+            },
+            "phases": {
+              "fetch": 1.2999999523162842,
+              "parse": 240.5,
+              "layout": 1940.5,
+              "paint": 1841.8999999761581,
+              "postFetch": 4022.899999976158,
+              "total": 4024.1999999284744,
+              "compareComplete": true,
+              "toCompare": 198797.39999997616
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 1254,
+              "texts": 1940
+            },
+            "ok": true
+          },
+          {
+            "ms": 197829,
+            "heap_bytes": 1181336836,
+            "dom": {
+              "documents": 1,
+              "nodes": 10166,
+              "jsEventListeners": 7008
+            },
+            "phases": {
+              "fetch": 1.2999999523162842,
+              "parse": 236.80000007152557,
+              "layout": 1937.6999999284744,
+              "paint": 1858.7000000476837,
+              "postFetch": 4033.2000000476837,
+              "total": 4034.5,
+              "compareComplete": true,
+              "toCompare": 197821.20000004768
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 1254,
+              "texts": 1940
+            },
+            "ok": true
+          },
+          {
+            "ms": 198645,
+            "heap_bytes": 1181337396,
+            "dom": {
+              "documents": 1,
+              "nodes": 10166,
+              "jsEventListeners": 7008
+            },
+            "phases": {
+              "fetch": 1.399999976158142,
+              "parse": 232.90000009536743,
+              "layout": 1939.3999999761581,
+              "paint": 1852,
+              "postFetch": 4024.3000000715256,
+              "total": 4025.7000000476837,
+              "compareComplete": true,
+              "toCompare": 198634.10000002384
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 1254,
+              "texts": 1940
+            },
+            "ok": true
+          },
+          {
+            "ms": 198159,
+            "heap_bytes": 1181339292,
+            "dom": {
+              "documents": 1,
+              "nodes": 10166,
+              "jsEventListeners": 7008
+            },
+            "phases": {
+              "fetch": 1.2999999523162842,
+              "parse": 234.5,
+              "layout": 1949.2999999523163,
+              "paint": 1868.3000000715256,
+              "postFetch": 4052.100000023842,
+              "total": 4053.399999976158,
+              "compareComplete": true,
+              "toCompare": 198148.29999995232
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 1254,
+              "texts": 1940
+            },
+            "ok": true
+          },
+          {
+            "ms": 198296,
+            "heap_bytes": 1181336212,
+            "dom": {
+              "documents": 1,
+              "nodes": 10166,
+              "jsEventListeners": 7008
+            },
+            "phases": {
+              "fetch": 1.2999999523162842,
+              "parse": 234.5,
+              "layout": 1932.5,
+              "paint": 1864.6000000238419,
+              "postFetch": 4031.600000023842,
+              "total": 4032.899999976158,
+              "compareComplete": true,
+              "toCompare": 198285.10000002384
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 1254,
+              "texts": 1940
+            },
+            "ok": true
+          }
+        ]
       },
       "phylodelta": {
-        "ms": 221,
-        "heap_bytes": 3834832,
+        "ms": 216,
+        "heap_bytes": 3822616,
         "dom": {
           "documents": 1,
           "nodes": 285,
@@ -188,27 +958,114 @@
             "showing 50 of 10,000 leaves · 9,996 behind wedges"
           ]
         },
-        "ok": true
+        "ok": true,
+        "loads": [
+          {
+            "ms": 216,
+            "heap_bytes": 3822616,
+            "dom": {
+              "documents": 1,
+              "nodes": 285,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 10,000 leaves · 9,982 behind wedges",
+                "showing 50 of 10,000 leaves · 9,996 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 219,
+            "heap_bytes": 3854872,
+            "dom": {
+              "documents": 1,
+              "nodes": 285,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 10,000 leaves · 9,982 behind wedges",
+                "showing 50 of 10,000 leaves · 9,996 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 200,
+            "heap_bytes": 3886036,
+            "dom": {
+              "documents": 1,
+              "nodes": 285,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 10,000 leaves · 9,982 behind wedges",
+                "showing 50 of 10,000 leaves · 9,996 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 221,
+            "heap_bytes": 3858804,
+            "dom": {
+              "documents": 1,
+              "nodes": 285,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 10,000 leaves · 9,982 behind wedges",
+                "showing 50 of 10,000 leaves · 9,996 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 197,
+            "heap_bytes": 3830524,
+            "dom": {
+              "documents": 1,
+              "nodes": 285,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 10,000 leaves · 9,982 behind wedges",
+                "showing 50 of 10,000 leaves · 9,996 behind wedges"
+              ]
+            },
+            "ok": true
+          }
+        ]
       }
     },
     {
       "leaves": 17645,
       "server_s": 2.6,
       "phyloio": {
-        "ms": 608878,
-        "heap_bytes": 58654540,
+        "ms": 608876,
+        "heap_bytes": 58659880,
         "dom": {
           "documents": 1,
           "nodes": 6921,
           "jsEventListeners": 3900
         },
         "phases": {
-          "fetch": 3.200000047683716,
-          "parse": 521.6999999284744,
-          "layout": 4654.300000071526,
-          "paint": 3500.600000023842,
-          "postFetch": 8676.600000023842,
-          "total": 8679.800000071526,
+          "fetch": 2.399999976158142,
+          "parse": 497.89999997615814,
+          "layout": 4659.5,
+          "paint": 3528.600000023842,
+          "postFetch": 8686,
+          "total": 8688.399999976158,
           "compareComplete": false,
           "toCompare": null
         },
@@ -217,11 +1074,138 @@
           "paths": 670,
           "texts": 1061
         },
-        "ok": true
+        "ok": true,
+        "loads": [
+          {
+            "ms": 608876,
+            "heap_bytes": 58659880,
+            "dom": {
+              "documents": 1,
+              "nodes": 6921,
+              "jsEventListeners": 3900
+            },
+            "phases": {
+              "fetch": 2.399999976158142,
+              "parse": 497.89999997615814,
+              "layout": 4659.5,
+              "paint": 3528.600000023842,
+              "postFetch": 8686,
+              "total": 8688.399999976158,
+              "compareComplete": false,
+              "toCompare": null
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 670,
+              "texts": 1061
+            },
+            "ok": true
+          },
+          {
+            "ms": 608967,
+            "heap_bytes": 58654316,
+            "dom": {
+              "documents": 1,
+              "nodes": 6921,
+              "jsEventListeners": 3900
+            },
+            "phases": {
+              "fetch": 2.399999976158142,
+              "parse": 526.3000000715256,
+              "layout": 4696.299999952316,
+              "paint": 3556,
+              "postFetch": 8778.600000023842,
+              "total": 8781,
+              "compareComplete": false,
+              "toCompare": null
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 670,
+              "texts": 1061
+            },
+            "ok": true
+          },
+          {
+            "ms": 608955,
+            "heap_bytes": 58651580,
+            "dom": {
+              "documents": 1,
+              "nodes": 6921,
+              "jsEventListeners": 3900
+            },
+            "phases": {
+              "fetch": 2.399999976158142,
+              "parse": 508.3000000715256,
+              "layout": 4658.199999928474,
+              "paint": 3552.4000000953674,
+              "postFetch": 8718.900000095367,
+              "total": 8721.300000071526,
+              "compareComplete": false,
+              "toCompare": null
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 670,
+              "texts": 1061
+            },
+            "ok": true
+          },
+          {
+            "ms": 608987,
+            "heap_bytes": 58653152,
+            "dom": {
+              "documents": 1,
+              "nodes": 6921,
+              "jsEventListeners": 3900
+            },
+            "phases": {
+              "fetch": 2.799999952316284,
+              "parse": 513.8999999761581,
+              "layout": 4664.300000071526,
+              "paint": 3564.0999999046326,
+              "postFetch": 8742.299999952316,
+              "total": 8745.099999904633,
+              "compareComplete": false,
+              "toCompare": null
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 670,
+              "texts": 1061
+            },
+            "ok": true
+          },
+          {
+            "ms": 608944,
+            "heap_bytes": 58654924,
+            "dom": {
+              "documents": 1,
+              "nodes": 6921,
+              "jsEventListeners": 3900
+            },
+            "phases": {
+              "fetch": 2.4000000953674316,
+              "parse": 517.0999999046326,
+              "layout": 4669.200000047684,
+              "paint": 3499.2999999523163,
+              "postFetch": 8685.599999904633,
+              "total": 8688,
+              "compareComplete": false,
+              "toCompare": null
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 670,
+              "texts": 1061
+            },
+            "ok": true
+          }
+        ]
       },
       "phylodelta": {
-        "ms": 225,
-        "heap_bytes": 3843512,
+        "ms": 227,
+        "heap_bytes": 3885504,
         "dom": {
           "documents": 1,
           "nodes": 285,
@@ -234,27 +1218,114 @@
             "showing 50 of 17,646 leaves · 17,643 behind wedges"
           ]
         },
-        "ok": true
+        "ok": true,
+        "loads": [
+          {
+            "ms": 227,
+            "heap_bytes": 3885504,
+            "dom": {
+              "documents": 1,
+              "nodes": 285,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 17,645 leaves · 17,626 behind wedges",
+                "showing 50 of 17,646 leaves · 17,643 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 210,
+            "heap_bytes": 3878348,
+            "dom": {
+              "documents": 1,
+              "nodes": 285,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 17,645 leaves · 17,626 behind wedges",
+                "showing 50 of 17,646 leaves · 17,643 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 208,
+            "heap_bytes": 3936620,
+            "dom": {
+              "documents": 1,
+              "nodes": 285,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 17,645 leaves · 17,626 behind wedges",
+                "showing 50 of 17,646 leaves · 17,643 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 225,
+            "heap_bytes": 3851740,
+            "dom": {
+              "documents": 1,
+              "nodes": 285,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 17,645 leaves · 17,626 behind wedges",
+                "showing 50 of 17,646 leaves · 17,643 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 221,
+            "heap_bytes": 3854188,
+            "dom": {
+              "documents": 1,
+              "nodes": 285,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 17,645 leaves · 17,626 behind wedges",
+                "showing 50 of 17,646 leaves · 17,643 behind wedges"
+              ]
+            },
+            "ok": true
+          }
+        ]
       }
     },
     {
       "leaves": 35290,
-      "server_s": 3.1,
+      "server_s": 3.6,
       "phyloio": {
-        "ms": 623795,
-        "heap_bytes": 115521852,
+        "ms": 624011,
+        "heap_bytes": 115522500,
         "dom": {
           "documents": 1,
           "nodes": 6506,
           "jsEventListeners": 3744
         },
         "phases": {
-          "fetch": 4.600000023841858,
-          "parse": 989.3000000715256,
-          "layout": 15272.399999976158,
-          "paint": 7280.299999952316,
-          "postFetch": 23542,
-          "total": 23546.600000023842,
+          "fetch": 4.299999952316284,
+          "parse": 1013.7000000476837,
+          "layout": 15391.100000023842,
+          "paint": 7421.399999976158,
+          "postFetch": 23826.200000047684,
+          "total": 23830.5,
           "compareComplete": false,
           "toCompare": null
         },
@@ -263,11 +1334,138 @@
           "paths": 640,
           "texts": 1016
         },
-        "ok": true
+        "ok": true,
+        "loads": [
+          {
+            "ms": 624011,
+            "heap_bytes": 115522500,
+            "dom": {
+              "documents": 1,
+              "nodes": 6506,
+              "jsEventListeners": 3744
+            },
+            "phases": {
+              "fetch": 4.299999952316284,
+              "parse": 1013.7000000476837,
+              "layout": 15391.100000023842,
+              "paint": 7421.399999976158,
+              "postFetch": 23826.200000047684,
+              "total": 23830.5,
+              "compareComplete": false,
+              "toCompare": null
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 640,
+              "texts": 1016
+            },
+            "ok": true
+          },
+          {
+            "ms": 623805,
+            "heap_bytes": 115523568,
+            "dom": {
+              "documents": 1,
+              "nodes": 6506,
+              "jsEventListeners": 3744
+            },
+            "phases": {
+              "fetch": 3.8000000715255737,
+              "parse": 989.3999999761581,
+              "layout": 15358.5,
+              "paint": 7218.600000023842,
+              "postFetch": 23566.5,
+              "total": 23570.300000071526,
+              "compareComplete": false,
+              "toCompare": null
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 640,
+              "texts": 1016
+            },
+            "ok": true
+          },
+          {
+            "ms": 623576,
+            "heap_bytes": 115523976,
+            "dom": {
+              "documents": 1,
+              "nodes": 6506,
+              "jsEventListeners": 3744
+            },
+            "phases": {
+              "fetch": 4.100000023841858,
+              "parse": 952.3999999761581,
+              "layout": 15266.600000023842,
+              "paint": 7136.300000071526,
+              "postFetch": 23355.300000071526,
+              "total": 23359.400000095367,
+              "compareComplete": false,
+              "toCompare": null
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 640,
+              "texts": 1016
+            },
+            "ok": true
+          },
+          {
+            "ms": 623554,
+            "heap_bytes": 115520568,
+            "dom": {
+              "documents": 1,
+              "nodes": 6506,
+              "jsEventListeners": 3744
+            },
+            "phases": {
+              "fetch": 3.899999976158142,
+              "parse": 994.5,
+              "layout": 15395.700000047684,
+              "paint": 7126.399999976158,
+              "postFetch": 23516.600000023842,
+              "total": 23520.5,
+              "compareComplete": false,
+              "toCompare": null
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 640,
+              "texts": 1016
+            },
+            "ok": true
+          },
+          {
+            "ms": 623651,
+            "heap_bytes": 115524072,
+            "dom": {
+              "documents": 1,
+              "nodes": 6506,
+              "jsEventListeners": 3744
+            },
+            "phases": {
+              "fetch": 3.3000000715255737,
+              "parse": 949.7999999523163,
+              "layout": 15304.200000047684,
+              "paint": 7145.100000023842,
+              "postFetch": 23399.100000023842,
+              "total": 23402.400000095367,
+              "compareComplete": false,
+              "toCompare": null
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 640,
+              "texts": 1016
+            },
+            "ok": true
+          }
+        ]
       },
       "phylodelta": {
-        "ms": 219,
-        "heap_bytes": 3793184,
+        "ms": 232,
+        "heap_bytes": 3848544,
         "dom": {
           "documents": 1,
           "nodes": 284,
@@ -280,27 +1478,114 @@
             "showing 50 of 35,292 leaves · 35,289 behind wedges"
           ]
         },
-        "ok": true
+        "ok": true,
+        "loads": [
+          {
+            "ms": 232,
+            "heap_bytes": 3848544,
+            "dom": {
+              "documents": 1,
+              "nodes": 284,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 35,290 leaves · 35,272 behind wedges",
+                "showing 50 of 35,292 leaves · 35,289 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 208,
+            "heap_bytes": 3925404,
+            "dom": {
+              "documents": 1,
+              "nodes": 284,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 35,290 leaves · 35,272 behind wedges",
+                "showing 50 of 35,292 leaves · 35,289 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 204,
+            "heap_bytes": 3843872,
+            "dom": {
+              "documents": 1,
+              "nodes": 284,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 35,290 leaves · 35,272 behind wedges",
+                "showing 50 of 35,292 leaves · 35,289 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 207,
+            "heap_bytes": 3843956,
+            "dom": {
+              "documents": 1,
+              "nodes": 284,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 35,290 leaves · 35,272 behind wedges",
+                "showing 50 of 35,292 leaves · 35,289 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 212,
+            "heap_bytes": 3876728,
+            "dom": {
+              "documents": 1,
+              "nodes": 284,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 35,290 leaves · 35,272 behind wedges",
+                "showing 50 of 35,292 leaves · 35,289 behind wedges"
+              ]
+            },
+            "ok": true
+          }
+        ]
       }
     },
     {
       "leaves": 70580,
-      "server_s": 6.7,
+      "server_s": 6.1,
       "phyloio": {
-        "ms": 675215,
-        "heap_bytes": 230184064,
+        "ms": 674874,
+        "heap_bytes": 230184624,
         "dom": {
           "documents": 1,
           "nodes": 7962,
           "jsEventListeners": 5696
         },
         "phases": {
-          "fetch": 7.200000047683716,
-          "parse": 2006.1999999284744,
-          "layout": 54327.200000047684,
-          "paint": 18730.799999952316,
-          "postFetch": 75064.19999992847,
-          "total": 75071.39999997616,
+          "fetch": 8.399999976158142,
+          "parse": 2009.7000000476837,
+          "layout": 54368.5,
+          "paint": 18397.699999928474,
+          "postFetch": 74775.89999997616,
+          "total": 74784.29999995232,
           "compareComplete": false,
           "toCompare": null
         },
@@ -309,11 +1594,138 @@
           "paths": 1036,
           "texts": 1610
         },
-        "ok": true
+        "ok": true,
+        "loads": [
+          {
+            "ms": 674874,
+            "heap_bytes": 230184624,
+            "dom": {
+              "documents": 1,
+              "nodes": 7962,
+              "jsEventListeners": 5696
+            },
+            "phases": {
+              "fetch": 8.399999976158142,
+              "parse": 2009.7000000476837,
+              "layout": 54368.5,
+              "paint": 18397.699999928474,
+              "postFetch": 74775.89999997616,
+              "total": 74784.29999995232,
+              "compareComplete": false,
+              "toCompare": null
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 1036,
+              "texts": 1610
+            },
+            "ok": true
+          },
+          {
+            "ms": 674950,
+            "heap_bytes": 230185704,
+            "dom": {
+              "documents": 1,
+              "nodes": 7962,
+              "jsEventListeners": 5696
+            },
+            "phases": {
+              "fetch": 5.800000071525574,
+              "parse": 2016.6000000238419,
+              "layout": 54003.699999928474,
+              "paint": 18833.399999976158,
+              "postFetch": 74853.69999992847,
+              "total": 74859.5,
+              "compareComplete": false,
+              "toCompare": null
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 1036,
+              "texts": 1610
+            },
+            "ok": true
+          },
+          {
+            "ms": 675023,
+            "heap_bytes": 230185428,
+            "dom": {
+              "documents": 1,
+              "nodes": 7962,
+              "jsEventListeners": 5696
+            },
+            "phases": {
+              "fetch": 6.100000023841858,
+              "parse": 1989.6000000238419,
+              "layout": 54184.200000047684,
+              "paint": 18716.699999928474,
+              "postFetch": 74890.5,
+              "total": 74896.60000002384,
+              "compareComplete": false,
+              "toCompare": null
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 1036,
+              "texts": 1610
+            },
+            "ok": true
+          },
+          {
+            "ms": 674537,
+            "heap_bytes": 230184676,
+            "dom": {
+              "documents": 1,
+              "nodes": 7962,
+              "jsEventListeners": 5696
+            },
+            "phases": {
+              "fetch": 5.699999928474426,
+              "parse": 1986.9000000953674,
+              "layout": 54028.59999990463,
+              "paint": 18365.200000047684,
+              "postFetch": 74380.70000004768,
+              "total": 74386.39999997616,
+              "compareComplete": false,
+              "toCompare": null
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 1036,
+              "texts": 1610
+            },
+            "ok": true
+          },
+          {
+            "ms": 674598,
+            "heap_bytes": 230183900,
+            "dom": {
+              "documents": 1,
+              "nodes": 7962,
+              "jsEventListeners": 5696
+            },
+            "phases": {
+              "fetch": 8.100000023841858,
+              "parse": 2004.3999999761581,
+              "layout": 54068.199999928474,
+              "paint": 18418.5,
+              "postFetch": 74491.09999990463,
+              "total": 74499.19999992847,
+              "compareComplete": false,
+              "toCompare": null
+            },
+            "drawn": {
+              "svg": 4,
+              "paths": 1036,
+              "texts": 1610
+            },
+            "ok": true
+          }
+        ]
       },
       "phylodelta": {
-        "ms": 246,
-        "heap_bytes": 3843520,
+        "ms": 237,
+        "heap_bytes": 3885772,
         "dom": {
           "documents": 1,
           "nodes": 284,
@@ -326,7 +1738,94 @@
             "showing 50 of 70,584 leaves · 70,581 behind wedges"
           ]
         },
-        "ok": true
+        "ok": true,
+        "loads": [
+          {
+            "ms": 237,
+            "heap_bytes": 3885772,
+            "dom": {
+              "documents": 1,
+              "nodes": 284,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 70,580 leaves · 70,562 behind wedges",
+                "showing 50 of 70,584 leaves · 70,581 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 206,
+            "heap_bytes": 3882164,
+            "dom": {
+              "documents": 1,
+              "nodes": 284,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 70,580 leaves · 70,562 behind wedges",
+                "showing 50 of 70,584 leaves · 70,581 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 212,
+            "heap_bytes": 3944580,
+            "dom": {
+              "documents": 1,
+              "nodes": 284,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 70,580 leaves · 70,562 behind wedges",
+                "showing 50 of 70,584 leaves · 70,581 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 221,
+            "heap_bytes": 3854744,
+            "dom": {
+              "documents": 1,
+              "nodes": 284,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 70,580 leaves · 70,562 behind wedges",
+                "showing 50 of 70,584 leaves · 70,581 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 209,
+            "heap_bytes": 3921996,
+            "dom": {
+              "documents": 1,
+              "nodes": 284,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 70,580 leaves · 70,562 behind wedges",
+                "showing 50 of 70,584 leaves · 70,581 behind wedges"
+              ]
+            },
+            "ok": true
+          }
+        ]
       }
     },
     {
@@ -334,11 +1833,33 @@
       "server_s": 16.8,
       "phyloio": {
         "ok": false,
-        "failed": "page.evaluate: Target crashed "
+        "failed": "page.evaluate: Target crashed ",
+        "loads": [
+          {
+            "ok": false,
+            "failed": "page.evaluate: Target crashed "
+          },
+          {
+            "ok": false,
+            "failed": "page.evaluate: Target crashed "
+          },
+          {
+            "ok": false,
+            "failed": "page.evaluate: Target crashed "
+          },
+          {
+            "ok": false,
+            "failed": "page.evaluate: Target crashed "
+          },
+          {
+            "ok": false,
+            "failed": "page.evaluate: Target crashed "
+          }
+        ]
       },
       "phylodelta": {
-        "ms": 268,
-        "heap_bytes": 3848624,
+        "ms": 261,
+        "heap_bytes": 3879924,
         "dom": {
           "documents": 1,
           "nodes": 282,
@@ -351,7 +1872,94 @@
             "showing 50 of 141,168 leaves · 141,165 behind wedges"
           ]
         },
-        "ok": true
+        "ok": true,
+        "loads": [
+          {
+            "ms": 261,
+            "heap_bytes": 3879924,
+            "dom": {
+              "documents": 1,
+              "nodes": 282,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 141,160 leaves · 141,144 behind wedges",
+                "showing 50 of 141,168 leaves · 141,165 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 202,
+            "heap_bytes": 3838288,
+            "dom": {
+              "documents": 1,
+              "nodes": 282,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 141,160 leaves · 141,144 behind wedges",
+                "showing 50 of 141,168 leaves · 141,165 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 207,
+            "heap_bytes": 3880952,
+            "dom": {
+              "documents": 1,
+              "nodes": 282,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 141,160 leaves · 141,144 behind wedges",
+                "showing 50 of 141,168 leaves · 141,165 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 202,
+            "heap_bytes": 3894760,
+            "dom": {
+              "documents": 1,
+              "nodes": 282,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 141,160 leaves · 141,144 behind wedges",
+                "showing 50 of 141,168 leaves · 141,165 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 216,
+            "heap_bytes": 3857100,
+            "dom": {
+              "documents": 1,
+              "nodes": 282,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 141,160 leaves · 141,144 behind wedges",
+                "showing 50 of 141,168 leaves · 141,165 behind wedges"
+              ]
+            },
+            "ok": true
+          }
+        ]
       }
     },
     {
@@ -359,11 +1967,33 @@
       "server_s": 60.2,
       "phyloio": {
         "ok": false,
-        "failed": "page.evaluate: Target crashed "
+        "failed": "page.evaluate: Target crashed ",
+        "loads": [
+          {
+            "ok": false,
+            "failed": "page.evaluate: Target crashed "
+          },
+          {
+            "ok": false,
+            "failed": "page.evaluate: Target crashed "
+          },
+          {
+            "ok": false,
+            "failed": "page.evaluate: Target crashed "
+          },
+          {
+            "ok": false,
+            "failed": "page.evaluate: Target crashed "
+          },
+          {
+            "ok": false,
+            "failed": "page.evaluate: Target crashed "
+          }
+        ]
       },
       "phylodelta": {
-        "ms": 282,
-        "heap_bytes": 3810008,
+        "ms": 250,
+        "heap_bytes": 3914340,
         "dom": {
           "documents": 1,
           "nodes": 280,
@@ -376,7 +2006,94 @@
             "showing 50 of 282,336 leaves · 282,333 behind wedges"
           ]
         },
-        "ok": true
+        "ok": true,
+        "loads": [
+          {
+            "ms": 250,
+            "heap_bytes": 3914340,
+            "dom": {
+              "documents": 1,
+              "nodes": 280,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 282,320 leaves · 282,306 behind wedges",
+                "showing 50 of 282,336 leaves · 282,333 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 236,
+            "heap_bytes": 3870296,
+            "dom": {
+              "documents": 1,
+              "nodes": 280,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 282,320 leaves · 282,306 behind wedges",
+                "showing 50 of 282,336 leaves · 282,333 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 213,
+            "heap_bytes": 3924596,
+            "dom": {
+              "documents": 1,
+              "nodes": 280,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 282,320 leaves · 282,306 behind wedges",
+                "showing 50 of 282,336 leaves · 282,333 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 203,
+            "heap_bytes": 3887968,
+            "dom": {
+              "documents": 1,
+              "nodes": 280,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 282,320 leaves · 282,306 behind wedges",
+                "showing 50 of 282,336 leaves · 282,333 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 203,
+            "heap_bytes": 3924156,
+            "dom": {
+              "documents": 1,
+              "nodes": 280,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 282,320 leaves · 282,306 behind wedges",
+                "showing 50 of 282,336 leaves · 282,333 behind wedges"
+              ]
+            },
+            "ok": true
+          }
+        ]
       }
     },
     {
@@ -384,11 +2101,33 @@
       "server_s": 244.5,
       "phyloio": {
         "ok": false,
-        "failed": "phylo.io exceeded 840s"
+        "failed": "phylo.io exceeded 840s",
+        "loads": [
+          {
+            "ok": false,
+            "failed": "phylo.io exceeded 840s"
+          },
+          {
+            "ok": false,
+            "failed": "phylo.io exceeded 840s"
+          },
+          {
+            "ok": false,
+            "failed": "phylo.io exceeded 840s"
+          },
+          {
+            "ok": false,
+            "failed": "phylo.io exceeded 840s"
+          },
+          {
+            "ok": false,
+            "failed": "phylo.io exceeded 840s"
+          }
+        ]
       },
       "phylodelta": {
-        "ms": 277,
-        "heap_bytes": 3841568,
+        "ms": 305,
+        "heap_bytes": 3875036,
         "dom": {
           "documents": 1,
           "nodes": 276,
@@ -401,7 +2140,94 @@
             "showing 50 of 564,672 leaves · 564,669 behind wedges"
           ]
         },
-        "ok": true
+        "ok": true,
+        "loads": [
+          {
+            "ms": 305,
+            "heap_bytes": 3875036,
+            "dom": {
+              "documents": 1,
+              "nodes": 276,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 564,640 leaves · 564,630 behind wedges",
+                "showing 50 of 564,672 leaves · 564,669 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 225,
+            "heap_bytes": 3849360,
+            "dom": {
+              "documents": 1,
+              "nodes": 276,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 564,640 leaves · 564,630 behind wedges",
+                "showing 50 of 564,672 leaves · 564,669 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 203,
+            "heap_bytes": 3886152,
+            "dom": {
+              "documents": 1,
+              "nodes": 276,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 564,640 leaves · 564,630 behind wedges",
+                "showing 50 of 564,672 leaves · 564,669 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 206,
+            "heap_bytes": 3877696,
+            "dom": {
+              "documents": 1,
+              "nodes": 276,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 564,640 leaves · 564,630 behind wedges",
+                "showing 50 of 564,672 leaves · 564,669 behind wedges"
+              ]
+            },
+            "ok": true
+          },
+          {
+            "ms": 200,
+            "heap_bytes": 3891984,
+            "dom": {
+              "documents": 1,
+              "nodes": 276,
+              "jsEventListeners": 195
+            },
+            "drawn": {
+              "canvases": 16,
+              "shown": [
+                "showing 50 of 564,640 leaves · 564,630 behind wedges",
+                "showing 50 of 564,672 leaves · 564,669 behind wedges"
+              ]
+            },
+            "ok": true
+          }
+        ]
       }
     }
   ]

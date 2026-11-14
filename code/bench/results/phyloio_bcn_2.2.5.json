@@ -3,50 +3,256 @@
   "browser": "Chrome 156.0.8078.80",
   "leaves": 1000,
   "loads": 8,
-  "loads_with_any_success": 3,
-  "loads_all_failed": 5,
+  "loads_with_any_success": 8,
+  "loads_all_failed": 0,
   "attempts_total": 120,
-  "attempts_succeeded": 27,
+  "attempts_succeeded": 120,
   "per_load": [
     {
       "completed": true,
       "attempted": 15,
-      "succeeded": 0
+      "succeeded": 15,
+      "rootward": {
+        "clades": 22,
+        "attempted": 15,
+        "threw": 15,
+        "sizes": [
+          996,
+          953,
+          936,
+          930,
+          927,
+          925,
+          923,
+          922,
+          871,
+          868,
+          867,
+          866,
+          824,
+          815,
+          790
+        ],
+        "errors": [
+          "Cannot read properties of null (reading '_children')"
+        ]
+      }
     },
     {
       "completed": true,
       "attempted": 15,
-      "succeeded": 0
+      "succeeded": 15,
+      "rootward": {
+        "clades": 22,
+        "attempted": 15,
+        "threw": 15,
+        "sizes": [
+          996,
+          953,
+          936,
+          930,
+          927,
+          925,
+          923,
+          922,
+          871,
+          868,
+          867,
+          866,
+          824,
+          815,
+          790
+        ],
+        "errors": [
+          "Cannot read properties of null (reading '_children')"
+        ]
+      }
     },
     {
       "completed": true,
       "attempted": 15,
-      "succeeded": 0
+      "succeeded": 15,
+      "rootward": {
+        "clades": 22,
+        "attempted": 15,
+        "threw": 15,
+        "sizes": [
+          996,
+          953,
+          936,
+          930,
+          927,
+          925,
+          923,
+          922,
+          871,
+          868,
+          867,
+          866,
+          824,
+          815,
+          790
+        ],
+        "errors": [
+          "Cannot read properties of null (reading '_children')"
+        ]
+      }
     },
     {
       "completed": true,
       "attempted": 15,
-      "succeeded": 0
+      "succeeded": 15,
+      "rootward": {
+        "clades": 22,
+        "attempted": 15,
+        "threw": 15,
+        "sizes": [
+          996,
+          953,
+          936,
+          930,
+          927,
+          925,
+          923,
+          922,
+          871,
+          868,
+          867,
+          866,
+          824,
+          815,
+          790
+        ],
+        "errors": [
+          "Cannot read properties of null (reading '_children')"
+        ]
+      }
     },
     {
       "completed": true,
       "attempted": 15,
-      "succeeded": 0
+      "succeeded": 15,
+      "rootward": {
+        "clades": 22,
+        "attempted": 15,
+        "threw": 15,
+        "sizes": [
+          996,
+          953,
+          936,
+          930,
+          927,
+          925,
+          923,
+          922,
+          871,
+          868,
+          867,
+          866,
+          824,
+          815,
+          790
+        ],
+        "errors": [
+          "Cannot read properties of null (reading '_children')"
+        ]
+      }
     },
     {
       "completed": true,
       "attempted": 15,
-      "succeeded": 4
+      "succeeded": 15,
+      "rootward": {
+        "clades": 22,
+        "attempted": 15,
+        "threw": 15,
+        "sizes": [
+          996,
+          953,
+          936,
+          930,
+          927,
+          925,
+          923,
+          922,
+          871,
+          868,
+          867,
+          866,
+          824,
+          815,
+          790
+        ],
+        "errors": [
+          "Cannot read properties of null (reading '_children')"
+        ]
+      }
     },
     {
       "completed": true,
       "attempted": 15,
-      "succeeded": 15
+      "succeeded": 15,
+      "rootward": {
+        "clades": 33,
+        "attempted": 15,
+        "threw": 15,
+        "sizes": [
+          996,
+          953,
+          936,
+          930,
+          927,
+          925,
+          923,
+          922,
+          871,
+          868,
+          867,
+          866,
+          824,
+          815,
+          790
+        ],
+        "errors": [
+          "Cannot read properties of null (reading '_children')"
+        ]
+      }
     },
     {
       "completed": true,
       "attempted": 15,
-      "succeeded": 8
+      "succeeded": 15,
+      "rootward": {
+        "clades": 15,
+        "attempted": 15,
+        "threw": 15,
+        "sizes": [
+          996,
+          953,
+          936,
+          930,
+          927,
+          925,
+          923,
+          922,
+          871,
+          868,
+          867,
+          866,
+          824,
+          815,
+          790
+        ],
+        "errors": [
+          "Cannot read properties of null (reading '_children')"
+        ]
+      }
     }
+  ],
+  "rootward_clades": 33,
+  "rootward_attempted": 120,
+  "rootward_threw": 120,
+  "rootward_errors": [
+    "Cannot read properties of null (reading '_children')"
   ]
 }

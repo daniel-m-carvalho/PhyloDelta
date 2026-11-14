@@ -6,29 +6,29 @@
   "height": 900
  },
  "phyloio_home": "/Users/danielcarvalho/Documents/masters/Theses/repo/theses/code/bench/vendor/phyloio-2.2.5",
- "bench_commit": "3084237",
+ "bench_commit": "a99d091",
  "attempt_budget_ms": 700000,
  "compare_budget_ms": 600000,
  "rows": [
   {
    "leaves": 70580,
-   "loads": 3,
-   "painted": 3,
-   "paint_ms_median": 74609,
+   "loads": 5,
+   "painted": 5,
+   "paint_ms_median": 74896,
    "paths_median": 1036,
    "dom_nodes_median": 7962,
    "compare_completed": 0,
    "per_load": [
     {
      "outcome": "painted",
-     "paint_ms": 74609,
+     "paint_ms": 75128,
      "phases": {
-      "fetch": 6.800000071525574,
-      "parse": 2044.8999999761581,
-      "layout": 54324.89999997616,
-      "paint": 18232.5,
-      "postFetch": 74602.29999995232,
-      "total": 74609.10000002384,
+      "fetch": 8.799999952316284,
+      "parse": 2054.7999999523163,
+      "layout": 54599.200000047684,
+      "paint": 18465.399999976158,
+      "postFetch": 75119.39999997616,
+      "total": 75128.19999992847,
       "compareComplete": false,
       "toCompare": null
      },
@@ -42,19 +42,19 @@
       "nodes": 7962,
       "jsEventListeners": 5696
      },
-     "heap_bytes": 240435540,
+     "heap_bytes": 240437576,
      "compared": false
     },
     {
      "outcome": "painted",
-     "paint_ms": 74518,
+     "paint_ms": 74837,
      "phases": {
-      "fetch": 6.700000047683716,
-      "parse": 2024.8999999761581,
-      "layout": 54163.60000002384,
-      "paint": 18322.5,
-      "postFetch": 74511,
-      "total": 74517.70000004768,
+      "fetch": 7,
+      "parse": 2028.6000000238419,
+      "layout": 54327.5,
+      "paint": 18474,
+      "postFetch": 74830.10000002384,
+      "total": 74837.10000002384,
       "compareComplete": false,
       "toCompare": null
      },
@@ -68,19 +68,19 @@
       "nodes": 7962,
       "jsEventListeners": 5696
      },
-     "heap_bytes": 240442736,
+     "heap_bytes": 240438552,
      "compared": false
     },
     {
      "outcome": "painted",
-     "paint_ms": 75323,
+     "paint_ms": 74896,
      "phases": {
-      "fetch": 8.399999976158142,
-      "parse": 2034.6000000238419,
-      "layout": 54353.300000071526,
-      "paint": 18926.599999904633,
-      "postFetch": 75314.5,
-      "total": 75322.89999997616,
+      "fetch": 6.799999952316284,
+      "parse": 2067.7000000476837,
+      "layout": 54489.299999952316,
+      "paint": 18332,
+      "postFetch": 74889,
+      "total": 74895.79999995232,
       "compareComplete": false,
       "toCompare": null
      },
@@ -94,7 +94,59 @@
       "nodes": 7962,
       "jsEventListeners": 5696
      },
-     "heap_bytes": 240441192,
+     "heap_bytes": 240443068,
+     "compared": false
+    },
+    {
+     "outcome": "painted",
+     "paint_ms": 75158,
+     "phases": {
+      "fetch": 6.600000023841858,
+      "parse": 2029.7000000476837,
+      "layout": 53937.5,
+      "paint": 19184.399999976158,
+      "postFetch": 75151.60000002384,
+      "total": 75158.20000004768,
+      "compareComplete": false,
+      "toCompare": null
+     },
+     "drawn": {
+      "svg": 4,
+      "paths": 1036,
+      "texts": 1610
+     },
+     "dom": {
+      "documents": 1,
+      "nodes": 7962,
+      "jsEventListeners": 5696
+     },
+     "heap_bytes": 240439820,
+     "compared": false
+    },
+    {
+     "outcome": "painted",
+     "paint_ms": 74468,
+     "phases": {
+      "fetch": 7,
+      "parse": 2023.7999999523163,
+      "layout": 54262.40000009537,
+      "paint": 18175.199999928474,
+      "postFetch": 74461.39999997616,
+      "total": 74468.39999997616,
+      "compareComplete": false,
+      "toCompare": null
+     },
+     "drawn": {
+      "svg": 4,
+      "paths": 1036,
+      "texts": 1610
+     },
+     "dom": {
+      "documents": 1,
+      "nodes": 7962,
+      "jsEventListeners": 5696
+     },
+     "heap_bytes": 240435336,
      "compared": false
     }
    ]

@@ -6,29 +6,29 @@
   "height": 900
  },
  "phyloio_home": "/Users/danielcarvalho/Documents/masters/Theses/repo/theses/code/bench/vendor/phyloio-2.2.5",
- "bench_commit": "3084237",
+ "bench_commit": "a99d091",
  "attempt_budget_ms": 700000,
  "compare_budget_ms": 600000,
  "rows": [
   {
    "leaves": 17645,
-   "loads": 3,
-   "painted": 3,
-   "paint_ms_median": 8574,
+   "loads": 5,
+   "painted": 5,
+   "paint_ms_median": 8562,
    "paths_median": 670,
    "dom_nodes_median": 6921,
    "compare_completed": 0,
    "per_load": [
     {
      "outcome": "painted",
-     "paint_ms": 8579,
+     "paint_ms": 8566,
      "phases": {
-      "fetch": 4,
-      "parse": 516,
-      "layout": 4711.799999952316,
-      "paint": 3347,
-      "postFetch": 8574.799999952316,
-      "total": 8578.799999952316,
+      "fetch": 3.100000023841858,
+      "parse": 517,
+      "layout": 4726.100000023842,
+      "paint": 3319.399999976158,
+      "postFetch": 8562.5,
+      "total": 8565.600000023842,
       "compareComplete": false,
       "toCompare": null
      },
@@ -42,19 +42,19 @@
       "nodes": 6921,
       "jsEventListeners": 3900
      },
-     "heap_bytes": 68910036,
+     "heap_bytes": 68929196,
      "compared": false
     },
     {
      "outcome": "painted",
-     "paint_ms": 8528,
+     "paint_ms": 8538,
      "phases": {
-      "fetch": 2.4000000953674316,
-      "parse": 517.1999999284744,
-      "layout": 4676.899999976158,
-      "paint": 3331.2000000476837,
-      "postFetch": 8525.299999952316,
-      "total": 8527.700000047684,
+      "fetch": 2.6999999284744263,
+      "parse": 511,
+      "layout": 4682.600000023842,
+      "paint": 3341.899999976158,
+      "postFetch": 8535.5,
+      "total": 8538.199999928474,
       "compareComplete": false,
       "toCompare": null
      },
@@ -68,19 +68,19 @@
       "nodes": 6921,
       "jsEventListeners": 3900
      },
-     "heap_bytes": 68912476,
+     "heap_bytes": 68930168,
      "compared": false
     },
     {
      "outcome": "painted",
-     "paint_ms": 8574,
+     "paint_ms": 8503,
      "phases": {
-      "fetch": 2.3000000715255737,
-      "parse": 510.1999999284744,
-      "layout": 4679.200000047684,
-      "paint": 3382.6999999284744,
-      "postFetch": 8572.099999904633,
-      "total": 8574.399999976158,
+      "fetch": 2.299999952316284,
+      "parse": 512.7000000476837,
+      "layout": 4645.599999904633,
+      "paint": 3342,
+      "postFetch": 8500.299999952316,
+      "total": 8502.599999904633,
       "compareComplete": false,
       "toCompare": null
      },
@@ -94,30 +94,82 @@
       "nodes": 6921,
       "jsEventListeners": 3900
      },
-     "heap_bytes": 68932280,
+     "heap_bytes": 68919624,
+     "compared": false
+    },
+    {
+     "outcome": "painted",
+     "paint_ms": 8562,
+     "phases": {
+      "fetch": 2.5,
+      "parse": 515.1999999284744,
+      "layout": 4713.5,
+      "paint": 3330.399999976158,
+      "postFetch": 8559.099999904633,
+      "total": 8561.599999904633,
+      "compareComplete": false,
+      "toCompare": null
+     },
+     "drawn": {
+      "svg": 4,
+      "paths": 670,
+      "texts": 1061
+     },
+     "dom": {
+      "documents": 1,
+      "nodes": 6921,
+      "jsEventListeners": 3900
+     },
+     "heap_bytes": 68915756,
+     "compared": false
+    },
+    {
+     "outcome": "painted",
+     "paint_ms": 8565,
+     "phases": {
+      "fetch": 2.200000047683716,
+      "parse": 514.8999999761581,
+      "layout": 4715.100000023842,
+      "paint": 3332.6999999284744,
+      "postFetch": 8562.699999928474,
+      "total": 8564.899999976158,
+      "compareComplete": false,
+      "toCompare": null
+     },
+     "drawn": {
+      "svg": 4,
+      "paths": 670,
+      "texts": 1061
+     },
+     "dom": {
+      "documents": 1,
+      "nodes": 6921,
+      "jsEventListeners": 3900
+     },
+     "heap_bytes": 68932096,
      "compared": false
     }
    ]
   },
   {
    "leaves": 35290,
-   "loads": 3,
-   "painted": 3,
-   "paint_ms_median": 23380,
+   "loads": 5,
+   "painted": 5,
+   "paint_ms_median": 23398,
    "paths_median": 640,
    "dom_nodes_median": 6506,
    "compare_completed": 0,
    "per_load": [
     {
      "outcome": "painted",
-     "paint_ms": 23332,
+     "paint_ms": 23319,
      "phases": {
       "fetch": 4,
-      "parse": 1044.2000000476837,
-      "layout": 15211,
-      "paint": 7073.199999928474,
-      "postFetch": 23328.399999976158,
-      "total": 23332.399999976158,
+      "parse": 1026.6000000238419,
+      "layout": 15124,
+      "paint": 7164.5,
+      "postFetch": 23315.100000023842,
+      "total": 23319.100000023842,
       "compareComplete": false,
       "toCompare": null
      },
@@ -131,19 +183,19 @@
       "nodes": 6506,
       "jsEventListeners": 3744
      },
-     "heap_bytes": 125772220,
+     "heap_bytes": 125757968,
      "compared": false
     },
     {
      "outcome": "painted",
-     "paint_ms": 23459,
+     "paint_ms": 23398,
      "phases": {
-      "fetch": 4.199999928474426,
-      "parse": 1032.5,
-      "layout": 15195.800000071526,
-      "paint": 7226.899999976158,
-      "postFetch": 23455.200000047684,
-      "total": 23459.399999976158,
+      "fetch": 3.6999999284744263,
+      "parse": 1041.1000000238419,
+      "layout": 15240.299999952316,
+      "paint": 7112.900000095367,
+      "postFetch": 23394.300000071526,
+      "total": 23398,
       "compareComplete": false,
       "toCompare": null
      },
@@ -157,19 +209,19 @@
       "nodes": 6506,
       "jsEventListeners": 3744
      },
-     "heap_bytes": 125795308,
+     "heap_bytes": 125804176,
      "compared": false
     },
     {
      "outcome": "painted",
-     "paint_ms": 23380,
+     "paint_ms": 23471,
      "phases": {
       "fetch": 3.5,
-      "parse": 1026.5999999046326,
-      "layout": 15187.900000095367,
-      "paint": 7162.399999976158,
-      "postFetch": 23376.899999976158,
-      "total": 23380.399999976158,
+      "parse": 1047.1999999284744,
+      "layout": 15268.200000047684,
+      "paint": 7152.5,
+      "postFetch": 23467.899999976158,
+      "total": 23471.399999976158,
       "compareComplete": false,
       "toCompare": null
      },
@@ -183,7 +235,59 @@
       "nodes": 6506,
       "jsEventListeners": 3744
      },
-     "heap_bytes": 125790552,
+     "heap_bytes": 125773488,
+     "compared": false
+    },
+    {
+     "outcome": "painted",
+     "paint_ms": 23468,
+     "phases": {
+      "fetch": 3.1999999284744263,
+      "parse": 1056.3000000715256,
+      "layout": 15251.099999904633,
+      "paint": 7157.400000095367,
+      "postFetch": 23464.800000071526,
+      "total": 23468,
+      "compareComplete": false,
+      "toCompare": null
+     },
+     "drawn": {
+      "svg": 4,
+      "paths": 640,
+      "texts": 1016
+     },
+     "dom": {
+      "documents": 1,
+      "nodes": 6506,
+      "jsEventListeners": 3744
+     },
+     "heap_bytes": 125767004,
+     "compared": false
+    },
+    {
+     "outcome": "painted",
+     "paint_ms": 23376,
+     "phases": {
+      "fetch": 3.399999976158142,
+      "parse": 1048.8000000715256,
+      "layout": 15190.899999976158,
+      "paint": 7132.799999952316,
+      "postFetch": 23372.5,
+      "total": 23375.899999976158,
+      "compareComplete": false,
+      "toCompare": null
+     },
+     "drawn": {
+      "svg": 4,
+      "paths": 640,
+      "texts": 1016
+     },
+     "dom": {
+      "documents": 1,
+      "nodes": 6506,
+      "jsEventListeners": 3744
+     },
+     "heap_bytes": 125797828,
      "compared": false
     }
    ]
