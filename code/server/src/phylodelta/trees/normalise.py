@@ -384,7 +384,13 @@ def _from_preorder_parents(parent: np.ndarray, lengths: np.ndarray, labels: list
     m = parent.shape[0]
     depth = np.zeros(m, dtype=np.uint16)
     for i in range(1, m):
-        depth[i] = depth[parent[i]] + 1
+        d = int(depth[parent[i]]) + 1
+        if d > 0xFFFF:
+            # Re-rooting can make a tree deeper than it was, and u16 would wrap
+            # silently, giving the correspondence search wrong ancestors. The
+            # parsers refuse the same depth by name; so does this.
+            raise RerootRefused(f"the re-rooted tree would be deeper than {0xFFFF} levels")
+        depth[i] = d
     subtree_end = np.arange(1, m + 1, dtype=np.int64)
     is_leaf = np.ones(m, dtype=bool)
     is_leaf[parent[1:].astype(np.int64)] = False

@@ -6119,6 +6119,18 @@ original has been replaced.
 500,000 (Table 8), and the disk of a second comparison while the original is kept. Table 24 measures
 it against Phylo.io, which recomputes its whole comparison in the page after a re-root.
 
+**Two fixes after release (v0.3.1), found by a read-only audit (2026-11-14).** The "moved" note was
+written even when the replace's delete found nothing — the user had deleted the original by hand
+while the new one built, or a second replace had — so an ordinary deletion answered 410, against
+§22; it is now written only for a deletion the re-root made. And `reroot` rebuilt the 16-bit depth
+column with no overflow check, though re-rooting can make a tree deeper than it was (two long
+chains under one root double it); past 65,535 it would have wrapped silently and given the
+correspondence search wrong ancestors, so it is refused by name, as the parsers already refuse it.
+Neither path ran in the v0.3.0 campaign (every re-root kept its original; the deepest ladder tree
+is 474 levels), so its results stand for v0.3.1. A third finding is open: the request reads and
+writes both trees before answering 202, size-dependent work §23.1 keeps out of a request; it holds
+at 564,640 leaves (a few seconds) and moving it to the job would change Table 24's timings.
+
 **Not used: the library's own re-rooting.** `rerootTree` and `TreeViewer.reroot` re-root a tree the
 browser holds, which the comparison view never does — it holds a slice — so the view does not use
 them, and they remain for consumers that hold whole trees.
