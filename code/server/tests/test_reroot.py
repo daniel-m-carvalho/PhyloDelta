@@ -241,3 +241,22 @@ def test_the_real_vibrio_tree_reroots_and_keeps_its_distances(datasets_dir):
     for _ in range(300):
         a, b = rng.sample(names, 2)
         assert distance(r, rl, ri, a, b) == pytest.approx(distance(t, tl, ti, a, b), rel=1e-5, abs=1e-5)
+
+
+def test_a_reroot_that_would_overflow_the_depth_column_is_refused():
+    """Depth is u16; a re-root can make a tree deeper than it was (audit, 2026-11-14).
+
+    Two caterpillars of 33,000 under one root are 33,001 deep, which the parser
+    accepts. Rooted at the bottom of one, the far end of the other is ~66,000
+    deep: past 65,535, where the column would wrap without an error.
+    """
+    k = 33_000
+
+    def caterpillar(tag: str) -> str:
+        return "(" * k + f"{tag}0" + "".join(f",{tag}{i})" for i in range(1, k + 1))
+
+    t = parse_newick(f"({caterpillar('L')},{caterpillar('R')});")
+    assert int(t.depth.max()) == k + 1
+    deepest = t.labels.index("L0")
+    with pytest.raises(RerootRefused, match="deeper than 65535"):
+        reroot(t, deepest)

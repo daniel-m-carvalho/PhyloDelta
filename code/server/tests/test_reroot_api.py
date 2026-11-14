@@ -176,6 +176,19 @@ def test_replace_deletes_the_original_and_its_owner_is_told_where_it_went(client
     assert client.get(f"/api/v1/comparisons/{original}/status", headers=ALICE).status_code == 404
 
 
+def test_an_original_deleted_by_hand_during_a_replace_stays_an_ordinary_404(client):
+    """Only a deletion the re-root made earns the 410 "moved" (audit, 2026-11-14)."""
+    original = _built(client, TREE, TREE)
+    response = _reroot(client, original, side="left", node=_deep_node(TREE), replace=True)
+    new = response.json()["id"]
+    assert client.delete(f"/api/v1/comparisons/{original}", headers=ALICE).status_code == 200
+    assert jobs.process_next("test") is True
+    assert _status(client, new)["status"] == "ready"
+    gone = client.get(f"/api/v1/comparisons/{original}/status", headers=ALICE)
+    assert gone.status_code == 404
+    assert gone.json()["code"] == "comparison_not_found"
+
+
 def test_replacing_a_replacement_leads_old_links_to_the_latest(client):
     first = _built(client, TREE, TREE)
     second = _rebuilt(client, first, side="left", node=_deep_node(TREE), replace=True)

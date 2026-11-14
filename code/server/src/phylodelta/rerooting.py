@@ -84,7 +84,7 @@ def request(
     owner_id: str,
     comparison_id: str,
     side: str,
-    node: int | None,
+    node: int,
     replace: bool = False,
 ):
     """Accept a re-root as a pending comparison. Returns the bundle.
@@ -105,15 +105,12 @@ def request(
         )
 
     ids = {"left": record.left_id, "right": record.right_id}
+    # The range from the header, before either tree is read in full.
+    n_nodes = tree_registry.get_tree(ids[side]).meta.n_nodes
+    if not 0 <= node < n_nodes:
+        raise RerootRefused(f"node {node} is not in this tree, which has nodes 0 to {n_nodes - 1}")
     trees = {s: _stored(ids[s]) for s in SIDES}
     this = trees[side]
-
-    if node is None:
-        raise RerootNotPossible("a re-root needs the stored id of the node to re-root above")
-    if not 0 <= node < this.n_nodes:
-        raise RerootRefused(
-            f"node {node} is not in this tree, which has nodes 0 to {this.n_nodes - 1}"
-        )
     label = this.labels[node]
     rerooted = reroot(this, node)
 
@@ -231,8 +228,13 @@ def settle_original(comparison_id: str) -> str | None:
         # ``old`` forgets every record that leads to it.
         db.repoint_rerooted(record.owner_id, old, comparison_id)
         removed = retention.remove_comparison(record.owner_id, old)
+        if removed is None:
+            # Already gone: the user deleted it, or another replace did. That
+            # deletion was not this re-root's, so its old links keep the 404
+            # every ordinary deletion gives (§22) rather than a "moved".
+            return f"{old} was already gone"
         db.record_rerooted_away(record.owner_id, old, comparison_id)
-        return f"replaced {old}" if removed else f"{old} was already gone"
+        return f"replaced {old}"
     db.mark_superseded(old, comparison_id)
     return f"{old} kept, superseded by this one"
 
