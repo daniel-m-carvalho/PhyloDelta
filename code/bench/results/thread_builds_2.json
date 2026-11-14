@@ -3,10 +3,25 @@
   "metrics": [
     "rf"
   ],
+  "builds": 5,
   "rungs": [
     {
       "leaves": 1000,
-      "build_s": 2.0803166249534115,
+      "build_s": 2.0677633750019595,
+      "builds_s": [
+        2.0707651249831542,
+        2.0651309159584343,
+        2.0677633750019595,
+        2.066713791922666,
+        2.070631832932122
+      ],
+      "statuses": [
+        "ready",
+        "ready",
+        "ready",
+        "ready",
+        "ready"
+      ],
       "status": "ready",
       "threads_verified": 2,
       "metrics_asked": [
@@ -19,7 +34,21 @@
     },
     {
       "leaves": 2500,
-      "build_s": 2.0690383339533582,
+      "build_s": 2.0633106250315905,
+      "builds_s": [
+        2.0675552919274196,
+        2.058043249999173,
+        2.0633106250315905,
+        2.0605792499845847,
+        2.0640345419524238
+      ],
+      "statuses": [
+        "ready",
+        "ready",
+        "ready",
+        "ready",
+        "ready"
+      ],
       "status": "ready",
       "threads_verified": 2,
       "metrics_asked": [
@@ -32,7 +61,21 @@
     },
     {
       "leaves": 5000,
-      "build_s": 2.059849665965885,
+      "build_s": 2.056468207971193,
+      "builds_s": [
+        2.056468207971193,
+        2.064591374946758,
+        2.057668291963637,
+        2.053643666091375,
+        2.055933209019713
+      ],
+      "statuses": [
+        "ready",
+        "ready",
+        "ready",
+        "ready",
+        "ready"
+      ],
       "status": "ready",
       "threads_verified": 2,
       "metrics_asked": [
@@ -45,7 +88,21 @@
     },
     {
       "leaves": 10000,
-      "build_s": 2.0659790839999914,
+      "build_s": 2.0658712920267135,
+      "builds_s": [
+        2.5616232079919428,
+        2.056366166099906,
+        2.0606452090432867,
+        2.580107167013921,
+        2.0658712920267135
+      ],
+      "statuses": [
+        "ready",
+        "ready",
+        "ready",
+        "ready",
+        "ready"
+      ],
       "status": "ready",
       "threads_verified": 2,
       "metrics_asked": [
@@ -58,7 +115,21 @@
     },
     {
       "leaves": 17645,
-      "build_s": 2.578936707926914,
+      "build_s": 2.576519291033037,
+      "builds_s": [
+        2.5831343749305233,
+        2.066345207975246,
+        2.576519291033037,
+        2.5757332500070333,
+        2.5800576659385115
+      ],
+      "statuses": [
+        "ready",
+        "ready",
+        "ready",
+        "ready",
+        "ready"
+      ],
       "status": "ready",
       "threads_verified": 2,
       "metrics_asked": [
@@ -71,7 +142,21 @@
     },
     {
       "leaves": 35290,
-      "build_s": 3.5994953750632703,
+      "build_s": 3.087652459042147,
+      "builds_s": [
+        3.087652459042147,
+        3.599610124947503,
+        3.0663587499875575,
+        3.077839249977842,
+        3.584263916942291
+      ],
+      "statuses": [
+        "ready",
+        "ready",
+        "ready",
+        "ready",
+        "ready"
+      ],
       "status": "ready",
       "threads_verified": 2,
       "metrics_asked": [
@@ -84,7 +169,21 @@
     },
     {
       "leaves": 70580,
-      "build_s": 6.1696677500149235,
+      "build_s": 6.143413707963191,
+      "builds_s": [
+        6.143413707963191,
+        6.194480707985349,
+        6.100905459024943,
+        6.141456124954857,
+        6.639728416921571
+      ],
+      "statuses": [
+        "ready",
+        "ready",
+        "ready",
+        "ready",
+        "ready"
+      ],
       "status": "ready",
       "threads_verified": 2,
       "metrics_asked": [
@@ -97,7 +196,21 @@
     },
     {
       "leaves": 141160,
-      "build_s": 16.868069958058186,
+      "build_s": 16.86646358401049,
+      "builds_s": [
+        16.86262645793613,
+        17.329724125098437,
+        16.86646358401049,
+        17.401633833069354,
+        16.85739116696641
+      ],
+      "statuses": [
+        "ready",
+        "ready",
+        "ready",
+        "ready",
+        "ready"
+      ],
       "status": "ready",
       "threads_verified": 2,
       "metrics_asked": [
@@ -110,7 +223,21 @@
     },
     {
       "leaves": 282320,
-      "build_s": 60.26193245803006,
+      "build_s": 60.19145679101348,
+      "builds_s": [
+        60.21781841700431,
+        60.17828962497879,
+        60.191933916998096,
+        60.19145679101348,
+        60.167287208954804
+      ],
+      "statuses": [
+        "ready",
+        "ready",
+        "ready",
+        "ready",
+        "ready"
+      ],
       "status": "ready",
       "threads_verified": 2,
       "metrics_asked": [
@@ -123,7 +250,21 @@
     },
     {
       "leaves": 564640,
-      "build_s": 245.67810812499374,
+      "build_s": 245.0763621670194,
+      "builds_s": [
+        245.25668416696135,
+        245.0763621670194,
+        246.0888657500036,
+        244.125765417004,
+        244.60398825001903
+      ],
+      "statuses": [
+        "ready",
+        "ready",
+        "ready",
+        "ready",
+        "ready"
+      ],
       "status": "ready",
       "threads_verified": 2,
       "metrics_asked": [

@@ -4521,6 +4521,54 @@ leave five copies of the largest rung in the store.
 **The jump is sampled across sizes** (Table 15), and the clades whose counterpart is the other
 tree's root are counted and tried apart: the correction to §34.14's finding is in *Corrections*.
 
+### 34.25 The v0.3.0 campaign: five runs a rung, and what they found
+
+**What was run.** The whole campaign from a clean clone of `v0.3.0` (`a99d091`), 2026-11-13 01:37 to
+2026-11-14 02:35, 35 steps in one command, Chrome unchanged, on AC at both ends. 25 hours, against
+v0.2.1's 7: the five-fold repetitions of §34.24, most of it phylo.io loads running to their budgets
+(`endurance_extra` alone 10 h 36 min, `ceiling` 5 h 13 min). `RERUN_REPORT.md` holds the claims and
+the table-by-table figures, `RERUN_LEDGER.md` every changed median against v0.2.1.
+
+**Five runs changed little that one run had said.** Almost every repeated cell has an interquartile
+range under 1%: phylo.io paints in 8.7 s [8.7–8.7] at 17,645, compares in 198 s [198–199] at 10,000;
+PhyloDelta loads in 0.21 s at every size; builds at 564,640 take 245.1 s [244.6–245.3]. Outcomes did
+not split either: where phylo.io failed in one load it failed in all five, the same way, with one
+exception — at 564,640 under the 30-minute budget the renderer crashed in one load of five and was
+still working at the limit in four. The repetition earned its cost by removing the possibility, not
+by moving the numbers.
+
+**What it did find:**
+
+* **The jump** (§34.14, corrected in *Corrections*). Sampled across sizes, phylo.io's "Highlight BCN"
+  works on 160 of 160 clades whose best corresponding node is not the other tree's root, and throws
+  on 229 of 229 attempts on those whose counterpart is; the dedicated probe, 120 of 120 each way. How
+  many clades have the root as counterpart varies by load (22, 22, 1, 22, 22 at 1,000), since the
+  comparison is not deterministic (§34.4).
+* **Phylo.io cannot re-root a compared tree** (Table 24). `trigger_("reroot", …)`, the call its own
+  context menu makes, throws in compare mode, in two ways: at 1,000 leaves while redrawing
+  (`Viewer.color_edge`: `colorScale.node is not a function`), and from 2,500 when
+  `compute_topology_and_render_bounded_viewer(true)` restarts the comparison and
+  `compute_visible_topology_similarity` posts the re-rooted model to its worker (`Maximum call stack
+  size exceeded`). Checked by hand at 1,000 and 2,500: outside compare mode the same call on the same
+  clade works. The comparison is never recomputed, so Table 24 has no phylo.io time to set beside
+  PhyloDelta's — the one interaction that makes both tools redo the expensive half is the one
+  phylo.io does not complete. Recorded as a finding about the tool, like the jump, and not worked
+  around: re-rooting before comparing would time a different action from the one a user takes.
+* **PhyloDelta re-roots in a build plus 2–5 s** (§56): 250.1 s [250.06–250.11] at 564,640 against a
+  245.1 s build. Below 35,290 the worker's 2 s poll sets the time (0.7–2.7 s at 2,500), not the tree.
+* **Memory under a 30-minute budget** (Table 4), now for both tools: phylo.io's renderer peaks at 3.5,
+  6.1, 9.5 and up to 11.8 GB at 17,645, 35,290, 70,580 and 564,640, and finishes no comparison;
+  PhyloDelta's stays at 199–226 MB at every size.
+* **First opening** (Table 1): precompute plus load is 2.3 s to 10,000 leaves and 245.3 s at 564,640.
+  It is the figure for the first person to open a comparison; every later opening is the 0.21 s load.
+
+**Fixed after the run, changing no number** (the CSVs before and after are byte-identical): Table 15's
+note read "the eight largest, 922 to 997 leaves" as fixed text, and now reads its counts from the
+loads; Table 24 gained its note on phylo.io's two errors; and Table 13 said phylo.io's re-root
+recomputes the comparison, which this run showed it does not. `rerun_ledger.py` learnt the renamed
+headings, per table and for the old file only, and compares medians, so a cell that only gained an
+interquartile range is not listed as changed.
+
 ## 35. The frontend holds what it has already seen
 
 The library shipped a two-tier LRU — `CacheManager`, with warm and rendered queues, an eviction
@@ -6309,7 +6357,10 @@ intermittent within one. The supervisor's own use found otherwise: it works, exc
 clade's best corresponding node is the **root of the other tree**. Then `elementBCN` points at a
 detached copy of the root, `getHierarchyNodeFromModelNode` returns null, and the action throws
 `Cannot read properties of null (reading '_children')`. On the 1,000-leaf pruned vibrio pair the
-eight largest clades, 922 to 997 leaves, fail, and every other clade tried works, in every load.
+clades that fail are among the largest, and every other clade tried works, in every load. How many
+fail varies between loads, because phylo.io's comparison is not deterministic (§34.4): the v0.3.0
+campaign found 22, 22, 1, 22 and 22 at 1,000 leaves (Table 15's note). It was first reported here
+as the eight largest, 922 to 997 leaves, from fewer loads.
 
 **Why the harness got it wrong.** `navigation.html` offered candidates largest first, and the probe
 took the first fifteen with a counterpart. On these rungs the largest clades are exactly those whose

@@ -1,9 +1,9 @@
 [
   {
     "leaves": 1000,
-    "median_ms": 1.6112920129671693,
-    "min_ms": 1.56879099085927,
-    "max_ms": 1.8749579321593046,
+    "median_ms": 1.5974160050973296,
+    "min_ms": 1.557542011141777,
+    "max_ms": 1.756667043082416,
     "bytes": 5234,
     "gzip_bytes": 1638,
     "metric": "mast",
@@ -12,20 +12,20 @@
   },
   {
     "leaves": 2500,
-    "median_ms": 1.609708066098392,
-    "min_ms": 1.5507920179516077,
-    "max_ms": 1.854332978837192,
+    "median_ms": 1.7507500015199184,
+    "min_ms": 1.6683749854564667,
+    "max_ms": 1.9032079726457596,
     "bytes": 5408,
-    "gzip_bytes": 1672,
+    "gzip_bytes": 1673,
     "metric": "mast",
     "displayed_leaves": 50,
     "total_leaves": 2500
   },
   {
     "leaves": 5000,
-    "median_ms": 1.5267919516190886,
-    "min_ms": 1.482957974076271,
-    "max_ms": 1.5844579320400953,
+    "median_ms": 1.6444169450551271,
+    "min_ms": 1.6038749599829316,
+    "max_ms": 1.845958991907537,
     "bytes": 5491,
     "gzip_bytes": 1701,
     "metric": "mast",
@@ -34,51 +34,51 @@
   },
   {
     "leaves": 10000,
-    "median_ms": 1.5660410281270742,
-    "min_ms": 1.5167079400271177,
-    "max_ms": 1.651874976232648,
+    "median_ms": 1.6134589677676558,
+    "min_ms": 1.5546249924227595,
+    "max_ms": 1.7061249818652868,
     "bytes": 5480,
-    "gzip_bytes": 1685,
+    "gzip_bytes": 1682,
     "metric": "mast",
     "displayed_leaves": 50,
     "total_leaves": 10000
   },
   {
     "leaves": 17645,
-    "median_ms": 1.5378330135717988,
-    "min_ms": 1.5231670113280416,
-    "max_ms": 1.6627500299364328,
+    "median_ms": 1.6297090332955122,
+    "min_ms": 1.5567910159006715,
+    "max_ms": 1.7942909616976976,
     "bytes": 6927,
-    "gzip_bytes": 2705,
+    "gzip_bytes": 2706,
     "metric": "mast",
     "displayed_leaves": 50,
     "total_leaves": 17645
   },
   {
     "leaves": 35290,
-    "median_ms": 1.5279999934136868,
-    "min_ms": 1.4906669966876507,
-    "max_ms": 1.6970420256257057,
+    "median_ms": 1.5823750291019678,
+    "min_ms": 1.5599579783156514,
+    "max_ms": 1.6314160311594605,
     "bytes": 6920,
-    "gzip_bytes": 2675,
+    "gzip_bytes": 2673,
     "metric": "mast",
     "displayed_leaves": 50,
     "total_leaves": 35290
   },
   {
     "leaves": 70580,
-    "absent": "No metric 'mast' for pair '434120d2a773__f6ccc9a45abf'."
+    "absent": "No metric 'mast' for pair '4de0a4c5d3dd__4003e564f5f7'."
   },
   {
     "leaves": 141160,
-    "absent": "No metric 'mast' for pair '95478c74b2f6__6d7f91ae926e'."
+    "absent": "No metric 'mast' for pair '3f335b17709f__2da93aa7cd20'."
   },
   {
     "leaves": 282320,
-    "absent": "No metric 'mast' for pair '392684003213__b99749d3f7fc'."
+    "absent": "No metric 'mast' for pair '0b0e982b2c04__800dd6873bcd'."
   },
   {
     "leaves": 564640,
-    "absent": "No metric 'mast' for pair 'e0b847c2dd07__0eaf9e1927bb'."
+    "absent": "No metric 'mast' for pair 'b722e14db1c4__f82468f451ea'."
   }
 ]

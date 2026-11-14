@@ -1,1 +1,7 @@
 vendor/
+
+# The clade each rung's re-root benchmark used, with every leaf label: an input
+# to `harness/reroot.mjs`, rebuilt exactly from the bench store by
+# `tools/reroot_targets.py`, and 1.4 MB at the top rung. Nothing reads it for a
+# table — `reroot.json` records the node, clade size and depth per rung (§34.24).
+results/reroot_targets.json

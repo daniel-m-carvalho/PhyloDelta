@@ -1,0 +1,540 @@
+{
+  "browser": "Chrome 156.0.8078.80",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "runs": 5,
+  "rows": [
+    {
+      "leaves": 1000,
+      "pair": "17f7ac04cbe7__5072bbaaf8df",
+      "node": 1058,
+      "clade_leaves": 102,
+      "depth": 60,
+      "phyloio": [
+        {
+          "ok": false,
+          "outcome": "threw",
+          "why": "this.model.settings.colorScale.node is not a function"
+        },
+        {
+          "ok": false,
+          "outcome": "threw",
+          "why": "this.model.settings.colorScale.node is not a function"
+        },
+        {
+          "ok": false,
+          "outcome": "threw",
+          "why": "this.model.settings.colorScale.node is not a function"
+        },
+        {
+          "ok": false,
+          "outcome": "threw",
+          "why": "this.model.settings.colorScale.node is not a function"
+        },
+        {
+          "ok": false,
+          "outcome": "threw",
+          "why": "this.model.settings.colorScale.node is not a function"
+        }
+      ],
+      "phylodelta": [
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 2587.399999976158,
+          "new_id": "3a6c3756ce26__286cfe4de9a5"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 2590.3000000715256,
+          "new_id": "25fdea60db6b__fb6910c12875"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 1437.6000000238419,
+          "new_id": "11cdcd158c4d__45aea91a66ff"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 2572,
+          "new_id": "6a84039cf36c__6fd5495fb587"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 1450.5,
+          "new_id": "33bcf464d98d__e049889b885c"
+        }
+      ]
+    },
+    {
+      "leaves": 2500,
+      "pair": "db57d3bbb767__a2193ffd3599",
+      "node": 2658,
+      "clade_leaves": 251,
+      "depth": 73,
+      "phyloio": [
+        {
+          "ok": false,
+          "outcome": "threw",
+          "why": "Failed to execute 'postMessage' on 'Worker': Maximum call stack size exceeded"
+        },
+        {
+          "ok": false,
+          "outcome": "threw",
+          "why": "Failed to execute 'postMessage' on 'Worker': Maximum call stack size exceeded"
+        },
+        {
+          "ok": false,
+          "outcome": "threw",
+          "why": "Failed to execute 'postMessage' on 'Worker': Maximum call stack size exceeded"
+        },
+        {
+          "ok": false,
+          "outcome": "threw",
+          "why": "Failed to execute 'postMessage' on 'Worker': Maximum call stack size exceeded"
+        },
+        {
+          "ok": false,
+          "outcome": "threw",
+          "why": "Failed to execute 'postMessage' on 'Worker': Maximum call stack size exceeded"
+        }
+      ],
+      "phylodelta": [
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 1469.2000000476837,
+          "new_id": "1d0e471b92ca__474f49b993f2"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 2562.600000023842,
+          "new_id": "5efdebe9b091__7a363e6c0edf"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 2564.2000000476837,
+          "new_id": "b6eb54331487__2e75c26a0959"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 717.7999999523163,
+          "new_id": "9f59897bbc48__bd5a3d41972f"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 729.9000000953674,
+          "new_id": "47e23867da27__71f341774d14"
+        }
+      ]
+    },
+    {
+      "leaves": 5000,
+      "pair": "d2dd1ab69d6d__601234bf5660",
+      "node": 5332,
+      "clade_leaves": 504,
+      "depth": 82,
+      "phyloio": [
+        {
+          "ok": false,
+          "outcome": "threw",
+          "why": "Failed to execute 'postMessage' on 'Worker': Maximum call stack size exceeded"
+        },
+        {
+          "ok": false,
+          "outcome": "threw",
+          "why": "Failed to execute 'postMessage' on 'Worker': Maximum call stack size exceeded"
+        },
+        {
+          "ok": false,
+          "outcome": "threw",
+          "why": "Failed to execute 'postMessage' on 'Worker': Maximum call stack size exceeded"
+        },
+        {
+          "ok": false,
+          "outcome": "threw",
+          "why": "Failed to execute 'postMessage' on 'Worker': Maximum call stack size exceeded"
+        },
+        {
+          "ok": false,
+          "outcome": "threw",
+          "why": "Failed to execute 'postMessage' on 'Worker': Maximum call stack size exceeded"
+        }
+      ],
+      "phylodelta": [
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 733.3999999761581,
+          "new_id": "b5e8c6e59898__5bf90e4b00eb"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 1502.5999999046326,
+          "new_id": "b7f3984c4e2f__8b90e6719601"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 711.4000000953674,
+          "new_id": "79f90ff5cc59__e4693a6ad2ee"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 1498.5999999046326,
+          "new_id": "073fdbc875b9__bd099f2b629b"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 1491.2000000476837,
+          "new_id": "680d6059ff60__0a2552738014"
+        }
+      ]
+    },
+    {
+      "leaves": 10000,
+      "pair": "6a6763cda00e__71c3e740f22c",
+      "node": 10825,
+      "clade_leaves": 1049,
+      "depth": 108,
+      "phyloio": [
+        {
+          "ok": false,
+          "outcome": "threw",
+          "why": "Failed to execute 'postMessage' on 'Worker': Maximum call stack size exceeded"
+        },
+        {
+          "ok": false,
+          "outcome": "threw",
+          "why": "Failed to execute 'postMessage' on 'Worker': Maximum call stack size exceeded"
+        },
+        {
+          "ok": false,
+          "outcome": "threw",
+          "why": "Failed to execute 'postMessage' on 'Worker': Maximum call stack size exceeded"
+        },
+        {
+          "ok": false,
+          "outcome": "threw",
+          "why": "Failed to execute 'postMessage' on 'Worker': Maximum call stack size exceeded"
+        },
+        {
+          "ok": false,
+          "outcome": "threw",
+          "why": "Failed to execute 'postMessage' on 'Worker': Maximum call stack size exceeded"
+        }
+      ],
+      "phylodelta": [
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 2658.8000000715256,
+          "new_id": "aa7557b06732__85ebd493e711"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 2652.2000000476837,
+          "new_id": "60cd95107184__31a705c23358"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 1503.6999999284744,
+          "new_id": "5dc2e4dc27fe__a3e709017630"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 2643.899999976158,
+          "new_id": "244d461a443d__ecf27f1b4ba8"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 2659.399999976158,
+          "new_id": "6cd6f9242380__ff6b041a0ac5"
+        }
+      ]
+    },
+    {
+      "leaves": 17645,
+      "pair": "b115c9a28f32__c0026609cdf7",
+      "node": 19003,
+      "clade_leaves": 1816,
+      "depth": 123,
+      "phyloio": [
+        {
+          "ok": false,
+          "outcome": "no comparison",
+          "why": "the first comparison never completed"
+        },
+        {
+          "ok": false,
+          "outcome": "no comparison",
+          "why": "the first comparison never completed"
+        },
+        {
+          "ok": false,
+          "outcome": "no comparison",
+          "why": "the first comparison never completed"
+        },
+        {
+          "ok": false,
+          "outcome": "no comparison",
+          "why": "the first comparison never completed"
+        },
+        {
+          "ok": false,
+          "outcome": "no comparison",
+          "why": "the first comparison never completed"
+        }
+      ],
+      "phylodelta": [
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 1615.3000000715256,
+          "new_id": "22ffc16ce64d__2a888d0e7a6b"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 2732.7999999523163,
+          "new_id": "24843765fd36__ff7ce17e3a84"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 1609.1000000238419,
+          "new_id": "33954a968ccf__be185d46d30c"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 2708.399999976158,
+          "new_id": "3b33fd215e2f__1d12e02b36ad"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 795.2000000476837,
+          "new_id": "baed5a6f2d3e__b88934699b11"
+        }
+      ]
+    },
+    {
+      "leaves": 35290,
+      "pair": "13110ee449e1__905882d4d5a8",
+      "node": 18636,
+      "clade_leaves": 3288,
+      "depth": 115,
+      "phyloio": null,
+      "phylodelta": [
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 2857.7000000476837,
+          "new_id": "2e53f4e9f23d__e31b9652b65f"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 2842.100000023842,
+          "new_id": "3433c8bdf0d3__6d0873077403"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 2835.6999999284744,
+          "new_id": "02d3c7420c94__0394450cb223"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 2844.7999999523163,
+          "new_id": "89137ee0314d__4780b5614743"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 4557.599999904633,
+          "new_id": "ce6054bd3fe6__52c34d6f2755"
+        }
+      ]
+    },
+    {
+      "leaves": 70580,
+      "pair": "f31b5194eb44__44c758dd0257",
+      "node": 15231,
+      "clade_leaves": 6987,
+      "depth": 110,
+      "phyloio": null,
+      "phylodelta": [
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 7364.800000071526,
+          "new_id": "995a9e0b1c64__465987ed496d"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 7342.5,
+          "new_id": "07111a5023ba__3fe8277403a0"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 7339.399999976158,
+          "new_id": "15d3ceb07934__48115725f0f6"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 7376.399999976158,
+          "new_id": "cb18d8c3e305__d3004058b757"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 7351.600000023842,
+          "new_id": "40c4112b8438__0cdbc3ef0f84"
+        }
+      ]
+    },
+    {
+      "leaves": 141160,
+      "pair": "6826ebd88092__191d19c92c91",
+      "node": 5884,
+      "clade_leaves": 14110,
+      "depth": 44,
+      "phyloio": null,
+      "phylodelta": [
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 21721.600000023842,
+          "new_id": "d09b7e1f9949__5101b5eaa1d4"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 21661.5,
+          "new_id": "7aab427d3ed4__b80bdb8870bd"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 21700.300000071526,
+          "new_id": "a89695d7cd96__8e7962550df4"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 21719.700000047684,
+          "new_id": "62a38f696eb1__f2ab4c0dd7ca"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 16670.699999928474,
+          "new_id": "73ae39d67d9a__72aefebeedd3"
+        }
+      ]
+    },
+    {
+      "leaves": 282320,
+      "pair": "be40bd9a8809__0f3ac9aa8e25",
+      "node": 14,
+      "clade_leaves": 35290,
+      "depth": 14,
+      "phyloio": null,
+      "phylodelta": [
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 62779.90000009537,
+          "new_id": "7b55e9b878dd__fbf5e793432e"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 62770.700000047684,
+          "new_id": "b7da4bbbabe5__49fa446922b7"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 62799.39999997616,
+          "new_id": "cc55da495c50__ddd7262182fe"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 62772.699999928474,
+          "new_id": "eb1d1961b69a__d8baf7f02b3e"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 62811.300000071526,
+          "new_id": "40fa8c6c7ab6__446d2f15fad1"
+        }
+      ]
+    },
+    {
+      "leaves": 564640,
+      "pair": "7bedc9af02d2__4af2d588bf6c",
+      "node": 29,
+      "clade_leaves": 52935,
+      "depth": 29,
+      "phyloio": null,
+      "phylodelta": [
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 250159.30000007153,
+          "new_id": "8989e199d22f__ff821c2d00e0"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 250060.40000009537,
+          "new_id": "0ec5d939e361__e033c98a5825"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 245093.20000004768,
+          "new_id": "d63b1b379d77__bbcf5e8738e6"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 250109.5,
+          "new_id": "e7f3c60e1d6c__abb745b21122"
+        },
+        {
+          "ok": true,
+          "outcome": "re-rooted",
+          "ms": 250080.79999995232,
+          "new_id": "23b7286cfbc8__d5b357a483fe"
+        }
+      ]
+    }
+  ]
+}

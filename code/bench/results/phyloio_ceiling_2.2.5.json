@@ -11,7 +11,12 @@
     {
       "completed": false,
       "attempted": 0,
-      "succeeded": 0
+      "succeeded": 0,
+      "rootward": null
     }
-  ]
+  ],
+  "rootward_clades": 0,
+  "rootward_attempted": 0,
+  "rootward_threw": 0,
+  "rootward_errors": []
 }

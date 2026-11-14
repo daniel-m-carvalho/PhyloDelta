@@ -1,14 +1,22 @@
 [
   {
+    "ok": true,
+    "ms": 249,
+    "peak_renderer_mb": 224,
+    "leaves": 17645,
+    "tool": "phylodelta",
+    "load": 0
+  },
+  {
     "ok": false,
-    "ms": 1808814,
+    "ms": 1808863,
     "phases": {
-      "fetch": 2.399999976158142,
-      "parse": 491.60000002384186,
-      "layout": 4643.899999976158,
-      "paint": 3471.899999976158,
-      "postFetch": 8607.399999976158,
-      "total": 8609.799999952316,
+      "fetch": 2.5999999046325684,
+      "parse": 510.60000002384186,
+      "layout": 4651.700000047684,
+      "paint": 3491,
+      "postFetch": 8653.300000071526,
+      "total": 8655.899999976158,
       "compareComplete": false,
       "toCompare": null
     },
@@ -17,20 +25,158 @@
       "texts": 1061
     },
     "why": "comparison unfinished after 30 min",
-    "leaves": 17645,
     "compare_budget_ms": 1800000,
-    "peak_renderer_mb": 3504
+    "peak_renderer_mb": 3497,
+    "leaves": 17645,
+    "tool": "phyloio",
+    "load": 0
+  },
+  {
+    "ok": true,
+    "ms": 235,
+    "peak_renderer_mb": 223,
+    "leaves": 17645,
+    "tool": "phylodelta",
+    "load": 1
   },
   {
     "ok": false,
-    "ms": 1822821,
+    "ms": 1808489,
     "phases": {
-      "fetch": 3.5,
-      "parse": 967.8999999761581,
-      "layout": 14560.5,
-      "paint": 6980.200000047684,
-      "postFetch": 22508.600000023842,
-      "total": 22512.100000023842,
+      "fetch": 3,
+      "parse": 496.2999999523163,
+      "layout": 4427.600000023842,
+      "paint": 3375.7000000476837,
+      "postFetch": 8299.600000023842,
+      "total": 8302.600000023842,
+      "compareComplete": false,
+      "toCompare": null
+    },
+    "drawn": {
+      "paths": 670,
+      "texts": 1061
+    },
+    "why": "comparison unfinished after 30 min",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 3515,
+    "leaves": 17645,
+    "tool": "phyloio",
+    "load": 1
+  },
+  {
+    "ok": true,
+    "ms": 236,
+    "peak_renderer_mb": 225,
+    "leaves": 17645,
+    "tool": "phylodelta",
+    "load": 2
+  },
+  {
+    "ok": false,
+    "ms": 1808418,
+    "phases": {
+      "fetch": 2.399999976158142,
+      "parse": 485.5,
+      "layout": 4423.600000023842,
+      "paint": 3330.399999976158,
+      "postFetch": 8239.5,
+      "total": 8241.899999976158,
+      "compareComplete": false,
+      "toCompare": null
+    },
+    "drawn": {
+      "paths": 670,
+      "texts": 1061
+    },
+    "why": "comparison unfinished after 30 min",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 3505,
+    "leaves": 17645,
+    "tool": "phyloio",
+    "load": 2
+  },
+  {
+    "ok": true,
+    "ms": 234,
+    "peak_renderer_mb": 222,
+    "leaves": 17645,
+    "tool": "phylodelta",
+    "load": 3
+  },
+  {
+    "ok": false,
+    "ms": 1808409,
+    "phases": {
+      "fetch": 2.200000047683716,
+      "parse": 478.39999997615814,
+      "layout": 4408.199999928474,
+      "paint": 3346.8000000715256,
+      "postFetch": 8233.399999976158,
+      "total": 8235.600000023842,
+      "compareComplete": false,
+      "toCompare": null
+    },
+    "drawn": {
+      "paths": 670,
+      "texts": 1061
+    },
+    "why": "comparison unfinished after 30 min",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 3517,
+    "leaves": 17645,
+    "tool": "phyloio",
+    "load": 3
+  },
+  {
+    "ok": true,
+    "ms": 236,
+    "peak_renderer_mb": 223,
+    "leaves": 17645,
+    "tool": "phylodelta",
+    "load": 4
+  },
+  {
+    "ok": false,
+    "ms": 1808377,
+    "phases": {
+      "fetch": 2.1999999284744263,
+      "parse": 487,
+      "layout": 4410.900000095367,
+      "paint": 3312.5,
+      "postFetch": 8210.400000095367,
+      "total": 8212.600000023842,
+      "compareComplete": false,
+      "toCompare": null
+    },
+    "drawn": {
+      "paths": 670,
+      "texts": 1061
+    },
+    "why": "comparison unfinished after 30 min",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 3518,
+    "leaves": 17645,
+    "tool": "phyloio",
+    "load": 4
+  },
+  {
+    "ok": true,
+    "ms": 254,
+    "peak_renderer_mb": 223,
+    "leaves": 35290,
+    "tool": "phylodelta",
+    "load": 0
+  },
+  {
+    "ok": false,
+    "ms": 1822623,
+    "phases": {
+      "fetch": 4.299999952316284,
+      "parse": 935.7000000476837,
+      "layout": 14393.599999904633,
+      "paint": 6890.300000071526,
+      "postFetch": 22219.600000023842,
+      "total": 22223.899999976158,
       "compareComplete": false,
       "toCompare": null
     },
@@ -39,20 +185,158 @@
       "texts": 1016
     },
     "why": "comparison unfinished after 30 min",
-    "leaves": 35290,
     "compare_budget_ms": 1800000,
-    "peak_renderer_mb": 6261
+    "peak_renderer_mb": 6075,
+    "leaves": 35290,
+    "tool": "phyloio",
+    "load": 0
+  },
+  {
+    "ok": true,
+    "ms": 236,
+    "peak_renderer_mb": 223,
+    "leaves": 35290,
+    "tool": "phylodelta",
+    "load": 1
   },
   {
     "ok": false,
-    "ms": 1873870,
+    "ms": 1822739,
     "phases": {
-      "fetch": 6.900000095367432,
-      "parse": 1937.5999999046326,
-      "layout": 53274.5,
-      "paint": 18357,
-      "postFetch": 73569.09999990463,
-      "total": 73576,
+      "fetch": 4.200000047683716,
+      "parse": 955.2000000476837,
+      "layout": 14535.399999976158,
+      "paint": 6959.799999952316,
+      "postFetch": 22450.399999976158,
+      "total": 22454.600000023842,
+      "compareComplete": false,
+      "toCompare": null
+    },
+    "drawn": {
+      "paths": 640,
+      "texts": 1016
+    },
+    "why": "comparison unfinished after 30 min",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 6193,
+    "leaves": 35290,
+    "tool": "phyloio",
+    "load": 1
+  },
+  {
+    "ok": true,
+    "ms": 232,
+    "peak_renderer_mb": 202,
+    "leaves": 35290,
+    "tool": "phylodelta",
+    "load": 2
+  },
+  {
+    "ok": false,
+    "ms": 1822829,
+    "phases": {
+      "fetch": 4.199999928474426,
+      "parse": 983.6000000238419,
+      "layout": 14561.800000071526,
+      "paint": 7037.5,
+      "postFetch": 22582.900000095367,
+      "total": 22587.100000023842,
+      "compareComplete": false,
+      "toCompare": null
+    },
+    "drawn": {
+      "paths": 640,
+      "texts": 1016
+    },
+    "why": "comparison unfinished after 30 min",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 6050,
+    "leaves": 35290,
+    "tool": "phyloio",
+    "load": 2
+  },
+  {
+    "ok": true,
+    "ms": 200,
+    "peak_renderer_mb": 200,
+    "leaves": 35290,
+    "tool": "phylodelta",
+    "load": 3
+  },
+  {
+    "ok": false,
+    "ms": 1822792,
+    "phases": {
+      "fetch": 4.799999952316284,
+      "parse": 960,
+      "layout": 14541.399999976158,
+      "paint": 6975.800000071526,
+      "postFetch": 22477.200000047684,
+      "total": 22482,
+      "compareComplete": false,
+      "toCompare": null
+    },
+    "drawn": {
+      "paths": 640,
+      "texts": 1016
+    },
+    "why": "comparison unfinished after 30 min",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 6203,
+    "leaves": 35290,
+    "tool": "phyloio",
+    "load": 3
+  },
+  {
+    "ok": true,
+    "ms": 234,
+    "peak_renderer_mb": 199,
+    "leaves": 35290,
+    "tool": "phylodelta",
+    "load": 4
+  },
+  {
+    "ok": false,
+    "ms": 1822895,
+    "phases": {
+      "fetch": 4.600000023841858,
+      "parse": 987.6999999284744,
+      "layout": 14610.200000047684,
+      "paint": 7025.899999976158,
+      "postFetch": 22623.799999952316,
+      "total": 22628.399999976158,
+      "compareComplete": false,
+      "toCompare": null
+    },
+    "drawn": {
+      "paths": 640,
+      "texts": 1016
+    },
+    "why": "comparison unfinished after 30 min",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 6233,
+    "leaves": 35290,
+    "tool": "phyloio",
+    "load": 4
+  },
+  {
+    "ok": true,
+    "ms": 241,
+    "peak_renderer_mb": 223,
+    "leaves": 70580,
+    "tool": "phylodelta",
+    "load": 0
+  },
+  {
+    "ok": false,
+    "ms": 1873881,
+    "phases": {
+      "fetch": 8.199999928474426,
+      "parse": 1949.7000000476837,
+      "layout": 53136,
+      "paint": 18635.399999976158,
+      "postFetch": 73721.10000002384,
+      "total": 73729.29999995232,
       "compareComplete": false,
       "toCompare": null
     },
@@ -61,16 +345,228 @@
       "texts": 1610
     },
     "why": "comparison unfinished after 30 min",
-    "leaves": 70580,
     "compare_budget_ms": 1800000,
-    "peak_renderer_mb": 9867
+    "peak_renderer_mb": 9482,
+    "leaves": 70580,
+    "tool": "phyloio",
+    "load": 0
+  },
+  {
+    "ok": true,
+    "ms": 235,
+    "peak_renderer_mb": 200,
+    "leaves": 70580,
+    "tool": "phylodelta",
+    "load": 1
   },
   {
     "ok": false,
-    "ms": 2100351,
-    "why": "35 min limit",
-    "leaves": 564640,
+    "ms": 1875714,
+    "phases": {
+      "fetch": 6.100000023841858,
+      "parse": 2023.8999999761581,
+      "layout": 54344.90000009537,
+      "paint": 19171.5,
+      "postFetch": 75540.30000007153,
+      "total": 75546.40000009537,
+      "compareComplete": false,
+      "toCompare": null
+    },
+    "drawn": {
+      "paths": 1036,
+      "texts": 1610
+    },
+    "why": "comparison unfinished after 30 min",
     "compare_budget_ms": 1800000,
-    "peak_renderer_mb": 10309
+    "peak_renderer_mb": 9401,
+    "leaves": 70580,
+    "tool": "phyloio",
+    "load": 1
+  },
+  {
+    "ok": true,
+    "ms": 240,
+    "peak_renderer_mb": 224,
+    "leaves": 70580,
+    "tool": "phylodelta",
+    "load": 2
+  },
+  {
+    "ok": false,
+    "ms": 1875975,
+    "phases": {
+      "fetch": 6.5,
+      "parse": 2022.8999999761581,
+      "layout": 54300,
+      "paint": 19399.600000023842,
+      "postFetch": 75722.5,
+      "total": 75729,
+      "compareComplete": false,
+      "toCompare": null
+    },
+    "drawn": {
+      "paths": 1036,
+      "texts": 1610
+    },
+    "why": "comparison unfinished after 30 min",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 9730,
+    "leaves": 70580,
+    "tool": "phyloio",
+    "load": 2
+  },
+  {
+    "ok": true,
+    "ms": 242,
+    "peak_renderer_mb": 224,
+    "leaves": 70580,
+    "tool": "phylodelta",
+    "load": 3
+  },
+  {
+    "ok": false,
+    "ms": 1875128,
+    "phases": {
+      "fetch": 7,
+      "parse": 2014.3000000715256,
+      "layout": 54236.299999952316,
+      "paint": 18622.899999976158,
+      "postFetch": 74873.5,
+      "total": 74880.5,
+      "compareComplete": false,
+      "toCompare": null
+    },
+    "drawn": {
+      "paths": 1036,
+      "texts": 1610
+    },
+    "why": "comparison unfinished after 30 min",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 9519,
+    "leaves": 70580,
+    "tool": "phyloio",
+    "load": 3
+  },
+  {
+    "ok": true,
+    "ms": 237,
+    "peak_renderer_mb": 202,
+    "leaves": 70580,
+    "tool": "phylodelta",
+    "load": 4
+  },
+  {
+    "ok": false,
+    "ms": 1875342,
+    "phases": {
+      "fetch": 8,
+      "parse": 2020,
+      "layout": 54315.800000071526,
+      "paint": 18700.099999904633,
+      "postFetch": 75035.89999997616,
+      "total": 75043.89999997616,
+      "compareComplete": false,
+      "toCompare": null
+    },
+    "drawn": {
+      "paths": 1036,
+      "texts": 1610
+    },
+    "why": "comparison unfinished after 30 min",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 9281,
+    "leaves": 70580,
+    "tool": "phyloio",
+    "load": 4
+  },
+  {
+    "ok": true,
+    "ms": 291,
+    "peak_renderer_mb": 224,
+    "leaves": 564640,
+    "tool": "phylodelta",
+    "load": 0
+  },
+  {
+    "ok": false,
+    "ms": 2100159,
+    "why": "35 min limit",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 10864,
+    "leaves": 564640,
+    "tool": "phyloio",
+    "load": 0
+  },
+  {
+    "ok": true,
+    "ms": 238,
+    "peak_renderer_mb": 224,
+    "leaves": 564640,
+    "tool": "phylodelta",
+    "load": 1
+  },
+  {
+    "ok": false,
+    "ms": 2100170,
+    "why": "35 min limit",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 11341,
+    "leaves": 564640,
+    "tool": "phyloio",
+    "load": 1
+  },
+  {
+    "ok": true,
+    "ms": 239,
+    "peak_renderer_mb": 226,
+    "leaves": 564640,
+    "tool": "phylodelta",
+    "load": 2
+  },
+  {
+    "ok": false,
+    "ms": 2100164,
+    "why": "35 min limit",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 11215,
+    "leaves": 564640,
+    "tool": "phyloio",
+    "load": 2
+  },
+  {
+    "ok": true,
+    "ms": 235,
+    "peak_renderer_mb": 201,
+    "leaves": 564640,
+    "tool": "phylodelta",
+    "load": 3
+  },
+  {
+    "ok": false,
+    "ms": 1998835,
+    "why": "page.evaluate: Target crashed ",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 11744,
+    "leaves": 564640,
+    "tool": "phyloio",
+    "load": 3
+  },
+  {
+    "ok": true,
+    "ms": 234,
+    "peak_renderer_mb": 200,
+    "leaves": 564640,
+    "tool": "phylodelta",
+    "load": 4
+  },
+  {
+    "ok": false,
+    "ms": 2100147,
+    "why": "35 min limit",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 11785,
+    "leaves": 564640,
+    "tool": "phyloio",
+    "load": 4
   }
 ]

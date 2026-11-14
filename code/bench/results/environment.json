@@ -1,7 +1,7 @@
 {
- "commit": "3084237710337581edce8bddbb4ba63e784a26b2",
- "commit_short": "3084237",
- "tag": "v0.2.1",
+ "commit": "a99d091bf8ea0de1d2d95a9558a87b97f9fe6e19",
+ "commit_short": "a99d091",
+ "tag": "v0.3.0",
  "machine": {
   "chip": "Apple M4",
   "memory_gib": 24,
@@ -35,14 +35,14 @@
   "PHYLODELTA_METRIC_MEMORY": "16G"
  },
  "store": {
-  "root": "/Users/danielcarvalho/Documents/masters/Theses/campaign-v0.2.1.noindex/root",
+  "root": "/Users/danielcarvalho/Documents/masters/Theses/campaign-v0.3.0.noindex/root",
   "file_system": "APFS",
   "solid_state": "Yes"
  },
  "dry_run": false,
- "started": "2026-11-08T16:24:28+00:00",
+ "started": "2026-11-13T00:37:28+00:00",
  "power_at_start": "Now drawing from 'AC Power'",
- "finished": "2026-11-08T23:16:44+00:00",
+ "finished": "2026-11-14T01:35:32+00:00",
  "power_at_finish": "Now drawing from 'AC Power'",
  "moved_during_run": []
 }

@@ -1,54 +1,54 @@
 {
- "commit": "3084237",
+ "commit": "a99d091",
  "leaves": 2500,
- "pair": "688a47f5656d__26d9ee287ce4",
+ "pair": "db57d3bbb767__a2193ffd3599",
  "clades": 2499,
  "runs": [
   {
-   "comparable": 2498,
-   "exact_match": 2390,
-   "worse": 108,
-   "gap_median": 0.12409420808156332,
-   "gap_worst": 0.6666666799121432,
-   "compare_ms": 18279.699999928474
+   "comparable": 2497,
+   "exact_match": 2358,
+   "worse": 139,
+   "gap_median": 0.12121214108033618,
+   "gap_worst": 0.6888888955116272,
+   "compare_ms": 18431.699999928474
+  },
+  {
+   "comparable": 2497,
+   "exact_match": 2397,
+   "worse": 100,
+   "gap_median": 0.16364247600237528,
+   "gap_worst": 0.6666666666666667,
+   "compare_ms": 18277.100000023842
+  },
+  {
+   "comparable": 2497,
+   "exact_match": 2388,
+   "worse": 109,
+   "gap_median": 0.12318841616312665,
+   "gap_worst": 0.5000000255448478,
+   "compare_ms": 18256.800000071526
   },
   {
    "comparable": 2498,
-   "exact_match": 2342,
-   "worse": 156,
-   "gap_median": 0.13442931264296348,
-   "gap_worst": 0.75,
-   "compare_ms": 18281.199999928474
+   "exact_match": 2395,
+   "worse": 103,
+   "gap_median": 0.125,
+   "gap_worst": 0.7912261771119159,
+   "compare_ms": 18223.600000023842
   },
   {
    "comparable": 2496,
-   "exact_match": 2376,
-   "worse": 120,
-   "gap_median": 0.07856163967025373,
-   "gap_worst": 0.6666666467984518,
-   "compare_ms": 18452.100000023842
-  },
-  {
-   "comparable": 2498,
-   "exact_match": 2383,
-   "worse": 115,
-   "gap_median": 0.08000000119209288,
-   "gap_worst": 0.5354691179175126,
+   "exact_match": 2396,
+   "worse": 100,
+   "gap_median": 0.09677970977413838,
+   "gap_worst": 0.8571428315980094,
    "compare_ms": 18245.600000023842
-  },
-  {
-   "comparable": 2498,
-   "exact_match": 2394,
-   "worse": 104,
-   "gap_median": 0.097387558332196,
-   "gap_worst": 0.8112988195601543,
-   "compare_ms": 18431.799999952316
   }
  ],
  "scores_identical_to_first_run": [
-  2273,
-  2303,
-  2322,
-  2326
+  2285,
+  2297,
+  2316,
+  2308
  ]
 }

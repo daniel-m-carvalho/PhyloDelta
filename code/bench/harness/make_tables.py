@@ -1033,7 +1033,8 @@ print("| Precompute before first view | none | up to "
       f"{max(r['build_s'] for r in app_builds):.0f} s as the app uploads it |")
 print("| Whole tree ever visible | yes, in memory | **no, never transferred** |")
 print("| Works offline from a file | yes | no |")
-print("| Comparison recomputed on demand | yes, in the page (a re-root recomputes it there) "
+print("| Comparison recomputed on demand | in the page, but a re-root of a compared tree "
+      "throws before recomputing it (Table 24) "
       "| only as a new comparison: a re-root is a full rebuild on the server (§56, Table 24) |")
 
 table(14, "Provenance of the test data")
@@ -1245,11 +1246,31 @@ if nav_rows:
               "`getHierarchyNodeFromModelNode` returns null, and `expandToRoot` hands that "
               "null to `apply_collapse_from_data_to_d3`, which reads `_children` on it. Any "
               "other counterpart is found, and the jump works.\n")
+        # Worked out from the loads, not written down: how many clades each load
+        # matched to the root, and how large the ones tried were.
+        def _root_clades(cell):
+            seen = [one["rootward"] for one in nav_loads(cell) if one.get("rootward")]
+            counts = [r["clades"] for r in seen]
+            sizes = [n for r in seen for n in r.get("sizes", [])]
+            return counts, sizes
+
+        _first = next((r for r in nav_rows if not no_comparison(r.get("phyloio", {}))), None)
+        if _first is not None:
+            counts, sizes = _root_clades(_first["phyloio"])
+            spread = (f"{min(counts)} to {max(counts)}" if min(counts) != max(counts)
+                      else f"{counts[0]}")
+            print(f"**How many clades that is varies from load to load.** At "
+                  f"{_first['leaves']:,} leaves the loads matched {spread} clades to the "
+                  f"root ({', '.join(str(c) for c in counts)}), because phylo.io's "
+                  "comparison is not deterministic (§34.4): which clades end up with the "
+                  "root as their best match is decided anew in each load. They are among "
+                  f"the largest — the ones tried there held {min(sizes):,} to {max(sizes):,} "
+                  "leaves — which is why a harness sampling the largest clades first finds "
+                  "almost nothing else.\n")
         print("**Why the earlier tables said \"fails in most page loads\".** The harness "
-              "took the largest clades first, and on these rungs the largest clades are "
-              "exactly those whose counterpart is the root — at 1,000 leaves the eight "
-              "largest, 922 to 997 leaves. It measured the one failing case and reported it "
-              "as the tool's behaviour (DECISIONS, Corrections; §34.24).\n")
+              "took the largest clades first, and the largest clades are exactly those "
+              "whose counterpart is the root. It measured the one failing case and reported "
+              "it as the tool's behaviour (DECISIONS, Corrections; §34.24).\n")
         if ceiling_225:
             done = ceiling_225["per_load"][0]["completed"]
             print(f"The ceiling was measured directly on {ceiling_225['label']}: at "
@@ -1771,6 +1792,39 @@ if reroot.get("rows"):
               f"{miqr(deploy_builds.get(row['leaves'], []), ' s')} |")
     print("\n*Above 17,645 leaves phylo.io's first comparison does not finish (Table 1), "
           "so there is nothing for it to re-root and it is not run there.*\n")
+    # Each distinct way phylo.io's re-root failed, with the rungs it failed at,
+    # read from the runs (§34.24).
+    _why: dict[str, list[int]] = {}
+    for row in reroot["rows"]:
+        for run in row.get("phyloio") or []:
+            if run.get("outcome") == "threw":
+                _why.setdefault(run.get("why", "?"), [])
+                if row["leaves"] not in _why[run.get("why", "?")]:
+                    _why[run.get("why", "?")].append(row["leaves"])
+    if _why:
+        print("### Table 24 note — phylo.io cannot re-root a tree it has compared\n")
+        print("Every phylo.io run that had a comparison to re-root threw, inside phylo.io's "
+              "own code, by the path its context menu's \"Reroot\" takes "
+              "(`viewer.js` calls the same `trigger_(\"reroot\", …)`). Two errors, by size:\n")
+        print("| error | at |")
+        print("|---|---|")
+        for error, at in _why.items():
+            print(f"| `{error}` | {', '.join(f'{n:,}' for n in sorted(at))} leaves |")
+        print()
+        print("**Where each comes from.** The first is thrown while the re-rooted tree is "
+              "redrawn: `Viewer.color_edge` (`viewer.js`) colours a branch with the "
+              "similarity colour scale, and in compare mode that scale is no longer a "
+              "function. The second is thrown after the redraw, when "
+              "`compute_topology_and_render_bounded_viewer(true)` starts the comparison again "
+              "and `compute_visible_topology_similarity` (`api.js`) posts the re-rooted model "
+              "to its worker: copying it overflows the call stack. Either way the comparison "
+              "is never recomputed. **Outside compare mode the same call on the same clade "
+              "works**, checked by hand at 1,000 and 2,500 leaves, so it is re-rooting a "
+              "*compared* tree that fails, not re-rooting.\n")
+        print("So there is no phylo.io re-root time to set beside PhyloDelta's: the one "
+              "interaction where both tools must redo the comparison is the one phylo.io "
+              "does not complete. PhyloDelta's column is a full rebuild on the server, the "
+              "build time of Table 8 plus 2–5 s, every run.\n")
 
 
 # --- the thesis charts' data ------------------------------------------------
@@ -1792,7 +1846,9 @@ def _q(values, scale=1.0):
 
 def _write(name, header, body):
     with (FIGURES / name).open("w", newline="") as out:
-        writer = csv.writer(out)
+        # "\n", not the csv module's default "\r\n": the files are committed, and
+        # git would rewrite every line ending on the next touch.
+        writer = csv.writer(out, lineterminator="\n")
         writer.writerow(header)
         writer.writerows(body)
 

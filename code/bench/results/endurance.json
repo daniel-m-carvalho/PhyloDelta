@@ -1,18 +1,182 @@
 [
   {
-    "ok": false,
-    "ms": 283326,
-    "why": "page.evaluate: Target crashed ",
+    "ok": true,
+    "ms": 272,
+    "peak_renderer_mb": 224,
     "leaves": 141160,
-    "compare_budget_ms": 1800000,
-    "peak_renderer_mb": 9902
+    "tool": "phylodelta",
+    "load": 0
   },
   {
     "ok": false,
-    "ms": 457509,
+    "ms": 270562,
     "why": "page.evaluate: Target crashed ",
-    "leaves": 282320,
     "compare_budget_ms": 1800000,
-    "peak_renderer_mb": 9894
+    "peak_renderer_mb": 10329,
+    "leaves": 141160,
+    "tool": "phyloio",
+    "load": 0
+  },
+  {
+    "ok": true,
+    "ms": 237,
+    "peak_renderer_mb": 224,
+    "leaves": 141160,
+    "tool": "phylodelta",
+    "load": 1
+  },
+  {
+    "ok": false,
+    "ms": 270576,
+    "why": "page.evaluate: Target crashed ",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 10216,
+    "leaves": 141160,
+    "tool": "phyloio",
+    "load": 1
+  },
+  {
+    "ok": true,
+    "ms": 239,
+    "peak_renderer_mb": 224,
+    "leaves": 141160,
+    "tool": "phylodelta",
+    "load": 2
+  },
+  {
+    "ok": false,
+    "ms": 269226,
+    "why": "page.evaluate: Target crashed ",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 10087,
+    "leaves": 141160,
+    "tool": "phyloio",
+    "load": 2
+  },
+  {
+    "ok": true,
+    "ms": 240,
+    "peak_renderer_mb": 225,
+    "leaves": 141160,
+    "tool": "phylodelta",
+    "load": 3
+  },
+  {
+    "ok": false,
+    "ms": 268638,
+    "why": "page.evaluate: Target crashed ",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 10216,
+    "leaves": 141160,
+    "tool": "phyloio",
+    "load": 3
+  },
+  {
+    "ok": true,
+    "ms": 238,
+    "peak_renderer_mb": 201,
+    "leaves": 141160,
+    "tool": "phylodelta",
+    "load": 4
+  },
+  {
+    "ok": false,
+    "ms": 272009,
+    "why": "page.evaluate: Target crashed ",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 10238,
+    "leaves": 141160,
+    "tool": "phyloio",
+    "load": 4
+  },
+  {
+    "ok": true,
+    "ms": 284,
+    "peak_renderer_mb": 225,
+    "leaves": 282320,
+    "tool": "phylodelta",
+    "load": 0
+  },
+  {
+    "ok": false,
+    "ms": 451101,
+    "why": "page.evaluate: Target crashed ",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 9820,
+    "leaves": 282320,
+    "tool": "phyloio",
+    "load": 0
+  },
+  {
+    "ok": true,
+    "ms": 238,
+    "peak_renderer_mb": 224,
+    "leaves": 282320,
+    "tool": "phylodelta",
+    "load": 1
+  },
+  {
+    "ok": false,
+    "ms": 454582,
+    "why": "page.evaluate: Target crashed ",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 10104,
+    "leaves": 282320,
+    "tool": "phyloio",
+    "load": 1
+  },
+  {
+    "ok": true,
+    "ms": 236,
+    "peak_renderer_mb": 199,
+    "leaves": 282320,
+    "tool": "phylodelta",
+    "load": 2
+  },
+  {
+    "ok": false,
+    "ms": 455989,
+    "why": "page.evaluate: Target crashed ",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 10101,
+    "leaves": 282320,
+    "tool": "phyloio",
+    "load": 2
+  },
+  {
+    "ok": true,
+    "ms": 236,
+    "peak_renderer_mb": 200,
+    "leaves": 282320,
+    "tool": "phylodelta",
+    "load": 3
+  },
+  {
+    "ok": false,
+    "ms": 453426,
+    "why": "page.evaluate: Target crashed ",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 10121,
+    "leaves": 282320,
+    "tool": "phyloio",
+    "load": 3
+  },
+  {
+    "ok": true,
+    "ms": 236,
+    "peak_renderer_mb": 200,
+    "leaves": 282320,
+    "tool": "phylodelta",
+    "load": 4
+  },
+  {
+    "ok": false,
+    "ms": 468676,
+    "why": "page.evaluate: Target crashed ",
+    "compare_budget_ms": 1800000,
+    "peak_renderer_mb": 9954,
+    "leaves": 282320,
+    "tool": "phyloio",
+    "load": 4
   }
 ]
