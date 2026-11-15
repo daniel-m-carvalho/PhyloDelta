@@ -269,6 +269,29 @@ class RerootRefused(ValueError):
     """A re-root that cannot be done, or would change nothing, said by name (§56)."""
 
 
+def check_reroot(parent, node: int) -> None:
+    """The refusals of ``reroot`` that need only the parent column, by name.
+
+    Three reads of ``parent`` whatever the tree's size, so the API can answer
+    with them at once from the stored, memory-mapped column (§23.1), and leave
+    the re-root itself to the worker.
+    """
+    n = len(parent)
+    if not 0 <= node < n:
+        raise RerootRefused(f"node {node} is not in this tree, which has nodes 0 to {n - 1}")
+    if parent[node] == NO_PARENT:
+        raise RerootRefused(
+            f"node {node} is the root; a tree is re-rooted on the branch above a node, "
+            "and the root has none"
+        )
+    if parent[parent[node]] == NO_PARENT:
+        raise RerootRefused(
+            f"node {node} is a child of the root. Rooting on its branch gives the same "
+            "rooted topology — the same clades, only the root's two edges split "
+            "differently — so every metric would give the same answer"
+        )
+
+
 def reroot(arrays: TreeArrays, node: int) -> TreeArrays:
     """The tree rooted on the branch above ``node``, at the branch's midpoint (§56).
 
@@ -296,21 +319,9 @@ def reroot(arrays: TreeArrays, node: int) -> TreeArrays:
       every metric would answer as before;
     * an id outside the tree.
     """
-    n = arrays.n_nodes
-    if not 0 <= node < n:
-        raise RerootRefused(f"node {node} is not in this tree, which has nodes 0 to {n - 1}")
     parent = np.asarray(arrays.parent)
-    if parent[node] == NO_PARENT:
-        raise RerootRefused(
-            f"node {node} is the root; a tree is re-rooted on the branch above a node, "
-            "and the root has none"
-        )
-    if parent[parent[node]] == NO_PARENT:
-        raise RerootRefused(
-            f"node {node} is a child of the root. Rooting on its branch gives the same "
-            "rooted topology — the same clades, only the root's two edges split "
-            "differently — so every metric would give the same answer"
-        )
+    check_reroot(parent, node)
+    n = arrays.n_nodes
 
     # Children in their stored order, as CSR: one pass, no Python lists per node.
     # Pre-order lists every child after its parent and siblings left to right,

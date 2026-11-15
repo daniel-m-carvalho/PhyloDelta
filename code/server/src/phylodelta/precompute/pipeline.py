@@ -32,7 +32,7 @@ from ..metrics.project import project, project_correspondence
 from ..metrics.store import CORRESPONDENCE_DIR, write_correspondence, write_pair
 from ..trees.correspondence import compute_correspondence
 from ..trees.materialise import MaterialisedPair
-from ..trees.newick import parse_newick_file
+from ..trees.newick import TreeArrays, parse_newick_file
 from ..trees.normalise import (
     assert_rooted_binary,
     resolve_trifurcating_root,
@@ -95,6 +95,36 @@ def ingest_tree_file(
     """
     started = time.perf_counter()
     arrays = parse_newick_file(path, fast=True)
+    return ingest_tree_arrays(
+        arrays,
+        trees_dir,
+        dataset_id,
+        owner_id,
+        species,
+        method,
+        display_name=display_name,
+        source_name=source_name or path.name,
+        started=started,
+    )
+
+
+def ingest_tree_arrays(
+    arrays: TreeArrays,
+    trees_dir: Path,
+    dataset_id: str,
+    owner_id: str,
+    species: str,
+    method: str,
+    display_name: str = "",
+    source_name: str = "",
+    started: float | None = None,
+) -> IngestedTree:
+    """Store a tree already in memory, through the same canonical checks as a file.
+
+    A re-root (§56) has its tree as arrays already; writing them out as Newick
+    only to parse them again cost seconds at 500k leaves and changed nothing.
+    """
+    started = time.perf_counter() if started is None else started
     # Canonicalise before storing: the store promises a rooted binary tree,
     # and vibrio-nj arrives with a unary root. Asserting afterwards means a
     # dataset that cannot be canonicalised fails ingest loudly rather than
@@ -114,7 +144,7 @@ def ingest_tree_file(
             id=dataset_id,
             species=species,
             method=method,
-            source=source_name or path.name,
+            source=source_name,
             n_nodes=arrays.n_nodes,
             n_leaves=arrays.n_leaves,
             max_depth=arrays.max_depth,
