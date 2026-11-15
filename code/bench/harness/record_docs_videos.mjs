@@ -718,6 +718,22 @@ if (!ONLY || ONLY.includes("annotated")) {
   // A little zoom on the right panel, so its fit button is on screen too. Set
   // on the camera: one wheel notch is sigma's 1.7x, far more than a little.
   await page.evaluate(() => window.__phylodelta.zoom(1, 1.2));
+  // The left panel's fit is limited by its width (names and bars take the
+  // right of it), which leaves its rows too close to read. Zoomed until the
+  // tree fills the panel's height, about the leaf column so names and bars
+  // stay on screen and the root end runs off the left.
+  await page.evaluate(() => {
+    const host = document.querySelectorAll(".sigma-host")[0].getBoundingClientRect();
+    const nodes = window.__phylodelta.drawn(0);
+    const ys = nodes.map((n) => n.y);
+    const [lo, hi] = [Math.min(...ys), Math.max(...ys)];
+    const margin = 20;
+    const factor = (host.height - 2 * margin) / (hi - lo);
+    // The point that stays put while the tree's top moves to the margin.
+    const y = (host.top + margin - factor * lo) / (1 - factor);
+    const x = Math.max(...nodes.filter((n) => n.leaf || n.collapsed).map((n) => n.x));
+    window.__phylodelta.zoom(0, factor, { x, y });
+  });
   await page.locator(".panel").nth(1).locator(".ptv-reset-view").waitFor({ state: "visible" });
   await page.waitForTimeout(1500);
 
