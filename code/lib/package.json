@@ -1,6 +1,6 @@
 {
   "name": "phylo-tree-viewer",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Side-by-side phylogenetic tree visualisation for the browser: a Sigma.js/graphology viewer with composable operators for expand/collapse, selection, per-leaf bar charts and tree comparison.",
   "keywords": [
     "phylogenetics",

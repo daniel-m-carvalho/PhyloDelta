@@ -1,6 +1,6 @@
 {
   "name": "phylodelta-web",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "private": true,
   "description": "The PhyloDelta application: side-by-side tree comparison driven by server-computed slices.",
   "license": "MIT",
