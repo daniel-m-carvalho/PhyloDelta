@@ -11,8 +11,9 @@ screen, see [Using the web app](web-app-guide.md).
 4. **The found leaf, marked** in magenta ([Marks](#marks)).
 5. **A collapsed clade**: a triangle standing for a group of leaves ([Shapes](#shapes)).
 6. **A leaf**, with its name ([Shapes](#shapes)).
-7. **The colour legend**: blue identical, yellow most diverged, red not in the other tree ([Colours](#colours)).
+7. **The colour legend**: blue identical, yellow most diverged, red not in the other tree, grey nothing to measure ([Colours](#colours)).
 8. **Isolate data**: what the bars beside the leaves are coloured by ([Isolate data bars](#isolate-data-bars)).
+9. **The fit button**, shown only once a panel is zoomed or moved (here the right one, zoomed a little): click it to fit that tree back to its panel ([Navigate a tree](web-app-guide.md#3-navigate-a-tree)).
 
 ## The layout
 

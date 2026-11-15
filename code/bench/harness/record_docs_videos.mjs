@@ -1,6 +1,7 @@
 /**
  * Records the videos in docs/videos/ — one per task in docs/web-app-guide.md —
- * and the annotated screenshot in docs/images/.
+ * and the comparison screenshot in docs/images/, once with numbered callouts
+ * and once without.
  *
  *   node harness/record_docs_videos.mjs [web url] [only, e.g. 03,04]
  *
@@ -650,6 +651,24 @@ if (!ONLY || ONLY.includes("annotated")) {
   await page.keyboard.press("Escape");
   await page.mouse.click(420, 24);
   await page.waitForTimeout(800);
+  const settled = async () => {
+    await page.waitForTimeout(300);
+    await page.waitForFunction(() => window.__phylodelta.state().every((s) => s.tree && !s.loading));
+    await page.waitForTimeout(800);
+  };
+  // One level in on the left: the triangle nearest a thousand leaves, a clade
+  // in the middle of the tree rather than the whole of it or a twig.
+  const clade = await page.evaluate(() => {
+    const slice = window.__phylodelta.state()[0].slice;
+    const leavesOf = Object.fromEntries(slice.nodes.id.map((id, k) => [id, slice.nodes.true_leaf_count[k]]));
+    return window.__phylodelta
+      .drawn(0)
+      .filter((n) => n.collapsed)
+      .sort((a, b) => Math.abs(leavesOf[a.storedId] - 1000) - Math.abs(leavesOf[b.storedId] - 1000))[0];
+  });
+  await page.mouse.click(clade.x, clade.y, { button: "right" });
+  await page.click(".context-menu-item:has-text('Expand this clade')");
+  await settled();
   const leaves = (await page.evaluate(() => window.__phylodelta.drawn(0))).filter((n) => n.leaf);
   const from = leaves[Math.floor(leaves.length / 2)];
   await page.mouse.click(from.x, from.y, { button: "right" });
@@ -658,6 +677,65 @@ if (!ONLY || ONLY.includes("annotated")) {
   await page.waitForFunction(() => window.__phylodelta.state().every((s) => !s.loading));
   await page.waitForSelector(".legend-swatches .swatch");
   await page.waitForTimeout(3000);
+  // Bars by the column where the fewest leaves on screen are mostly "not
+  // recorded", among those with two to ten values on screen: one colour says
+  // nothing, and past ten they are hard to tell apart. Asked of the route the
+  // bars come from.
+  const columns = await page.evaluate(async (species) => {
+    const labels = [0, 1].flatMap((s) => window.__phylodelta.drawn(s).filter((n) => n.leaf).map((n) => n.label));
+    const base = `/api/v1/isolates/${species}`;
+    const keys = await (await fetch(`${base}/keys`)).json();
+    const scored = [];
+    for (const facet of keys.facets.filter((f) => f.segmentable)) {
+      const body = JSON.stringify({ leaves: labels, segment_by: facet.name, filter: {} });
+      const answer = await (
+        await fetch(`${base}/compositions`, { method: "POST", headers: { "Content-Type": "application/json" }, body })
+      ).json();
+      const seen = new Set();
+      let unrecorded = 0;
+      for (const leaf of answer.leaves) {
+        const top = [...leaf.segments].sort((a, b) => b.count - a.count)[0];
+        if (!top?.value) unrecorded += 1;
+        for (const s of leaf.segments) if (s.value) seen.add(s.value);
+      }
+      scored.push({ name: facet.name, unrecorded: unrecorded / answer.leaves.length, values: seen.size });
+    }
+    return scored.sort((a, b) => a.unrecorded - b.unrecorded);
+  }, "vibrio");
+  console.log("  bar columns, share of leaves mostly not recorded", JSON.stringify(columns));
+  const best = columns.find((c) => c.values >= 2 && c.values <= 10).name;
+  const chosen = await page.locator(".typing-legend .picker-summary").textContent();
+  if (chosen !== best) {
+    await page.click(".typing-legend .picker-button");
+    await page.click(`.typing-legend .picker-menu label:has-text('${best}')`);
+    if (chosen !== "none") await page.click(`.typing-legend .picker-menu label:has-text('${chosen}')`);
+    await page.keyboard.press("Escape");
+    await page.mouse.click(420, 24);
+    await page.waitForFunction((best) => document.querySelector(".typing-legend .picker-summary")?.textContent === best, best);
+    await settled();
+    await page.waitForTimeout(2000);
+  }
+  // A little zoom on the right panel, so its fit button is on screen too. Set
+  // on the camera: one wheel notch is sigma's 1.7x, far more than a little.
+  await page.evaluate(() => window.__phylodelta.zoom(1, 1.2));
+  // The left panel's fit is limited by its width (names and bars take the
+  // right of it), which leaves its rows too close to read. Zoomed until the
+  // tree fills the panel's height, about the leaf column so names and bars
+  // stay on screen and the root end runs off the left.
+  await page.evaluate(() => {
+    const host = document.querySelectorAll(".sigma-host")[0].getBoundingClientRect();
+    const nodes = window.__phylodelta.drawn(0);
+    const ys = nodes.map((n) => n.y);
+    const [lo, hi] = [Math.min(...ys), Math.max(...ys)];
+    const margin = 20;
+    const factor = (host.height - 2 * margin) / (hi - lo);
+    // The point that stays put while the tree's top moves to the margin.
+    const y = (host.top + margin - factor * lo) / (1 - factor);
+    const x = Math.max(...nodes.filter((n) => n.leaf || n.collapsed).map((n) => n.x));
+    window.__phylodelta.zoom(0, factor, { x, y });
+  });
+  await page.locator(".panel").nth(1).locator(".ptv-reset-view").waitFor({ state: "visible" });
+  await page.waitForTimeout(1500);
 
   const targets = await page.evaluate(() => {
     const rect = (selector, index = 0) => {
@@ -723,9 +801,16 @@ if (!ONLY || ONLY.includes("annotated")) {
       leaf: nearest(left.filter((n) => n.leaf), 0.62),
       found: right.find((n) => n.storedId === marked) ?? null,
       hostL: rect(".sigma-host", 0),
+      fit: (() => {
+        const r = document.querySelectorAll(".panel")[1].querySelector(".ptv-reset-view")?.getBoundingClientRect();
+        return r?.width ? { x: r.left, y: r.top, w: r.width, h: r.height } : null;
+      })(),
     };
   });
   console.log("  annotated targets", JSON.stringify(targets));
+  // The same screen with nothing drawn over it, for wherever numbers don't fit.
+  await page.screenshot({ path: join(IMAGES, "comparison.png") });
+  console.log("  comparison.png");
   await page.evaluate((t) => {
     const layer = document.createElement("div");
     layer.style.cssText = "position:fixed;inset:0;z-index:2147483647;pointer-events:none;";
@@ -768,8 +853,8 @@ if (!ONLY || ONLY.includes("annotated")) {
     // triangle starts, and a ring round it misses the shape it points at.
     if (t.wedgeBox) {
       ring(t.wedgeBox.x, t.wedgeBox.y, t.wedgeBox.w, t.wedgeBox.h);
-      // Above it: to the right are the leaf names.
-      label(5, t.wedgeBox.x + t.wedgeBox.w / 2, t.wedgeBox.y - 22);
+      // To its left, over the branches: right and above are leaf names.
+      label(5, t.wedgeBox.x - 22, t.wedgeBox.y + t.wedgeBox.h / 2);
     } else point(5, t.wedge, 30, 0);
     point(6, t.leaf, -30, 0);
     boxed(7, t.legend, "right");
@@ -777,6 +862,8 @@ if (!ONLY || ONLY.includes("annotated")) {
       ring(t.typing.x, t.typing.y, t.typing.w, t.typing.h);
       label(8, t.typing.x + t.typing.w - 30, t.typing.y + t.typing.h / 2);
     }
+    // The button is in the panel's top-right corner, so its number goes to its left.
+    boxed(9, t.fit);
   }, targets);
   await page.waitForTimeout(300);
   await page.screenshot({ path: join(IMAGES, "comparison-annotated.png") });
