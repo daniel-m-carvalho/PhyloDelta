@@ -431,6 +431,7 @@ declare global {
       actions: () => [SideActions, SideActions];
       marks: () => [MarkProbe, MarkProbe];
       drawn: (side: 0 | 1) => DrawnProbe[];
+      zoom: (side: 0 | 1, factor: number) => void;
     };
   }
 }
@@ -672,6 +673,12 @@ export function ComparisonView({
             columns,
           }];
         });
+      },
+      // Zoom a panel about its centre by any factor; the wheel only steps by
+      // sigma's fixed 1.7x. For the docs screenshot's "zoomed a little".
+      zoom: (side, factor) => {
+        const camera = handle.current?.panels[side]?.viewer.getRenderer()?.getCamera();
+        camera?.setState({ ratio: camera.getState().ratio / factor });
       },
     };
     return () => {
