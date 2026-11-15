@@ -216,6 +216,7 @@ def accept(
     isolate_keys: dict[str, str] | None = None,
     shared_isolates: bool = False,
     derived: dict | None = None,
+    linked: dict[str, tuple[str, Path]] | None = None,
 ) -> Bundle:
     """Receive a bundle, streaming each file to disk as it arrives.
 
@@ -228,14 +229,23 @@ def accept(
     one is keyed by ``ST``, which is what the API meant before the key could be
     chosen. ``shared_isolates`` says the left table is both trees'.
 
+    ``linked`` fills a tree role from a tree already stored, as
+    ``(original_name, store directory)``: its files are hard-linked into the
+    bundle, a few links whatever the tree's size, and the link keeps them even
+    if the stored tree is deleted before the job runs. A re-root (§56) sends
+    its trees this way.
+
     Whole or not at all: any refusal removes everything already written, so a
     rejected upload leaves nothing for a later job to find and mistake for
     work.
     """
-    missing = [r for r, (required, _) in ROLES.items() if required and r not in sources]
+    linked = linked or {}
+    missing = [
+        r for r, (required, _) in ROLES.items() if required and r not in sources and r not in linked
+    ]
     if missing:
         raise UploadRejected(f"missing required file(s): {', '.join(sorted(missing))}")
-    unknown = set(sources) - set(ROLES)
+    unknown = (set(sources) | set(linked)) - set(ROLES)
     if unknown:
         raise UploadRejected(f"unexpected file(s): {', '.join(sorted(unknown))}")
 
@@ -289,6 +299,16 @@ def accept(
                     role_hint=role,
                 )
             stored[role] = StoredFile(role, path, original_name, size)
+        for role, (original_name, tree_dir) in linked.items():
+            target = directory / role
+            target.mkdir(parents=True)
+            for item in Path(tree_dir).iterdir():
+                try:
+                    os.link(item, target / item.name)
+                except OSError:  # another filesystem: a copy, still whole
+                    shutil.copy2(item, target / item.name)
+            size = sum(item.stat().st_size for item in target.iterdir())
+            stored[role] = StoredFile(role, target, original_name, size)
     except Exception:
         discard(directory)
         raise

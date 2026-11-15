@@ -6058,12 +6058,14 @@ SPR all read the root. A tree re-rooted is therefore a different tree to every o
 comparison has to be computed again — there is no cheaper update to make, because the correspondence
 and every metric are functions of the rooted clades.
 
-**Decision.** A re-root is a new comparison, built exactly as an upload is. The server reads both
-stored trees back (`TreeReader.to_arrays`), re-roots one, writes both as Newick (`to_newick`), and
-sends them through `uploads.accept` into the queue, with the original's metrics. The worker builds
-it with the same `ingest_tree_file` and `compute_pair`. The unchanged tree is re-ingested from its
-own Newick as well, so it becomes an independent store — identical structure and node ids, since a
-stored tree is already canonical — and the new comparison shares nothing with the original.
+**Decision.** A re-root is a new comparison, built as an upload is. The request only checks — the
+owner, the state, the side, and the node against the stored parent column (`check_reroot`, three
+reads) — and hard-links both stored trees into a bundle (`uploads.accept(linked=…)`), queued with the
+original's metrics. The worker re-roots one tree and stores both through `ingest_tree_arrays`, the
+same canonical checks as `ingest_tree_file` without the parse, then runs the same `compute_pair`.
+The unchanged tree becomes an independent store too — identical structure and node ids, since a
+stored tree is already canonical — and the new comparison shares nothing with the original. (Until
+v0.3.1 the request did the re-root and wrote both trees as Newick; see the end of this section.)
 
 **The algorithm** (`reroot(arrays, node)`): a new root at the **midpoint** of the branch above the
 node; every parent pointer on the path from there to the old root reversed, each reversed node
@@ -6076,7 +6078,10 @@ times the time), so the cost of the action is the cost of building the compariso
 
 **Refused by name**: the root (there is no branch above it); a child of the root, because rooting on
 its branch splits the root's two edges differently but gives the same rooted topology, so every
-metric would answer as before; an id outside the tree. The menu disables the same items with the
+metric would answer as before; an id outside the tree. These three come back from the request at
+once. A tree that would become deeper than the 16-bit depth column holds is known only from the
+whole tree, so that one is the worker's: the new comparison fails with the reason, and the original
+is untouched, as for any failed build. The menu disables the same items with the
 same reasons, so the round trip that could only fail is not made.
 
 **Only "Re-root here".** Phylo.io also offers "Equalize trees → Reroot", rooting one tree as the
@@ -6127,9 +6132,20 @@ column with no overflow check, though re-rooting can make a tree deeper than it 
 chains under one root double it); past 65,535 it would have wrapped silently and given the
 correspondence search wrong ancestors, so it is refused by name, as the parsers already refuse it.
 Neither path ran in the v0.3.0 campaign (every re-root kept its original; the deepest ladder tree
-is 474 levels), so its results stand for v0.3.1. A third finding is open: the request reads and
-writes both trees before answering 202, size-dependent work §23.1 keeps out of a request; it holds
-at 564,640 leaves (a few seconds) and moving it to the job would change Table 24's timings.
+is 474 levels), so its results stand for v0.3.1.
+
+**The re-root moved into the worker, without a Newick round trip (after v0.3.1).** The audit's third
+finding: the request read both trees in full, re-rooted one and wrote both as Newick before
+answering 202 — size-dependent work §23.1 keeps out of a request, over 7 s of API time at 564,640
+leaves, with the worker then parsing that Newick again. Now the request links the stored trees and
+answers, and the worker re-roots and writes the arrays directly. The trees stored are byte for byte
+the same as before (checked column by column on the 564,640-leaf pair), so nothing a comparison
+shows changes; the hard links keep the snapshot even if the original is deleted before the job
+runs, which is the case the first audit fix is about. **The time does change**: measured on the
+564,640-leaf pair at Table 24's clade, the old request plus the worker's ingest took 9.5 s and the
+new worker step 4.8 s, about 4.7 s less end to end. So Table 24's PhyloDelta column, measured on
+v0.3.0, is now an upper bound by a few seconds at the top rungs, until the next campaign re-measures
+it.
 
 **Not used: the library's own re-rooting.** `rerootTree` and `TreeViewer.reroot` re-root a tree the
 browser holds, which the comparison view never does — it holds a slice — so the view does not use

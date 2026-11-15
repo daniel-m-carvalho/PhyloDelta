@@ -32,8 +32,9 @@ from ..db import jobs as queue
 from ..isolates.ingest import JoinReport, ingest_table
 from ..isolates.schema import DEFAULT_KEY_COLUMN
 from ..isolates.table import TableRejected
-from ..trees.normalise import NotRootedBinary
-from .pipeline import NotComparable, compute_pair, ingest_tree_file, load_metrics
+from ..trees.normalise import NotRootedBinary, RerootRefused, reroot
+from ..trees.store import TreeReader
+from .pipeline import NotComparable, compute_pair, ingest_tree_arrays, ingest_tree_file, load_metrics
 
 #: What a worker computes for an uploaded pair. RF is the headline number; the
 #: correspondence gradient that drives the colouring is computed once per pair
@@ -123,22 +124,36 @@ def run_comparison(
 
     # --- trees ---------------------------------------------------------
     leaves: dict[str, tuple[str, ...]] = {}
+    derived = manifest.get("derived")
     for role, dataset_id, species in (
         ("left_tree", record.left_id, manifest.get("left_species", "")),
         ("right_tree", record.right_id, manifest.get("right_species", "")),
     ):
         db.set_dataset_status(dataset_id, db.DatasetStatus.INGESTING)
+        path = directory / files[role]["path"]
+        common = {
+            "trees_dir": store / "trees",
+            "dataset_id": dataset_id,
+            "owner_id": owner,
+            "species": species,
+            "method": "",
+            "display_name": Path(files[role]["original_name"]).stem,
+            "source_name": files[role]["original_name"],
+        }
         try:
-            ingested = ingest_tree_file(
-                path=directory / files[role]["path"],
-                trees_dir=store / "trees",
-                dataset_id=dataset_id,
-                owner_id=owner,
-                species=species,
-                method="",
-                display_name=Path(files[role]["original_name"]).stem,
-                source_name=files[role]["original_name"],
-            )
+            if path.is_dir():
+                # A re-root's stored tree, linked into the bundle (§56): read
+                # back, re-rooted if it is the side asked for, and stored as
+                # arrays. A refusal only the whole tree can see — too deep —
+                # is a definite answer, like a tree that is not binary.
+                arrays = TreeReader(path).to_arrays()
+                if derived and role == f"{derived['side']}_tree":
+                    arrays = reroot(arrays, derived["node"])
+                ingested = ingest_tree_arrays(arrays, **common)
+            else:
+                ingested = ingest_tree_file(path=path, **common)
+        except RerootRefused as exc:
+            raise TreeRejected(f"The re-root was not possible: {exc}") from exc
         except NotRootedBinary as exc:
             side = role.split("_")[0]
             raise TreeRejected(
@@ -164,7 +179,6 @@ def run_comparison(
     keys = manifest.get("isolate_keys", {})
     shared = manifest.get("shared_isolates", False)
     report: dict[str, dict] = {}
-    derived = manifest.get("derived")
     if derived:
         # A re-root (§56): the bundle carries no table — the original's was
         # discarded once it was built (§26) — but names the isolate stores to

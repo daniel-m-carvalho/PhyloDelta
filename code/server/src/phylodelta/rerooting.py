@@ -5,13 +5,17 @@ the root — so a tree re-rooted is a different tree, and its comparison has to
 be computed again. This module turns "re-root the left tree above node 812"
 into exactly what an upload would have been had the user sent that tree:
 
-* both stored trees are read back and written as Newick, one of them re-rooted
-  (``normalise.reroot``). The unchanged one is re-ingested from its own Newick
-  too, so the new comparison owns two independent stores — identical structure
-  and node ids for the unchanged side — and shares nothing with the original;
-* they go through ``uploads.accept`` into a bundle, and the bundle into the
-  queue, so the worker builds it with the same ``ingest_tree_file`` and
-  ``compute_pair`` as any upload, with the original's metrics;
+* the request only checks — owner, state, side, and the node against the
+  stored parent column (``normalise.check_reroot``) — and hard-links both
+  stored trees into a bundle (``uploads.accept(linked=…)``). Nothing in it
+  grows with the tree (§23.1), and the links keep the trees even if the
+  original is deleted before the job runs;
+* the worker re-roots one tree (``normalise.reroot``) and writes both through
+  ``ingest_tree_arrays`` — the same canonical checks as an upload, without a
+  Newick round trip — so the new comparison owns two independent stores,
+  identical structure and node ids for the unchanged side, and shares nothing
+  with the original. Then the same ``compute_pair`` as any upload, with the
+  original's metrics;
 * typing data cannot be re-joined — the original's raw tables were discarded
   when it was built (§26) — so the bundle names each side's isolate **store**
   to copy instead. A store is keyed by the leaf label (the ST), never by a
@@ -29,7 +33,6 @@ is a failed new comparison, and the original is still there, as it was.
 
 from __future__ import annotations
 
-import io
 import json
 import shutil
 from pathlib import Path
@@ -37,9 +40,7 @@ from pathlib import Path
 from . import config, db, retention, uploads
 from .metrics.store import read_pair
 from .trees import registry as tree_registry
-from .trees.newick import TreeArrays
-from .trees.newick_writer import to_newick
-from .trees.normalise import RerootRefused, reroot
+from .trees.normalise import RerootRefused, check_reroot
 
 SIDES = ("left", "right")
 
@@ -63,10 +64,6 @@ def _isolate_store(tree_id: str, meta) -> str | None:
     if meta.method and meta.species and (base / meta.species / "meta.json").exists():
         return meta.species
     return None
-
-
-def _stored(tree_id: str) -> TreeArrays:
-    return tree_registry.get_tree(tree_id).to_arrays()
 
 
 def _before(comparison_id: str, metrics: list[str]) -> dict[str, dict]:
@@ -105,14 +102,11 @@ def request(
         )
 
     ids = {"left": record.left_id, "right": record.right_id}
-    # The range from the header, before either tree is read in full.
-    n_nodes = tree_registry.get_tree(ids[side]).meta.n_nodes
-    if not 0 <= node < n_nodes:
-        raise RerootRefused(f"node {node} is not in this tree, which has nodes 0 to {n_nodes - 1}")
-    trees = {s: _stored(ids[s]) for s in SIDES}
-    this = trees[side]
-    label = this.labels[node]
-    rerooted = reroot(this, node)
+    # Answered from three reads of the stored parent column and one label:
+    # nothing here grows with the tree (§23.1). The re-root is the worker's.
+    reader = tree_registry.get_tree(ids[side])
+    check_reroot(reader.parent, node)
+    label = reader.label(node)
 
     # Each side's isolate store, and the join report it came with. A side with
     # no store has nothing to copy, and its report says why it has none.
@@ -124,11 +118,10 @@ def request(
 
     isolates = {s: found for s in SIDES if (found := _isolate_store(ids[s], tree_meta(s)))}
 
-    sources = {}
-    for s in SIDES:
-        arrays = rerooted if s == side else trees[s]
-        name = tree_meta(s).source or f"{s}.nwk"
-        sources[f"{s}_tree"] = (name, io.BytesIO(to_newick(arrays).encode()))
+    linked = {
+        f"{s}_tree": (tree_meta(s).source or f"{s}.nwk", tree_registry.get_tree(ids[s]).directory)
+        for s in SIDES
+    }
 
     reroot_info = {
         "from": comparison_id,
@@ -140,12 +133,15 @@ def request(
     }
     where = f"at {label}" if label and label != "_" else f"above node {node}"
     bundle = uploads.accept(
-        sources,
+        {},
         display_name=f"{record.display_name or comparison_id} (re-rooted {side} {where})",
         left_species=tree_meta("left").species,
         right_species=tree_meta("right").species,
+        linked=linked,
         derived={
             "from": comparison_id,
+            "side": side,
+            "node": node,
             "isolates": isolates,
             "isolate_report": {s: reports[s] for s in SIDES if s in reports},
         },

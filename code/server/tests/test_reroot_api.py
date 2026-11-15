@@ -189,6 +189,51 @@ def test_an_original_deleted_by_hand_during_a_replace_stays_an_ordinary_404(clie
     assert gone.json()["code"] == "comparison_not_found"
 
 
+def test_the_request_reads_no_whole_tree_and_links_the_stores(client, monkeypatch):
+    """Nothing in the request grows with the tree (§23.1): the worker re-roots."""
+    from phylodelta import uploads
+    from phylodelta.trees import store
+
+    original = _built(client, TREE, TREE)
+
+    def whole_tree(*_args, **_kwargs):
+        raise AssertionError("the request read a whole tree")
+
+    with monkeypatch.context() as patched:
+        patched.setattr(store.TreeReader, "to_arrays", whole_tree)
+        response = _reroot(client, original, side="left", node=_deep_node(TREE))
+    assert response.status_code == 202, response.text
+    new = response.json()["id"]
+    bundle = uploads.uploads_dir() / new
+    # The stored trees, hard-linked: no Newick, and the same files on disk.
+    for side, tree in zip(("left", "right"), original.split("__"), strict=True):
+        linked = bundle / f"{side}_tree"
+        assert not list(bundle.glob("*.nwk"))
+        assert (linked / "parent.uint32").stat().st_ino == (config.TREES_DIR / tree / "parent.uint32").stat().st_ino
+    assert jobs.process_next("test") is True
+    assert _status(client, new)["status"] == "ready"
+    assert not bundle.exists(), "a built bundle is discarded, links and all"
+
+
+def test_a_refusal_only_the_worker_can_see_fails_the_build_by_name(client, monkeypatch):
+    """Too deep is known only from the whole tree, so it is the worker's to say."""
+    from phylodelta.trees.normalise import RerootRefused
+
+    original = _built(client, TREE, TREE)
+    new = _reroot(client, original, side="left", node=_deep_node(TREE)).json()["id"]
+
+    def too_deep(*_args, **_kwargs):
+        raise RerootRefused("the re-rooted tree would be deeper than 65535 levels")
+
+    monkeypatch.setattr(jobs, "reroot", too_deep)
+    assert jobs.process_next("test") is True
+    failed = _status(client, new)
+    assert failed["status"] == "failed"
+    assert failed["error"] == "The re-root was not possible: the re-rooted tree would be deeper than 65535 levels"
+    kept = _status(client, original)
+    assert kept["status"] == "ready" and kept["superseded_by"] is None
+
+
 def test_replacing_a_replacement_leads_old_links_to_the_latest(client):
     first = _built(client, TREE, TREE)
     second = _rebuilt(client, first, side="left", node=_deep_node(TREE), replace=True)

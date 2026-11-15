@@ -356,8 +356,9 @@ curl -X POST $BASE/comparisons/$ID/reroot -H 'Content-Type: application/json' \
 ```
 
 - The request roots `side`'s tree on the branch above `node` (a stored id), at its midpoint. Not
-  the root, and not a child of the root, which gives the same clades: both are refused,
-  `reroot_refused`.
+  the root, and not a child of the root, which gives the same clades: both are refused at once,
+  `reroot_refused`. The re-root itself happens in the build, so a tree that would become deeper
+  than 65,535 levels comes back as a failed build, its status's `error` saying so.
 - `replace: true` deletes the original once the new comparison is ready. Without it the original
   is kept and its status says `superseded_by`.
 
